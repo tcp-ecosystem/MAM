@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://mam.dev/schema/v1.0.0/sections/outputs.schema.json",
+  "title": "Outputs Section Schema",
+  "type": "object",
+  "required": ["type", "name", "content"],
+  "properties": {
+    "type": { "type": "string", "const": "section" },
+    "name": { "type": "string", "const": "Outputs" },
+    "content": { "type": "array", "items": { "oneOf": [{ "$ref": "#/definitions/Table" }, { "$ref": "#/definitions/Paragraph" }] }, "minItems": 1 }
+  },
+  "definitions": {
+    "Table": { "type": "object", "required": ["type", "headers", "rows"], "properties": { "type": { "const": "table" }, "headers": { "type": "array", "items": { "type": "string" } }, "rows": { "type": "array", "items": { "type": "array", "items": { "type": "string" } } } } },
+    "Paragraph": { "type": "object", "required": ["type", "value"], "properties": { "type": { "const": "paragraph" }, "value": { "type": "string" } } }
+  }
+}

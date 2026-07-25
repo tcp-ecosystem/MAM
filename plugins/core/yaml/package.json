@@ -1,0 +1,23 @@
+{
+  "name": "@mam/plugin-yaml",
+  "version": "0.1.0",
+  "description": "MAM YAML Plugin - YAML section parser and validator",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@mam/plugin-api": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0"
+  },
+  "files": ["dist"],
+  "keywords": ["mam", "plugin", "yaml"],
+  "author": "MAM Team",
+  "license": "MIT"
+}

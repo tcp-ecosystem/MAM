@@ -1,0 +1,38 @@
+{
+  "name": "@mam/validator",
+  "version": "0.1.0",
+  "description": "MAM Validator — Schema and semantic validation for MAM modules",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./rules": {
+      "import": "./dist/rules/index.js",
+      "types": "./dist/rules/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@mam/ast": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0",
+    "vitest": "^1.2.0",
+    "@types/node": "^20.11.0"
+  },
+  "files": ["dist", "README.md"],
+  "keywords": ["mam", "markdown", "validator", "ai", "agents"],
+  "author": "LifeJiggy",
+  "license": "MIT"
+}

@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://mam.dev/schema/v1.0.0/sections/references.schema.json",
+  "title": "References Section Schema",
+  "type": "object",
+  "required": ["type", "name", "content"],
+  "properties": {
+    "type": { "type": "string", "const": "section" },
+    "name": { "type": "string", "const": "References" },
+    "content": { "type": "array", "items": { "oneOf": [{ "$ref": "#/definitions/List" }, { "$ref": "#/definitions/Paragraph" }] }, "minItems": 1 }
+  },
+  "definitions": {
+    "List": { "type": "object", "required": ["type", "items"], "properties": { "type": { "const": "list" }, "items": { "type": "array", "items": { "type": "string" } } } },
+    "Paragraph": { "type": "object", "required": ["type", "value"], "properties": { "type": { "const": "paragraph" }, "value": { "type": "string" } } }
+  }
+}

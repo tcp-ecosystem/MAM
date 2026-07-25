@@ -1,0 +1,316 @@
+# MAM v2 Grammar (BNF) — System Description Language
+# Version: 2.0.0
+
+# ============================================================================
+# Root
+# ============================================================================
+
+<mam_document> ::= <front_matter> <declarations>
+
+# ============================================================================
+# Front Matter (unchanged from v1)
+# ============================================================================
+
+<front_matter> ::= "---" <yaml_content> "---"
+<yaml_content> ::= <yaml_line>*
+<yaml_line> ::= <yaml_key_value> | <yaml_list_item> | <yaml_comment> | <yaml_blank>
+<yaml_key_value> ::= <yaml_key> ":" <yaml_value>
+<yaml_key> ::= IDENTIFIER
+<yaml_value> ::= STRING | NUMBER | BOOLEAN | NULL | <yaml_string>
+<yaml_list_item> ::= "-" <yaml_value>
+<yaml_comment> ::= "#" ANYTHING
+<yaml_blank> ::= NEWLINE
+
+# ============================================================================
+# Declarations (v2 DSL)
+# ============================================================================
+
+<declarations> ::= <declaration>*
+<declaration> ::= <module_decl> | <v1_section> | <edge_decl>
+
+# ============================================================================
+# Module Declaration
+# ============================================================================
+
+<module_decl> ::= <module_keyword> <module_name> NEWLINE <module_body>
+<module_keyword> ::= "module" | "agent" | "tool" | "memory" | "workflow" | "team" | "policy" | "system"
+<module_name> ::= IDENTIFIER (<space> IDENTIFIER)*
+
+# ============================================================================
+# Module Body
+# ============================================================================
+
+<module_body> ::= <module_section>*
+<module_section> ::= <type_section> | <role_section> | <goal_section> | <description_section>
+                   | <provider_section> | <format_section> | <backend_section>
+                   | <scope_section> | <ttl_section>
+                   | <requires_section> | <inputs_section> | <outputs_section>
+                   | <tools_section> | <memory_section> | <handoff_section>
+                   | <members_section> | <steps_section> | <edges_section>
+                   | <allow_section> | <deny_section> | <permissions_section>
+                   | <capabilities_section> | <list_section>
+
+# ============================================================================
+# Type Section
+# ============================================================================
+
+<type_section> ::= "type:" NEWLINE <type_value>
+<type_value> ::= INDENT <module_type> NEWLINE
+<module_type> ::= "module" | "agent" | "tool" | "memory" | "workflow" | "team"
+                | "policy" | "system" | "service" | "component" | "resource"
+                | "interface" | "contract" | "plugin" | "extension" | "runtime"
+                | "package" | "repository" | "documentation"
+
+# ============================================================================
+# Role Section
+# ============================================================================
+
+<role_section> ::= "role:" NEWLINE <role_value>
+<role_value> ::= INDENT <text> NEWLINE
+
+# ============================================================================
+# Goal Section
+# ============================================================================
+
+<goal_section> ::= "goal:" NEWLINE <goal_value>
+<goal_value> ::= INDENT <text> NEWLINE
+
+# ============================================================================
+# Description Section
+# ============================================================================
+
+<description_section> ::= "description:" NEWLINE <description_value>
+<description_value> ::= INDENT <text> NEWLINE
+
+# ============================================================================
+# Provider Section
+# ============================================================================
+
+<provider_section> ::= "provider:" NEWLINE <provider_value>
+<provider_value> ::= INDENT <text> NEWLINE
+
+# ============================================================================
+# Format Section
+# ============================================================================
+
+<format_section> ::= "format:" NEWLINE <format_value>
+<format_value> ::= INDENT <memory_format> NEWLINE
+<memory_format> ::= "vector" | "key-value" | "relational" | "graph" | "document"
+
+# ============================================================================
+# Backend Section
+# ============================================================================
+
+<backend_section> ::= "backend:" NEWLINE <backend_value>
+<backend_value> ::= INDENT <text> NEWLINE
+
+# ============================================================================
+# Scope Section
+# ============================================================================
+
+<scope_section> ::= "scope:" NEWLINE <scope_value>
+<scope_value> ::= INDENT <scope_type> NEWLINE
+<scope_type> ::= "module" | "workspace" | "global"
+
+# ============================================================================
+# TTL Section
+# ============================================================================
+
+<ttl_section> ::= "ttl:" NEWLINE <ttl_value>
+<ttl_value> ::= INDENT <duration> NEWLINE
+<duration> ::= NUMBER ("h" | "m" | "s" | "d")
+
+# ============================================================================
+# Requires Section
+# ============================================================================
+
+<requires_section> ::= "requires:" NEWLINE <requires_list>
+<requires_list> ::= <requires_item>+
+<requires_item> ::= INDENT "-" <text> NEWLINE
+
+# ============================================================================
+# Inputs Section
+# ============================================================================
+
+<inputs_section> ::= "inputs:" NEWLINE <inputs_list>
+<inputs_list> ::= <input_item>+
+<input_item> ::= INDENT "-" <input_name> ":" <input_type> NEWLINE
+               | INDENT <input_name> ":" <input_type> NEWLINE
+<input_name> ::= IDENTIFIER
+<input_type> ::= "string" | "number" | "boolean" | "object" | "array" | IDENTIFIER
+
+# ============================================================================
+# Outputs Section
+# ============================================================================
+
+<outputs_section> ::= "outputs:" NEWLINE <outputs_list>
+<outputs_list> ::= <output_item>+
+<output_item> ::= INDENT "-" <output_name> ":" <output_type> NEWLINE
+                | INDENT <output_name> ":" <output_type> NEWLINE
+<output_name> ::= IDENTIFIER
+<output_type> ::= "string" | "number" | "boolean" | "object" | "array" | IDENTIFIER
+
+# ============================================================================
+# Tools Section
+# ============================================================================
+
+<tools_section> ::= "tools:" NEWLINE <tools_list>
+<tools_list> ::= <tool_item>+
+<tool_item> ::= INDENT "-" <text> NEWLINE
+
+# ============================================================================
+# Memory Section
+# ============================================================================
+
+<memory_section> ::= "memory:" NEWLINE <memory_value>
+<memory_value> ::= INDENT <memory_type> NEWLINE
+                 | INDENT "type:" <memory_format> NEWLINE <memory_details>
+<memory_type> ::= "shared" | "local" | "external"
+<memory_details> ::= <memory_detail>*
+<memory_detail> ::= INDENT "backend:" <text> NEWLINE
+                  | INDENT "scope:" <scope_type> NEWLINE
+                  | INDENT "ttl:" <duration> NEWLINE
+
+# ============================================================================
+# Handoff Section
+# ============================================================================
+
+<handoff_section> ::= "handoff:" NEWLINE <handoff_list>
+<handoff_list> ::= <handoff_item>+
+<handoff_item> ::= INDENT "-" <text> NEWLINE
+
+# ============================================================================
+# Members Section
+# ============================================================================
+
+<members_section> ::= "members:" NEWLINE <members_list>
+<members_list> ::= <member_item>+
+<member_item> ::= INDENT "-" <text> NEWLINE
+
+# ============================================================================
+# Steps Section
+# ============================================================================
+
+<steps_section> ::= "steps:" NEWLINE <steps_list>
+<steps_list> ::= <step_item>+
+<step_item> ::= INDENT "-" <step_name> NEWLINE <step_details>?
+              | INDENT "-" <text> NEWLINE
+<step_name> ::= TEXT
+<step_details> ::= <step_detail>+
+<step_detail> ::= INDENT INDENT <step_key> ":" <text> NEWLINE
+<step_key> ::= "agent" | "tool" | "action" | "condition" | "retry" | "timeout"
+
+# ============================================================================
+# Edges Section
+# ============================================================================
+
+<edges_section> ::= "edges:" NEWLINE <edges_list>
+<edges_list> ::= <edge_item>+
+<edge_item> ::= INDENT <edge_decl> NEWLINE
+              | INDENT "-" <edge_decl> NEWLINE
+
+# ============================================================================
+# Edge Declaration (also top-level)
+# ============================================================================
+
+<edge_decl> ::= <source_name> "->" <target_name> <edge_condition>?
+<source_name> ::= TEXT
+<target_name> ::= TEXT
+<edge_condition> ::= "[" <condition_text> "]"
+<condition_text> ::= TEXT
+
+# ============================================================================
+# Allow Section
+# ============================================================================
+
+<allow_section> ::= "allow:" NEWLINE <allow_list>
+<allow_list> ::= <allow_item>+
+<allow_item> ::= INDENT "-" <text> NEWLINE
+
+# ============================================================================
+# Deny Section
+# ============================================================================
+
+<deny_section> ::= "deny:" NEWLINE <deny_list>
+<deny_list> ::= <deny_item>+
+<deny_item> ::= INDENT "-" <text> NEWLINE
+
+# ============================================================================
+# Permissions Section
+# ============================================================================
+
+<permissions_section> ::= "permissions:" NEWLINE <permissions_list>
+<permissions_list> ::= <permission_item>+
+<permission_item> ::= INDENT <permission_key> ":" <permission_value> NEWLINE
+<permission_key> ::= "filesystem" | "network" | "python" | "memory" | "exec" | IDENTIFIER
+<permission_value> ::= "read" | "write" | "none" | "internet" | "internal"
+                     | "sandbox" | "full" | "local" | "shared"
+                     | "allowed" | "denied" | TEXT
+
+# ============================================================================
+# Capabilities Section
+# ============================================================================
+
+<capabilities_section> ::= "capabilities:" NEWLINE <capabilities_list>
+<capabilities_list> ::= <capability_item>+
+<capability_item> ::= INDENT "-" <text> NEWLINE
+
+# ============================================================================
+# List Section (generic)
+# ============================================================================
+
+<list_section> ::= <section_name> ":" NEWLINE <list_value>
+<list_value> ::= <list_item>+
+<list_item> ::= INDENT "-" <text> NEWLINE
+
+# ============================================================================
+# V1 Sections (backward compatibility)
+# ============================================================================
+
+<v1_section> ::= "##" <section_name> <section_content>
+<section_name> ::= IDENTIFIER | CUSTOM_NAME
+<section_content> ::= <content_element>*
+<content_element> ::= <paragraph> | <list> | <code_block> | <table> | <blockquote>
+
+# ============================================================================
+# Inline Elements
+# ============================================================================
+
+<paragraph> ::= <text_line>+
+<text_line> ::= INLINE_CONTENT NEWLINE
+<list> ::= <bullet_list> | <numbered_list>
+<bullet_list> ::= <bullet_item>+
+<bullet_item> ::= ("-" | "*" | "+") <text> NEWLINE
+<numbered_list> ::= <numbered_item>+
+<numbered_item> ::= DIGIT+ "." <text> NEWLINE
+<code_block> ::= "```" <language>? NEWLINE <code_content> "```" NEWLINE
+<language> ::= "python" | "javascript" | "js" | "typescript" | "ts" | "rust" | "go" | "shell" | "bash" | "yaml" | "json" | "mermaid" | CUSTOM_LANG
+<code_content> ::= ANYTHING*
+<table> ::= <table_header> <table_separator> <table_row>+
+<table_header> ::= "|" <cell> "|"
+<table_separator> ::= "|" <separator_cell> "|"
+<table_row> ::= "|" <cell> "|"
+<cell> ::= CELL_CONTENT
+<separator_cell> ::= ("-" | ":" | "-:" | ":-")+
+<blockquote> ::= ">" <text> NEWLINE
+
+# ============================================================================
+# Tokens
+# ============================================================================
+
+IDENTIFIER ::= [a-zA-Z_][a-zA-Z0-9_]*
+CUSTOM_NAME ::= [a-zA-Z_][a-zA-Z0-9_ ]*
+CUSTOM_LANG ::= [a-zA-Z_][a-zA-Z0-9_]*
+STRING ::= "\"" [^"]* "\""
+NUMBER ::= [0-9]+ ("." [0-9]+)?
+BOOLEAN ::= "true" | "false"
+NULL ::= "null" | "~"
+TEXT ::= [^\n]+
+CELL_CONTENT ::= [^|]+
+INLINE_CONTENT ::= [^\n]+
+ANYTHING ::= [^\n]*
+NEWLINE ::= "\n"
+DIGIT ::= [0-9]
+SPACE ::= " " | "\t"
+INDENT ::= ("  " | "\t")+
+ARROW ::= "->"

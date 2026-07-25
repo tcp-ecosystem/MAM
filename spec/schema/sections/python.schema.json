@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://mam.dev/schema/v1.0.0/sections/python.schema.json",
+  "title": "Python Section Schema",
+  "type": "object",
+  "required": ["type", "name", "content"],
+  "properties": {
+    "type": { "type": "string", "const": "section" },
+    "name": { "type": "string", "const": "Python" },
+    "content": { "type": "array", "items": { "oneOf": [{ "$ref": "#/definitions/CodeBlock" }, { "$ref": "#/definitions/Paragraph" }] }, "minItems": 1 }
+  },
+  "definitions": {
+    "CodeBlock": { "type": "object", "required": ["type", "language", "value"], "properties": { "type": { "const": "codeblock" }, "language": { "enum": ["python", "py"] }, "value": { "type": "string", "minLength": 1 } } },
+    "Paragraph": { "type": "object", "required": ["type", "value"], "properties": { "type": { "const": "paragraph" }, "value": { "type": "string" } } }
+  }
+}

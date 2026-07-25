@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://mam.dev/schema/v1.0.0/sections/workflow.schema.json",
+  "title": "Workflow Section Schema",
+  "type": "object",
+  "required": ["type", "name", "content"],
+  "properties": {
+    "type": { "type": "string", "const": "section" },
+    "name": { "type": "string", "const": "Workflow" },
+    "content": { "type": "array", "items": { "oneOf": [{ "$ref": "#/definitions/CodeBlock" }, { "$ref": "#/definitions/Paragraph" }, { "$ref": "#/definitions/List" }] }, "minItems": 1 }
+  },
+  "definitions": {
+    "CodeBlock": { "type": "object", "required": ["type", "language", "value"], "properties": { "type": { "const": "codeblock" }, "language": { "type": "string" }, "value": { "type": "string" } } },
+    "Paragraph": { "type": "object", "required": ["type", "value"], "properties": { "type": { "const": "paragraph" }, "value": { "type": "string" } } },
+    "List": { "type": "object", "required": ["type", "items"], "properties": { "type": { "const": "list" }, "items": { "type": "array", "items": { "type": "string" } } } }
+  }
+}

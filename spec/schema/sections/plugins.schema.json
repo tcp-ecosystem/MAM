@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://mam.dev/schema/v1.0.0/sections/plugins.schema.json",
+  "title": "Plugins Section Schema",
+  "type": "object",
+  "required": ["type", "name", "content"],
+  "properties": {
+    "type": { "type": "string", "const": "section" },
+    "name": { "type": "string", "const": "Plugins" },
+    "content": { "type": "array", "items": { "oneOf": [{ "$ref": "#/definitions/List" }, { "$ref": "#/definitions/Table" }] }, "minItems": 0 }
+  },
+  "definitions": {
+    "List": { "type": "object", "required": ["type", "items"], "properties": { "type": { "const": "list" }, "items": { "type": "array", "items": { "type": "string" } } } },
+    "Table": { "type": "object", "required": ["type", "headers", "rows"], "properties": { "type": { "const": "table" }, "headers": { "type": "array", "items": { "type": "string" } }, "rows": { "type": "array", "items": { "type": "array", "items": { "type": "string" } } } } }
+  }
+}

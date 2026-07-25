@@ -1,0 +1,11 @@
+packages:
+  - "spec/*"
+  - "parser"
+  - "ast"
+  - "validator"
+  - "runtime"
+  - "cli"
+  - "sdk/*"
+  - "plugins/*"
+  - "plugins/core/*"
+  - "lsp"

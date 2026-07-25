@@ -1,0 +1,41 @@
+{
+  "name": "@mam/reference",
+  "version": "0.1.0",
+  "description": "MAM Reference Implementation — Complete working compiler, package manager, and registry",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "mamc": "./dist/index.js"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@mam/ast": "workspace:*",
+    "@mam/parser": "workspace:*",
+    "@mam/validator": "workspace:*",
+    "@mam/compiler": "workspace:*",
+    "@mam/runtime": "workspace:*",
+    "@mam/package-manager": "workspace:*",
+    "@mam/testing": "workspace:*",
+    "@mam/visualization": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0",
+    "vitest": "^1.2.0"
+  },
+  "files": ["dist"],
+  "keywords": ["mam", "reference", "implementation"],
+  "author": "MAM Team",
+  "license": "MIT"
+}

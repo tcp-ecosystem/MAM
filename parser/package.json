@@ -1,0 +1,43 @@
+{
+  "name": "@mam/parser",
+  "version": "0.1.0",
+  "description": "MAM Parser — Lexer and parser for Markdown as Module",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./lexer": {
+      "import": "./dist/lexer/index.js",
+      "types": "./dist/lexer/index.d.ts"
+    },
+    "./parser": {
+      "import": "./dist/parser/index.js",
+      "types": "./dist/parser/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@mam/ast": "workspace:*",
+    "yaml": "^2.3.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0",
+    "vitest": "^1.2.0",
+    "@types/node": "^20.11.0"
+  },
+  "files": ["dist", "README.md"],
+  "keywords": ["mam", "markdown", "parser", "ast", "ai", "agents"],
+  "author": "LifeJiggy",
+  "license": "MIT"
+}

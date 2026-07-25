@@ -1,0 +1,299 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://mam.dev/schema/v1.0.0/mam.schema.json",
+  "title": "MAM Module Schema",
+  "description": "JSON Schema for validating MAM (Markdown as Module) documents",
+  "type": "object",
+  "required": ["frontmatter", "sections"],
+  "properties": {
+    "frontmatter": {
+      "$ref": "#/definitions/FrontMatter"
+    },
+    "sections": {
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/Section"
+      },
+      "minItems": 1
+    },
+    "location": {
+      "$ref": "#/definitions/SourceLocation"
+    }
+  },
+  "definitions": {
+    "FrontMatter": {
+      "type": "object",
+      "required": ["id", "version", "name", "author", "runtime"],
+      "properties": {
+        "id": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{0,63}$",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "Unique module identifier"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(-[a-zA-Z0-9.]+)?(\\+[a-zA-Z0-9.]+)?$",
+          "description": "Semantic version (MAJOR.MINOR.PATCH)"
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "description": "Human-readable module name"
+        },
+        "author": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Module author"
+        },
+        "runtime": {
+          "type": "string",
+          "enum": ["python", "javascript", "typescript", "rust", "go", "shell"],
+          "description": "Primary runtime environment"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9-]+$"
+          },
+          "uniqueItems": true,
+          "description": "Discovery tags"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 1024,
+          "description": "Module description"
+        },
+        "dependencies": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]{0,63}$"
+          },
+          "description": "Module dependencies"
+        },
+        "permissions": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["network", "filesystem", "environment", "exec", "memory"]
+          },
+          "description": "Required permissions"
+        },
+        "license": {
+          "type": "string",
+          "description": "License identifier (SPDX)"
+        },
+        "repository": {
+          "type": "string",
+          "format": "uri",
+          "description": "Source repository URL"
+        },
+        "mam_version": {
+          "type": "string",
+          "default": "1.0.0",
+          "description": "MAM specification version"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Section": {
+      "type": "object",
+      "required": ["name", "content"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "enum": [
+            "Purpose",
+            "Inputs",
+            "Outputs",
+            "Rules",
+            "Workflow",
+            "Mermaid",
+            "Python",
+            "JavaScript",
+            "TypeScript",
+            "Prompt",
+            "Memory",
+            "Examples",
+            "Tests",
+            "References",
+            "Dependencies",
+            "Exports",
+            "Imports",
+            "Plugins",
+            "Permissions",
+            "Capabilities"
+          ],
+          "description": "Section type"
+        },
+        "content": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/ContentNode"
+          },
+          "minItems": 1
+        },
+        "location": {
+          "$ref": "#/definitions/SourceLocation"
+        }
+      },
+      "additionalProperties": false
+    },
+    "ContentNode": {
+      "oneOf": [
+        { "$ref": "#/definitions/Paragraph" },
+        { "$ref": "#/definitions/List" },
+        { "$ref": "#/definitions/CodeBlock" },
+        { "$ref": "#/definitions/Table" },
+        { "$ref": "#/definitions/Mermaid" }
+      ]
+    },
+    "Paragraph": {
+      "type": "object",
+      "required": ["type", "value"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "paragraph"
+        },
+        "value": {
+          "type": "string"
+        },
+        "location": {
+          "$ref": "#/definitions/SourceLocation"
+        }
+      }
+    },
+    "List": {
+      "type": "object",
+      "required": ["type", "items"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "list"
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        },
+        "location": {
+          "$ref": "#/definitions/SourceLocation"
+        }
+      }
+    },
+    "CodeBlock": {
+      "type": "object",
+      "required": ["type", "language", "value"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "codeblock"
+        },
+        "language": {
+          "type": "string",
+          "enum": [
+            "python", "javascript", "js", "typescript", "ts",
+            "rust", "go", "shell", "bash", "yaml", "json", "mermaid"
+          ]
+        },
+        "value": {
+          "type": "string"
+        },
+        "metadata": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string"
+          }
+        },
+        "location": {
+          "$ref": "#/definitions/SourceLocation"
+        }
+      }
+    },
+    "Table": {
+      "type": "object",
+      "required": ["type", "headers", "rows"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "table"
+        },
+        "headers": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "location": {
+          "$ref": "#/definitions/SourceLocation"
+        }
+      }
+    },
+    "Mermaid": {
+      "type": "object",
+      "required": ["type", "value"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "const": "mermaid"
+        },
+        "value": {
+          "type": "string"
+        },
+        "location": {
+          "$ref": "#/definitions/SourceLocation"
+        }
+      }
+    },
+    "SourceLocation": {
+      "type": "object",
+      "required": ["start", "end"],
+      "properties": {
+        "start": {
+          "$ref": "#/definitions/Position"
+        },
+        "end": {
+          "$ref": "#/definitions/Position"
+        },
+        "source": {
+          "type": "string"
+        }
+      }
+    },
+    "Position": {
+      "type": "object",
+      "required": ["line", "column", "offset"],
+      "properties": {
+        "line": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "column": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "offset": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  }
+}

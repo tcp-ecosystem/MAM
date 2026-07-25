@@ -1,0 +1,90 @@
+# MAM Grammar (BNF)
+# Version: 1.0.0
+
+# Root
+<mam_module> ::= <front_matter> <sections>
+
+# Front Matter
+<front_matter> ::= "---" <yaml_content> "---"
+<yaml_content> ::= <yaml_line>* 
+<yaml_line> ::= <yaml_key_value> | <yaml_list_item> | <yaml_comment> | <yaml_blank>
+<yaml_key_value> ::= <yaml_key> ":" <yaml_value>
+<yaml_key> ::= IDENTIFIER
+<yaml_value> ::= STRING | NUMBER | BOOLEAN | NULL | <yaml_string>
+<yaml_list_item> ::= "-" <yaml_value>
+<yaml_comment> ::= "#" ANYTHING
+<yaml_blank> ::= NEWLINE
+
+# Sections
+<sections> ::= <section>*
+<section> ::= "##" <section_name> <section_content>
+<section_name> ::= IDENTIFIER | CUSTOM_NAME
+
+# Section Content
+<section_content> ::= <content_element>*
+<content_element> ::= <paragraph> | <list> | <code_block> | <table> | <blockquote> | <horizontal_rule> | <mermaid_block>
+
+# Paragraph
+<paragraph> ::= <text_line>+
+<text_line> ::= INLINE_CONTENT NEWLINE
+
+# List
+<list> ::= <bullet_list> | <numbered_list> | <task_list>
+<bullet_list> ::= <bullet_item>+
+<bullet_item> ::= ("-" | "*" | "+") <list_text> NEWLINE
+<numbered_list> ::= <numbered_item>+
+<numbered_item> ::= DIGIT+ "." <list_text> NEWLINE
+<task_list> ::= <task_item>+
+<task_item> ::= ("-" | "*") "[" ("x" | " ") "]" <list_text> NEWLINE
+<list_text> ::= INLINE_CONTENT
+
+# Code Block
+<code_block> ::= <code_fence_open> <code_content> <code_fence_close>
+<code_fence_open> ::= "```" <language_identifier>? NEWLINE
+<code_fence_close> ::= "```" NEWLINE
+<code_content> ::= ANYTHING*
+<language_identifier> ::= "python" | "javascript" | "js" | "typescript" | "ts" | "rust" | "go" | "shell" | "bash" | "yaml" | "json" | "mermaid" | CUSTOM_LANG
+
+# Table
+<table> ::= <table_header> <table_separator> <table_row>+
+<table_header> ::= "|" <cell> "|"
+<table_separator> ::= "|" <separator_cell> "|"
+<table_row> ::= "|" <cell> "|"
+<cell> ::= CELL_CONTENT
+<separator_cell> ::= ("-" | ":" | "-:" | ":-")+
+
+# Blockquote
+<blockquote> ::= ">" <blockquote_text> NEWLINE
+<blockquote_text> ::= INLINE_CONTENT
+
+# Horizontal Rule
+<horizontal_rule> ::= ("---" | "***" | "___") NEWLINE
+
+# Mermaid Block
+<mermaid_block> ::= "```mermaid" NEWLINE <mermaid_content> "```" NEWLINE
+<mermaid_content> ::= ANYTHING*
+
+# Inline Elements
+<inline_element> ::= <bold> | <italic> | <strikethrough> | <inline_code> | <link> | <image> | <plain_text>
+<bold> ::= "**" INLINE_CONTENT "**"
+<italic> ::= "*" INLINE_CONTENT "*"
+<strikethrough> ::= "~~" INLINE_CONTENT "~~"
+<inline_code> ::= "`" INLINE_CONTENT "`"
+<link> ::= "[" INLINE_CONTENT "](" URL ")"
+<image> ::= "!" "[" INLINE_CONTENT "](" URL ")"
+<plain_text> ::= INLINE_CONTENT
+
+# Token definitions
+IDENTIFIER ::= [a-zA-Z_][a-zA-Z0-9_]*
+CUSTOM_NAME ::= [a-zA-Z_][a-zA-Z0-9_ ]*
+CUSTOM_LANG ::= [a-zA-Z_][a-zA-Z0-9_]*
+STRING ::= "\"" [^"]* "\""
+NUMBER ::= [0-9]+ ("." [0-9]+)?
+BOOLEAN ::= "true" | "false"
+NULL ::= "null" | "~"
+URL ::= [^)]+
+CELL_CONTENT ::= [^|]+
+INLINE_CONTENT ::= [^\n]+
+ANYTHING ::= [^\n]*
+NEWLINE ::= "\n"
+DIGIT ::= [0-9]

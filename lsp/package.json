@@ -1,0 +1,31 @@
+{
+  "name": "@mam/lsp",
+  "version": "0.1.0",
+  "description": "MAM Language Server Protocol implementation",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "mam-lsp": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@mam/parser": "workspace:*",
+    "@mam/validator": "workspace:*",
+    "vscode-languageserver": "^9.0.0",
+    "vscode-languageserver-textdocument": "^1.0.0"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0",
+    "vitest": "^1.2.0"
+  },
+  "files": ["dist"],
+  "keywords": ["mam", "lsp", "language-server", "vscode"],
+  "author": "MAM Team",
+  "license": "MIT"
+}

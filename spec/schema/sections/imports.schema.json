@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://mam.dev/schema/v1.0.0/sections/imports.schema.json",
+  "title": "Imports Section Schema",
+  "type": "object",
+  "required": ["type", "name", "content"],
+  "properties": {
+    "type": { "type": "string", "const": "section" },
+    "name": { "type": "string", "const": "Imports" },
+    "content": { "type": "array", "items": { "oneOf": [{ "$ref": "#/definitions/List" }, { "$ref": "#/definitions/CodeBlock" }] }, "minItems": 0 }
+  },
+  "definitions": {
+    "List": { "type": "object", "required": ["type", "items"], "properties": { "type": { "const": "list" }, "items": { "type": "array", "items": { "type": "string" } } } },
+    "CodeBlock": { "type": "object", "required": ["type", "language", "value"], "properties": { "type": { "const": "codeblock" }, "language": { "type": "string" }, "value": { "type": "string" } } }
+  }
+}

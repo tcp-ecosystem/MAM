@@ -1,0 +1,26 @@
+{
+  "name": "@mam/registry-server",
+  "version": "0.1.0",
+  "description": "MAM Hub — Module Registry Server",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@mam/ast": "workspace:*",
+    "@mam/parser": "workspace:*"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0",
+    "vitest": "^1.2.0"
+  },
+  "files": ["dist"],
+  "keywords": ["mam", "registry", "hub"],
+  "author": "MAM Team",
+  "license": "MIT"
+}

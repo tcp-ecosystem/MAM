@@ -1,0 +1,17 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://mam.dev/schema/v1.0.0/sections/memory.schema.json",
+  "title": "Memory Section Schema",
+  "type": "object",
+  "required": ["type", "name", "content"],
+  "properties": {
+    "type": { "type": "string", "const": "section" },
+    "name": { "type": "string", "const": "Memory" },
+    "content": { "type": "array", "items": { "oneOf": [{ "$ref": "#/definitions/Paragraph" }, { "$ref": "#/definitions/List" }, { "$ref": "#/definitions/CodeBlock" }] }, "minItems": 0 }
+  },
+  "definitions": {
+    "Paragraph": { "type": "object", "required": ["type", "value"], "properties": { "type": { "const": "paragraph" }, "value": { "type": "string" } } },
+    "List": { "type": "object", "required": ["type", "items"], "properties": { "type": { "const": "list" }, "items": { "type": "array", "items": { "type": "string" } } } },
+    "CodeBlock": { "type": "object", "required": ["type", "language", "value"], "properties": { "type": { "const": "codeblock" }, "language": { "enum": ["json", "yaml"] }, "value": { "type": "string" } } }
+  }
+}

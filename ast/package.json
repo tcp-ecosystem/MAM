@@ -1,0 +1,44 @@
+{
+  "name": "@mam/ast",
+  "version": "0.1.0",
+  "description": "MAM AST — Abstract Syntax Tree for Markdown as Module",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./nodes": {
+      "import": "./dist/nodes/index.js",
+      "types": "./dist/nodes/index.d.ts"
+    },
+    "./visitor": {
+      "import": "./dist/visitor/index.js",
+      "types": "./dist/visitor/index.d.ts"
+    },
+    "./serializer": {
+      "import": "./dist/serializer/index.js",
+      "types": "./dist/serializer/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint src",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.3.0",
+    "vitest": "^1.2.0",
+    "@types/node": "^20.11.0"
+  },
+  "files": ["dist", "README.md"],
+  "keywords": ["mam", "markdown", "ast", "ai", "agents"],
+  "author": "LifeJiggy",
+  "license": "MIT"
+}

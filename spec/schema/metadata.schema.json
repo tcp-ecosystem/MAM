@@ -1,0 +1,74 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://mam.dev/schema/v1.0.0/metadata.schema.json",
+  "title": "MAM Metadata Schema",
+  "description": "JSON Schema for MAM YAML front matter",
+  "type": "object",
+  "required": ["id", "version", "name", "author", "runtime"],
+  "properties": {
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{0,63}$",
+      "minLength": 1,
+      "maxLength": 64,
+      "description": "Unique module identifier"
+    },
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(-[a-zA-Z0-9.]+)?(\\+[a-zA-Z0-9.]+)?$",
+      "description": "Semantic version (MAJOR.MINOR.PATCH)"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "description": "Human-readable module name"
+    },
+    "author": {
+      "type": "string",
+      "minLength": 1,
+      "description": "Module author"
+    },
+    "runtime": {
+      "type": "string",
+      "enum": ["python", "javascript", "typescript", "rust", "go", "shell"],
+      "description": "Primary runtime environment"
+    },
+    "tags": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+      "uniqueItems": true,
+      "description": "Discovery tags"
+    },
+    "description": {
+      "type": "string",
+      "maxLength": 1024,
+      "description": "Module description"
+    },
+    "dependencies": {
+      "type": "array",
+      "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,63}$" },
+      "description": "Module dependencies"
+    },
+    "permissions": {
+      "type": "array",
+      "items": { "type": "string", "enum": ["network", "filesystem", "environment", "exec", "memory"] },
+      "description": "Required permissions"
+    },
+    "license": {
+      "type": "string",
+      "description": "License identifier (SPDX)"
+    },
+    "repository": {
+      "type": "string",
+      "format": "uri",
+      "description": "Source repository URL"
+    },
+    "mam_version": {
+      "type": "string",
+      "default": "1.0.0",
+      "description": "MAM specification version"
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,41 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://mam.dev/schema/v1.0.0/sections/purpose.schema.json",
+  "title": "Purpose Section Schema",
+  "description": "Schema for the Purpose section - module objective description",
+  "type": "object",
+  "required": ["type", "content"],
+  "properties": {
+    "type": { "type": "string", "const": "section" },
+    "name": { "type": "string", "const": "Purpose" },
+    "content": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          { "$ref": "#/definitions/Paragraph" },
+          { "$ref": "#/definitions/List" }
+        ]
+      },
+      "minItems": 1,
+      "description": "Section content describing the module's purpose"
+    }
+  },
+  "definitions": {
+    "Paragraph": {
+      "type": "object",
+      "required": ["type", "value"],
+      "properties": {
+        "type": { "type": "string", "const": "paragraph" },
+        "value": { "type": "string", "minLength": 1 }
+      }
+    },
+    "List": {
+      "type": "object",
+      "required": ["type", "items"],
+      "properties": {
+        "type": { "type": "string", "const": "list" },
+        "items": { "type": "array", "items": { "type": "string" }, "minItems": 1 }
+      }
+    }
+  }
+}
