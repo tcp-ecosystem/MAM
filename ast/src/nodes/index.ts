@@ -21,6 +21,7 @@ export type NodeType =
   | 'Mermaid'
   | 'Heading'
   | 'Blockquote'
+  | 'InlineText'
   | 'InlineCode'
   | 'Bold'
   | 'Italic'

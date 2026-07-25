@@ -244,59 +244,59 @@ export abstract class MAMTransformer implements MAMVisitor<BaseNode | null> {
 
   abstract visitContent(node: ContentNode): ContentNode | null;
 
-  visitParagraph(node: Paragraph): Paragraph {
+  visitParagraph(node: Paragraph): BaseNode {
     return node;
   }
 
-  visitList(node: List): List {
+  visitList(node: List): BaseNode {
     return node;
   }
 
-  visitCodeBlock(node: CodeBlock): CodeBlock {
+  visitCodeBlock(node: CodeBlock): BaseNode {
     return node;
   }
 
-  visitTable(node: Table): Table {
+  visitTable(node: Table): BaseNode {
     return node;
   }
 
-  visitMermaid(node: MermaidDiagram): MermaidDiagram {
+  visitMermaid(node: MermaidDiagram): BaseNode {
     return node;
   }
 
-  visitHeading(node: Heading): Heading {
+  visitHeading(node: Heading): BaseNode {
     return node;
   }
 
-  visitBlockquote(node: Blockquote): Blockquote {
+  visitBlockquote(node: Blockquote): BaseNode {
     return node;
   }
 
-  visitInline(node: InlineNode): InlineNode {
+  visitInline(node: InlineNode): BaseNode {
     return node;
   }
 
-  visitInlineText(node: InlineText): InlineText {
+  visitInlineText(node: InlineText): BaseNode {
     return node;
   }
 
-  visitInlineCode(node: InlineCode): InlineCode {
+  visitInlineCode(node: InlineCode): BaseNode {
     return node;
   }
 
-  visitBold(node: Bold): Bold {
+  visitBold(node: Bold): BaseNode {
     return node;
   }
 
-  visitItalic(node: Italic): Italic {
+  visitItalic(node: Italic): BaseNode {
     return node;
   }
 
-  visitLink(node: Link): Link {
+  visitLink(node: Link): BaseNode {
     return node;
   }
 
-  visitImage(node: Image): Image {
+  visitImage(node: Image): BaseNode {
     return node;
   }
 
