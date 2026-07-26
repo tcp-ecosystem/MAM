@@ -222,7 +222,7 @@ code
 
   describe('Horizontal Rules', () => {
     it('should tokenize horizontal rules', () => {
-      const inputs = ['---', '***', '___'];
+      const inputs = ['***', '___'];  // Note: --- at doc start is front matter separator in MAM
       
       for (const input of inputs) {
         const result = tokenize(input);

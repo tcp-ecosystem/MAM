@@ -60,6 +60,6 @@ describe('Sections Parser', () => {
     const tokens = tokenize(input).tokens;
     const result = parseSections(tokens, 0, 'test.mam.md');
 
-    expect(result.warnings.some(w => w.message.includes('EmptySection') || w.message.includes('empty'))).toBe(true);
+    expect(result.warnings.some(w => w.message.toLowerCase().includes('empty'))).toBe(true);
   });
 });

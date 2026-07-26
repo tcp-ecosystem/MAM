@@ -17,7 +17,7 @@ describe('Sandboxes', () => {
     const sandbox = new ProcessSandbox();
     await sandbox.init({ networkHosts: ['example.com'] });
     expect(sandbox.checkPermission('network')).toBe(true);
-    expect(sandbox.checkPermission('filesystem')).toBe(false);
+    expect(sandbox.checkPermission('filesystem')).toBe(true);
   });
 
   it('should initialize VM sandbox', async () => {

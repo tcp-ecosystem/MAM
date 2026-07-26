@@ -212,6 +212,22 @@ export class Tokenizer {
       const char = this.input[this.pos]!;
       const remaining = this.input.slice(this.pos);
 
+      // Detect unexpected control/non-printable characters
+      const charCode = char.charCodeAt(0);
+      if (charCode < 32 && char !== '\n' && char !== '\t') {
+        this.errors.push(
+          new LexerError(
+            `Unexpected character: ${char}`,
+            this.source,
+            this.line,
+            this.column,
+            LexerErrorCode.UNEXPECTED_CHARACTER
+          )
+        );
+        this.consumeChar();
+        return;
+      }
+
       // Priority 1: Front matter separator
       if (this.isAtLineStart() && this.isFrontMatterSeparator(remaining)) {
         this.readFrontMatterSeparator();
@@ -367,6 +383,9 @@ export class Tokenizer {
 
   private isFrontMatterSeparator(remaining: string): boolean {
     const line = remaining.split('\n')[0]!;
+    // Only match --- as front matter if at absolute document start (pos 0)
+    // Otherwise --- is a horizontal rule, not front matter
+    if (this.pos !== 0) return false;
     return /^---\s*$/.test(line);
   }
 
@@ -755,7 +774,7 @@ export class Tokenizer {
     const line = this.peekLine();
 
     // Check if this is a separator line
-    if (/^\|[\s:-]+\|$/.test(line.trim())) {
+    if (/^\|[\s|:-]+\|?\s*$/.test(line.trim())) {
       this.tokens.push(
         createToken(TokenType.TABLE_HYPHEN, line, startLine, startCol, startOffset)
       );
@@ -1021,14 +1040,15 @@ export class Tokenizer {
     }
 
     const text = this.input.slice(this.pos, bracketEnd - 1);
-    this.advanceTo(bracketEnd);
+    // Consume the ] at bracketEnd-1, then check position 6 for (
+    this.advanceTo(bracketEnd - 1);
     this.consumeChar(); // ]
 
     this.tokens.push(
       createToken(TokenType.LINK_TEXT, text, startLine, startCol + 1, startOffset + 1)
     );
 
-    // Check for (url)
+    // Check for (url) — now at correct position after consuming ]
     if (this.peekChar() === '(') {
       this.consumeChar(); // (
       

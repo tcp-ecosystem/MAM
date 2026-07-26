@@ -158,6 +158,10 @@ export const VALID_LANGUAGES = new Set([
   'makefile',
 ]);
 
+export function isLanguageValid(language: string): boolean {
+  return VALID_LANGUAGES.has(language.toLowerCase());
+}
+
 export const STANDARD_SECTIONS = new Set([
   'Purpose',
   'Inputs',
@@ -180,3 +184,7 @@ export const STANDARD_SECTIONS = new Set([
   'Permissions',
   'Capabilities',
 ]);
+
+export function isSectionNameValid(name: string): boolean {
+  return STANDARD_SECTIONS.has(name);
+}

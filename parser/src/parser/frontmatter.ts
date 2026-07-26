@@ -47,6 +47,16 @@ export function parseFrontMatter(
 
   // Check for opening ---
   if (pos >= tokens.length || tokens[pos]!.type !== TokenType.FRONTMATTER_SEPARATOR) {
+    // Missing front matter is a warning/error for strict parsing
+    if (pos < tokens.length) {
+      errors.push(new ParseError(
+        'Expected front matter (---) but found different token',
+        source,
+        tokens[pos]!.line,
+        tokens[pos]!.column,
+        ParseErrorCode.EXPECTED_FRONTMATTER
+      ));
+    }
     return { data: null, errors, endIndex: pos };
   }
 

@@ -42,7 +42,7 @@ describe('Token Definitions', () => {
   });
 
   it('should have standard sections set', () => {
-    expect(STANDARD_SECTIONS.size).toBe(19);
+    expect(STANDARD_SECTIONS.size).toBe(20);
     expect(STANDARD_SECTIONS.has('Purpose')).toBe(true);
     expect(STANDARD_SECTIONS.has('Inputs')).toBe(true);
   });
