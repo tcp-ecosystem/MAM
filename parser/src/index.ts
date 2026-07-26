@@ -34,29 +34,19 @@ export {
 export {
   MAMParser,
   parse,
-  parseMarkdown,
   type ParserOptions,
   type ParseResult,
   type ParserStats,
   type MAMModule,
   type FrontMatter,
+  type FrontMatterData,
   type Section,
   type SectionAttributes,
-  type ModuleMetadata,
+  type ContentNode,
   parseFrontMatter,
-  type FrontMatterData,
   type FrontMatterResult,
   parseSections,
   type SectionData,
-  type ContentNode,
-  type ParagraphNode,
-  type ListNode,
-  type CodeBlockNode,
-  type TableNode,
-  type MermaidNode,
-  type HeadingNode,
-  type BlockquoteNode,
-  type HorizontalRuleNode,
   type InlineNode,
   type SourceLocation,
   type SectionParseResult,
@@ -70,33 +60,11 @@ export {
 // Convenience Functions
 // ============================================================================
 
+import { tokenize as _tokenize } from './lexer/index.js';
+import { parse as _parse } from './parser/index.js';
+
 /**
  * Parse a MAM document from raw Markdown text
- * 
- * @param input - Raw Markdown text
- * @param options - Parser options
- * @returns Parse result with AST, errors, and warnings
- * 
- * @example
- * ```typescript
- * import { parseMAM } from '@mam/parser';
- * 
- * const mamContent = `---
- * id: auth
- * version: 1.0.0
- * name: Authentication
- * author: LifeJiggy
- * runtime: python
- * ---
- * 
- * ## Purpose
- * 
- * Authenticate users securely.
- * `;
- * 
- * const result = parseMAM(mamContent);
- * console.log(result.ast.frontmatter?.data.id); // "auth"
- * ```
  */
 export function parseMAM(
   input: string,
@@ -114,7 +82,7 @@ export function parseMAM(
   stats: import('./parser/mam.js').ParserStats & import('./lexer/tokenizer.js').TokenizerStats;
 } {
   // Step 1: Tokenize
-  const tokenizeResult = tokenize(input, {
+  const tokenizeResult = _tokenize(input, {
     source: options?.source,
     maxDepth: options?.maxDepth,
     strict: options?.strict,
@@ -122,7 +90,7 @@ export function parseMAM(
   });
 
   // Step 2: Parse tokens
-  const parseResult = parse(tokenizeResult.tokens, {
+  const parseResult = _parse(tokenizeResult.tokens, {
     source: options?.source,
     maxDepth: options?.maxDepth,
     strict: options?.strict,

@@ -35,15 +35,15 @@ export async function exportCommand(options: ExportOptions): Promise<void> {
 
     switch (options.format) {
       case 'json':
-        output = serializeToJSON(parseResult.ast);
+        output = serializeToJSON(parseResult.ast as any);
         ext = 'json';
         break;
       case 'ast':
-        output = prettyPrint(parseResult.ast);
+        output = prettyPrint(parseResult.ast as any);
         ext = 'txt';
         break;
       case 'html':
-        output = generateHTML(parseResult.ast);
+        output = generateHTML(parseResult.ast as any);
         ext = 'html';
         break;
       case 'markdown':

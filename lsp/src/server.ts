@@ -9,7 +9,7 @@
 import { Connection, InitializeParams, InitializeResult, TextDocumentSyncKind } from 'vscode-languageserver';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { parseMAM } from '@mam/parser';
-import { CompletionItem, CompletionItemKind, Diagnostic, DiagnosticSeverity, Hover, MarkupKind, TextEdit, CodeAction, CodeActionKind } from 'vscode-languageserver-protocol';
+import { CompletionItem, CompletionItemKind, Diagnostic, DiagnosticSeverity, Hover, MarkupKind, TextEdit, CodeAction, CodeActionKind, Command } from 'vscode-languageserver-protocol';
 
 // ============================================================================
 // Constants
@@ -116,7 +116,6 @@ export class MAMServer {
         referencesProvider: true,
         documentFormattingProvider: true,
         codeActionProvider: true,
-        diagnosticProvider: { identifier: 'mam-lsp' },
       },
     };
   }
@@ -133,7 +132,7 @@ export class MAMServer {
     this.connection.onDefinition(params => this.onDefinition(params));
     this.connection.onReferences(params => this.onReferences(params));
     this.connection.onDocumentFormatting(params => this.onFormatting(params));
-    this.connection.onCodeAction(params => this.onCodeAction(params));
+    this.connection.onCodeAction(params => this.onCodeAction(params) as any);
     this.connection.onRequest('textDocument/diagnostic', params => this.getDiagnostics(params));
 
     // Track documents
@@ -429,13 +428,13 @@ export class MAMServer {
   // Code Actions
   // ==========================================================================
 
-  private onCodeAction(params: { textDocument: { uri: string }; range: { start: { line: number } } }): CodeAction[] {
-    const actions: CodeAction[] = [];
+  private onCodeAction(params: { textDocument: { uri: string }; range: { start: { line: number } } }): (Command | CodeAction)[] {
+    const actions: (Command | CodeAction)[] = [];
 
     // Add Purpose section
     actions.push({
       title: 'Add Purpose section',
-      kind: CodeActionKind.QuickFix,
+      kind: CodeActionKind.QuickFix as string,
       edit: {
         changes: {
           [params.textDocument.uri]: [{
@@ -444,12 +443,12 @@ export class MAMServer {
           }],
         },
       },
-    });
+    } as any);
 
     // Add type declaration
     actions.push({
       title: 'Add type: module',
-      kind: CodeActionKind.QuickFix,
+      kind: CodeActionKind.QuickFix as string,
       edit: {
         changes: {
           [params.textDocument.uri]: [{
@@ -458,12 +457,12 @@ export class MAMServer {
           }],
         },
       },
-    });
+    } as any);
 
     // Add permissions section
     actions.push({
       title: 'Add permissions section',
-      kind: CodeActionKind.QuickFix,
+      kind: CodeActionKind.QuickFix as string,
       edit: {
         changes: {
           [params.textDocument.uri]: [{
@@ -472,7 +471,7 @@ export class MAMServer {
           }],
         },
       },
-    });
+    } as any);
 
     return actions;
   }

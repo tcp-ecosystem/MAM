@@ -556,10 +556,10 @@ function parseTable(
   while (pos < tokens.length) {
     const token = tokens[pos]!;
     
-    if (token.type === TokenType.TABLE_ROW || token.type === TokenType.TABLE_HEADER_CELL) {
+    if (token.type === TokenType.TABLE_ROW_CELL || token.type === TokenType.TABLE_HEADER_CELL) {
       const row: string[] = [];
       while (pos < tokens.length && 
-             (tokens[pos]!.type === TokenType.TABLE_ROW || tokens[pos]!.type === TokenType.TABLE_HEADER_CELL)) {
+             (tokens[pos]!.type === TokenType.TABLE_ROW_CELL || tokens[pos]!.type === TokenType.TABLE_HEADER_CELL)) {
         row.push(tokens[pos]!.value);
         pos++;
         if (pos < tokens.length && tokens[pos]!.type === TokenType.TABLE_PIPE) {
@@ -838,12 +838,14 @@ function isInlineMarker(char: string): boolean {
 // Helper Functions
 // ============================================================================
 
-function isWhitespace(token: TokenType): boolean {
-  return token === TokenType.NEWLINE || token === TokenType.WHITESPACE || token === TokenType.INDENT;
+function isWhitespace(token: TokenType | { type: TokenType }): boolean {
+  const type = typeof token === 'string' ? token : token.type;
+  return type === TokenType.NEWLINE || type === TokenType.WHITESPACE || type === TokenType.INDENT;
 }
 
-function isHeadingToken(token: TokenType): boolean {
-  return token >= TokenType.HEADING_1 && token <= TokenType.HEADING_6;
+function isHeadingToken(token: TokenType | { type: TokenType }): boolean {
+  const type = typeof token === 'string' ? token : token.type;
+  return type >= TokenType.HEADING_1 && type <= TokenType.HEADING_6;
 }
 
 function getHeadingLevel(token: TokenType): number {

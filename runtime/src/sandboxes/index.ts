@@ -216,12 +216,12 @@ export class VMSandbox implements Sandbox {
         // No process access
         process: undefined,
         // Limited setTimeout
-        setTimeout: (fn: Function, ms: number) => {
+        setTimeout: ((fn: () => void, ms: number) => {
           if (ms > (this.config.timeout || 30000)) {
             throw new Error('Timeout exceeds limit');
           }
           return global.setTimeout(fn, ms);
-        },
+        }) as unknown as typeof globalThis.setTimeout,
         clearTimeout: global.clearTimeout,
       });
 

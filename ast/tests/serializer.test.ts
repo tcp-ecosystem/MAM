@@ -30,7 +30,7 @@ describe('AST Serializer', () => {
   it('should serialize to JSON', () => {
     const module = createTestModule();
     const json = serializeToJSON(module);
-    expect(json).toContain('"type":"MAMModule"');
+    expect(json).toContain('"type": "MAMModule"');
   });
 
   it('should deserialize from JSON', () => {

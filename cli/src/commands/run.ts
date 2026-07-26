@@ -49,7 +49,7 @@ export async function runCommand(options: RunOptions): Promise<void> {
     }
 
     spinner.text = 'Executing...';
-    const execResult = await executeModule(result.ast, {
+    const execResult = await executeModule(result.ast as any, {
       defaultTimeout: options.timeout || 30000,
     }, {
       inputs,

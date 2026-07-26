@@ -25,14 +25,15 @@ const MEMORY_DIR = join(process.cwd(), '.mam', 'memory');
 function parseMemoryContent(content: unknown[]): Record<string, unknown> {
   const memory: Record<string, unknown> = {};
   for (const node of content) {
-    if (node.type === 'Paragraph') {
-      const lines = (node as { value: string }).value.split('\n');
+    const n = node as { type?: string; value?: string; language?: string };
+    if (n.type === 'Paragraph') {
+      const lines = (n.value || '').split('\n');
       for (const line of lines) {
         const match = line.match(/^[-*]\s*\*\*(.+?)\*\*:\s*(.+)$/);
         if (match) memory[match[1]!.trim()] = match[2]!.trim();
       }
-    } else if (node.type === 'CodeBlock' && (node as { language: string }).language === 'json') {
-      try { Object.assign(memory, JSON.parse((node as { value: string }).value)); } catch { /* skip */ }
+    } else if (n.type === 'CodeBlock' && n.language === 'json') {
+      try { Object.assign(memory, JSON.parse(n.value || '')); } catch { /* skip */ }
     }
   }
   return memory;

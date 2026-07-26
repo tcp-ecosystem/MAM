@@ -22,11 +22,18 @@
     "@mam/validator": "workspace:*"
   },
   "devDependencies": {
+    "@types/node": "^20.11.0",
     "typescript": "^5.3.0",
     "vitest": "^1.2.0"
   },
-  "files": ["dist"],
-  "keywords": ["mam", "plugin", "api"],
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "mam",
+    "plugin",
+    "api"
+  ],
   "author": "MAM Team",
   "license": "MIT"
 }

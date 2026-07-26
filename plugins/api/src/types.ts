@@ -121,3 +121,14 @@ export interface PluginRegistryEntry {
   enabled: boolean;
   loadedAt: Date;
 }
+
+export type PluginEvent =
+  | 'plugin:loaded'
+  | 'plugin:unloaded'
+  | 'plugin:error'
+  | 'parse:before'
+  | 'parse:after'
+  | 'validate:before'
+  | 'validate:after'
+  | 'execute:before'
+  | 'execute:after';

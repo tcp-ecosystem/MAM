@@ -259,13 +259,15 @@ export class DSLParser {
       default:
         // Unknown section
         if (!this.allowUnknownTypes) {
-          this.warnings.push({
-            message: `Unknown section: "${key}"`,
-            source: this.source,
-            line: token.line,
-            column: token.column,
-            code: ParseWarningCode.UNKNOWN_SECTION,
-          });
+          this.warnings.push(
+            new ParseWarning(
+              `Unknown section: "${key}"`,
+              this.source,
+              token.line,
+              token.column,
+              ParseWarningCode.UNKNOWN_SECTION
+            )
+          );
         }
         return false;
     }

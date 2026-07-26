@@ -38,11 +38,11 @@ export async function astCommand(options: ASTOptions): Promise<void> {
 
     switch (options.format) {
       case 'json':
-        console.log(serializeToJSON(parseResult.ast));
+        console.log(serializeToJSON(parseResult.ast as any));
         break;
       
       case 'stats':
-        const stats = getASTStats(parseResult.ast);
+        const stats = getASTStats(parseResult.ast as any);
         console.log(chalk.cyan('\nAST Statistics:\n'));
         console.log(`  Sections:      ${stats.totalSections}`);
         console.log(`  Total Nodes:   ${stats.totalNodes}`);
@@ -55,7 +55,7 @@ export async function astCommand(options: ASTOptions): Promise<void> {
       case 'pretty':
       default:
         console.log(chalk.cyan('\nAST Structure:\n'));
-        console.log(prettyPrint(parseResult.ast));
+        console.log(prettyPrint(parseResult.ast as any));
         break;
     }
 

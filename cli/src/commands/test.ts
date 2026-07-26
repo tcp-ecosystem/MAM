@@ -38,7 +38,7 @@ export async function testCommand(options: TestOptions): Promise<void> {
       }
 
       spinner.text = 'Validating module...';
-      const validationResult = validate(parseResult.ast);
+      const validationResult = validate(parseResult.ast as any);
 
       spinner.stop();
 
@@ -78,7 +78,7 @@ export async function testCommand(options: TestOptions): Promise<void> {
           continue;
         }
 
-        const validationResult = validate(parseResult.ast);
+        const validationResult = validate(parseResult.ast as any);
         if (validationResult.valid) {
           console.log(chalk.green(`  ✓ ${file}`));
           passed++;

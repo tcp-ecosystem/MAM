@@ -37,7 +37,7 @@ export async function buildCommand(options: BuildOptions): Promise<void> {
     }
 
     spinner.text = 'Serializing...';
-    const json = serializeToJSON(result.ast, options.minify ? 'compact' : 'json');
+    const json = serializeToJSON(result.ast as any, options.minify ? 'compact' : 'json');
 
     const outDir = options.outDir || join(process.cwd(), 'dist');
     try {

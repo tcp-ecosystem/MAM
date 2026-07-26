@@ -37,7 +37,7 @@ export async function validateCommand(options: ValidateOptions): Promise<void> {
     }
 
     spinner.text = 'Validating module...';
-    const validationResult = validate(parseResult.ast, {
+    const validationResult = validate(parseResult.ast as any, {
       level: options.level || 'schema',
     });
 

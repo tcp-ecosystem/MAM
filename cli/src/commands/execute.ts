@@ -51,7 +51,7 @@ export async function executeCommand(options: ExecuteOptions): Promise<void> {
 
     spinner.text = 'Executing module...';
     
-    const result = await executeModule(parseResult.ast, {
+    const result = await executeModule(parseResult.ast as any, {
       defaultTimeout: options.timeout || 30000,
     }, {
       inputs,
