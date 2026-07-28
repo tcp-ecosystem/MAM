@@ -1,0 +1,20 @@
+* @mam-team
+
+# Core packages
+/parser/ @mam-team
+/compiler/ @mam-team
+/runtime/ @mam-team
+/ast/ @mam-team
+/validator/ @mam-team
+/sdk/ @mam-team
+/cli/ @mam-team
+/lsp/ @mam-team
+
+# Plugins
+/plugins/ @mam-team
+
+# Registry
+/registry/ @mam-team
+
+# CI/CD
+/.github/ @mam-team

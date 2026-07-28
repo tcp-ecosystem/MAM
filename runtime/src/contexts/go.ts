@@ -5,7 +5,8 @@
  */
 
 import { CodeBlock, Language } from '@mam/ast';
-import { BaseExecutionContext, ExecutionResult } from './index.js';
+import { BaseExecutionContext } from './base.js';
+import type { ExecutionResult } from './types.js';
 
 export class GoContext extends BaseExecutionContext {
   readonly runtime: Language = 'go';

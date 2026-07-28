@@ -1,0 +1,29 @@
+# Dev Dockerfile for MAM
+FROM node:20-alpine
+
+RUN corepack enable && corepack prepare pnpm@8.14.0 --activate
+
+WORKDIR /app
+
+COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
+COPY turbo.json ./
+COPY tsconfig.json ./
+
+# Copy workspace packages
+COPY parser/ parser/
+COPY ast/ ast/
+COPY compiler/ compiler/
+COPY runtime/ runtime/
+COPY validator/ validator/
+COPY cli/ cli/
+COPY sdk/ sdk/
+COPY plugins/ plugins/
+COPY spec/ spec/
+COPY visualization/ visualization/
+COPY lsp/ lsp/
+
+RUN pnpm install --frozen-lockfile
+
+EXPOSE 3000
+
+CMD ["pnpm", "run", "dev"]

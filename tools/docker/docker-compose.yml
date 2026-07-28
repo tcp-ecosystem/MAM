@@ -1,0 +1,29 @@
+version: "3.8"
+
+services:
+  mam:
+    build:
+      context: ../../
+      dockerfile: tools/docker/Dockerfile.dev
+    ports:
+      - "3000:3000"
+    volumes:
+      - ../../:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+    working_dir: /app
+
+  cli:
+    build:
+      context: ../../
+      dockerfile: tools/docker/Dockerfile.dev
+    ports:
+      - "3001:3000"
+    volumes:
+      - ../../:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+    working_dir: /app/cli
+    command: ["pnpm", "run", "dev"]

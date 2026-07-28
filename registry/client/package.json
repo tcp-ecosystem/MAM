@@ -1,0 +1,26 @@
+{
+  "name": "@mam/registry-client",
+  "version": "0.1.0",
+  "description": "MAM Registry Client - Client library for interacting with the MAM registry",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.3.0"
+  },
+  "files": ["dist"],
+  "keywords": ["mam", "registry", "client"],
+  "author": "MAM Team",
+  "license": "MIT"
+}

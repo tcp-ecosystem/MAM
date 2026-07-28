@@ -1,0 +1,338 @@
+---
+id: template-api
+version: 1.0.0
+name: API Module Template
+author: MAM Team
+runtime: python
+tags:
+  - template
+  - api
+  - rest
+  - http
+description: Starter template for building API modules with endpoints, middleware, and validation
+---
+
+# API Module Template
+
+## Purpose
+
+Template for creating API modules that define RESTful endpoints with request validation, middleware chains, and structured responses. Customize the endpoints, middleware, and schemas for your service.
+
+## System Definition
+
+module MyAPI
+
+type:
+    system
+
+agents:
+    - Router
+    - Validator
+    - Handler
+
+edges:
+    Router -> Validator
+    Validator -> Handler
+
+## Agent: Router
+
+module Router
+
+type:
+    agent
+
+role:
+    Routing
+
+goal:
+    Route incoming requests to the appropriate handler based on method and path
+
+memory:
+    shared
+
+tools:
+    - Python
+
+handoff:
+    - Validator
+
+## Agent: Validator
+
+module Validator
+
+type:
+    agent
+
+role:
+    Validation
+
+goal:
+    Validate request payloads against defined schemas before passing to handlers
+
+memory:
+    shared
+
+tools:
+    - Python
+
+handoff:
+    - Handler
+
+## Agent: Handler
+
+module Handler
+
+type:
+    agent
+
+role:
+    Execution
+
+goal:
+    Execute business logic for each endpoint and return structured responses
+
+memory:
+    shared
+
+tools:
+    - Python
+
+## Memory: SharedMemory
+
+module SharedMemory
+
+type:
+    memory
+
+format:
+    key-value
+
+backend:
+    sqlite
+
+scope:
+    request
+
+ttl:
+    5m
+
+## Rules
+
+- All endpoints must define request and response schemas
+- Middleware runs in order: auth, validation, rate-limit, handler
+- Error responses must follow the standard error format
+- All endpoints must handle CORS preflight requests
+- Rate limiting applies per-client per-endpoint
+- Request bodies must not exceed 1MB
+- Timeouts default to 30 seconds
+
+## Workflow
+
+```mermaid
+flowchart TD
+    A[Incoming Request] --> B[Router]
+    B --> C[Middleware Chain]
+    C --> D[Auth Check]
+    D --> E[Rate Limit]
+    E --> F[Schema Validation]
+    F --> G{Valid?}
+    G -->|No| H[400 Bad Request]
+    G -->|Yes| I[Handler]
+    I --> J{Success?}
+    J -->|Yes| K[200 OK]
+    J -->|No| L[Error Response]
+```
+
+## Python
+
+```python
+from typing import Any, Callable, Dict, List, Optional
+from dataclasses import dataclass, field
+from enum import Enum
+import json
+import time
+
+class HTTPMethod(Enum):
+    GET = "GET"
+    POST = "POST"
+    PUT = "PUT"
+    PATCH = "PATCH"
+    DELETE = "DELETE"
+
+@dataclass
+class Endpoint:
+    method: HTTPMethod
+    path: str
+    handler: str
+    schema: Optional[Dict] = None
+    middleware: List[str] = field(default_factory=list)
+    rate_limit: int = 100
+    timeout: int = 30
+
+@dataclass
+class APIResponse:
+    status: int
+    body: Any
+    headers: Dict[str, str] = field(default_factory=dict)
+
+class APIModule:
+    def __init__(self):
+        self._endpoints: List[Endpoint] = []
+        self._handlers: Dict[str, Callable] = {}
+        self._middleware: Dict[str, Callable] = {}
+        self._rate_counters: Dict[str, List[float]] = {}
+
+    def add_endpoint(self, method: str, path: str, handler: str,
+                     schema: Dict = None, middleware: List[str] = None,
+                     rate_limit: int = 100):
+        self._endpoints.append(Endpoint(
+            method=HTTPMethod(method), path=path, handler=handler,
+            schema=schema, middleware=middleware or [],
+            rate_limit=rate_limit,
+        ))
+
+    def register_handler(self, name: str, fn: Callable):
+        self._handlers[name] = fn
+
+    def register_middleware(self, name: str, fn: Callable):
+        self._middleware[name] = fn
+
+    def find_endpoint(self, method: str, path: str) -> Optional[Endpoint]:
+        for ep in self._endpoints:
+            if ep.method.value == method and ep.path == path:
+                return ep
+        return None
+
+    def validate_request(self, data: Dict, schema: Dict) -> List[str]:
+        errors = []
+        required = schema.get("required", [])
+        types = schema.get("properties", {})
+
+        for field in required:
+            if field not in data:
+                errors.append(f"Missing required field: {field}")
+
+        for field, spec in types.items():
+            if field in data:
+                expected = spec.get("type")
+                val = data[field]
+                if expected == "string" and not isinstance(val, str):
+                    errors.append(f"Field '{field}' must be string")
+                elif expected == "integer" and not isinstance(val, int):
+                    errors.append(f"Field '{field}' must be integer")
+                elif expected == "boolean" and not isinstance(val, bool):
+                    errors.append(f"Field '{field}' must be boolean")
+
+        return errors
+
+    def check_rate_limit(self, client_id: str, endpoint_path: str,
+                         limit: int, window: int = 60) -> bool:
+        key = f"{client_id}:{endpoint_path}"
+        now = time.time()
+        self._rate_counters[key] = [t for t in self._rate_counters[key] if t > now - window]
+
+        if len(self._rate_counters[key]) >= limit:
+            return False
+
+        self._rate_counters[key].append(now)
+        return True
+
+    def handle_request(self, method: str, path: str, data: Dict = None,
+                       client_id: str = "anonymous") -> APIResponse:
+        endpoint = self.find_endpoint(method, path)
+        if not endpoint:
+            return APIResponse(status=404, body={"error": "Not found"})
+
+        if not self.check_rate_limit(client_id, path, endpoint.rate_limit):
+            return APIResponse(status=429, body={"error": "Rate limit exceeded"})
+
+        for mw_name in endpoint.middleware:
+            mw_fn = self._middleware.get(mw_name)
+            if mw_fn:
+                result = mw_fn(data)
+                if result is False:
+                    return APIResponse(status=403, body={"error": f"Blocked by {mw_name}"})
+
+        if endpoint.schema and data:
+            errors = self.validate_request(data, endpoint.schema)
+            if errors:
+                return APIResponse(status=400, body={"errors": errors})
+
+        handler = self._handlers.get(endpoint.handler)
+        if not handler:
+            return APIResponse(status=500, body={"error": "Handler not configured"})
+
+        try:
+            result = handler(data)
+            return APIResponse(status=200, body=result)
+        except Exception as e:
+            return APIResponse(status=500, body={"error": str(e)})
+```
+
+## Examples
+
+```python
+api = APIModule()
+
+api.register_handler("get_users", lambda d: {"users": ["alice", "bob"]})
+api.register_middleware("auth", lambda d: True if d and d.get("token") else False)
+
+api.add_endpoint(
+    "GET", "/users", "get_users",
+    middleware=["auth"],
+    rate_limit=50,
+)
+
+response = api.handle_request("GET", "/users", {"token": "valid"})
+print(response.status)  # 200
+print(response.body)    # {'users': ['alice', 'bob']}
+
+response = api.handle_request("GET", "/users")
+print(response.status)  # 403
+```
+
+## Tests
+
+```python
+def test_find_endpoint():
+    api = APIModule()
+    api.add_endpoint("GET", "/test", "handler")
+    ep = api.find_endpoint("GET", "/test")
+    assert ep is not None
+    assert ep.path == "/test"
+
+def test_validate_request():
+    api = APIModule()
+    errors = api.validate_request({"name": "Alice"}, {"required": ["name", "age"]})
+    assert len(errors) == 1
+    assert "age" in errors[0]
+
+def test_rate_limit():
+    api = APIModule()
+    for _ in range(5):
+        assert api.check_rate_limit("c1", "/api", limit=5) is True
+    assert api.check_rate_limit("c1", "/api", limit=5) is False
+
+def test_404():
+    api = APIModule()
+    resp = api.handle_request("GET", "/nonexistent")
+    assert resp.status == 404
+
+def test_middleware_block():
+    api = APIModule()
+    api.register_handler("h", lambda d: "ok")
+    api.register_middleware("deny", lambda d: False)
+    api.add_endpoint("GET", "/x", "h", middleware=["deny"])
+    resp = api.handle_request("GET", "/x", {})
+    assert resp.status == 403
+```
+
+## Dependencies
+
+- None
+
+## References
+
+- [API Section Spec](../../spec/sections/)
+- [Plugin API](../../plugins/api/)
+- [CLI API](../../cli/src/)

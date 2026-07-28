@@ -85,7 +85,7 @@ export class ModuleExecutor {
 
       for (const codeBlock of codeBlocks) {
         try {
-          const context = this.getExecutionContext(codeBlock.language);
+          const context = await this.getExecutionContext(codeBlock.language);
           const execConfig: ExecutionContextConfig = {
             module,
             inputs: options.inputs || {},
@@ -131,9 +131,9 @@ export class ModuleExecutor {
     }
   }
 
-  private getExecutionContext(runtime: string): ExecutionContext {
+  private async getExecutionContext(runtime: string): Promise<ExecutionContext> {
     if (!this.contexts.has(runtime)) {
-      const context = createExecutionContext(runtime as any);
+      const context = await createExecutionContext(runtime as any);
       this.contexts.set(runtime, context);
     }
     return this.contexts.get(runtime)!;

@@ -5,7 +5,7 @@
  */
 
 import { readFile, writeFile, mkdir, access, readdir, rm } from 'node:fs/promises';
-import { join } from 'node:path';
+import { join, dirname } from 'node:path';
 import { PackageManifest } from '@mam/package-manager';
 
 // ============================================================================
@@ -178,7 +178,7 @@ export class ModuleStore {
     
     for (const [path, content] of files) {
       const filePath = join(versionDir, path);
-      const fileDir = resolve.dirname(filePath);
+      const fileDir = dirname(filePath);
       await mkdir(fileDir, { recursive: true });
       await writeFile(filePath, content, 'utf-8');
     }

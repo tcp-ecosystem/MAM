@@ -194,7 +194,7 @@ export class MAMRuntime {
     const results: ExecutionResult[] = [];
     
     for (const codeBlock of codeBlocks) {
-      const context = this.getExecutionContext(codeBlock.language);
+      const context = await this.getExecutionContext(codeBlock.language);
       
       const execConfig: ExecutionContextConfig = {
         module,
@@ -230,11 +230,11 @@ export class MAMRuntime {
   /**
    * Get or create execution context for a runtime
    */
-  private getExecutionContext(runtime: string): ExecutionContext {
+  private async getExecutionContext(runtime: string): Promise<ExecutionContext> {
     const key = runtime;
     
     if (!this.contexts.has(key)) {
-      const context = createExecutionContext(runtime as any);
+      const context = await createExecutionContext(runtime as any);
       this.contexts.set(key, context);
     }
     
