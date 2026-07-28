@@ -1,0 +1,38 @@
+[package]
+name = "mam-sdk"
+version = "0.1.0"
+edition = "2021"
+authors = ["MAM Contributors"]
+description = "Rust SDK for MAM (Markdown as Module) - parse, validate, and execute .mam.md modules"
+license = "MIT"
+repository = "https://github.com/mam-project/mam"
+keywords = ["mam", "markdown", "module", "ai", "agent"]
+categories = ["parsing", "parser-implementations", "command-line-utilities"]
+
+[lib]
+name = "mam"
+path = "src/lib.rs"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+serde_yaml = "0.9"
+tokio = { version = "1", features = ["full"] }
+thiserror = "2"
+regex = "1"
+pest = "2"
+pest_derive = "2"
+uuid = { version = "1", features = ["v4"] }
+chrono = { version = "0.4", features = ["serde"] }
+dirs = "5"
+dyn-clone = "1"
+libloading = "0.8"
+
+[dev-dependencies]
+tempfile = "3"
+tokio-test = "0.4"
+
+[features]
+default = []
+async-runtime = ["tokio"]
+plugin-dynamic = ["libloading"]
