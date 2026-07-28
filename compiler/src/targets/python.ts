@@ -41,25 +41,25 @@ export class PythonTarget implements CompileTargetHandler {
 
     switch (mod.moduleType) {
       case 'agent':
-        lines.push(...this.compileAgent(mod as V2AgentNode, indent, config));
+        lines.push(...this.compileAgent(mod as unknown as V2AgentNode, indent, config));
         break;
       case 'tool':
-        lines.push(...this.compileTool(mod as V2ToolNode, indent, config));
+        lines.push(...this.compileTool(mod as unknown as V2ToolNode, indent, config));
         break;
       case 'memory':
-        lines.push(...this.compileMemory(mod as V2MemoryNode, indent, config));
+        lines.push(...this.compileMemory(mod as unknown as V2MemoryNode, indent, config));
         break;
       case 'workflow':
-        lines.push(...this.compileWorkflow(mod as V2WorkflowNode, indent, config));
+        lines.push(...this.compileWorkflow(mod as unknown as V2WorkflowNode, indent, config));
         break;
       case 'team':
-        lines.push(...this.compileTeam(mod as V2TeamNode, indent, config));
+        lines.push(...this.compileTeam(mod as unknown as V2TeamNode, indent, config));
         break;
       case 'policy':
-        lines.push(...this.compilePolicy(mod as V2PolicyNode, indent, config));
+        lines.push(...this.compilePolicy(mod as unknown as V2PolicyNode, indent, config));
         break;
       case 'system':
-        lines.push(...this.compileSystem(mod as V2SystemNode, indent, config));
+        lines.push(...this.compileSystem(mod as unknown as V2SystemNode, indent, config));
         break;
       default:
         lines.push(...this.compileGeneric(mod, indent, config));

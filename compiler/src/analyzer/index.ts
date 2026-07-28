@@ -120,6 +120,7 @@ export class SemanticAnalyzer {
         message: `Invalid module type: "${mod.moduleType}"`,
         module: mod.name,
         location: mod.location.start,
+        severity: 'error',
       });
     }
 
@@ -155,6 +156,7 @@ export class SemanticAnalyzer {
         code: 'MISSING_ROLE',
         message: `Agent "${mod.name}" has no role defined`,
         module: mod.name,
+        severity: 'warning',
       });
     }
     if (!mod.goal) {
@@ -162,6 +164,7 @@ export class SemanticAnalyzer {
         code: 'MISSING_GOAL',
         message: `Agent "${mod.name}" has no goal defined`,
         module: mod.name,
+        severity: 'warning',
       });
     }
   }
@@ -172,6 +175,7 @@ export class SemanticAnalyzer {
         code: 'MISSING_PROVIDER',
         message: `Tool "${mod.name}" has no provider defined`,
         module: mod.name,
+        severity: 'warning',
       });
     }
   }
@@ -182,6 +186,7 @@ export class SemanticAnalyzer {
         code: 'MISSING_FORMAT',
         message: `Memory "${mod.name}" has no format defined`,
         module: mod.name,
+        severity: 'error',
       });
     }
     if (!mod.backend) {
@@ -189,6 +194,7 @@ export class SemanticAnalyzer {
         code: 'MISSING_BACKEND',
         message: `Memory "${mod.name}" has no backend defined`,
         module: mod.name,
+        severity: 'warning',
       });
     }
     if (!mod.scope) {
@@ -196,6 +202,7 @@ export class SemanticAnalyzer {
         code: 'MISSING_SCOPE',
         message: `Memory "${mod.name}" has no scope defined`,
         module: mod.name,
+        severity: 'warning',
       });
     }
   }
@@ -206,6 +213,7 @@ export class SemanticAnalyzer {
         code: 'EMPTY_WORKFLOW',
         message: `Workflow "${mod.name}" has no steps`,
         module: mod.name,
+        severity: 'error',
       });
     }
   }
@@ -216,6 +224,7 @@ export class SemanticAnalyzer {
         code: 'EMPTY_TEAM',
         message: `Team "${mod.name}" has no members`,
         module: mod.name,
+        severity: 'error',
       });
     }
   }
@@ -226,6 +235,7 @@ export class SemanticAnalyzer {
         code: 'EMPTY_POLICY',
         message: `Policy "${mod.name}" has no allow/deny rules`,
         module: mod.name,
+        severity: 'warning',
       });
     }
   }
@@ -236,6 +246,7 @@ export class SemanticAnalyzer {
         code: 'EMPTY_SYSTEM',
         message: `System "${mod.name}" has no agents or modules`,
         module: mod.name,
+        severity: 'warning',
       });
     }
   }
@@ -257,6 +268,7 @@ export class SemanticAnalyzer {
               message: `Edge source "${edge.source}" not found in module "${mod.name}"`,
               module: mod.name,
               location: edge.location.start,
+              severity: 'error',
             });
           }
         }
@@ -269,6 +281,7 @@ export class SemanticAnalyzer {
               message: `Edge target "${edge.target}" not found in module "${mod.name}"`,
               module: mod.name,
               location: edge.location.start,
+              severity: 'error',
             });
           }
         }
@@ -280,6 +293,7 @@ export class SemanticAnalyzer {
             message: `Self-loop detected: "${edge.source}" -> "${edge.target}"`,
             module: mod.name,
             location: edge.location.start,
+            severity: 'warning',
           });
         }
       }
@@ -300,6 +314,7 @@ export class SemanticAnalyzer {
               code: 'UNDEFINED_TOOL',
               message: `Tool "${tool}" not found in module "${mod.name}"`,
               module: mod.name,
+              severity: 'warning',
             });
           }
         }
@@ -313,6 +328,7 @@ export class SemanticAnalyzer {
               code: 'UNDEFINED_HANDOFF',
               message: `Handoff target "${target}" not found in module "${mod.name}"`,
               module: mod.name,
+              severity: 'warning',
             });
           }
         }
@@ -326,6 +342,7 @@ export class SemanticAnalyzer {
               code: 'UNDEFINED_MEMBER',
               message: `Team member "${member}" not found in module "${mod.name}"`,
               module: mod.name,
+              severity: 'warning',
             });
           }
         }
@@ -339,6 +356,7 @@ export class SemanticAnalyzer {
               code: 'UNDEFINED_AGENT',
               message: `Agent "${agent}" not found in system "${mod.name}"`,
               module: mod.name,
+              severity: 'warning',
             });
           }
         }
@@ -351,6 +369,7 @@ export class SemanticAnalyzer {
             code: 'UNDEFINED_POLICY',
             message: `Policy "${mod.policy}" not found in module "${mod.name}"`,
             module: mod.name,
+            severity: 'warning',
           });
         }
       }
@@ -362,6 +381,7 @@ export class SemanticAnalyzer {
             code: 'UNDEFINED_MEMORY',
             message: `Memory "${mod.memory.name}" not found in module "${mod.name}"`,
             module: mod.name,
+            severity: 'warning',
           });
         }
       }
@@ -402,6 +422,7 @@ export class SemanticAnalyzer {
             code: 'CYCLIC_DEPENDENCY',
             message: `Cyclic dependency detected: "${name}" -> "${edge.target}"`,
             module: name,
+            severity: 'error',
           });
         }
       }
@@ -425,6 +446,7 @@ export class SemanticAnalyzer {
           code: 'PERMISSION_CONFLICT',
           message: `Module "${mod.name}" has filesystem write but no network access`,
           module: mod.name,
+          severity: 'warning',
         });
       }
     }

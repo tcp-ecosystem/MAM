@@ -114,6 +114,11 @@ export interface V2ModuleNode extends V2BaseNode {
   documentation?: string;
   tests?: string;
   examples?: string;
+
+  // System-specific fields
+  agents?: string[];
+  modules?: string[];
+  policy?: string;
 }
 
 // ============================================================================

@@ -2,6 +2,8 @@ packages:
   - "spec/*"
   - "parser"
   - "ast"
+  - "compiler"
+  - "visualization"
   - "validator"
   - "runtime"
   - "cli"

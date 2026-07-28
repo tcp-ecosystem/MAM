@@ -69,7 +69,7 @@ export class DocsGenerator {
 
     const content = await readFile(resolve(filePath), 'utf-8');
     const parseResult = parseMAM(content, { source: filePath });
-    const semanticResult = analyzeSemantics(parseResult.ast.sections as V2ModuleNode[]);
+    const semanticResult = analyzeSemantics(parseResult.ast.sections as unknown as V2ModuleNode[]);
 
     // Create output directory
     await mkdir(resolve(this.config.outDir), { recursive: true });

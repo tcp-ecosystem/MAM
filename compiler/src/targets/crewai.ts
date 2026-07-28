@@ -36,13 +36,13 @@ export class CrewAITarget implements CompileTargetHandler {
 
     switch (mod.moduleType) {
       case 'agent':
-        lines.push(...this.compileAgent(mod as V2AgentNode, indent, config));
+        lines.push(...this.compileAgent(mod as unknown as V2AgentNode, indent, config));
         break;
       case 'tool':
-        lines.push(...this.compileTool(mod as V2ToolNode, indent, config));
+        lines.push(...this.compileTool(mod as unknown as V2ToolNode, indent, config));
         break;
       case 'team':
-        lines.push(...this.compileTeam(mod as V2TeamNode, indent, config));
+        lines.push(...this.compileTeam(mod as unknown as V2TeamNode, indent, config));
         break;
       default:
         lines.push(`# Module: ${mod.name} (${mod.moduleType})`);

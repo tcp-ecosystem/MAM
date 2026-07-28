@@ -4,7 +4,7 @@
  * Migrates v1 MAM modules to v2 format.
  */
 
-import { readFile, writeFile, backup } from 'node:fs/promises';
+import { readFile, writeFile, cp } from 'node:fs/promises';
 import { resolve, join, dirname } from 'node:path';
 import chalk from 'chalk';
 import ora from 'ora';

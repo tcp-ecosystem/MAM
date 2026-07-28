@@ -165,7 +165,7 @@ export class MAMLinter {
     }
 
     // Run semantic analysis
-    const semanticResult = analyzeSemantics(parseResult.ast.sections as V2ModuleNode[]);
+    const semanticResult = analyzeSemantics(parseResult.ast.sections as unknown as V2ModuleNode[]);
     for (const error of semanticResult.errors) {
       issues.push({
         code: 'SEMANTIC_ERROR',

@@ -46,7 +46,7 @@ export class RustTarget implements CompileTargetHandler {
     // Generate main function if system
     const system = modules.find(m => m.moduleType === 'system');
     if (system) {
-      lines.push(...this.generateMain(system, indent));
+      lines.push(...this.generateMain(system as unknown as V2SystemNode, indent));
     }
 
     return lines.join('\n');
@@ -59,25 +59,25 @@ export class RustTarget implements CompileTargetHandler {
 
     switch (mod.moduleType) {
       case 'agent':
-        lines.push(...this.compileAgent(mod as V2AgentNode, indent, config));
+        lines.push(...this.compileAgent(mod as unknown as V2AgentNode, indent, config));
         break;
       case 'tool':
-        lines.push(...this.compileTool(mod as V2ToolNode, indent, config));
+        lines.push(...this.compileTool(mod as unknown as V2ToolNode, indent, config));
         break;
       case 'memory':
-        lines.push(...this.compileMemory(mod as V2MemoryNode, indent, config));
+        lines.push(...this.compileMemory(mod as unknown as V2MemoryNode, indent, config));
         break;
       case 'workflow':
-        lines.push(...this.compileWorkflow(mod as V2WorkflowNode, indent, config));
+        lines.push(...this.compileWorkflow(mod as unknown as V2WorkflowNode, indent, config));
         break;
       case 'team':
-        lines.push(...this.compileTeam(mod as V2TeamNode, indent, config));
+        lines.push(...this.compileTeam(mod as unknown as V2TeamNode, indent, config));
         break;
       case 'policy':
-        lines.push(...this.compilePolicy(mod as V2PolicyNode, indent, config));
+        lines.push(...this.compilePolicy(mod as unknown as V2PolicyNode, indent, config));
         break;
       case 'system':
-        lines.push(...this.compileSystem(mod as V2SystemNode, indent, config));
+        lines.push(...this.compileSystem(mod as unknown as V2SystemNode, indent, config));
         break;
       default:
         lines.push(...this.compileGeneric(mod, indent, config));
@@ -121,10 +121,10 @@ export class RustTarget implements CompileTargetHandler {
     lines.push(`${pad}${pad}${pad}role: role.to_string(),`);
     lines.push(`${pad}${pad}${pad}goal: goal.to_string(),`);
     if (mod.tools && mod.tools.length > 0) {
-      lines.push(`${pad}${pad}${pad}tools: vec![${mod.tools.map(t => `"${t}"`.to_string()).join(', ')}],`);
+      lines.push(`${pad}${pad}${pad}tools: vec![${mod.tools.map(t => `"${t}"`.toString()).join(', ')}],`);
     }
     if (mod.handoff && mod.handoff.length > 0) {
-      lines.push(`${pad}${pad}${pad}handoff: vec![${mod.handoff.map(t => `"${t}"`.to_string()).join(', ')}],`);
+      lines.push(`${pad}${pad}${pad}handoff: vec![${mod.handoff.map(t => `"${t}"`.toString()).join(', ')}],`);
     }
     lines.push(`${pad}${pad}${pad}memory: None,`);
     lines.push(`${pad}${pad}}`);
@@ -209,7 +209,7 @@ export class RustTarget implements CompileTargetHandler {
     lines.push(`${pad}${pad}Self {`);
     lines.push(`${pad}${pad}${pad}provider: provider.to_string(),`);
     if (mod.capabilities && mod.capabilities.length > 0) {
-      lines.push(`${pad}${pad}${pad}capabilities: vec![${mod.capabilities.map(c => `"${c}"`.to_string()).join(', ')}],`);
+      lines.push(`${pad}${pad}${pad}capabilities: vec![${mod.capabilities.map(c => `"${c}"`.toString()).join(', ')}],`);
     }
     lines.push(`${pad}${pad}${pad}permissions,`);
     lines.push(`${pad}${pad}}`);
@@ -276,8 +276,8 @@ export class RustTarget implements CompileTargetHandler {
     lines.push(`impl ${structName} {`);
     lines.push(`${pad}pub fn new() -> Self {`);
     lines.push(`${pad}${pad}Self {`);
-    lines.push(`${pad}${pad}${pad}steps: vec![${mod.steps?.map(s => `"${s.name}"`.to_string()).join(', ') || ""}],`);
-    lines.push(`${pad}${pad}${pad}edges: vec![${mod.edges?.map(e => `("${e.source}", "${e.target}")`.to_string()).join(', ') || ""}],`);
+    lines.push(`${pad}${pad}${pad}steps: vec![${mod.steps?.map(s => `"${s.name}"`.toString()).join(', ') || ""}],`);
+    lines.push(`${pad}${pad}${pad}edges: vec![${mod.edges?.map(e => `("${e.source}", "${e.target}")`.toString()).join(', ') || ""}],`);
     lines.push(`${pad}${pad}}`);
     lines.push(`${pad}}`);
     lines.push('');
@@ -373,9 +373,9 @@ export class RustTarget implements CompileTargetHandler {
     lines.push(`impl ${structName} {`);
     lines.push(`${pad}pub fn new() -> Self {`);
     lines.push(`${pad}${pad}Self {`);
-    lines.push(`${pad}${pad}${pad}agents: vec![${mod.agents?.map(a => `"${a}"`.to_string()).join(', ') || ""}],`);
-    lines.push(`${pad}${pad}${pad}modules: vec![${mod.modules?.map(m => `"${m}"`.to_string()).join(', ') || ""}],`);
-    lines.push(`${pad}${pad}${pad}edges: vec![${mod.edges?.map(e => `("${e.source}", "${e.target}")`.to_string()).join(', ') || ""}],`);
+    lines.push(`${pad}${pad}${pad}agents: vec![${mod.agents?.map(a => `"${a}"`.toString()).join(', ') || ""}],`);
+    lines.push(`${pad}${pad}${pad}modules: vec![${mod.modules?.map(m => `"${m}"`.toString()).join(', ') || ""}],`);
+    lines.push(`${pad}${pad}${pad}edges: vec![${mod.edges?.map(e => `("${e.source}", "${e.target}")`.toString()).join(', ') || ""}],`);
     lines.push(`${pad}${pad}}`);
     lines.push(`${pad}}`);
     lines.push('');

@@ -7,9 +7,10 @@
 import { readFile, writeFile, mkdir, access } from 'node:fs/promises';
 import { resolve, basename, join } from 'node:path';
 import { parseMAM } from '@mam/parser';
-import { MAMCompiler, type CompileTarget } from '@mam/compiler';
 import chalk from 'chalk';
 import ora from 'ora';
+
+export type CompileTarget = 'python' | 'javascript' | 'typescript' | 'go' | 'rust' | 'json' | 'yaml' | 'openai' | 'langgraph' | 'crewai';
 
 export interface CompileOptions {
   file: string;
@@ -24,6 +25,16 @@ export async function compileCommand(options: CompileOptions): Promise<void> {
   const spinner = ora('Compiling module...').start();
 
   try {
+    // Dynamically import the compiler package — only needed for this command
+    let MAMCompiler: any;
+    try {
+      const compilerMod = await import('@mam/compiler' as any);
+      MAMCompiler = compilerMod.MAMCompiler;
+    } catch {
+      spinner.fail('Compiler package (@mam/compiler) is not installed. Run: pnpm install');
+      process.exit(1);
+    }
+
     const filePath = resolve(options.file);
     const content = await readFile(filePath, 'utf-8');
 

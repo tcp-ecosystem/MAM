@@ -23,6 +23,8 @@
   "dependencies": {
     "@mam/parser": "workspace:*",
     "@mam/ast": "workspace:*",
+    "@mam/compiler": "workspace:*",
+    "@mam/visualization": "workspace:*",
     "@mam/validator": "workspace:*",
     "@mam/runtime": "workspace:*",
     "commander": "^12.0.0",

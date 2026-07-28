@@ -37,10 +37,10 @@ export class LangGraphTarget implements CompileTargetHandler {
 
     switch (mod.moduleType) {
       case 'agent':
-        lines.push(...this.compileAgent(mod as V2AgentNode, indent, config));
+        lines.push(...this.compileAgent(mod as unknown as V2AgentNode, indent, config));
         break;
       case 'workflow':
-        lines.push(...this.compileWorkflow(mod as V2WorkflowNode, indent, config));
+        lines.push(...this.compileWorkflow(mod as unknown as V2WorkflowNode, indent, config));
         break;
       case 'system':
         lines.push(...this.compileSystem(mod, indent, config));

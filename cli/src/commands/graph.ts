@@ -9,7 +9,6 @@ import { resolve, join } from 'node:path';
 import { parseMAM } from '@mam/parser';
 import chalk from 'chalk';
 import ora from 'ora';
-import { GraphVisualizer, MermaidGenerator, ASCIIArt } from '@mam/visualization';
 
 export interface GraphOptions {
   dir?: string;
@@ -21,6 +20,17 @@ export async function graphCommand(options: GraphOptions): Promise<void> {
   const spinner = ora('Generating graph...').start();
 
   try {
+    // Dynamically import visualization package — only needed for some formats
+    let MermaidGenerator: any = null;
+    let ASCIIArt: any = null;
+    try {
+      const vizMod = await import('@mam/visualization' as any);
+      MermaidGenerator = vizMod.MermaidGenerator;
+      ASCIIArt = vizMod.ASCIIArt;
+    } catch {
+      // Visualization package not available; only text/json will work
+    }
+
     const dir = options.dir || process.cwd();
     const files = await findMAMFiles(dir);
     

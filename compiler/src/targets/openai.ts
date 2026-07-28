@@ -36,10 +36,10 @@ export class OpenAITarget implements CompileTargetHandler {
 
     switch (mod.moduleType) {
       case 'agent':
-        lines.push(...this.compileAgent(mod as V2AgentNode, indent, config));
+        lines.push(...this.compileAgent(mod as unknown as V2AgentNode, indent, config));
         break;
       case 'tool':
-        lines.push(...this.compileTool(mod as V2ToolNode, indent, config));
+        lines.push(...this.compileTool(mod as unknown as V2ToolNode, indent, config));
         break;
       case 'system':
         lines.push(...this.compileSystem(mod, indent, config));
