@@ -13,6 +13,12 @@ export {
 } from './runtime.js';
 
 export {
+  ModuleExecutor,
+  type ExecutorConfig,
+  type ExecutorResult,
+} from './executor.js';
+
+export {
   type ExecutionContext,
   type ExecutionContextConfig,
   type ExecutionResult,
@@ -20,6 +26,10 @@ export {
   PythonExecutionContext,
   JavaScriptExecutionContext,
   createExecutionContext,
+  PythonContext,
+  JavaScriptContext,
+  RustContext,
+  GoContext,
 } from './contexts/index.js';
 
 export {
@@ -28,4 +38,20 @@ export {
   ProcessSandbox,
   VMSandbox,
   createSandbox,
+  ProcessSandboxImpl,
+  VMSandboxImpl,
+  DockerSandbox,
 } from './sandboxes/index.js';
+
+export {
+  PluginLoader,
+  type Plugin,
+  PluginRegistry,
+  type PluginMetadata,
+} from './plugins/index.js';
+
+export {
+  JSONOutput,
+  HTMLOutput,
+  MarkdownOutput,
+} from './outputs/index.js';

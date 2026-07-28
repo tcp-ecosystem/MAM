@@ -1,0 +1,18 @@
+type Module {
+  name: String!
+  version: String!
+  description: String
+  author: String
+  tags: [String]
+  downloads: Int
+  publishedAt: String
+}
+
+type Query {
+  modules(query: String): [Module]
+  module(name: String!): Module
+}
+
+type Mutation {
+  publishModule(name: String!, version: String!, description: String): Module
+}

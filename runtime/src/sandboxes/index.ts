@@ -6,6 +6,7 @@
 
 import { CodeBlock } from '@mam/ast';
 import { ExecutionResult } from '../contexts/index.js';
+import { DockerSandbox } from './docker.js';
 
 /**
  * Sandbox configuration
@@ -262,13 +263,20 @@ export class VMSandbox implements Sandbox {
 /**
  * Create sandbox for configuration
  */
-export function createSandbox(type: 'process' | 'vm' = 'process'): Sandbox {
+export function createSandbox(type: 'process' | 'vm' | 'docker' = 'process'): Sandbox {
   switch (type) {
     case 'process':
       return new ProcessSandbox();
     case 'vm':
       return new VMSandbox();
+    case 'docker':
+      return new DockerSandbox();
     default:
       throw new Error(`Unknown sandbox type: ${type}`);
   }
 }
+
+// Re-export standalone sandboxes
+export { ProcessSandboxImpl } from './process.js';
+export { VMSandboxImpl } from './vm.js';
+export { DockerSandbox, type DockerSandboxConfig } from './docker.js';

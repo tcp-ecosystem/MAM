@@ -1,0 +1,69 @@
+openapi: 3.0.3
+info:
+  title: MAM Registry API
+  description: API for the MAM module registry
+  version: 0.1.0
+paths:
+  /modules:
+    get:
+      summary: List modules
+      operationId: listModules
+      parameters:
+        - name: query
+          in: query
+          schema:
+            type: string
+      responses:
+        '200':
+          description: List of modules
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Module'
+    post:
+      summary: Publish a module
+      operationId: publishModule
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Module'
+      responses:
+        '201':
+          description: Module published
+  /modules/{name}:
+    get:
+      summary: Get module details
+      operationId: getModule
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Module details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Module'
+components:
+  schemas:
+    Module:
+      type: object
+      properties:
+        name:
+          type: string
+        version:
+          type: string
+        description:
+          type: string
+        author:
+          type: string
+        tags:
+          type: array
+          items:
+            type: string

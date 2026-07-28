@@ -1,10 +1,12 @@
 /**
  * MAM Validator Errors
- * 
+ *
  * Error types and utilities for MAM validation.
  */
 
 import { SourceLocation } from '@mam/ast';
+
+export { MAMValidationError, type ValidationErrorOptions } from './types.js';
 
 export interface ValidationError {
   /** Error code for programmatic handling */

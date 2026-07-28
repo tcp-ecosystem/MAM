@@ -5,6 +5,8 @@
  */
 
 import { MAMModule, CodeBlock, Language } from '@mam/ast';
+import { RustContext } from './rust.js';
+import { GoContext } from './go.js';
 
 /**
  * Execution context configuration
@@ -205,7 +207,17 @@ export function createExecutionContext(runtime: Language): ExecutionContext {
     case 'javascript':
     case 'js':
       return new JavaScriptExecutionContext();
+    case 'rust':
+      return new RustContext();
+    case 'go':
+      return new GoContext();
     default:
       throw new Error(`Unsupported runtime: ${runtime}`);
   }
 }
+
+// Re-export standalone contexts
+export { PythonContext } from './python.js';
+export { JavaScriptContext } from './javascript.js';
+export { RustContext } from './rust.js';
+export { GoContext } from './go.js';

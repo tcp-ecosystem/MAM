@@ -1,0 +1,26 @@
+{
+  "name": "@mam/sdk-javascript",
+  "version": "0.1.0",
+  "description": "MAM JavaScript SDK",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "typescript": "^5.3.0"
+  },
+  "files": ["dist"],
+  "keywords": ["mam", "sdk", "javascript"],
+  "author": "MAM Team",
+  "license": "MIT"
+}
