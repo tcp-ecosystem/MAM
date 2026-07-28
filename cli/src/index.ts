@@ -27,16 +27,19 @@ try {
 const VERSION = pkg.version;
 
 const BANNER = `
-${chalk.cyan('╔══════════════════════════════════════════════════════════════╗')}
-${chalk.cyan('║')}${chalk.white.bold('  ███╗   ███╗ █████╗ ███╗   ██╗ ██████╗ ')}${chalk.cyan('║')}
-${chalk.cyan('║')}${chalk.white.bold('  ████╗ ████║██╔══██╗████╗  ██║██╔════╝ ')}${chalk.cyan('║')}
-${chalk.cyan('║')}${chalk.white.bold('  ██╔████╔██║███████║██╔██╗ ██║██║  ███╗')}${chalk.cyan('║')}
-${chalk.cyan('║')}${chalk.white.bold('  ██║╚██╔╝██║██╔══██║██║╚██╗██║██║   ██║')}${chalk.cyan('║')}
-${chalk.cyan('║')}${chalk.white.bold('  ██║ ╚═╝ ██║██║  ██║██║ ╚████║╚██████╔╝')}${chalk.cyan('║')}
-${chalk.cyan('║')}${chalk.white.bold('  ╚═╝     ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝ ╚═════╝ ')}${chalk.cyan('║')}
-${chalk.cyan('║')}${chalk.gray('     Markdown as Module — Machine Agent Modules')}      ${chalk.cyan('║')}
-${chalk.cyan('║')}${chalk.gray(`     v${VERSION} · markdown-as-module.org`)}${' '.repeat(Math.max(0, 20 - VERSION.length))}${chalk.cyan('║')}
-${chalk.cyan('╚══════════════════════════════════════════════════════════════╝')}
+${chalk.cyan('╔═══════════════════════════════════════════════════════╗')}
+${chalk.cyan('║')}${chalk.white.bold('                                                       ')}${chalk.cyan('║')}
+${chalk.cyan('║')}${chalk.white.bold('   ██╗  ██╗ █████╗ ███╗   ██╗ ██████╗                ')}${chalk.cyan('║')}
+${chalk.cyan('║')}${chalk.white.bold('   ███╗███║██╔══██╗████╗  ██║██╔════╝                ')}${chalk.cyan('║')}
+${chalk.cyan('║')}${chalk.white.bold('   ╚███╔███║███████║██╔██╗ ██║██║  ███╗               ')}${chalk.cyan('║')}
+${chalk.cyan('║')}${chalk.white.bold('    ╚██╔╝██║██╔══██║██║╚██╗██║██║   ██║               ')}${chalk.cyan('║')}
+${chalk.cyan('║')}${chalk.white.bold('     ██╝ ██║██║  ██║██║ ╚████║╚██████╔╝               ')}${chalk.cyan('║')}
+${chalk.cyan('║')}${chalk.white.bold('     ╚═╝ ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝ ╚═════╝                ')}${chalk.cyan('║')}
+${chalk.cyan('║')}${chalk.white.bold('                                                       ')}${chalk.cyan('║')}
+${chalk.cyan('║')}${chalk.gray('       Markdown as Module — Machine Agent Modules')}   ${chalk.cyan('║')}
+${chalk.cyan('║')}${chalk.gray(`       v${VERSION} · markdown-as-module.org`)}${' '.repeat(Math.max(0, 19 - VERSION.length))}${chalk.cyan('║')}
+${chalk.cyan('║')}${chalk.white.bold('                                                       ')}${chalk.cyan('║')}
+${chalk.cyan('╚═══════════════════════════════════════════════════════╝')}
 `;
 
 const program = new Command();
