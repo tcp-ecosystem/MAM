@@ -1,10 +1,13 @@
 #!/usr/bin/env node
 
 /**
- * MAM CLI — Machine Agent Module
- * System Description Language
+ * MAM — Markdown as Module
+ * Machine Agent Modules
  *
- * v2: Full-featured CLI with 30+ commands
+ * Human Identity: Markdown as Module (what users write)
+ * System Identity: Machine Agent Modules (what the compiler understands)
+ *
+ * v2: Full-featured CLI with 35+ commands
  */
 
 import { Command } from 'commander';
@@ -31,7 +34,7 @@ ${chalk.cyan('║')}${chalk.white.bold('  ██╔████╔██║█�
 ${chalk.cyan('║')}${chalk.white.bold('  ██║╚██╔╝██║██╔══██║██║╚██╗██║██║   ██║')}${chalk.cyan('║')}
 ${chalk.cyan('║')}${chalk.white.bold('  ██║ ╚═╝ ██║██║  ██║██║ ╚████║╚██████╔╝')}${chalk.cyan('║')}
 ${chalk.cyan('║')}${chalk.white.bold('  ╚═╝     ╚═╝╚═╝  ╚═╝╚═╝  ╚═══╝ ╚═════╝ ')}${chalk.cyan('║')}
-${chalk.cyan('║')}${chalk.gray('     Machine Agent Module — System Description Language')}  ${chalk.cyan('║')}
+${chalk.cyan('║')}${chalk.gray('     Markdown as Module — Machine Agent Modules')}      ${chalk.cyan('║')}
 ${chalk.cyan('║')}${chalk.gray(`     v${VERSION} · markdown-as-module.org`)}${' '.repeat(Math.max(0, 20 - VERSION.length))}${chalk.cyan('║')}
 ${chalk.cyan('╚══════════════════════════════════════════════════════════════╝')}
 `;
@@ -40,7 +43,7 @@ const program = new Command();
 
 program
   .name('mam')
-  .description(`${chalk.cyan('MAM')} — ${chalk.white('Machine Agent Module CLI')}\n${chalk.gray('System Description Language for AI agents, workflows, and tools')}`)
+  .description(`${chalk.cyan('MAM')} — ${chalk.white('Markdown as Module')}\n${chalk.gray('Machine Agent Modules · System Description Language')}`)
   .version(VERSION)
   .argument('[file]', 'MAM module file to process')
   .addHelpText('before', BANNER);
