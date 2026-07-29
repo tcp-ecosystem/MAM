@@ -77,4 +77,17 @@ export class RustContext extends BaseExecutionContext {
       };
     }
   }
+
+  validateCode(code: string): boolean {
+    if (!code || code.trim().length === 0) return false;
+    const disallowed = [/\bstd::process::exit\b/, /\bstd::fs::remove/, /\bunsafe\s*\{/];
+    for (const pattern of disallowed) {
+      if (pattern.test(code)) return false;
+    }
+    return true;
+  }
+
+  getSupportedLanguages(): Language[] {
+    return ['rust'];
+  }
 }

@@ -1,6 +1,6 @@
 /**
  * MAM Visitor Module
- * 
+ *
  * Exports visitor pattern implementations for MAM AST traversal.
  */
 
@@ -11,3 +11,9 @@ export {
   MAMCollector,
   traverse,
 } from './visitor.js';
+
+export {
+  findNodes,
+  countNodes,
+  collectText,
+} from './traverser.js';

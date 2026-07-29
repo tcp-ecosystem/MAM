@@ -5,7 +5,8 @@
  */
 
 import { CodeBlock, Language } from '@mam/ast';
-import { BaseExecutionContext, ExecutionContextConfig, ExecutionResult } from './index.js';
+import { BaseExecutionContext } from './base.js';
+import type { ExecutionContextConfig, ExecutionResult } from './types.js';
 
 export interface PythonContextConfig {
   pythonPath?: string;
@@ -63,6 +64,19 @@ export class PythonContext extends BaseExecutionContext {
         exitCode: 1,
       };
     }
+  }
+
+  validateCode(code: string): boolean {
+    if (!code || code.trim().length === 0) return false;
+    const disallowed = [/\bos\.system\b/, /\bexec\(/, /\beval\(/, /\b__import__\b/];
+    for (const pattern of disallowed) {
+      if (pattern.test(code)) return false;
+    }
+    return true;
+  }
+
+  getSupportedLanguages(): Language[] {
+    return ['python'];
   }
 
   private buildEnvironment(): Record<string, string | undefined> {

@@ -47,3 +47,13 @@ export function countNodes(node: traversable): number {
   traverse(node, () => { count++; });
   return count;
 }
+
+export function collectText(node: traversable): string {
+  const parts: string[] = [];
+  traverse(node, (n) => {
+    if ('value' in n && typeof n.value === 'string') {
+      parts.push(n.value);
+    }
+  });
+  return parts.join(' ');
+}

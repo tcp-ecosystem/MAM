@@ -5,7 +5,8 @@
  */
 
 import { CodeBlock, Language } from '@mam/ast';
-import { BaseExecutionContext, ExecutionResult } from './index.js';
+import { BaseExecutionContext } from './base.js';
+import type { ExecutionResult } from './types.js';
 
 export interface JavaScriptContextConfig {
   timeout?: number;
@@ -73,5 +74,14 @@ export class JavaScriptContext extends BaseExecutionContext {
         exitCode: 1,
       };
     }
+  }
+
+  validateCode(code: string): boolean {
+    if (!code || code.trim().length === 0) return false;
+    return true;
+  }
+
+  getSupportedLanguages(): Language[] {
+    return ['javascript', 'js'];
   }
 }

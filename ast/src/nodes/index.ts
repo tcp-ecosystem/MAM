@@ -379,3 +379,27 @@ export function isNodeType<T extends BaseNode>(
 ): node is T {
   return node.type === type;
 }
+
+// ============================================================================
+// Section-specific Node Types
+// ============================================================================
+
+export type { CapabilitiesNode, Capability, CapabilityPort, CapabilityRequirement, CapabilityLevel } from './capabilities.js';
+export type { DependenciesNode, Dependency, DependencySource, DependencyType } from './dependencies.js';
+export type { ExamplesNode, ExampleEntry } from './examples.js';
+export type { ExportsNode, ExportItem, ExportType } from './exports.js';
+export type { ImportsNode, ImportItem, SelectiveImportKind } from './imports.js';
+export type { InputsNode, InputPort, PortType, InputValidation } from './inputs.js';
+export type { MemoryNode, MemoryFormat, MemoryBackend, MemoryScope, MemoryIndex, MemoryConfiguration } from './memory.js';
+export type { MermaidNode, SectionDiagramType, MermaidDirection, MermaidParsedNode, MermaidParsedEdge, MermaidDiagramMetadata } from './mermaid.js';
+export type { MetadataNode, MetadataRuntimeType, PermissionKind, MetadataPermission, MetadataDependency } from './metadata.js';
+export type { OutputsNode, OutputPort, OutputPortType, OutputSchema } from './outputs.js';
+export type { PermissionsNode, PermissionEntry, PermissionLevel, PermissionResourceKind, PermissionCondition } from './permissions.js';
+export type { PluginsNode, PluginRef, PluginSource } from './plugins.js';
+export type { PromptNode, PromptVariable, PromptTemplate, PromptRole } from './prompt.js';
+export type { PurposeNode, PurposeGoal, SuccessCriterion } from './purpose.js';
+export type { PythonNode, PythonImport, PythonFunction, PythonClass, PythonExecutionConfig } from './python.js';
+export type { ReferencesNode, Reference, ReferenceType } from './references.js';
+export type { RulesNode, Rule, RulePriority, RuleSeverity, RuleCategory } from './rules.js';
+export type { TestsNode, TestCase, TestCaseStatus } from './tests.js';
+export type { WorkflowNode, WorkflowStep, WorkflowEdge, WorkflowConfig } from './workflow.js';
