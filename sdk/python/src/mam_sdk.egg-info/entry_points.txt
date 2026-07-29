@@ -1,0 +1,2 @@
+[console_scripts]
+mam = mam.cli:main

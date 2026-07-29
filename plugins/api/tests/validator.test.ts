@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { validatePluginManifest, validatePluginIntegrity, getPluginStats } from '../src/validator.js';
+import { validatePluginManifest, validatePluginIntegrity, getPluginStats, formatIntegrityReport } from '../src/validator.js';
 import type { MAMPlugin } from '../src/types.js';
 
 function makePlugin(overrides?: Partial<MAMPlugin>): MAMPlugin {
@@ -22,6 +22,7 @@ describe('Plugin Manifest Validator', () => {
   it('should accept valid manifest', () => {
     const result = validatePluginManifest(makePlugin().manifest);
     expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
   });
 
   it('should reject missing name', () => {
@@ -29,6 +30,7 @@ describe('Plugin Manifest Validator', () => {
     manifest.name = '';
     const result = validatePluginManifest(manifest);
     expect(result.valid).toBe(false);
+    expect(result.errors.some((e) => e.includes('name'))).toBe(true);
   });
 
   it('should reject invalid name format', () => {
@@ -40,64 +42,106 @@ describe('Plugin Manifest Validator', () => {
 
   it('should warn on too many keywords', () => {
     const manifest = makePlugin().manifest;
-    manifest.keywords = Array.from({ length: 25 }, (_, i) => `kw${i}`);
+    manifest.keywords = Array.from({ length: 35 }, (_, i) => `kw${i}`);
     const result = validatePluginManifest(manifest);
     expect(result.warnings.some((w) => w.includes('keywords'))).toBe(true);
+  });
+
+  it('should detect duplicate keywords', () => {
+    const manifest = makePlugin().manifest;
+    manifest.keywords = ['a', 'b', 'a'];
+    const result = validatePluginManifest(manifest);
+    expect(result.warnings.some((w) => w.includes('Duplicate'))).toBe(true);
+  });
+
+  it('should warn on long description', () => {
+    const manifest = makePlugin().manifest;
+    manifest.description = 'x'.repeat(600);
+    const result = validatePluginManifest(manifest);
+    expect(result.warnings.some((w) => w.includes('long'))).toBe(true);
+  });
+
+  it('should reject invalid dependency names', () => {
+    const manifest = makePlugin().manifest;
+    manifest.dependencies = ['123invalid'];
+    const result = validatePluginManifest(manifest);
+    expect(result.valid).toBe(false);
+    expect(result.errors.some((e) => e.includes('dependency'))).toBe(true);
   });
 });
 
 describe('Plugin Integrity Validator', () => {
   it('should validate a minimal plugin', () => {
-    const results = validatePluginIntegrity(makePlugin());
-    expect(results.every((r) => r.valid)).toBe(true);
+    const report = validatePluginIntegrity(makePlugin());
+    expect(report.valid).toBe(true);
+    expect(report.errors).toHaveLength(0);
   });
 
   it('should detect missing section name', () => {
     const plugin = makePlugin({
       sections: [{ name: '', description: '', required: false, contentTypes: ['text'] }],
     });
-    const results = validatePluginIntegrity(plugin);
-    expect(results.some((r) => !r.valid)).toBe(true);
+    const report = validatePluginIntegrity(plugin);
+    expect(report.errors.some((r) => r.message?.includes('missing name'))).toBe(true);
   });
 
   it('should detect missing section content types', () => {
     const plugin = makePlugin({
       sections: [{ name: 'Test', description: '', required: false, contentTypes: [] }],
     });
-    const results = validatePluginIntegrity(plugin);
-    expect(results.some((r) => !r.valid && r.message?.includes('content types'))).toBe(true);
+    const report = validatePluginIntegrity(plugin);
+    expect(report.errors.some((r) => r.message?.includes('content types'))).toBe(true);
   });
 
   it('should detect rule without check function', () => {
     const plugin = makePlugin({
       rules: [{ name: 'test', description: '', severity: 'info', check: null as any }],
     });
-    const results = validatePluginIntegrity(plugin);
-    expect(results.some((r) => !r.valid)).toBe(true);
+    const report = validatePluginIntegrity(plugin);
+    expect(report.errors.some((r) => r.message?.includes('not a function'))).toBe(true);
   });
 
   it('should detect context without execute function', () => {
     const plugin = makePlugin({
       contexts: [{ name: 'test', language: 'py', execute: null as any, canHandle: () => true }],
     });
-    const results = validatePluginIntegrity(plugin);
-    expect(results.some((r) => !r.valid)).toBe(true);
+    const report = validatePluginIntegrity(plugin);
+    expect(report.errors.some((r) => r.message?.includes('not a function'))).toBe(true);
   });
 
   it('should detect renderer without render function', () => {
     const plugin = makePlugin({
       renderers: [{ name: 'test', target: 'html', render: null as any }],
     });
-    const results = validatePluginIntegrity(plugin);
-    expect(results.some((r) => !r.valid)).toBe(true);
+    const report = validatePluginIntegrity(plugin);
+    expect(report.errors.some((r) => r.message?.includes('not a function'))).toBe(true);
   });
 
   it('should detect exporter without export function', () => {
     const plugin = makePlugin({
       exporters: [{ name: 'test', format: 'json', export: null as any, extension: '.json' }],
     });
-    const results = validatePluginIntegrity(plugin);
-    expect(results.some((r) => !r.valid)).toBe(true);
+    const report = validatePluginIntegrity(plugin);
+    expect(report.errors.some((r) => r.message?.includes('not a function'))).toBe(true);
+  });
+
+  it('should return correct stats', () => {
+    const plugin = makePlugin({
+      sections: [{ name: 'A', description: '', required: false, contentTypes: ['text'] }],
+      rules: [{ name: 'r1', description: '', severity: 'info', check: () => [] }],
+      hooks: { beforeParse: () => '' },
+    });
+    const report = validatePluginIntegrity(plugin);
+    expect(report.stats.sections).toBe(1);
+    expect(report.stats.rules).toBe(1);
+    expect(report.stats.hooks).toBe(1);
+  });
+
+  it('formatIntegrityReport should produce output', () => {
+    const report = validatePluginIntegrity(makePlugin());
+    const text = formatIntegrityReport(report);
+    expect(text).toContain('test-plugin');
+    expect(text).toContain('Valid: Yes');
   });
 });
 
