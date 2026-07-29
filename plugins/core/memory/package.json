@@ -11,6 +11,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@mam/ast": "workspace:*",
     "@mam/plugin-api": "workspace:*"
   },
   "devDependencies": {
