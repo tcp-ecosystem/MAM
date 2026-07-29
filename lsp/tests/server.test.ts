@@ -77,4 +77,216 @@ describe('MAMServer', () => {
   it('shutdown() should complete without error', () => {
     expect(() => server.shutdown()).not.toThrow();
   });
+
+  it('should handle document open events', () => {
+    const handler = mockConnection.onDidOpenTextDocument.mock.calls[0]?.[0];
+    expect(handler).toBeDefined();
+
+    handler({
+      textDocument: {
+        uri: 'file:///test.mam.md',
+        languageId: 'mam',
+        version: 1,
+        text: '---\nid: test\n---\n## Purpose\n\nTest module.',
+      },
+    });
+
+    // Should not throw
+    expect(true).toBe(true);
+  });
+
+  it('should handle document change events', () => {
+    const openHandler = mockConnection.onDidOpenTextDocument.mock.calls[0]?.[0];
+    const changeHandler = mockConnection.onDidChangeTextDocument.mock.calls[0]?.[0];
+
+    openHandler({
+      textDocument: {
+        uri: 'file:///test.mam.md',
+        languageId: 'mam',
+        version: 1,
+        text: '---\nid: test\n---\n## Purpose\n\nOriginal.',
+      },
+    });
+
+    changeHandler({
+      textDocument: { uri: 'file:///test.mam.md', version: 2 },
+      contentChanges: [{ text: '---\nid: test\n---\n## Purpose\n\nUpdated.' }],
+    });
+
+    // Should not throw
+    expect(true).toBe(true);
+  });
+
+  it('should handle document close events', () => {
+    const openHandler = mockConnection.onDidOpenTextDocument.mock.calls[0]?.[0];
+    const closeHandler = mockConnection.onDidCloseTextDocument.mock.calls[0]?.[0];
+
+    openHandler({
+      textDocument: {
+        uri: 'file:///test.mam.md',
+        languageId: 'mam',
+        version: 1,
+        text: 'content',
+      },
+    });
+
+    closeHandler({
+      textDocument: { uri: 'file:///test.mam.md' },
+    });
+
+    // Should not throw
+    expect(true).toBe(true);
+  });
+
+  it('should handle completion requests', () => {
+    const openHandler = mockConnection.onDidOpenTextDocument.mock.calls[0]?.[0];
+    const completionHandler = mockConnection.onCompletion.mock.calls[0]?.[0];
+
+    openHandler({
+      textDocument: {
+        uri: 'file:///test.mam.md',
+        languageId: 'mam',
+        version: 1,
+        text: '## \n\nPurpose content',
+      },
+    });
+
+    const result = completionHandler({
+      textDocument: { uri: 'file:///test.mam.md' },
+      position: { line: 0, character: 3 },
+    });
+
+    expect(Array.isArray(result)).toBe(true);
+  });
+
+  it('should handle hover requests', () => {
+    const openHandler = mockConnection.onDidOpenTextDocument.mock.calls[0]?.[0];
+    const hoverHandler = mockConnection.onHover.mock.calls[0]?.[0];
+
+    openHandler({
+      textDocument: {
+        uri: 'file:///test.mam.md',
+        languageId: 'mam',
+        version: 1,
+        text: '## Purpose\n\nModule purpose.',
+      },
+    });
+
+    const result = hoverHandler({
+      textDocument: { uri: 'file:///test.mam.md' },
+      position: { line: 0, character: 3 },
+    });
+
+    expect(result === null || typeof result === 'object').toBe(true);
+  });
+
+  it('should handle definition requests', () => {
+    const openHandler = mockConnection.onDidOpenTextDocument.mock.calls[0]?.[0];
+    const definitionHandler = mockConnection.onDefinition.mock.calls[0]?.[0];
+
+    openHandler({
+      textDocument: {
+        uri: 'file:///test.mam.md',
+        languageId: 'mam',
+        version: 1,
+        text: '## Purpose\n\nSee Inputs section.',
+      },
+    });
+
+    const result = definitionHandler({
+      textDocument: { uri: 'file:///test.mam.md' },
+      position: { line: 2, character: 5 },
+    });
+
+    expect(result === null || typeof result === 'object').toBe(true);
+  });
+
+  it('should handle references requests', () => {
+    const openHandler = mockConnection.onDidOpenTextDocument.mock.calls[0]?.[0];
+    const referencesHandler = mockConnection.onReferences.mock.calls[0]?.[0];
+
+    openHandler({
+      textDocument: {
+        uri: 'file:///test.mam.md',
+        languageId: 'mam',
+        version: 1,
+        text: '## Purpose\n\nPurpose is important.',
+      },
+    });
+
+    const result = referencesHandler({
+      textDocument: { uri: 'file:///test.mam.md' },
+      position: { line: 0, character: 3 },
+      context: { includeDeclaration: true },
+    });
+
+    expect(Array.isArray(result)).toBe(true);
+  });
+
+  it('should handle formatting requests', () => {
+    const openHandler = mockConnection.onDidOpenTextDocument.mock.calls[0]?.[0];
+    const formattingHandler = mockConnection.onDocumentFormatting.mock.calls[0]?.[0];
+
+    openHandler({
+      textDocument: {
+        uri: 'file:///test.mam.md',
+        languageId: 'mam',
+        version: 1,
+        text: '## Purpose   \n\n   Module purpose.   \n\n',
+      },
+    });
+
+    const result = formattingHandler({
+      textDocument: { uri: 'file:///test.mam.md' },
+      options: { tabSize: 2, insertSpaces: true },
+    });
+
+    expect(Array.isArray(result)).toBe(true);
+  });
+
+  it('should handle code action requests', () => {
+    const openHandler = mockConnection.onDidOpenTextDocument.mock.calls[0]?.[0];
+    const codeActionHandler = mockConnection.onCodeAction.mock.calls[0]?.[0];
+
+    openHandler({
+      textDocument: {
+        uri: 'file:///test.mam.md',
+        languageId: 'mam',
+        version: 1,
+        text: '## Purpose\n\nModule purpose.',
+      },
+    });
+
+    const result = codeActionHandler({
+      textDocument: { uri: 'file:///test.mam.md' },
+      range: { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } },
+      context: { diagnostics: [] },
+    });
+
+    expect(Array.isArray(result)).toBe(true);
+  });
+
+  it('should handle diagnostic requests', () => {
+    const openHandler = mockConnection.onDidOpenTextDocument.mock.calls[0]?.[0];
+    const diagnosticHandler = mockConnection.onRequest.mock.calls.find(
+      (call: any[]) => call[0] === 'textDocument/diagnostic'
+    )?.[1];
+
+    openHandler({
+      textDocument: {
+        uri: 'file:///test.mam.md',
+        languageId: 'mam',
+        version: 1,
+        text: '## Purpose\n\nModule purpose.',
+      },
+    });
+
+    if (diagnosticHandler) {
+      const result = diagnosticHandler({
+        textDocument: { uri: 'file:///test.mam.md' },
+      });
+
+      expect(Array.isArray(result)).toBe(true);
+    }
+  });
 });

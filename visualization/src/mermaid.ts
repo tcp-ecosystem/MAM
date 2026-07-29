@@ -118,7 +118,7 @@ export class MermaidGenerator {
     for (const edge of graph.edges) {
       const style = this.getEdgeStyle(edge.type);
       if (edge.label) {
-        lines.push(`    ${edge.from} ${style.arrow}"${edge.label}"${style.end} ${edge.to}`);
+        lines.push(`    ${edge.from} ${style.arrow}|"${edge.label}"| ${edge.to}`);
       } else {
         lines.push(`    ${edge.from} ${style.arrow} ${edge.to}`);
       }
