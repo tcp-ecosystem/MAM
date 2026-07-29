@@ -2,15 +2,188 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://mam.dev/schema/v1.0.0/sections/dependencies.schema.json",
   "title": "Dependencies Section Schema",
+  "description": "Declares runtime and build-time dependencies with version constraints, registries, and resolution metadata. Used by the package manager for installation and conflict resolution.",
   "type": "object",
   "required": ["type", "name", "content"],
   "properties": {
     "type": { "type": "string", "const": "section" },
     "name": { "type": "string", "const": "Dependencies" },
-    "content": { "type": "array", "items": { "oneOf": [{ "$ref": "#/definitions/List" }, { "$ref": "#/definitions/Table" }] }, "minItems": 0 }
+    "content": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          { "$ref": "#/definitions/List" },
+          { "$ref": "#/definitions/Table" },
+          { "$ref": "#/definitions/CodeBlock" },
+          { "$ref": "#/definitions/Paragraph" }
+        ]
+      },
+      "minItems": 1
+    }
   },
   "definitions": {
-    "List": { "type": "object", "required": ["type", "items"], "properties": { "type": { "const": "list" }, "items": { "type": "array", "items": { "type": "string" } } } },
-    "Table": { "type": "object", "required": ["type", "headers", "rows"], "properties": { "type": { "const": "table" }, "headers": { "type": "array", "items": { "type": "string" } }, "rows": { "type": "array", "items": { "type": "array", "items": { "type": "string" } } } } }
-  }
+    "List": {
+      "type": "object",
+      "required": ["type", "items"],
+      "properties": {
+        "type": { "const": "list" },
+        "items": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              { "type": "string" },
+              { "$ref": "#/definitions/DependencyEntry" }
+            ]
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "Table": {
+      "type": "object",
+      "required": ["type", "headers", "rows"],
+      "properties": {
+        "type": { "const": "table" },
+        "headers": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 2,
+          "maxItems": 7,
+          "description": "Expected columns: Package, Version, Scope, Registry, Purpose"
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": { "type": "string" },
+            "minItems": 2,
+            "maxItems": 7
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "CodeBlock": {
+      "type": "object",
+      "required": ["type", "language", "value"],
+      "properties": {
+        "type": { "const": "codeblock" },
+        "language": {
+          "type": "string",
+          "enum": ["toml", "yaml", "json", "ini", "cfg"],
+          "description": "Dependency manifest format"
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Inline dependency declaration in native format"
+        }
+      }
+    },
+    "Paragraph": {
+      "type": "object",
+      "required": ["type", "value"],
+      "properties": {
+        "type": { "const": "paragraph" },
+        "value": { "type": "string", "minLength": 1 }
+      }
+    },
+    "DependencyEntry": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "description": "Package name (npm, PyPI, crates.io, etc.)"
+        },
+        "version": {
+          "type": "string",
+          "default": "*",
+          "description": "Semver constraint: ^1.0.0, ~1.2.0, >=1.0.0 <2.0.0, exact 1.0.0"
+        },
+        "scope": {
+          "type": "string",
+          "enum": ["runtime", "build", "dev", "test", "optional", "peer"],
+          "default": "runtime",
+          "description": "When this dependency is needed"
+        },
+        "registry": {
+          "type": "string",
+          "enum": [
+            "npm",
+            "pypi",
+            "crates-io",
+            "go-proxy",
+            "maven-central",
+            "nuget",
+            "docker-hub",
+            "ghcr",
+            "custom"
+          ],
+          "default": "npm",
+          "description": "Package registry to resolve from"
+        },
+        "registry_url": {
+          "type": "string",
+          "format": "uri",
+          "description": "Custom registry URL when registry is 'custom'"
+        },
+        "purpose": {
+          "type": "string",
+          "maxLength": 256,
+          "description": "Why this dependency is needed"
+        },
+        "alternatives": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Acceptable alternative packages"
+        },
+        "constraints": {
+          "type": "object",
+          "properties": {
+            "min_python": { "type": "string", "description": "Minimum Python version" },
+            "min_node": { "type": "string", "description": "Minimum Node.js version" },
+            "platforms": {
+              "type": "array",
+              "items": { "type": "string", "enum": ["linux", "darwin", "win32", "any"] },
+              "default": ["any"]
+            },
+            "architectures": {
+              "type": "array",
+              "items": { "type": "string", "enum": ["x64", "arm64", "any"] },
+              "default": ["any"]
+            }
+          }
+        },
+        "optional": {
+          "type": "boolean",
+          "default": false,
+          "description": "If true, module works without this dependency"
+        },
+        "install_command": {
+          "type": "string",
+          "description": "Custom install command if not standard"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "examples": [
+    {
+      "type": "section",
+      "name": "Dependencies",
+      "content": [
+        {
+          "type": "list",
+          "items": [
+            { "name": "requests", "version": "^2.28.0", "scope": "runtime", "registry": "pypi", "purpose": "HTTP client for API calls" },
+            { "name": "pytest", "version": "^7.0.0", "scope": "test", "registry": "pypi" },
+            { "name": "lodash", "version": "^4.17.21", "scope": "runtime", "registry": "npm", "purpose": "Utility functions" }
+          ]
+        }
+      ]
+    }
+  ]
 }

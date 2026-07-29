@@ -2,15 +2,271 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://mam.dev/schema/v1.0.0/sections/python.schema.json",
   "title": "Python Section Schema",
+  "description": "Python code implementations — function definitions, class implementations, type hints, decorators, async support, and runnable code blocks. Code should be PEP 8 compliant.",
   "type": "object",
   "required": ["type", "name", "content"],
   "properties": {
     "type": { "type": "string", "const": "section" },
     "name": { "type": "string", "const": "Python" },
-    "content": { "type": "array", "items": { "oneOf": [{ "$ref": "#/definitions/CodeBlock" }, { "$ref": "#/definitions/Paragraph" }] }, "minItems": 1 }
+    "content": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          { "$ref": "#/definitions/CodeBlock" },
+          { "$ref": "#/definitions/Paragraph" },
+          { "$ref": "#/definitions/List" },
+          { "$ref": "#/definitions/Table" },
+          { "$ref": "#/definitions/PythonFunction" }
+        ]
+      },
+      "minItems": 1
+    }
   },
   "definitions": {
-    "CodeBlock": { "type": "object", "required": ["type", "language", "value"], "properties": { "type": { "const": "codeblock" }, "language": { "enum": ["python", "py"] }, "value": { "type": "string", "minLength": 1 } } },
-    "Paragraph": { "type": "object", "required": ["type", "value"], "properties": { "type": { "const": "paragraph" }, "value": { "type": "string" } } }
-  }
+    "CodeBlock": {
+      "type": "object",
+      "required": ["type", "language", "value"],
+      "properties": {
+        "type": { "const": "codeblock" },
+        "language": {
+          "type": "string",
+          "enum": ["python", "py", "python3", "py3", "ipython", "jupyter"],
+          "description": "Python language variant"
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Python source code"
+        },
+        "title": {
+          "type": "string",
+          "description": "Code block title or function name"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 512,
+          "description": "What this code does"
+        },
+        "runnable": {
+          "type": "boolean",
+          "default": true
+        },
+        "python_version": {
+          "type": "string",
+          "pattern": "^[23](\\.[0-9]+)?$",
+          "default": "3",
+          "description": "Minimum Python version required"
+        },
+        "dependencies": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Python packages this code block requires"
+        },
+        "expected_output": {
+          "type": "string",
+          "description": "Expected stdout when executed"
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Tags for filtering (e.g., 'async', 'type-hints', 'dataclass')"
+        },
+        "async": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether this code uses async/await"
+        },
+        "decorators_used": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Decorators used in this code block"
+        }
+      }
+    },
+    "Paragraph": {
+      "type": "object",
+      "required": ["type", "value"],
+      "properties": {
+        "type": { "const": "paragraph" },
+        "value": { "type": "string", "minLength": 1 }
+      }
+    },
+    "List": {
+      "type": "object",
+      "required": ["type", "items"],
+      "properties": {
+        "type": { "const": "list" },
+        "items": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        }
+      }
+    },
+    "Table": {
+      "type": "object",
+      "required": ["type", "headers", "rows"],
+      "properties": {
+        "type": { "const": "table" },
+        "headers": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "PythonFunction": {
+      "type": "object",
+      "required": ["type", "name"],
+      "properties": {
+        "type": { "const": "python-function" },
+        "name": {
+          "type": "string",
+          "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "Function or method name"
+        },
+        "signature": {
+          "type": "string",
+          "description": "Type signature (e.g., '(str, int) -> bool')"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 1024
+        },
+        "code": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Function implementation"
+        },
+        "decorators": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "description": "Decorator name (e.g., '@property', '@staticmethod', '@lru_cache')"
+          },
+          "description": "Decorators applied to this function"
+        },
+        "parameters": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/Parameter" },
+          "description": "Function parameters with type hints"
+        },
+        "return_type": {
+          "type": "string",
+          "description": "Return type annotation"
+        },
+        "raises": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Exceptions this function may raise"
+        },
+        "async": {
+          "type": "boolean",
+          "default": false
+        },
+        "generator": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether this is a generator function"
+        },
+        "classmethod": {
+          "type": "boolean",
+          "default": false
+        },
+        "staticmethod": {
+          "type": "boolean",
+          "default": false
+        },
+        "abstractmethod": {
+          "type": "boolean",
+          "default": false
+        },
+        "private": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether name starts with underscore"
+        },
+        "examples": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "maxItems": 5
+        }
+      },
+      "additionalProperties": false
+    },
+    "Parameter": {
+      "type": "object",
+      "required": ["name", "type"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$"
+        },
+        "type": {
+          "type": "string",
+          "description": "Type hint (e.g., 'str', 'Optional[int]', 'List[str]')"
+        },
+        "default": {
+          "description": "Default value (omit if required)"
+        },
+        "required": {
+          "type": "boolean",
+          "default": false
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "kind": {
+          "type": "string",
+          "enum": ["positional", "keyword", "positional-or-keyword", "variadic", "kw-only"],
+          "default": "positional-or-keyword"
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "type": "section",
+      "name": "Python",
+      "content": [
+        {
+          "type": "python-function",
+          "name": "process_items",
+          "signature": "(items: List[dict], config: Config) -> List[dict]",
+          "description": "Process a list of items through the configured pipeline",
+          "decorators": ["@dataclass"],
+          "parameters": [
+            { "name": "items", "type": "List[dict]", "required": true, "description": "Input items to process" },
+            { "name": "config", "type": "Config", "required": true, "description": "Processing configuration" }
+          ],
+          "return_type": "List[dict]",
+          "raises": ["ValueError", "ProcessingError"],
+          "async": false,
+          "code": "def process_items(items: List[dict], config: Config) -> List[dict]:\n    results = []\n    for item in items:\n        result = transform(item, config)\n        if result is not None:\n            results.append(result)\n    return results"
+        },
+        {
+          "type": "codeblock",
+          "language": "python",
+          "title": "Async data fetcher",
+          "async": true,
+          "python_version": "3.10",
+          "value": "import asyncio\nfrom typing import AsyncGenerator\n\nasync def fetch_data(url: str) -> AsyncGenerator[dict, None]:\n    async with aiohttp.ClientSession() as session:\n        async with session.get(url) as response:\n            async for chunk in response.content.iter_any():\n                yield parse_chunk(chunk)",
+          "dependencies": ["aiohttp"],
+          "tags": ["async", "http", "streaming"]
+        }
+      ]
+    }
+  ]
 }

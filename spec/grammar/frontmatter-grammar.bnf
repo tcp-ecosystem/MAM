@@ -1,0 +1,186 @@
+# MAM Frontmatter Grammar (BNF)
+# Version: 1.0.0
+# Complete YAML frontmatter specification for MAM modules
+
+# ============================================================================
+# Frontmatter Container
+# ============================================================================
+
+<frontmatter> ::= <fm_delimiter> <fm_content> <fm_delimiter>
+<fm_delimiter> ::= "---" NEWLINE
+<fm_content> ::= <fm_line>*
+<fm_line> ::= <fm_key_value> | <fm_list_item> | <fm_comment>
+            | <fm_blank_line> | <fm_nested_object> | <fm_multiline_string>
+
+# ============================================================================
+# Key-Value Pairs
+# ============================================================================
+
+<fm_key_value> ::= <fm_key> ":" <fm_value> NEWLINE
+<fm_key> ::= <fm_identifier> | <fm_quoted_key>
+<fm_quoted_key> ::= "\"" <fm_identifier> "\""
+<fm_identifier> ::= [a-zA-Z_][a-zA-Z0-9_\-]*
+
+# ============================================================================
+# Value Types
+# ============================================================================
+
+<fm_value> ::= <fm_string> | <fm_number> | <fm_boolean>
+             | <fm_null> | <fm_date> | <fm_list>
+             | <fm_inline_object> | <fm_reference>
+             | <fm_empty>
+
+# String values
+<fm_string> ::= <fm_plain_string> | <fm_quoted_string> | <fm_single_quoted>
+<fm_plain_string> ::= [^\n#"\']+
+<fm_quoted_string> ::= "\"" <fm_string_chars> "\""
+<fm_single_quoted> ::= "'" <fm_string_chars> "'"
+<fm_string_chars> ::= [^"]*
+
+# Number values
+<fm_number> ::= <fm_integer> | <fm_float> | <fm_hex> | <fm_scientific>
+<fm_integer> ::= "-"? DIGIT+
+<fm_float> ::= "-"? DIGIT+ "." DIGIT+
+<fm_hex> ::= "0x" [0-9a-fA-F]+
+<fm_scientific> ::= DIGIT+ ("." DIGIT+)? "e" "-"? DIGIT+
+
+# Boolean values
+<fm_boolean> ::= "true" | "false" | "yes" | "no" | "on" | "off"
+
+# Null values
+<fm_null> ::= "null" | "NULL" | "~" | ""
+
+# Date values
+<fm_date> ::= <fm_date_iso> | <fm_date_short>
+<fm_date_iso> ::= DIGIT DIGIT DIGIT DIGIT "-" DIGIT DIGIT "-" DIGIT DIGIT
+<fm_date_short> ::= DIGIT DIGIT "-" DIGIT DIGIT
+
+# Reference values
+<fm_reference> ::= "*"<fm_anchor_name>
+<fm_anchor_name> ::= <fm_identifier>
+
+# Empty value
+<fm_empty> ::= ""
+
+# ============================================================================
+# List Syntax
+# ============================================================================
+
+<fm_list> ::= <fm_flow_list> | <fm_block_list>
+<fm_flow_list> ::= "[" <fm_flow_item> ("," <fm_flow_item>)* "]"
+<fm_flow_item> ::= <fm_string> | <fm_number> | <fm_boolean> | <fm_null>
+<fm_block_list> ::= NEWLINE <fm_block_list_item>+
+<fm_block_list_item> ::= INDENT "-" <fm_block_value> NEWLINE
+<fm_block_value> ::= <fm_string> | <fm_number> | <fm_boolean> | <fm_null>
+                   | <fm_inline_object> | <fm_block_list_nested>
+<fm_block_list_nested> ::= NEWLINE <fm_block_list_item>+
+
+# ============================================================================
+# Nested Objects
+# ============================================================================
+
+<fm_nested_object> ::= NEWLINE <fm_object_entry>+
+<fm_object_entry> ::= INDENT <fm_key> ":" <fm_object_value> NEWLINE
+<fm_object_value> ::= " " <fm_string> | " " <fm_number> | " " <fm_boolean>
+                    | " " <fm_null> | NEWLINE <fm_object_entry>+
+                    | " " <fm_flow_list> | " " <fm_inline_object>
+
+<fm_inline_object> ::= "{" <fm_object_pair> ("," <fm_object_pair>)* "}"
+<fm_object_pair> ::= <fm_key> ":" <fm_value>
+
+# ============================================================================
+# Multiline Strings
+# ============================================================================
+
+<fm_multiline_string> ::= <fm_literal_block> | <fm_folded_block>
+<fm_literal_block> ::= <fm_key> ":|" NEWLINE <fm_literal_content>
+<fm_literal_content> ::= (<fm_literal_line>)*
+<fm_literal_line> ::= INDENT <text_content> NEWLINE
+<fm_folded_block> ::= <fm_key> ":>" NEWLINE <fm_folded_content>
+<fm_folded_content> ::= (<fm_folded_line>)*
+<fm_folded_line> ::= INDENT <text_content> NEWLINE
+
+# ============================================================================
+# Comments
+# ============================================================================
+
+<fm_comment> ::= "#" <fm_comment_text> NEWLINE
+<fm_comment_text> ::= [^\n]*
+
+# ============================================================================
+# Blank Lines
+# ============================================================================
+
+<fm_blank_line> ::= NEWLINE
+
+# ============================================================================
+# Standard MAM Frontmatter Fields
+# ============================================================================
+
+# Required fields
+<fm_field_name> ::= "name"
+<fm_field_version> ::= "version"
+<fm_field_type> ::= "type"
+
+# Metadata fields
+<fm_field_description> ::= "description"
+<fm_field_author> ::= "author"
+<fm_field_license> ::= "license"
+<fm_field_tags> ::= "tags"
+<fm_field_category> ::= "category"
+
+# Versioning fields
+<fm_field_created> ::= "created"
+<fm_field_updated> ::= "updated"
+<fm_field_deprecated> ::= "deprecated"
+
+# Dependency fields
+<fm_field_requires> ::= "requires"
+<fm_field_provides> ::= "provides"
+<fm_field_conflicts> ::= "conflicts"
+
+# Configuration fields
+<fm_field_config> ::= "config"
+<fm_field_env> ::= "env"
+<fm_field_secrets> ::= "secrets"
+
+# ============================================================================
+# Validation Patterns (embedded in grammar)
+# ============================================================================
+
+# Name: lowercase, hyphens, 3-64 chars
+<fm_name_valid> ::= [a-z][a-z0-9\-]{2,63}
+
+# Version: semver
+<fm_version_valid> ::= DIGIT+ "." DIGIT+ "." DIGIT+
+                     ("-" <fm_prerelease>)?
+                     ("+" <fm_build>)?
+<fm_prerelease> ::= <fm_identifier> ("." <fm_identifier>)*
+<fm_build> ::= <fm_identifier> ("." <fm_identifier>)*
+
+# Type: must be a valid module type
+<fm_type_valid> ::= "module" | "agent" | "tool" | "memory" | "workflow"
+                  | "team" | "policy" | "system" | "service" | "component"
+
+# License: SPDX identifier
+<fm_license_valid> ::= "MIT" | "Apache-2.0" | "GPL-3.0" | "BSD-2-Clause"
+                     | "BSD-3-Clause" | "ISC" | "MPL-2.0" | "Proprietary"
+
+# Tags: lowercase, hyphens
+<fm_tag_valid> ::= [a-z][a-z0-9\-]*
+
+# Date format
+<fm_date_valid> ::= DIGIT DIGIT DIGIT DIGIT "-" DIGIT DIGIT "-" DIGIT DIGIT
+                   ("T" DIGIT DIGIT ":" DIGIT DIGIT ":" DIGIT DIGIT
+                   ("Z" | ("+" | "-") DIGIT DIGIT ":" DIGIT DIGIT)?)?
+
+# ============================================================================
+# Token Definitions
+# ============================================================================
+
+IDENTIFIER ::= [a-zA-Z_][a-zA-Z0-9_]*
+TEXT ::= [^\n]+
+NEWLINE ::= "\n"
+INDENT ::= ("  " | "\t")+
+DIGIT ::= [0-9]
+SPACE ::= " " | "\t"

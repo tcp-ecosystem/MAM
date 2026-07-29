@@ -2,15 +2,156 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://mam.dev/schema/v1.0.0/sections/capabilities.schema.json",
   "title": "Capabilities Section Schema",
+  "description": "Declares what the module can do — its feature surface, runtime abilities, and integration points. Used by the orchestrator for capability-based routing and dependency resolution.",
   "type": "object",
   "required": ["type", "name", "content"],
   "properties": {
     "type": { "type": "string", "const": "section" },
     "name": { "type": "string", "const": "Capabilities" },
-    "content": { "type": "array", "items": { "oneOf": [{ "$ref": "#/definitions/List" }, { "$ref": "#/definitions/Table" }] }, "minItems": 0 }
+    "content": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          { "$ref": "#/definitions/List" },
+          { "$ref": "#/definitions/Table" },
+          { "$ref": "#/definitions/Paragraph" }
+        ]
+      },
+      "minItems": 1,
+      "description": "Capabilities declared by this module — each item is a list, table, or paragraph describing a capability"
+    }
   },
   "definitions": {
-    "List": { "type": "object", "required": ["type", "items"], "properties": { "type": { "const": "list" }, "items": { "type": "array", "items": { "type": "string" } } } },
-    "Table": { "type": "object", "required": ["type", "headers", "rows"], "properties": { "type": { "const": "table" }, "headers": { "type": "array", "items": { "type": "string" } }, "rows": { "type": "array", "items": { "type": "array", "items": { "type": "string" } } } } }
-  }
+    "List": {
+      "type": "object",
+      "required": ["type", "items"],
+      "properties": {
+        "type": { "const": "list" },
+        "items": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              { "type": "string" },
+              { "$ref": "#/definitions/CapabilityEntry" }
+            ]
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "Table": {
+      "type": "object",
+      "required": ["type", "headers", "rows"],
+      "properties": {
+        "type": { "const": "table" },
+        "headers": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 2,
+          "maxItems": 6,
+          "description": "Expected columns: Capability, Category, Level, Status"
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": { "type": "string" },
+            "minItems": 2,
+            "maxItems": 6
+          },
+          "minItems": 1
+        },
+        "caption": {
+          "type": "string",
+          "description": "Optional table caption for accessibility"
+        }
+      }
+    },
+    "Paragraph": {
+      "type": "object",
+      "required": ["type", "value"],
+      "properties": {
+        "type": { "const": "paragraph" },
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Free-text capability description"
+        }
+      }
+    },
+    "CapabilityEntry": {
+      "type": "object",
+      "required": ["name", "category"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "Capability identifier (kebab-case preferred)"
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "core",
+            "integration",
+            "computation",
+            "io",
+            "network",
+            "ai",
+            "data",
+            "security",
+            "utility",
+            "domain"
+          ],
+          "description": "Capability category for routing and filtering"
+        },
+        "level": {
+          "type": "string",
+          "enum": ["basic", "standard", "advanced", "expert"],
+          "default": "standard",
+          "description": "Complexity or privilege level required"
+        },
+        "status": {
+          "type": "string",
+          "enum": ["stable", "beta", "experimental", "deprecated"],
+          "default": "stable",
+          "description": "Maturity of this capability"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 512,
+          "description": "Human-readable capability description"
+        },
+        "requires": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Other capabilities this one depends on"
+        },
+        "examples": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "maxItems": 5,
+          "description": "Example invocations or use cases"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "examples": [
+    {
+      "type": "section",
+      "name": "Capabilities",
+      "content": [
+        {
+          "type": "list",
+          "items": [
+            { "name": "code-generation", "category": "ai", "level": "standard", "status": "stable", "description": "Generate code from natural language prompts" },
+            { "name": "file-read", "category": "io", "level": "basic", "status": "stable", "description": "Read files from the local filesystem" },
+            { "name": "network-request", "category": "network", "level": "advanced", "status": "beta", "description": "Make outbound HTTP requests" }
+          ]
+        }
+      ]
+    }
+  ]
 }

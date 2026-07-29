@@ -2,15 +2,184 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://mam.dev/schema/v1.0.0/sections/exports.schema.json",
   "title": "Exports Section Schema",
+  "description": "Declares the public API surface of the module — functions, classes, constants, and types that other modules can import.",
   "type": "object",
   "required": ["type", "name", "content"],
   "properties": {
     "type": { "type": "string", "const": "section" },
     "name": { "type": "string", "const": "Exports" },
-    "content": { "type": "array", "items": { "oneOf": [{ "$ref": "#/definitions/List" }, { "$ref": "#/definitions/Table" }] }, "minItems": 0 }
+    "content": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          { "$ref": "#/definitions/List" },
+          { "$ref": "#/definitions/Table" },
+          { "$ref": "#/definitions/CodeBlock" },
+          { "$ref": "#/definitions/Paragraph" }
+        ]
+      },
+      "minItems": 1
+    }
   },
   "definitions": {
-    "List": { "type": "object", "required": ["type", "items"], "properties": { "type": { "const": "list" }, "items": { "type": "array", "items": { "type": "string" } } } },
-    "Table": { "type": "object", "required": ["type", "headers", "rows"], "properties": { "type": { "const": "table" }, "headers": { "type": "array", "items": { "type": "string" } }, "rows": { "type": "array", "items": { "type": "array", "items": { "type": "string" } } } } }
-  }
+    "List": {
+      "type": "object",
+      "required": ["type", "items"],
+      "properties": {
+        "type": { "const": "list" },
+        "items": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              { "type": "string" },
+              { "$ref": "#/definitions/ExportEntry" }
+            ]
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "Table": {
+      "type": "object",
+      "required": ["type", "headers", "rows"],
+      "properties": {
+        "type": { "const": "table" },
+        "headers": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 2,
+          "maxItems": 6,
+          "description": "Expected columns: Name, Type, Visibility, Signature, Description"
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": { "type": "string" },
+            "minItems": 2,
+            "maxItems": 6
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "CodeBlock": {
+      "type": "object",
+      "required": ["type", "language", "value"],
+      "properties": {
+        "type": { "const": "codeblock" },
+        "language": {
+          "type": "string",
+          "enum": ["python", "py", "javascript", "js", "typescript", "ts", "rust", "go"]
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Export declarations in native syntax"
+        }
+      }
+    },
+    "Paragraph": {
+      "type": "object",
+      "required": ["type", "value"],
+      "properties": {
+        "type": { "const": "paragraph" },
+        "value": { "type": "string", "minLength": 1 }
+      }
+    },
+    "ExportEntry": {
+      "type": "object",
+      "required": ["name", "kind"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "Exported symbol name"
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "function",
+            "class",
+            "constant",
+            "type",
+            "interface",
+            "enum",
+            "variable",
+            "module",
+            "default"
+          ],
+          "description": "What kind of symbol is exported"
+        },
+        "visibility": {
+          "type": "string",
+          "enum": ["public", "restricted", "experimental"],
+          "default": "public",
+          "description": "Access level for consumers"
+        },
+        "signature": {
+          "type": "string",
+          "description": "Type signature (e.g., '(str, int) -> bool')"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 512,
+          "description": "What this export provides"
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "api",
+            "utility",
+            "config",
+            "model",
+            "schema",
+            "helper",
+            "factory",
+            "decorator"
+          ],
+          "description": "Functional category for discovery"
+        },
+        "deprecated": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether this export is deprecated"
+        },
+        "since": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+          "description": "Version when this export was introduced"
+        },
+        "replaces": {
+          "type": "string",
+          "description": "Name of export this one replaces (if renamed)"
+        },
+        "examples": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "maxItems": 3,
+          "description": "Usage examples"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "examples": [
+    {
+      "type": "section",
+      "name": "Exports",
+      "content": [
+        {
+          "type": "list",
+          "items": [
+            { "name": "process_data", "kind": "function", "visibility": "public", "signature": "(DataFrame, dict) -> DataFrame", "category": "api", "description": "Main processing pipeline" },
+            { "name": "Config", "kind": "class", "visibility": "public", "category": "config", "description": "Module configuration class" },
+            { "name": "VERSION", "kind": "constant", "visibility": "public", "signature": "str", "category": "utility", "description": "Module version string" }
+          ]
+        }
+      ]
+    }
+  ]
 }

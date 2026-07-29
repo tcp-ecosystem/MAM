@@ -1,8 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://mam.dev/schema/v1.0.0/mam.schema.json",
+  "$id": "https://mam.dev/schema/v2.0.0/mam.schema.json",
   "title": "MAM Module Schema",
-  "description": "JSON Schema for validating MAM (Markdown as Module) documents",
+  "description": "JSON Schema for validating MAM (Markdown as Module) documents. Supports v1 and v2 DSL with module declarations, edge syntax, and enhanced section validation.",
   "type": "object",
   "required": ["frontmatter", "sections"],
   "properties": {
@@ -18,6 +18,27 @@
     },
     "location": {
       "$ref": "#/definitions/SourceLocation"
+    },
+    "dsl_version": {
+      "type": "string",
+      "enum": ["1.0", "2.0"],
+      "default": "1.0",
+      "description": "DSL version — v2 enables module declarations and edge syntax"
+    },
+    "module_declarations": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/ModuleDeclaration" },
+      "description": "v2: Inline module declarations for sub-modules and compositions"
+    },
+    "edges": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/Edge" },
+      "description": "v2: Dataflow edges between modules (input/output wiring)"
+    },
+    "compositions": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/Composition" },
+      "description": "v2: Named module compositions (pipelines, graphs)"
     }
   },
   "definitions": {
@@ -79,7 +100,7 @@
           "type": "array",
           "items": {
             "type": "string",
-            "enum": ["network", "filesystem", "environment", "exec", "memory"]
+            "enum": ["network", "filesystem", "environment", "exec", "memory", "database", "secrets"]
           },
           "description": "Required permissions"
         },
@@ -94,8 +115,61 @@
         },
         "mam_version": {
           "type": "string",
-          "default": "1.0.0",
+          "default": "2.0.0",
           "description": "MAM specification version"
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "data-processing", "api-client", "cli-tool", "library",
+            "framework", "middleware", "adapter", "generator",
+            "analyzer", "transformer", "validator", "orchestrator",
+            "utility", "integration", "infrastructure"
+          ],
+          "description": "Module category for discovery"
+        },
+        "stability": {
+          "type": "string",
+          "enum": ["experimental", "beta", "stable", "mature", "deprecated"],
+          "default": "stable"
+        },
+        "min_mam_version": {
+          "type": "string",
+          "description": "Minimum MAM runtime version required"
+        },
+        "max_mam_version": {
+          "type": "string",
+          "description": "Maximum MAM runtime version supported"
+        },
+        "homepage": {
+          "type": "string",
+          "format": "uri",
+          "description": "Module homepage URL"
+        },
+        "documentation": {
+          "type": "string",
+          "format": "uri",
+          "description": "Documentation URL"
+        },
+        "deprecated_reason": {
+          "type": "string",
+          "description": "Why this module is deprecated (if stability=deprecated)"
+        },
+        "replaces": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{0,63}$",
+          "description": "Module this one replaces (if renamed)"
+        },
+        "compatibility": {
+          "type": "object",
+          "properties": {
+            "min_python": { "type": "string" },
+            "min_node": { "type": "string" },
+            "platforms": {
+              "type": "array",
+              "items": { "type": "string", "enum": ["linux", "darwin", "win32", "any"] }
+            }
+          }
         }
       },
       "additionalProperties": false
@@ -107,26 +181,10 @@
         "name": {
           "type": "string",
           "enum": [
-            "Purpose",
-            "Inputs",
-            "Outputs",
-            "Rules",
-            "Workflow",
-            "Mermaid",
-            "Python",
-            "JavaScript",
-            "TypeScript",
-            "Prompt",
-            "Memory",
-            "Examples",
-            "Tests",
-            "References",
-            "Dependencies",
-            "Exports",
-            "Imports",
-            "Plugins",
-            "Permissions",
-            "Capabilities"
+            "Purpose", "Inputs", "Outputs", "Rules", "Workflow",
+            "Mermaid", "Python", "JavaScript", "TypeScript", "Prompt",
+            "Memory", "Examples", "Tests", "References", "Dependencies",
+            "Exports", "Imports", "Plugins", "Permissions", "Capabilities"
           ],
           "description": "Section type"
         },
@@ -139,6 +197,15 @@
         },
         "location": {
           "$ref": "#/definitions/SourceLocation"
+        },
+        "condition": {
+          "type": "string",
+          "description": "v2: Conditional section inclusion (e.g., 'runtime == python')"
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "v2: Section-level tags for filtering"
         }
       },
       "additionalProperties": false
@@ -156,144 +223,214 @@
       "type": "object",
       "required": ["type", "value"],
       "properties": {
-        "type": {
-          "type": "string",
-          "const": "paragraph"
-        },
-        "value": {
-          "type": "string"
-        },
-        "location": {
-          "$ref": "#/definitions/SourceLocation"
-        }
+        "type": { "type": "string", "const": "paragraph" },
+        "value": { "type": "string" },
+        "location": { "$ref": "#/definitions/SourceLocation" }
       }
     },
     "List": {
       "type": "object",
       "required": ["type", "items"],
       "properties": {
-        "type": {
-          "type": "string",
-          "const": "list"
-        },
+        "type": { "type": "string", "const": "list" },
         "items": {
           "type": "array",
-          "items": {
-            "type": "string"
-          },
+          "items": { "type": "string" },
           "minItems": 1
         },
-        "location": {
-          "$ref": "#/definitions/SourceLocation"
-        }
+        "location": { "$ref": "#/definitions/SourceLocation" }
       }
     },
     "CodeBlock": {
       "type": "object",
       "required": ["type", "language", "value"],
       "properties": {
-        "type": {
-          "type": "string",
-          "const": "codeblock"
-        },
+        "type": { "type": "string", "const": "codeblock" },
         "language": {
           "type": "string",
           "enum": [
             "python", "javascript", "js", "typescript", "ts",
-            "rust", "go", "shell", "bash", "yaml", "json", "mermaid"
+            "rust", "go", "shell", "bash", "yaml", "json", "mermaid",
+            "toml", "sql", "ruby", "java", "c", "cpp"
           ]
         },
-        "value": {
-          "type": "string"
-        },
+        "value": { "type": "string" },
         "metadata": {
           "type": "object",
-          "additionalProperties": {
-            "type": "string"
-          }
+          "additionalProperties": { "type": "string" }
         },
-        "location": {
-          "$ref": "#/definitions/SourceLocation"
-        }
+        "location": { "$ref": "#/definitions/SourceLocation" },
+        "title": { "type": "string" },
+        "runnable": { "type": "boolean", "default": true }
       }
     },
     "Table": {
       "type": "object",
       "required": ["type", "headers", "rows"],
       "properties": {
-        "type": {
-          "type": "string",
-          "const": "table"
-        },
+        "type": { "type": "string", "const": "table" },
         "headers": {
           "type": "array",
-          "items": {
-            "type": "string"
-          },
+          "items": { "type": "string" },
           "minItems": 1
         },
         "rows": {
           "type": "array",
           "items": {
             "type": "array",
-            "items": {
-              "type": "string"
-            }
+            "items": { "type": "string" }
           }
         },
-        "location": {
-          "$ref": "#/definitions/SourceLocation"
-        }
+        "location": { "$ref": "#/definitions/SourceLocation" },
+        "caption": { "type": "string" }
       }
     },
     "Mermaid": {
       "type": "object",
       "required": ["type", "value"],
       "properties": {
-        "type": {
-          "type": "string",
-          "const": "mermaid"
-        },
-        "value": {
-          "type": "string"
-        },
-        "location": {
-          "$ref": "#/definitions/SourceLocation"
-        }
+        "type": { "type": "string", "const": "mermaid" },
+        "value": { "type": "string" },
+        "location": { "$ref": "#/definitions/SourceLocation" }
       }
     },
     "SourceLocation": {
       "type": "object",
       "required": ["start", "end"],
       "properties": {
-        "start": {
-          "$ref": "#/definitions/Position"
-        },
-        "end": {
-          "$ref": "#/definitions/Position"
-        },
-        "source": {
-          "type": "string"
-        }
+        "start": { "$ref": "#/definitions/Position" },
+        "end": { "$ref": "#/definitions/Position" },
+        "source": { "type": "string" }
       }
     },
     "Position": {
       "type": "object",
       "required": ["line", "column", "offset"],
       "properties": {
-        "line": {
-          "type": "integer",
-          "minimum": 1
-        },
-        "column": {
-          "type": "integer",
-          "minimum": 0
-        },
-        "offset": {
-          "type": "integer",
-          "minimum": 0
-        }
+        "line": { "type": "integer", "minimum": 1 },
+        "column": { "type": "integer", "minimum": 0 },
+        "offset": { "type": "integer", "minimum": 0 }
       }
+    },
+    "ModuleDeclaration": {
+      "type": "object",
+      "required": ["name", "runtime"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{0,63}$",
+          "description": "Sub-module identifier"
+        },
+        "runtime": {
+          "type": "string",
+          "enum": ["python", "javascript", "typescript", "rust", "go", "shell"]
+        },
+        "source": {
+          "type": "string",
+          "description": "Path or URI to module source"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(-[a-zA-Z0-9.]+)?(\\+[a-zA-Z0-9.]+)?$"
+        },
+        "inputs": {
+          "type": "object",
+          "description": "Declared input parameters for this sub-module"
+        },
+        "outputs": {
+          "type": "object",
+          "description": "Declared output parameters for this sub-module"
+        },
+        "config": {
+          "type": "object",
+          "description": "Configuration for this sub-module"
+        },
+        "condition": {
+          "type": "string",
+          "description": "Condition for including this sub-module"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Edge": {
+      "type": "object",
+      "required": ["from", "to"],
+      "properties": {
+        "from": {
+          "type": "string",
+          "description": "Source module.output_field or section.name"
+        },
+        "to": {
+          "type": "string",
+          "description": "Target module.input_field or section.name"
+        },
+        "transform": {
+          "type": "string",
+          "description": "Optional transformation expression"
+        },
+        "condition": {
+          "type": "string",
+          "description": "Conditional edge — only wire when true"
+        },
+        "label": {
+          "type": "string",
+          "description": "Human-readable edge label"
+        },
+        "async": {
+          "type": "boolean",
+          "default": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "Composition": {
+      "type": "object",
+      "required": ["name", "modules"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "Composition name"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 512
+        },
+        "modules": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["module"],
+            "properties": {
+              "module": { "type": "string" },
+              "alias": { "type": "string" },
+              "config": { "type": "object" }
+            }
+          },
+          "minItems": 1
+        },
+        "edges": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/Edge" },
+          "description": "Edges within this composition"
+        },
+        "execution_mode": {
+          "type": "string",
+          "enum": ["sequential", "parallel", "dag", "event-driven"],
+          "default": "sequential"
+        },
+        "on_error": {
+          "type": "string",
+          "enum": ["fail", "skip", "compensate"],
+          "default": "fail"
+        },
+        "timeout": {
+          "type": "string",
+          "pattern": "^[0-9]+(s|m|h|d)$"
+        }
+      },
+      "additionalProperties": false
     }
   }
 }

@@ -1,0 +1,134 @@
+# MAM Code Block Grammar (BNF)
+# Version: 1.0.0
+# Complete code block specification for MAM modules
+
+# ============================================================================
+# Code Block Container
+# ============================================================================
+
+<code_block> ::= <code_fence_open> <code_body> <code_fence_close>
+<code_fence_open> ::= <fence_char> <fence_min> <code_metadata>? NEWLINE
+<code_fence_close> ::= <fence_char> <fence_min> NEWLINE
+<fence_char> ::= "`" | "~"
+<fence_min> ::= <fence_char> <fence_char> <fence_char>
+
+# ============================================================================
+# Language Identifier
+# ============================================================================
+
+<code_language> ::= <lang_name> | <lang_alias>
+<lang_name> ::= "python" | "javascript" | "typescript" | "rust" | "go"
+              | "shell" | "bash" | "yaml" | "json" | "mermaid"
+              | "markdown" | "html" | "css" | "sql" | "ruby" | "java"
+              | "c" | "cpp" | "csharp" | "php" | "swift" | "kotlin"
+              | "dart" | "lua" | "r" | "perl" | "toml" | "xml"
+              | "dockerfile" | "makefile" | "graphql" | "proto"
+<lang_alias> ::= "py" | "js" | "ts" | "rs" | "sh" | "yml" | "md"
+               | "cs" | "objc" | "rs" | "kt"
+<custom_lang> ::= [a-zA-Z_][a-zA-Z0-9_\-]*
+
+# ============================================================================
+# Code Metadata (MAM annotations)
+# ============================================================================
+
+<code_metadata> ::= <metadata_comment>+
+<metadata_comment> ::= <metadata_prefix> <metadata_entry>
+<metadata_prefix> ::= "#" | "//" | "--" | "/*" | "<!--"
+<metadata_entry> ::= <metadata_key> "=" <metadata_value>
+<metadata_key> ::= <metadata_standard> | <metadata_custom>
+<metadata_standard> ::= "mam" "." <standard_field>
+<standard_field> ::= "title" | "author" | "version" | "description"
+                   | "tags" | "export" | "import" | "requires"
+                   | "timeout" | "retries" | "cache" | "readonly"
+<metadata_custom> ::= [a-zA-Z_][a-zA-Z0-9_]*
+<metadata_value> ::= <metadata_string> | <metadata_number>
+                   | <metadata_boolean> | <metadata_list>
+<metadata_string> ::= "\"" [^"]* "\""
+<metadata_number> ::= [0-9]+ ("." [0-9]+)?
+<metadata_boolean> ::= "true" | "false"
+<metadata_list> ::= "[" <metadata_list_item> ("," <metadata_list_item>)* "]"
+<metadata_list_item> ::= <metadata_string> | <metadata_number>
+
+# ============================================================================
+# Code Body Content
+# ============================================================================
+
+<code_body> ::= <code_line>*
+<code_line> ::= <code_content> NEWLINE
+<code_content> ::= [^~]* (?! <fence_char> <fence_char> <fence_char>)
+
+# ============================================================================
+# Nested Code Blocks
+# ============================================================================
+
+<nested_code_block> ::= <nested_fence_open> <nested_body> <nested_fence_close>
+<nested_fence_open> ::= <outer_fence_char> <nested_fence_level> NEWLINE
+<nested_fence_close> ::= <outer_fence_char> <nested_fence_level> NEWLINE
+<outer_fence_char> ::= "`" | "~"
+<nested_fence_level> ::= <fence_char> <fence_char> <fence_char> <fence_char>
+
+# ============================================================================
+# Multi-Language Blocks
+# ============================================================================
+
+<multi_lang_block> ::= <multi_lang_open> <multi_lang_body> <multi_lang_close>
+<multi_lang_open> ::= "```" <lang_list> NEWLINE
+<lang_list> ::= <lang_entry> ("," <lang_entry>)+
+<lang_entry> ::= <lang_name> ("=" <lang_alias>)?
+<multi_lang_body> ::= <multi_lang_section>+
+<multi_lang_section> ::= <lang_header> <code_content>+
+<lang_header> ::= "```" <lang_name> NEWLINE
+<multi_lang_close> ::= "```" NEWLINE
+
+# ============================================================================
+# Code Content Types
+# ============================================================================
+
+<code_line_comment> ::= <comment_style> <comment_text> NEWLINE
+<comment_style> ::= "#" | "//" | "--" | "/*" | "<!--" | ";"
+<comment_text> ::= [^\n]*
+
+<code_line_blank> ::= NEWLINE
+<code_line_code> ::= <code_chars> NEWLINE
+<code_chars> ::= [^\n]+
+
+# ============================================================================
+# Special Code Block Types
+# ============================================================================
+
+<diff_block> ::= "```diff" NEWLINE <diff_content> "```" NEWLINE
+<diff_content> ::= <diff_line>*
+<diff_line> ::= <diff_prefix> <code_content> NEWLINE
+<diff_prefix> ::= "+" | "-" | " " | "@@"
+
+<output_block> ::= "```output" NEWLINE <output_content> "```" NEWLINE
+<output_content> ::= <output_line>*
+<output_line> ::= <code_content> NEWLINE
+
+<result_block> ::= "```result" NEWLINE <result_content> "```" NEWLINE
+<result_content> ::= <result_line>*
+<result_line> ::= <code_content> NEWLINE
+
+# ============================================================================
+# Inline Code
+# ============================================================================
+
+<inline_code> ::= <backtick_pair> <inline_content> <backtick_pair>
+<backtick_pair> ::= "`"
+<inline_content> ::= [^`]+
+
+<inline_code_extended> ::= <double_backtick> <extended_content> <double_backtick>
+<double_backtick> ::= "``"
+<extended_content> ::= [^`]+ (?! "`")
+
+# ============================================================================
+# Token Definitions
+# ============================================================================
+
+IDENTIFIER ::= [a-zA-Z_][a-zA-Z0-9_]*
+TEXT ::= [^\n]+
+NEWLINE ::= "\n"
+INDENT ::= ("  " | "\t")+
+DIGIT ::= [0-9]
+FENCE_BACKTICK ::= "`{3,}"
+FENCE_TILDE ::= "~{3,}"

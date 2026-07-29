@@ -2,16 +2,231 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://mam.dev/schema/v1.0.0/sections/memory.schema.json",
   "title": "Memory Section Schema",
+  "description": "Declares how the module manages state — cache backends, TTL policies, storage scopes, and serialization formats. Used by the orchestrator for memory allocation and lifecycle management.",
   "type": "object",
   "required": ["type", "name", "content"],
   "properties": {
     "type": { "type": "string", "const": "section" },
     "name": { "type": "string", "const": "Memory" },
-    "content": { "type": "array", "items": { "oneOf": [{ "$ref": "#/definitions/Paragraph" }, { "$ref": "#/definitions/List" }, { "$ref": "#/definitions/CodeBlock" }] }, "minItems": 0 }
+    "content": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          { "$ref": "#/definitions/Paragraph" },
+          { "$ref": "#/definitions/List" },
+          { "$ref": "#/definitions/CodeBlock" },
+          { "$ref": "#/definitions/Table" },
+          { "$ref": "#/definitions/MemoryConfig" }
+        ]
+      },
+      "minItems": 1
+    }
   },
   "definitions": {
-    "Paragraph": { "type": "object", "required": ["type", "value"], "properties": { "type": { "const": "paragraph" }, "value": { "type": "string" } } },
-    "List": { "type": "object", "required": ["type", "items"], "properties": { "type": { "const": "list" }, "items": { "type": "array", "items": { "type": "string" } } } },
-    "CodeBlock": { "type": "object", "required": ["type", "language", "value"], "properties": { "type": { "const": "codeblock" }, "language": { "enum": ["json", "yaml"] }, "value": { "type": "string" } } }
-  }
+    "Paragraph": {
+      "type": "object",
+      "required": ["type", "value"],
+      "properties": {
+        "type": { "const": "paragraph" },
+        "value": { "type": "string", "minLength": 1 }
+      }
+    },
+    "List": {
+      "type": "object",
+      "required": ["type", "items"],
+      "properties": {
+        "type": { "const": "list" },
+        "items": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              { "type": "string" },
+              { "$ref": "#/definitions/MemoryEntry" }
+            ]
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "CodeBlock": {
+      "type": "object",
+      "required": ["type", "language", "value"],
+      "properties": {
+        "type": { "const": "codeblock" },
+        "language": {
+          "type": "string",
+          "enum": ["json", "yaml", "toml"]
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Memory configuration in structured format"
+        }
+      }
+    },
+    "Table": {
+      "type": "object",
+      "required": ["type", "headers", "rows"],
+      "properties": {
+        "type": { "const": "table" },
+        "headers": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 2,
+          "maxItems": 6
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": { "type": "string" },
+            "minItems": 2,
+            "maxItems": 6
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "MemoryConfig": {
+      "type": "object",
+      "required": ["type", "backend"],
+      "properties": {
+        "type": { "const": "memory-config" },
+        "backend": {
+          "type": "string",
+          "enum": [
+            "memory",
+            "redis",
+            "memcached",
+            "sqlite",
+            "postgresql",
+            "file",
+            "s3",
+            "gcs",
+            "azure-blob",
+            "dynamodb",
+            "elasticsearch",
+            "none"
+          ],
+          "description": "Storage backend"
+        },
+        "scope": {
+          "type": "string",
+          "enum": [
+            "request",
+            "session",
+            "module",
+            "global",
+            "user",
+            "tenant",
+            "isolated"
+          ],
+          "default": "module",
+          "description": "Memory isolation scope"
+        },
+        "ttl": {
+          "description": "Time-to-live — string pattern, integer seconds, or null for no expiry"
+        },
+        "max_size": {
+          "type": "string",
+          "description": "Maximum memory size (e.g., '100MB', '1GB', '10000 entries')"
+        },
+        "format": {
+          "type": "string",
+          "enum": ["json", "pickle", "msgpack", "protobuf", "raw", "parquet"],
+          "default": "json",
+          "description": "Serialization format"
+        },
+        "eviction": {
+          "type": "string",
+          "enum": ["lru", "lfu", "fifo", "random", "ttl", "none"],
+          "default": "lru",
+          "description": "Eviction policy when memory is full"
+        },
+        "persistence": {
+          "type": "string",
+          "enum": ["none", "write-through", "write-behind", "write-around"],
+          "default": "none",
+          "description": "Persistence strategy"
+        },
+        "encryption": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether to encrypt stored data"
+        },
+        "compression": {
+          "type": "string",
+          "enum": ["none", "gzip", "lz4", "zstd", "snappy"],
+          "default": "none"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 256
+        }
+      },
+      "additionalProperties": false
+    },
+    "MemoryEntry": {
+      "type": "object",
+      "required": ["key", "type"],
+      "properties": {
+        "key": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "description": "Cache key name"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["cache", "state", "session", "context", "queue", "counter", "lock"],
+          "description": "Memory usage pattern"
+        },
+        "ttl": {
+          "oneOf": [
+            { "type": "string", "pattern": "^[0-9]+(s|m|h|d|w)$", "description": "Duration string (e.g., '30s', '5m', '2h', '1d', '1w')" },
+            { "type": "integer", "minimum": -1, "description": "Seconds (-1 for no expiry)" },
+            { "type": "null" }
+          ],
+          "default": "5m",
+          "description": "Time-to-live for this entry"
+        },
+        "scope": {
+          "type": "string",
+          "enum": ["request", "session", "module", "global", "user"],
+          "default": "module"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 256
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "examples": [
+    {
+      "type": "section",
+      "name": "Memory",
+      "content": [
+        {
+          "type": "memory-config",
+          "backend": "redis",
+          "scope": "session",
+          "ttl": "30m",
+          "max_size": "256MB",
+          "format": "json",
+          "eviction": "lru",
+          "encryption": true,
+          "description": "Session-level Redis cache for user context"
+        },
+        {
+          "type": "list",
+          "items": [
+            { "key": "search_results", "type": "cache", "ttl": "5m", "scope": "request", "description": "Cached search results" },
+            { "key": "user_context", "type": "session", "ttl": "1h", "scope": "user", "description": "Per-user session state" }
+          ]
+        }
+      ]
+    }
+  ]
 }

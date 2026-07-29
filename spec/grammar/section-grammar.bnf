@@ -1,0 +1,270 @@
+# MAM Section Content Grammar (BNF)
+# Version: 1.0.0
+# Detailed section content rules for all 19 section types
+
+# ============================================================================
+# Section Container
+# ============================================================================
+
+<section> ::= <section_header> <section_content>
+<section_header> ::= <section_marker> <section_name> NEWLINE
+<section_marker> ::= "##" | "###" | "####"
+<section_name> ::= IDENTIFIER | CUSTOM_NAME
+<section_content> ::= <content_element>*
+<content_element> ::= <paragraph> | <list> | <code_block> | <table>
+                    | <blockquote> | <horizontal_rule> | <mermaid_block>
+                    | <nested_section>
+
+# ============================================================================
+# Type Section
+# ============================================================================
+
+<type_content> ::= <type_value> NEWLINE
+<type_value> ::= <module_type>
+<module_type> ::= "module" | "agent" | "tool" | "memory" | "workflow"
+                | "team" | "policy" | "system" | "service" | "component"
+                | "resource" | "interface" | "contract" | "plugin"
+                | "extension" | "runtime" | "package" | "repository"
+                | "documentation"
+
+# ============================================================================
+# Role Section
+# ============================================================================
+
+<role_content> ::= <role_description> NEWLINE
+<role_description> ::= <text_line>+
+
+# ============================================================================
+# Goal Section
+# ============================================================================
+
+<goal_content> ::= <goal_description> NEWLINE
+<goal_description> ::= <text_line>+
+
+# ============================================================================
+# Description Section
+# ============================================================================
+
+<description_content> ::= <content_element>*
+
+# ============================================================================
+# Provider Section
+# ============================================================================
+
+<provider_content> ::= <provider_name> NEWLINE
+<provider_name> ::= TEXT
+
+# ============================================================================
+# Format Section
+# ============================================================================
+
+<format_content> ::= <format_value> NEWLINE
+<format_value> ::= "vector" | "key-value" | "relational" | "graph" | "document"
+
+# ============================================================================
+# Backend Section
+# ============================================================================
+
+<backend_content> ::= <backend_value> NEWLINE
+<backend_value> ::= TEXT
+
+# ============================================================================
+# Scope Section
+# ============================================================================
+
+<scope_content> ::= <scope_value> NEWLINE
+<scope_value> ::= "module" | "workspace" | "global"
+
+# ============================================================================
+# TTL Section
+# ============================================================================
+
+<ttl_content> ::= <duration> NEWLINE
+<duration> ::= NUMBER ("h" | "m" | "s" | "d")
+
+# ============================================================================
+# Requires Section
+# ============================================================================
+
+<requires_content> ::= <requires_list>
+<requires_list> ::= <requires_item>+
+<requires_item> ::= <list_marker> <requires_value> NEWLINE
+<requires_value> ::= TEXT
+<list_marker> ::= "-" | "*"
+
+# ============================================================================
+# Inputs Section
+# ============================================================================
+
+<inputs_content> ::= <inputs_list>
+<inputs_list> ::= <input_item>+
+<input_item> ::= <list_marker> <input_definition> NEWLINE
+<parameter_def> ::= <param_name> ":" <param_type>
+<param_name> ::= IDENTIFIER
+<param_type> ::= "string" | "number" | "boolean" | "object" | "array" | IDENTIFIER
+
+# ============================================================================
+# Outputs Section
+# ============================================================================
+
+<outputs_content> ::= <outputs_list>
+<outputs_list> ::= <output_item>+
+<output_item> ::= <list_marker> <output_definition> NEWLINE
+<output_def> ::= <param_name> ":" <param_type>
+
+# ============================================================================
+# Tools Section
+# ============================================================================
+
+<tools_content> ::= <tools_list>
+<tools_list> ::= <tool_item>+
+<tool_item> ::= <list_marker> <tool_name> NEWLINE <tool_details>?
+<tool_name> ::= TEXT
+<tool_details> ::= <tool_detail>+
+<tool_detail> ::= INDENT <tool_key> ":" <tool_value> NEWLINE
+<tool_key> ::= "description" | "args" | "returns" | "examples"
+<tool_value> ::= TEXT
+
+# ============================================================================
+# Memory Section
+# ============================================================================
+
+<memory_content> ::= <memory_directive> | <memory_block>
+<memory_directive> ::= <memory_type> NEWLINE
+<memory_type> ::= "shared" | "local" | "external"
+<memory_block> ::= <memory_field>+
+<memory_field> ::= INDENT <memory_key> ":" <memory_value> NEWLINE
+<memory_key> ::= "type" | "backend" | "scope" | "ttl" | "provider"
+<memory_value> ::= TEXT
+
+# ============================================================================
+# Handoff Section
+# ============================================================================
+
+<handoff_content> ::= <handoff_list>
+<handoff_list> ::= <handoff_item>+
+<handoff_item> ::= <list_marker> <handoff_target> NEWLINE
+<handoff_target> ::= TEXT
+
+# ============================================================================
+# Members Section
+# ============================================================================
+
+<members_content> ::= <members_list>
+<members_list> ::= <member_item>+
+<member_item> ::= <list_marker> <member_name> NEWLINE <member_details>?
+<member_name> ::= TEXT
+<member_details> ::= <member_detail>+
+<member_detail> ::= INDENT <member_key> ":" <member_value> NEWLINE
+<member_key> ::= "role" | "type" | "description"
+<member_value> ::= TEXT
+
+# ============================================================================
+# Steps Section
+# ============================================================================
+
+<steps_content> ::= <steps_list>
+<steps_list> ::= <step_item>+
+<step_item> ::= <list_marker> <step_name> NEWLINE <step_details>?
+<step_name> ::= TEXT
+<step_details> ::= <step_detail>+
+<step_detail> ::= INDENT <step_key> ":" <step_value> NEWLINE
+<step_key> ::= "agent" | "tool" | "action" | "condition" | "retry" | "timeout"
+<step_value> ::= TEXT
+
+# ============================================================================
+# Edges Section
+# ============================================================================
+
+<edges_content> ::= <edges_list>
+<edges_list> ::= <edge_item>+
+<edge_item> ::= <edge_directive> NEWLINE
+<edge_directive> ::= <source_name> "->" <target_name> <edge_condition>?
+<source_name> ::= TEXT
+<target_name> ::= TEXT
+<edge_condition> ::= "[" <condition_text> "]"
+<condition_text> ::= TEXT
+
+# ============================================================================
+# Allow Section
+# ============================================================================
+
+<allow_content> ::= <allow_list>
+<allow_list> ::= <allow_item>+
+<allow_item> ::= <list_marker> <allow_value> NEWLINE
+<allow_value> ::= TEXT
+
+# ============================================================================
+# Deny Section
+# ============================================================================
+
+<deny_content> ::= <deny_list>
+<deny_list> ::= <deny_item>+
+<deny_item> ::= <list_marker> <deny_value> NEWLINE
+<deny_value> ::= TEXT
+
+# ============================================================================
+# Permissions Section
+# ============================================================================
+
+<permissions_content> ::= <permissions_list>
+<permissions_list> ::= <permission_item>+
+<permission_item> ::= INDENT <permission_key> ":" <permission_value> NEWLINE
+<permission_key> ::= "filesystem" | "network" | "python" | "memory" | "exec" | IDENTIFIER
+<permission_value> ::= "read" | "write" | "none" | "internet" | "internal"
+                     | "sandbox" | "full" | "local" | "shared"
+                     | "allowed" | "denied" | TEXT
+
+# ============================================================================
+# Capabilities Section
+# ============================================================================
+
+<capabilities_content> ::= <capabilities_list>
+<capabilities_list> ::= <capability_item>+
+<capability_item> ::= <list_marker> <capability_name> NEWLINE
+<capability_name> ::= TEXT
+
+# ============================================================================
+# Cross-Reference Syntax
+# ============================================================================
+
+<cross_ref> ::= <ref_type> <ref_target>
+<ref_type> ::= "ref" | "see" | "depends" | "uses"
+<ref_target> ::= IDENTIFIER (":" IDENTIFIER)?
+<ref_path> ::= <ref_target> ("." <ref_target>)*
+
+# ============================================================================
+# Content Helpers
+# ============================================================================
+
+<text_line> ::= INLINE_CONTENT NEWLINE
+<list_marker> ::= "-" | "*" | "+"
+<indented_text> ::= INDENT INLINE_CONTENT NEWLINE
+
+# ============================================================================
+# Inline Elements
+# ============================================================================
+
+<inline_element> ::= <bold> | <italic> | <strikethrough> | <inline_code>
+                   | <link> | <image> | <footnote_ref> | <plain_text>
+<bold> ::= "**" INLINE_CONTENT "**"
+<italic> ::= "*" INLINE_CONTENT "*"
+<strikethrough> ::= "~~" INLINE_CONTENT "~~"
+<inline_code> ::= "`" INLINE_CONTENT "`"
+<link> ::= "[" INLINE_CONTENT "](" URL ")"
+<image> ::= "!" "[" INLINE_CONTENT "](" URL ")"
+<footnote_ref> ::= "[^" IDENTIFIER "]"
+<plain_text> ::= INLINE_CONTENT
+
+# ============================================================================
+# Tokens
+# ============================================================================
+
+IDENTIFIER ::= [a-zA-Z_][a-zA-Z0-9_]*
+CUSTOM_NAME ::= [a-zA-Z_][a-zA-Z0-9_ ]*
+TEXT ::= [^\n]+
+URL ::= [^)]+
+INLINE_CONTENT ::= [^\n]+
+NEWLINE ::= "\n"
+INDENT ::= ("  " | "\t")+
+DIGIT ::= [0-9]

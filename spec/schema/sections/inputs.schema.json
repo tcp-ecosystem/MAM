@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://mam.dev/schema/v1.0.0/sections/inputs.schema.json",
   "title": "Inputs Section Schema",
-  "description": "Schema for the Inputs section - expected input parameters",
+  "description": "Declares the expected input parameters, their types, defaults, validation rules, and inter-parameter dependencies. Used by the orchestrator for argument construction and validation.",
   "type": "object",
   "required": ["type", "name", "content"],
   "properties": {
@@ -10,12 +10,276 @@
     "name": { "type": "string", "const": "Inputs" },
     "content": {
       "type": "array",
-      "items": { "oneOf": [{ "$ref": "#/definitions/Table" }, { "$ref": "#/definitions/Paragraph" }] },
+      "items": {
+        "oneOf": [
+          { "$ref": "#/definitions/Table" },
+          { "$ref": "#/definitions/Paragraph" },
+          { "$ref": "#/definitions/List" },
+          { "$ref": "#/definitions/CodeBlock" }
+        ]
+      },
       "minItems": 1
     }
   },
   "definitions": {
-    "Table": { "type": "object", "required": ["type", "headers", "rows"], "properties": { "type": { "const": "table" }, "headers": { "type": "array", "items": { "type": "string" } }, "rows": { "type": "array", "items": { "type": "array", "items": { "type": "string" } } } } },
-    "Paragraph": { "type": "object", "required": ["type", "value"], "properties": { "type": { "const": "paragraph" }, "value": { "type": "string" } } }
-  }
+    "Table": {
+      "type": "object",
+      "required": ["type", "headers", "rows"],
+      "properties": {
+        "type": { "const": "table" },
+        "headers": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 2,
+          "maxItems": 8,
+          "description": "Expected columns: Name, Type, Required, Default, Description, Validation"
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": { "type": "string" },
+            "minItems": 2,
+            "maxItems": 8
+          },
+          "minItems": 1
+        },
+        "caption": {
+          "type": "string",
+          "description": "Table caption for accessibility"
+        }
+      }
+    },
+    "Paragraph": {
+      "type": "object",
+      "required": ["type", "value"],
+      "properties": {
+        "type": { "const": "paragraph" },
+        "value": { "type": "string", "minLength": 1 }
+      }
+    },
+    "List": {
+      "type": "object",
+      "required": ["type", "items"],
+      "properties": {
+        "type": { "const": "list" },
+        "items": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              { "type": "string" },
+              { "$ref": "#/definitions/InputEntry" }
+            ]
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "CodeBlock": {
+      "type": "object",
+      "required": ["type", "language", "value"],
+      "properties": {
+        "type": { "const": "codeblock" },
+        "language": {
+          "type": "string",
+          "enum": ["json", "yaml", "toml", "python", "typescript"]
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Input schema in structured format"
+        }
+      }
+    },
+    "InputEntry": {
+      "type": "object",
+      "required": ["name", "type"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-zA-Z_][a-zA-Z0-9_]*$",
+          "minLength": 1,
+          "maxLength": 128,
+          "description": "Parameter name (snake_case preferred)"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "string",
+            "str",
+            "integer",
+            "int",
+            "float",
+            "number",
+            "boolean",
+            "bool",
+            "array",
+            "list",
+            "object",
+            "dict",
+            "map",
+            "tuple",
+            "set",
+            "null",
+            "none",
+            "any",
+            "file",
+            "path",
+            "url",
+            "date",
+            "datetime",
+            "timestamp",
+            "json",
+            "binary",
+            "bytes",
+            "enum",
+            "union"
+          ],
+          "description": "Input data type"
+        },
+        "required": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether this parameter must be provided"
+        },
+        "default": {
+          "description": "Default value if not provided (type must match 'type' field)"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 512,
+          "description": "Human-readable parameter description"
+        },
+        "validation": {
+          "type": "object",
+          "properties": {
+            "pattern": {
+              "type": "string",
+              "description": "Regex pattern for string validation"
+            },
+            "min": {
+              "type": "number",
+              "description": "Minimum value for numeric types"
+            },
+            "max": {
+              "type": "number",
+              "description": "Maximum value for numeric types"
+            },
+            "min_length": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Minimum string/array length"
+            },
+            "max_length": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "Maximum string/array length"
+            },
+            "enum": {
+              "type": "array",
+              "items": {},
+              "description": "Allowed values (for enum type)"
+            },
+            "format": {
+              "type": "string",
+              "enum": [
+                "email",
+                "uri",
+                "url",
+                "uuid",
+                "date",
+                "date-time",
+                "ipv4",
+                "ipv6",
+                "hostname",
+                "path",
+                "file"
+              ],
+              "description": "Standard format constraint"
+            },
+            "custom": {
+              "type": "string",
+              "description": "Custom validation expression or function name"
+            }
+          }
+        },
+        "env_var": {
+          "type": "string",
+          "pattern": "^[A-Z_][A-Z0-9_]*$",
+          "description": "Environment variable to read from if not provided directly"
+        },
+        "positional": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether this is a positional argument"
+        },
+        "group": {
+          "type": "string",
+          "description": "Parameter group for mutual exclusivity"
+        },
+        "requires": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Other parameters that must also be provided"
+        },
+        "conflicts": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Parameters that cannot be provided simultaneously"
+        },
+        "examples": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "maxItems": 5,
+          "description": "Example values for this parameter"
+        },
+        "deprecated": {
+          "type": "boolean",
+          "default": false
+        },
+        "since": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "examples": [
+    {
+      "type": "section",
+      "name": "Inputs",
+      "content": [
+        {
+          "type": "list",
+          "items": [
+            {
+              "name": "query",
+              "type": "string",
+              "required": true,
+              "description": "Search query string",
+              "validation": { "min_length": 1, "max_length": 1000 }
+            },
+            {
+              "name": "max_results",
+              "type": "integer",
+              "required": false,
+              "default": 10,
+              "description": "Maximum results to return",
+              "validation": { "min": 1, "max": 100 }
+            },
+            {
+              "name": "format",
+              "type": "string",
+              "required": false,
+              "default": "json",
+              "validation": { "enum": ["json", "csv", "xml"] },
+              "env_var": "OUTPUT_FORMAT"
+            }
+          ]
+        }
+      ]
+    }
+  ]
 }

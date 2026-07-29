@@ -2,15 +2,184 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://mam.dev/schema/v1.0.0/sections/references.schema.json",
   "title": "References Section Schema",
+  "description": "External documentation, APIs, standards, and cross-references. Supports URL validation, citation formats, and internal module references.",
   "type": "object",
   "required": ["type", "name", "content"],
   "properties": {
     "type": { "type": "string", "const": "section" },
     "name": { "type": "string", "const": "References" },
-    "content": { "type": "array", "items": { "oneOf": [{ "$ref": "#/definitions/List" }, { "$ref": "#/definitions/Paragraph" }] }, "minItems": 1 }
+    "content": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          { "$ref": "#/definitions/List" },
+          { "$ref": "#/definitions/Paragraph" },
+          { "$ref": "#/definitions/Table" },
+          { "$ref": "#/definitions/CodeBlock" }
+        ]
+      },
+      "minItems": 1
+    }
   },
   "definitions": {
-    "List": { "type": "object", "required": ["type", "items"], "properties": { "type": { "const": "list" }, "items": { "type": "array", "items": { "type": "string" } } } },
-    "Paragraph": { "type": "object", "required": ["type", "value"], "properties": { "type": { "const": "paragraph" }, "value": { "type": "string" } } }
-  }
+    "List": {
+      "type": "object",
+      "required": ["type", "items"],
+      "properties": {
+        "type": { "const": "list" },
+        "items": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              { "type": "string" },
+              { "$ref": "#/definitions/ReferenceEntry" }
+            ]
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "Paragraph": {
+      "type": "object",
+      "required": ["type", "value"],
+      "properties": {
+        "type": { "const": "paragraph" },
+        "value": { "type": "string", "minLength": 1 }
+      }
+    },
+    "Table": {
+      "type": "object",
+      "required": ["type", "headers", "rows"],
+      "properties": {
+        "type": { "const": "table" },
+        "headers": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 2,
+          "maxItems": 6,
+          "description": "Expected columns: Title, URL, Type, Description, Last Verified"
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": { "type": "string" },
+            "minItems": 2,
+            "maxItems": 6
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "CodeBlock": {
+      "type": "object",
+      "required": ["type", "language", "value"],
+      "properties": {
+        "type": { "const": "codeblock" },
+        "language": {
+          "type": "string",
+          "enum": ["bibtex", "json", "yaml", "markdown", "text"]
+        },
+        "value": { "type": "string", "minLength": 1 }
+      }
+    },
+    "ReferenceEntry": {
+      "type": "object",
+      "required": ["title"],
+      "properties": {
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "description": "Reference title"
+        },
+        "url": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^https?://",
+          "description": "Reference URL (http or https)"
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "documentation",
+            "api-reference",
+            "standard",
+            "rfc",
+            "paper",
+            "book",
+            "tutorial",
+            "blog-post",
+            "video",
+            "source-code",
+            "specification",
+            "internal",
+            "module-ref"
+          ],
+          "default": "documentation",
+          "description": "Reference type"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 512,
+          "description": "Why this reference is relevant"
+        },
+        "author": {
+          "type": "string",
+          "description": "Author or maintainer"
+        },
+        "version": {
+          "type": "string",
+          "description": "Version of the referenced material"
+        },
+        "last_verified": {
+          "type": "string",
+          "format": "date",
+          "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
+          "description": "Date when this reference was last verified as current"
+        },
+        "citation": {
+          "type": "string",
+          "description": "Citation in a supported format (APA, MLA, Chicago, BibTeX)"
+        },
+        "module_ref": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{0,63}$",
+          "description": "Internal module reference (for type='module-ref')"
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Tags for categorization"
+        },
+        "required": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether understanding this reference is required to use the module"
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["critical", "recommended", "optional"],
+          "default": "recommended"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "examples": [
+    {
+      "type": "section",
+      "name": "References",
+      "content": [
+        {
+          "type": "list",
+          "items": [
+            { "title": "Python asyncio documentation", "url": "https://docs.python.org/3/library/asyncio.html", "type": "documentation", "description": "Core async runtime reference", "last_verified": "2025-01-15", "priority": "critical" },
+            { "title": "RFC 7231 — HTTP/1.1 Semantics", "url": "https://tools.ietf.org/html/rfc7231", "type": "rfc", "description": "HTTP method semantics", "priority": "recommended" },
+            { "title": "mam-utils module", "type": "module-ref", "module_ref": "mam-utils", "description": "Utility functions used by this module", "priority": "critical" }
+          ]
+        }
+      ]
+    }
+  ]
 }

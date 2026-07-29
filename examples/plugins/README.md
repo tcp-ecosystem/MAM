@@ -7,6 +7,10 @@ This directory contains example MAM modules that demonstrate how to extend MAM w
 | Module | Description |
 |--------|-------------|
 | `custom-section/` | Example of defining a custom section type via the Plugin API |
+| `validation-plugin/` | Custom validation rules plugin — business rules, security scanning, cross-references |
+| `export-plugin/` | Custom export format plugin — HTML, PDF, and DOCX output |
+| `runtime-plugin/` | Custom runtime plugin — Deno, Bun, and WebAssembly execution |
+| `memory-plugin/` | Memory backend plugin — Redis, PostgreSQL, and in-memory storage with TTL |
 
 ## Plugin Architecture
 

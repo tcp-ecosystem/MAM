@@ -2,15 +2,216 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://mam.dev/schema/v1.0.0/sections/plugins.schema.json",
   "title": "Plugins Section Schema",
+  "description": "Declares plugin dependencies, load order, version constraints, and conflict resolution. Plugins extend module functionality at runtime.",
   "type": "object",
   "required": ["type", "name", "content"],
   "properties": {
     "type": { "type": "string", "const": "section" },
     "name": { "type": "string", "const": "Plugins" },
-    "content": { "type": "array", "items": { "oneOf": [{ "$ref": "#/definitions/List" }, { "$ref": "#/definitions/Table" }] }, "minItems": 0 }
+    "content": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          { "$ref": "#/definitions/List" },
+          { "$ref": "#/definitions/Table" },
+          { "$ref": "#/definitions/Paragraph" },
+          { "$ref": "#/definitions/CodeBlock" }
+        ]
+      },
+      "minItems": 1
+    }
   },
   "definitions": {
-    "List": { "type": "object", "required": ["type", "items"], "properties": { "type": { "const": "list" }, "items": { "type": "array", "items": { "type": "string" } } } },
-    "Table": { "type": "object", "required": ["type", "headers", "rows"], "properties": { "type": { "const": "table" }, "headers": { "type": "array", "items": { "type": "string" } }, "rows": { "type": "array", "items": { "type": "array", "items": { "type": "string" } } } } }
-  }
+    "List": {
+      "type": "object",
+      "required": ["type", "items"],
+      "properties": {
+        "type": { "const": "list" },
+        "items": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              { "type": "string" },
+              { "$ref": "#/definitions/PluginEntry" }
+            ]
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "Table": {
+      "type": "object",
+      "required": ["type", "headers", "rows"],
+      "properties": {
+        "type": { "const": "table" },
+        "headers": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 2,
+          "maxItems": 7,
+          "description": "Expected columns: Plugin, Version, Load Order, Priority, Required, Description"
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": { "type": "string" },
+            "minItems": 2,
+            "maxItems": 7
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "Paragraph": {
+      "type": "object",
+      "required": ["type", "value"],
+      "properties": {
+        "type": { "const": "paragraph" },
+        "value": { "type": "string", "minLength": 1 }
+      }
+    },
+    "CodeBlock": {
+      "type": "object",
+      "required": ["type", "language", "value"],
+      "properties": {
+        "type": { "const": "codeblock" },
+        "language": {
+          "type": "string",
+          "enum": ["json", "yaml", "toml", "python"]
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Plugin configuration in structured format"
+        }
+      }
+    },
+    "PluginEntry": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "description": "Plugin identifier or package name"
+        },
+        "version": {
+          "type": "string",
+          "default": "*",
+          "description": "Semver constraint: ^1.0.0, ~1.2.0, >=1.0.0, exact 1.0.0"
+        },
+        "load_order": {
+          "type": "string",
+          "enum": ["before", "after", "代替", "parallel"],
+          "default": "after",
+          "description": "When to load relative to the module"
+        },
+        "priority": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 1000,
+          "default": 500,
+          "description": "Lower number = higher priority (0-1000)"
+        },
+        "required": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether module fails without this plugin"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "source": {
+          "type": "string",
+          "enum": ["registry", "local", "git", "url"],
+          "default": "registry",
+          "description": "Where to load the plugin from"
+        },
+        "source_url": {
+          "type": "string",
+          "format": "uri",
+          "description": "URL for non-registry sources"
+        },
+        "config": {
+          "type": "object",
+          "description": "Plugin-specific configuration"
+        },
+        "conflicts_with": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Plugins that cannot coexist with this one"
+        },
+        "provides": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Capabilities this plugin provides"
+        },
+        "hooks": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "on_load",
+              "on_init",
+              "on_pre_execute",
+              "on_post_execute",
+              "on_error",
+              "on_unload",
+              "on_config_change",
+              "on_dependency_ready"
+            ]
+          },
+          "description": "Lifecycle hooks this plugin uses"
+        },
+        "optional": {
+          "type": "boolean",
+          "default": false
+        },
+        "deprecated": {
+          "type": "boolean",
+          "default": false
+        },
+        "replaces": {
+          "type": "string",
+          "description": "Plugin this one replaces"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "examples": [
+    {
+      "type": "section",
+      "name": "Plugins",
+      "content": [
+        {
+          "type": "list",
+          "items": [
+            {
+              "name": "mam-logger",
+              "version": "^2.0.0",
+              "load_order": "before",
+              "priority": 100,
+              "required": true,
+              "description": "Structured logging plugin",
+              "hooks": ["on_load", "on_error", "on_unload"]
+            },
+            {
+              "name": "mam-metrics",
+              "version": "^1.5.0",
+              "load_order": "after",
+              "priority": 500,
+              "required": false,
+              "description": "OpenTelemetry metrics collection",
+              "conflicts_with": ["mam-prometheus"],
+              "hooks": ["on_pre_execute", "on_post_execute"]
+            }
+          ]
+        }
+      ]
+    }
+  ]
 }

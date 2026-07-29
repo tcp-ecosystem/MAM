@@ -2,15 +2,218 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://mam.dev/schema/v1.0.0/sections/permissions.schema.json",
   "title": "Permissions Section Schema",
+  "description": "Declares the runtime permissions this module requires — filesystem access, network, environment variables, exec, and memory. Includes escalation rules and scoped permission grants.",
   "type": "object",
   "required": ["type", "name", "content"],
   "properties": {
     "type": { "type": "string", "const": "section" },
     "name": { "type": "string", "const": "Permissions" },
-    "content": { "type": "array", "items": { "oneOf": [{ "$ref": "#/definitions/List" }, { "$ref": "#/definitions/Table" }] }, "minItems": 0 }
+    "content": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          { "$ref": "#/definitions/List" },
+          { "$ref": "#/definitions/Table" },
+          { "$ref": "#/definitions/Paragraph" },
+          { "$ref": "#/definitions/PermissionMatrix" }
+        ]
+      },
+      "minItems": 1
+    }
   },
   "definitions": {
-    "List": { "type": "object", "required": ["type", "items"], "properties": { "type": { "const": "list" }, "items": { "type": "array", "items": { "type": "string" } } } },
-    "Table": { "type": "object", "required": ["type", "headers", "rows"], "properties": { "type": { "const": "table" }, "headers": { "type": "array", "items": { "type": "string" } }, "rows": { "type": "array", "items": { "type": "array", "items": { "type": "string" } } } } }
-  }
+    "List": {
+      "type": "object",
+      "required": ["type", "items"],
+      "properties": {
+        "type": { "const": "list" },
+        "items": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              { "type": "string" },
+              { "$ref": "#/definitions/PermissionEntry" }
+            ]
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "Table": {
+      "type": "object",
+      "required": ["type", "headers", "rows"],
+      "properties": {
+        "type": { "const": "table" },
+        "headers": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 2,
+          "maxItems": 6,
+          "description": "Expected columns: Permission, Scope, Reason, Escalation, Required"
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": { "type": "string" },
+            "minItems": 2,
+            "maxItems": 6
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "Paragraph": {
+      "type": "object",
+      "required": ["type", "value"],
+      "properties": {
+        "type": { "const": "paragraph" },
+        "value": { "type": "string", "minLength": 1 }
+      }
+    },
+    "PermissionMatrix": {
+      "type": "object",
+      "required": ["type", "permissions"],
+      "properties": {
+        "type": { "const": "permission-matrix" },
+        "description": {
+          "type": "string",
+          "description": "Overview of permission requirements"
+        },
+        "permissions": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/PermissionEntry" },
+          "minItems": 1
+        },
+        "escalation_rules": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/EscalationRule" },
+          "description": "Rules for when permissions can be escalated"
+        }
+      }
+    },
+    "PermissionEntry": {
+      "type": "object",
+      "required": ["permission"],
+      "properties": {
+        "permission": {
+          "type": "string",
+          "enum": [
+            "network",
+            "filesystem",
+            "environment",
+            "exec",
+            "memory",
+            "database",
+            "cache",
+            "queue",
+            "secrets",
+            "crypto",
+            "audio",
+            "camera",
+            "location",
+            "notification",
+            "clipboard",
+            "ui"
+          ],
+          "description": "Permission type"
+        },
+        "scope": {
+          "type": "string",
+          "description": "Specific scope (e.g., '/tmp/**', 'DATABASE_URL', 'localhost:*')"
+        },
+        "reason": {
+          "type": "string",
+          "maxLength": 256,
+          "description": "Why this permission is needed"
+        },
+        "required": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether module fails without this permission"
+        },
+        "escalation": {
+          "type": "string",
+          "enum": ["none", "prompt", "auto", "configurable"],
+          "default": "prompt",
+          "description": "How to handle if permission is denied"
+        },
+        "read_only": {
+          "type": "boolean",
+          "default": false,
+          "description": "Only read access needed (for filesystem/database)"
+        },
+        "paths": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Specific paths this permission covers (for filesystem)"
+        },
+        "hosts": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Specific hosts this permission covers (for network)"
+        },
+        "env_vars": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Specific env vars needed (for environment)"
+        },
+        "examples": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Example permission grants"
+        }
+      },
+      "additionalProperties": false
+    },
+    "EscalationRule": {
+      "type": "object",
+      "required": ["trigger", "action"],
+      "properties": {
+        "trigger": {
+          "type": "string",
+          "description": "Condition that triggers escalation (e.g., 'permission_denied', 'elevated_needed')"
+        },
+        "action": {
+          "type": "string",
+          "enum": [
+            "prompt_user",
+            "use_fallback",
+            "disable_feature",
+            "fail_gracefully",
+            "log_and_continue",
+            "request_admin"
+          ]
+        },
+        "fallback": {
+          "type": "string",
+          "description": "Fallback behavior when escalation is not possible"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 256
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "type": "section",
+      "name": "Permissions",
+      "content": [
+        {
+          "type": "permission-matrix",
+          "description": "This module requires filesystem and network access for API calls",
+          "permissions": [
+            { "permission": "filesystem", "scope": "./data/**", "reason": "Read input data files", "read_only": true, "required": true },
+            { "permission": "network", "hosts": ["api.example.com", "*.openai.com"], "reason": "Call external APIs", "required": true },
+            { "permission": "environment", "env_vars": ["API_KEY", "LOG_LEVEL"], "reason": "API authentication and logging", "required": false, "escalation": "configurable" }
+          ],
+          "escalation_rules": [
+            { "trigger": "network_denied", "action": "disable_feature", "fallback": "Use cached responses only", "description": "Fall back to cached data if network unavailable" }
+          ]
+        }
+      ]
+    }
+  ]
 }

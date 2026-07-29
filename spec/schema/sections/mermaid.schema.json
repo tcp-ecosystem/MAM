@@ -2,15 +2,170 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://mam.dev/schema/v1.0.0/sections/mermaid.schema.json",
   "title": "Mermaid Section Schema",
+  "description": "Visual diagrams using Mermaid syntax — flowcharts, sequence diagrams, state machines, Gantt charts, class diagrams, and more. Supports all Mermaid diagram types with configuration options.",
   "type": "object",
   "required": ["type", "name", "content"],
   "properties": {
     "type": { "type": "string", "const": "section" },
     "name": { "type": "string", "const": "Mermaid" },
-    "content": { "type": "array", "items": { "oneOf": [{ "$ref": "#/definitions/CodeBlock" }, { "$ref": "#/definitions/Paragraph" }] }, "minItems": 1 }
+    "content": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          { "$ref": "#/definitions/CodeBlock" },
+          { "$ref": "#/definitions/Paragraph" },
+          { "$ref": "#/definitions/DiagramGroup" }
+        ]
+      },
+      "minItems": 1
+    }
   },
   "definitions": {
-    "CodeBlock": { "type": "object", "required": ["type", "language", "value"], "properties": { "type": { "const": "codeblock" }, "language": { "const": "mermaid" }, "value": { "type": "string", "minLength": 1 } } },
-    "Paragraph": { "type": "object", "required": ["type", "value"], "properties": { "type": { "const": "paragraph" }, "value": { "type": "string" } } }
-  }
+    "CodeBlock": {
+      "type": "object",
+      "required": ["type", "language", "value"],
+      "properties": {
+        "type": { "const": "codeblock" },
+        "language": { "const": "mermaid" },
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Mermaid diagram source code"
+        },
+        "title": {
+          "type": "string",
+          "description": "Diagram title"
+        },
+        "config": {
+          "$ref": "#/definitions/MermaidConfig"
+        }
+      }
+    },
+    "Paragraph": {
+      "type": "object",
+      "required": ["type", "value"],
+      "properties": {
+        "type": { "const": "paragraph" },
+        "value": { "type": "string", "minLength": 1 }
+      }
+    },
+    "DiagramGroup": {
+      "type": "object",
+      "required": ["type", "title", "diagrams"],
+      "properties": {
+        "type": { "const": "diagram-group" },
+        "title": { "type": "string", "minLength": 1 },
+        "description": { "type": "string" },
+        "diagrams": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/CodeBlock" },
+          "minItems": 1,
+          "description": "Related diagrams in this group"
+        },
+        "layout": {
+          "type": "string",
+          "enum": ["horizontal", "vertical", "grid"],
+          "default": "vertical"
+        }
+      }
+    },
+    "MermaidConfig": {
+      "type": "object",
+      "properties": {
+        "theme": {
+          "type": "string",
+          "enum": [
+            "default",
+            "forest",
+            "dark",
+            "neutral",
+            "base"
+          ],
+          "default": "default",
+          "description": "Color theme"
+        },
+        "themeVariables": {
+          "type": "object",
+          "properties": {
+            "primaryColor": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+            "primaryTextColor": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+            "primaryBorderColor": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+            "lineColor": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+            "secondaryColor": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+            "tertiaryColor": { "type": "string", "pattern": "^#[0-9a-fA-F]{6}$" },
+            "fontSize": { "type": "string", "pattern": "^[0-9]+px$" }
+          },
+          "additionalProperties": { "type": "string" }
+        },
+        "flowchart": {
+          "type": "object",
+          "properties": {
+            "curve": {
+              "type": "string",
+              "enum": ["basis", "linear", "monotoneX", "monotoneY", "natural", "step", "stepAfter", "stepBefore"],
+              "default": "basis"
+            },
+            "padding": { "type": "number", "minimum": 0, "default": 15 },
+            "htmlLabels": { "type": "boolean", "default": true },
+            "useMaxWidth": { "type": "boolean", "default": true },
+            "wrappingWidth": { "type": "number", "minimum": 100, "default": 200 }
+          }
+        },
+        "sequence": {
+          "type": "object",
+          "properties": {
+            "mirrorActors": { "type": "boolean", "default": true },
+            "bottomMarginAdj": { "type": "number", "minimum": 0, "default": 10 },
+            "actorMargin": { "type": "number", "minimum": 0, "default": 50 },
+            "width": { "type": "number", "minimum": 100, "default": 150 },
+            "height": { "type": "number", "minimum": 30, "default": 65 },
+            "boxMargin": { "type": "number", "minimum": 0, "default": 10 },
+            "noteMargin": { "type": "number", "minimum": 0, "default": 15 },
+            "messageMargin": { "type": "number", "minimum": 0, "default": 40 }
+          }
+        },
+        "gantt": {
+          "type": "object",
+          "properties": {
+            "titleTopMargin": { "type": "number", "minimum": 0, "default": 25 },
+            "barHeight": { "type": "number", "minimum": 5, "default": 20 },
+            "barGap": { "type": "number", "minimum": 0, "default": 4 },
+            "topPadding": { "type": "number", "minimum": 0, "default": 50 },
+            "sidePadding": { "type": "number", "minimum": 0, "default": 75 },
+            "fontSize": { "type": "number", "minimum": 8, "default": 11 },
+            "sectionFontSize": { "type": "number", "minimum": 8, "default": 11 }
+          }
+        },
+        "pie": {
+          "type": "object",
+          "properties": {
+            "textPosition": { "type": "number", "minimum": 0, "maximum": 1, "default": 0.75 }
+          }
+        },
+        "startOnLoad": { "type": "boolean", "default": true },
+        "securityLevel": {
+          "type": "string",
+          "enum": ["strict", "loose", "sandbox"],
+          "default": "strict"
+        },
+        "maxTextSize": { "type": "number", "minimum": 1000, "default": 50000 }
+      },
+      "additionalProperties": false
+    }
+  },
+  "examples": [
+    {
+      "type": "section",
+      "name": "Mermaid",
+      "content": [
+        {
+          "type": "codeblock",
+          "language": "mermaid",
+          "title": "Module Processing Flow",
+          "config": { "theme": "dark", "flowchart": { "curve": "basis", "htmlLabels": true } },
+          "value": "graph TD\n  A[Input] --> B{Validate}\n  B -->|Valid| C[Process]\n  B -->|Invalid| D[Error]\n  C --> E[Output]"
+        }
+      ]
+    }
+  ]
 }

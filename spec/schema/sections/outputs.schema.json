@@ -2,15 +2,261 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://mam.dev/schema/v1.0.0/sections/outputs.schema.json",
   "title": "Outputs Section Schema",
+  "description": "Declares what the module produces — return values, side effects, output formats, and post-processing rules. Used by downstream modules for chaining and integration.",
   "type": "object",
   "required": ["type", "name", "content"],
   "properties": {
     "type": { "type": "string", "const": "section" },
     "name": { "type": "string", "const": "Outputs" },
-    "content": { "type": "array", "items": { "oneOf": [{ "$ref": "#/definitions/Table" }, { "$ref": "#/definitions/Paragraph" }] }, "minItems": 1 }
+    "content": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          { "$ref": "#/definitions/Table" },
+          { "$ref": "#/definitions/Paragraph" },
+          { "$ref": "#/definitions/List" },
+          { "$ref": "#/definitions/CodeBlock" },
+          { "$ref": "#/definitions/OutputConfig" }
+        ]
+      },
+      "minItems": 1
+    }
   },
   "definitions": {
-    "Table": { "type": "object", "required": ["type", "headers", "rows"], "properties": { "type": { "const": "table" }, "headers": { "type": "array", "items": { "type": "string" } }, "rows": { "type": "array", "items": { "type": "array", "items": { "type": "string" } } } } },
-    "Paragraph": { "type": "object", "required": ["type", "value"], "properties": { "type": { "const": "paragraph" }, "value": { "type": "string" } } }
-  }
+    "Table": {
+      "type": "object",
+      "required": ["type", "headers", "rows"],
+      "properties": {
+        "type": { "const": "table" },
+        "headers": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 2,
+          "maxItems": 7,
+          "description": "Expected columns: Name, Type, Description, Example, When"
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": { "type": "string" },
+            "minItems": 2,
+            "maxItems": 7
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "Paragraph": {
+      "type": "object",
+      "required": ["type", "value"],
+      "properties": {
+        "type": { "const": "paragraph" },
+        "value": { "type": "string", "minLength": 1 }
+      }
+    },
+    "List": {
+      "type": "object",
+      "required": ["type", "items"],
+      "properties": {
+        "type": { "const": "list" },
+        "items": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              { "type": "string" },
+              { "$ref": "#/definitions/OutputEntry" }
+            ]
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "CodeBlock": {
+      "type": "object",
+      "required": ["type", "language", "value"],
+      "properties": {
+        "type": { "const": "codeblock" },
+        "language": {
+          "type": "string",
+          "enum": ["json", "yaml", "python", "typescript"]
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Output schema definition"
+        }
+      }
+    },
+    "OutputConfig": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": { "const": "output-config" },
+        "default_format": {
+          "type": "string",
+          "enum": ["json", "csv", "xml", "yaml", "toml", "text", "binary", "parquet"],
+          "default": "json",
+          "description": "Default output format"
+        },
+        "supported_formats": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["json", "csv", "xml", "yaml", "toml", "text", "binary", "parquet", "html", "markdown"]
+          },
+          "minItems": 1,
+          "description": "All supported output formats"
+        },
+        "streaming": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether output supports streaming"
+        },
+        "chunk_size": {
+          "type": "integer",
+          "minimum": 1,
+          "default": 1000,
+          "description": "Records per chunk when streaming"
+        },
+        "encoding": {
+          "type": "string",
+          "enum": ["utf-8", "ascii", "latin-1", "base64"],
+          "default": "utf-8"
+        },
+        "compression": {
+          "type": "string",
+          "enum": ["none", "gzip", "zstd", "lz4"],
+          "default": "none"
+        },
+        "transformations": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/Transformation" },
+          "description": "Post-processing transformations applied to output"
+        },
+        "chain": {
+          "type": "object",
+          "properties": {
+            "next_module": {
+              "type": "string",
+              "description": "Module to pipe output into"
+            },
+            "input_field": {
+              "type": "string",
+              "description": "Field name to pass as input to next module"
+            },
+            "auto_chain": {
+              "type": "boolean",
+              "default": false,
+              "description": "Automatically pass output to next module"
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "OutputEntry": {
+      "type": "object",
+      "required": ["name", "type"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "string", "str", "integer", "int", "float", "number",
+            "boolean", "bool", "array", "list", "object", "dict",
+            "binary", "bytes", "file", "path", "json", "stream",
+            "generator", "promise", "any"
+          ]
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 512
+        },
+        "example": {
+          "type": "string",
+          "description": "Example output value"
+        },
+        "when": {
+          "type": "string",
+          "description": "Condition under which this output is produced"
+        },
+        "optional": {
+          "type": "boolean",
+          "default": false
+        },
+        "schema": {
+          "type": "object",
+          "description": "Detailed type schema for complex types"
+        }
+      },
+      "additionalProperties": false
+    },
+    "Transformation": {
+      "type": "object",
+      "required": ["name", "kind"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "kind": {
+          "type": "string",
+          "enum": [
+            "filter",
+            "map",
+            "sort",
+            "deduplicate",
+            "aggregate",
+            "flatten",
+            "rename",
+            "validate",
+            "enrich",
+            "compress",
+            "encode"
+          ]
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 256
+        },
+        "config": {
+          "type": "object",
+          "description": "Transformation-specific configuration"
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "type": "section",
+      "name": "Outputs",
+      "content": [
+        {
+          "type": "output-config",
+          "default_format": "json",
+          "supported_formats": ["json", "csv", "yaml"],
+          "streaming": true,
+          "chunk_size": 500,
+          "transformations": [
+            { "name": "dedupe", "kind": "deduplicate", "description": "Remove duplicate records by ID" },
+            { "name": "sort_by_date", "kind": "sort", "description": "Sort by creation date descending" }
+          ]
+        },
+        {
+          "type": "list",
+          "items": [
+            { "name": "results", "type": "array", "description": "Processed result records", "optional": false },
+            { "name": "metadata", "type": "object", "description": "Processing metadata (count, duration)", "optional": false },
+            { "name": "errors", "type": "array", "description": "Records that failed processing", "optional": true }
+          ]
+        }
+      ]
+    }
+  ]
 }

@@ -2,16 +2,203 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://mam.dev/schema/v1.0.0/sections/examples.schema.json",
   "title": "Examples Section Schema",
+  "description": "Runnable code examples, expected outputs, and test assertions. Each example should be self-contained and verifiable.",
   "type": "object",
   "required": ["type", "name", "content"],
   "properties": {
     "type": { "type": "string", "const": "section" },
     "name": { "type": "string", "const": "Examples" },
-    "content": { "type": "array", "items": { "oneOf": [{ "$ref": "#/definitions/CodeBlock" }, { "$ref": "#/definitions/Paragraph" }, { "$ref": "#/definitions/List" }] }, "minItems": 1 }
+    "content": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          { "$ref": "#/definitions/CodeBlock" },
+          { "$ref": "#/definitions/Paragraph" },
+          { "$ref": "#/definitions/List" },
+          { "$ref": "#/definitions/Table" },
+          { "$ref": "#/definitions/ExampleGroup" }
+        ]
+      },
+      "minItems": 1
+    }
   },
   "definitions": {
-    "CodeBlock": { "type": "object", "required": ["type", "language", "value"], "properties": { "type": { "const": "codeblock" }, "language": { "type": "string" }, "value": { "type": "string", "minLength": 1 } } },
-    "Paragraph": { "type": "object", "required": ["type", "value"], "properties": { "type": { "const": "paragraph" }, "value": { "type": "string" } } },
-    "List": { "type": "object", "required": ["type", "items"], "properties": { "type": { "const": "list" }, "items": { "type": "array", "items": { "type": "string" } } } }
-  }
+    "CodeBlock": {
+      "type": "object",
+      "required": ["type", "language", "value"],
+      "properties": {
+        "type": { "const": "codeblock" },
+        "language": {
+          "type": "string",
+          "enum": [
+            "python", "py", "javascript", "js", "typescript", "ts",
+            "rust", "go", "shell", "bash", "zsh", "powershell",
+            "yaml", "json", "toml", "sql", "ruby", "java", "c", "cpp"
+          ],
+          "description": "Programming language for syntax highlighting"
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Code content"
+        },
+        "title": {
+          "type": "string",
+          "description": "Example title shown above the code block"
+        },
+        "description": {
+          "type": "string",
+          "description": "Explanation of what this example demonstrates"
+        },
+        "expected_output": {
+          "type": "string",
+          "description": "Expected stdout/stderr when executed"
+        },
+        "runnable": {
+          "type": "boolean",
+          "default": true,
+          "description": "Whether this code can be executed directly"
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Filtering tags (e.g., 'basic', 'advanced', 'async')"
+        },
+        "assertions": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/Assertion" },
+          "description": "Test assertions to validate the example"
+        }
+      }
+    },
+    "Paragraph": {
+      "type": "object",
+      "required": ["type", "value"],
+      "properties": {
+        "type": { "const": "paragraph" },
+        "value": { "type": "string", "minLength": 1 }
+      }
+    },
+    "List": {
+      "type": "object",
+      "required": ["type", "items"],
+      "properties": {
+        "type": { "const": "list" },
+        "items": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              { "type": "string" },
+              { "$ref": "#/definitions/ListItem" }
+            ]
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "ListItem": {
+      "type": "object",
+      "required": ["value"],
+      "properties": {
+        "value": { "type": "string" },
+        "description": { "type": "string" },
+        "link": { "type": "string", "format": "uri" }
+      }
+    },
+    "Table": {
+      "type": "object",
+      "required": ["type", "headers", "rows"],
+      "properties": {
+        "type": { "const": "table" },
+        "headers": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": { "type": "string" }
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "ExampleGroup": {
+      "type": "object",
+      "required": ["type", "title", "examples"],
+      "properties": {
+        "type": { "const": "example-group" },
+        "title": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Group heading"
+        },
+        "description": {
+          "type": "string",
+          "description": "Group-level description"
+        },
+        "examples": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/CodeBlock" },
+          "minItems": 1,
+          "description": "Related examples in this group"
+        },
+        "setup": {
+          "type": "string",
+          "description": "Setup code run before all examples in group"
+        },
+        "teardown": {
+          "type": "string",
+          "description": "Teardown code run after all examples"
+        }
+      }
+    },
+    "Assertion": {
+      "type": "object",
+      "required": ["type"],
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": [
+            "equals",
+            "contains",
+            "matches",
+            "throws",
+            "exit_code",
+            "output_contains",
+            "output_matches"
+          ],
+          "description": "Assertion type"
+        },
+        "expected": {
+          "type": "string",
+          "description": "Expected value, pattern, or substring"
+        },
+        "description": {
+          "type": "string",
+          "description": "Human-readable assertion description"
+        }
+      }
+    }
+  },
+  "examples": [
+    {
+      "type": "section",
+      "name": "Examples",
+      "content": [
+        {
+          "type": "codeblock",
+          "language": "python",
+          "value": "from mam_module import greet\nresult = greet('World')\nprint(result)",
+          "expected_output": "Hello, World!",
+          "assertions": [
+            { "type": "equals", "expected": "Hello, World!" },
+            { "type": "exit_code", "expected": "0" }
+          ]
+        }
+      ]
+    }
+  ]
 }

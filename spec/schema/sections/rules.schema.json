@@ -2,15 +2,215 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://mam.dev/schema/v1.0.0/sections/rules.schema.json",
   "title": "Rules Section Schema",
+  "description": "Behavioral constraints, guardrails, and governance rules for the module. Rules define what the module must, should, and must not do — including priority, conditions, and enforcement levels.",
   "type": "object",
   "required": ["type", "name", "content"],
   "properties": {
     "type": { "type": "string", "const": "section" },
     "name": { "type": "string", "const": "Rules" },
-    "content": { "type": "array", "items": { "oneOf": [{ "$ref": "#/definitions/List" }, { "$ref": "#/definitions/Paragraph" }] }, "minItems": 1 }
+    "content": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          { "$ref": "#/definitions/List" },
+          { "$ref": "#/definitions/Paragraph" },
+          { "$ref": "#/definitions/Table" },
+          { "$ref": "#/definitions/RuleSet" }
+        ]
+      },
+      "minItems": 1
+    }
   },
   "definitions": {
-    "List": { "type": "object", "required": ["type", "items"], "properties": { "type": { "const": "list" }, "items": { "type": "array", "items": { "type": "string" } } } },
-    "Paragraph": { "type": "object", "required": ["type", "value"], "properties": { "type": { "const": "paragraph" }, "value": { "type": "string" } } }
-  }
+    "List": {
+      "type": "object",
+      "required": ["type", "items"],
+      "properties": {
+        "type": { "const": "list" },
+        "items": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              { "type": "string" },
+              { "$ref": "#/definitions/RuleEntry" }
+            ]
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "Paragraph": {
+      "type": "object",
+      "required": ["type", "value"],
+      "properties": {
+        "type": { "const": "paragraph" },
+        "value": { "type": "string", "minLength": 1 }
+      }
+    },
+    "Table": {
+      "type": "object",
+      "required": ["type", "headers", "rows"],
+      "properties": {
+        "type": { "const": "table" },
+        "headers": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 2,
+          "maxItems": 7,
+          "description": "Expected columns: Rule, Category, Priority, Enforcement, Condition"
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": { "type": "string" },
+            "minItems": 2,
+            "maxItems": 7
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "RuleSet": {
+      "type": "object",
+      "required": ["type", "rules"],
+      "properties": {
+        "type": { "const": "rule-set" },
+        "name": {
+          "type": "string",
+          "description": "Rule set name for grouping"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 512
+        },
+        "rules": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/RuleEntry" },
+          "minItems": 1
+        },
+        "global_enforcement": {
+          "type": "string",
+          "enum": ["strict", "advisory", "disabled"],
+          "default": "strict",
+          "description": "Default enforcement for all rules in this set"
+        }
+      },
+      "additionalProperties": false
+    },
+    "RuleEntry": {
+      "type": "object",
+      "required": ["rule", "category"],
+      "properties": {
+        "rule": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 512,
+          "description": "Rule statement in natural language"
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "security",
+            "performance",
+            "reliability",
+            "compliance",
+            "style",
+            "validation",
+            "error-handling",
+            "logging",
+            "testing",
+            "accessibility",
+            "privacy",
+            "cost"
+          ],
+          "description": "Rule category for filtering and reporting"
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["critical", "high", "medium", "low", "info"],
+          "default": "medium",
+          "description": "Rule priority — higher priority rules are enforced first"
+        },
+        "enforcement": {
+          "type": "string",
+          "enum": [
+            "must",
+            "must-not",
+            "should",
+            "should-not",
+            "may",
+            "recommended",
+            "advisory"
+          ],
+          "default": "should",
+          "description": "RFC 2119-style enforcement level"
+        },
+        "condition": {
+          "type": "string",
+          "description": "Conditional expression — rule only applies when true (e.g., 'env == \"production\"')"
+        },
+        "applies_to": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Specific contexts this rule applies to (e.g., ['api-endpoints', 'user-input'])"
+        },
+        "exception": {
+          "type": "string",
+          "description": "Known exceptions or exemptions"
+        },
+        "consequence": {
+          "type": "string",
+          "description": "What happens if this rule is violated"
+        },
+        "auto_fix": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether the toolchain can auto-fix violations"
+        },
+        "reference": {
+          "type": "string",
+          "format": "uri",
+          "description": "Link to detailed documentation for this rule"
+        },
+        "deprecated": {
+          "type": "boolean",
+          "default": false
+        },
+        "since": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "examples": [
+    {
+      "type": "section",
+      "name": "Rules",
+      "content": [
+        {
+          "type": "rule-set",
+          "name": "Security Rules",
+          "description": "Security guardrails for all operations",
+          "global_enforcement": "strict",
+          "rules": [
+            { "rule": "Never log sensitive data (passwords, tokens, API keys)", "category": "security", "priority": "critical", "enforcement": "must-not", "consequence": "Security incident — immediate alert" },
+            { "rule": "Validate all external input before processing", "category": "validation", "priority": "high", "enforcement": "must", "auto_fix": false },
+            { "rule": "Use parameterized queries for all database operations", "category": "security", "priority": "critical", "enforcement": "must-not", "consequence": "SQL injection vulnerability" },
+            { "rule": "Set timeouts on all external API calls", "category": "reliability", "priority": "medium", "enforcement": "should", "condition": "env == 'production'", "consequence": "Potential hanging request" }
+          ]
+        },
+        {
+          "type": "list",
+          "items": [
+            "All public APIs must have input validation",
+            "Errors must not leak internal details to users",
+            "Rate limiting must be applied to all endpoints"
+          ]
+        }
+      ]
+    }
+  ]
 }

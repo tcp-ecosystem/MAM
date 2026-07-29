@@ -1,0 +1,193 @@
+# MAM Inline Element Grammar (BNF)
+# Version: 1.0.0
+# Complete inline element specification for MAM modules
+
+# ============================================================================
+# Inline Content Container
+# ============================================================================
+
+<inline_content> ::= <inline_element>+
+<inline_element> ::= <bold> | <italic> | <bold_italic> | <strikethrough>
+                   | <inline_code> | <link> | <image> | <auto_link>
+                   | <footnote_ref> | <citation_ref> | <math_inline>
+                   | <html_entity> | <escape_sequence> | <plain_text>
+
+# ============================================================================
+# Text Formatting
+# ============================================================================
+
+<bold> ::= <bold_delimiter> <bold_content> <bold_delimiter>
+<bold_delimiter> ::= "**"
+<bold_content> ::= <inline_element>+
+
+<italic> ::= <italic_delimiter> <italic_content> <italic_delimiter>
+<italic_delimiter> ::= "*"
+<italic_content> ::= <inline_element>+
+
+<bold_italic> ::= <bold_italic_delimiter> <bold_italic_content> <bold_italic_delimiter>
+<bold_italic_delimiter> ::= "***"
+<bold_italic_content> ::= <inline_element>+
+
+<strikethrough> ::= <strike_delimiter> <strike_content> <strike_delimiter>
+<strike_delimiter> ::= "~~"
+<strike_content> ::= <inline_element>+
+
+# ============================================================================
+# Inline Code
+# ============================================================================
+
+<inline_code> ::= <code_delimiter> <code_content> <code_delimiter>
+<code_delimiter> ::= "`"
+<code_content> ::= [^`]+
+
+<inline_code_extended> ::= <ext_delimiter> <ext_content> <ext_delimiter>
+<ext_delimiter> ::= "``"
+<ext_content> ::= [^`]+ (?! "`")
+
+# ============================================================================
+# Links
+# ============================================================================
+
+<link> ::= "[" <link_text> "](" <link_url> <link_title>? ")"
+<link_text> ::= <inline_element>*
+<link_url> ::= <absolute_url> | <relative_url> | <email_url>
+<link_title> ::= " " <title_string>
+<title_string> ::= "\"" [^"]* "\""
+<absolute_url> ::= <scheme> "://" <authority> <path>?
+<scheme> ::= "http" | "https" | "ftp" | "ftps"
+<authority> ::= <host> (":" <port>)?
+<host> ::= [a-zA-Z0-9\-\.]+
+<port> ::= DIGIT+
+<path> ::= "/" <path_segment>*
+<path_segment> ::= [a-zA-Z0-9\-_\.]+
+<relative_url> ::= <path> | <path> "?" <query>
+<query> ::= <query_param> ("&" <query_param>)*
+<query_param> ::= <key> "=" <value>
+<key> ::= [a-zA-Z0-9_]+
+<value> ::= [^&]+
+<email_url> ::= "mailto:" <email_address>
+<email_address> ::= [a-zA-Z0-9_\-\.]+ "@" [a-zA-Z0-9\-\.]+
+
+# ============================================================================
+# Images
+# ============================================================================
+
+<image> ::= <image_marker> "[" <image_alt> "](" <image_url> <image_title>? ")"
+<image_marker> ::= "!"
+<image_alt> ::= <inline_element>*
+<image_url> ::= <absolute_url> | <relative_url>
+<image_title> ::= " " <title_string>
+<image_size> ::= <image_url> " =" <width> "x" <height>
+<width> ::= DIGIT+
+<height> ::= DIGIT+
+
+# ============================================================================
+# Auto Links
+# ============================================================================
+
+<auto_link> ::= "<" <auto_url> ">"
+<auto_url> ::= <scheme> "://" <host> <path>?
+<auto_email> ::= "<" <email_address> ">"
+
+# ============================================================================
+# Footnotes
+# ============================================================================
+
+<footnote_ref> ::= <fn_ref_open> <fn_identifier> <fn_ref_close>
+<fn_ref_open> ::= "[^"
+<fn_identifier> ::= [a-zA-Z0-9_]+
+<fn_ref_close> ::= "]"
+
+<footnote_def> ::= <fn_def_open> <fn_identifier> <fn_def_sep> <fn_text> NEWLINE
+<fn_def_open> ::= "[^"
+<fn_def_sep> ::= "]:"
+<fn_text> ::= [^\n]+
+
+# ============================================================================
+# Citations
+# ============================================================================
+
+<citation_ref> ::= <cite_open> <cite_key> <cite_close>
+<cite_open> ::= "[@"
+<cite_key> ::= [a-zA-Z0-9_\-\.]+
+<cite_close> ::= "]"
+
+<citation_def> ::= <cite_def_open> <cite_key> <cite_def_sep> <cite_details> NEWLINE
+<cite_def_open> ::= "[@"
+<cite_def_sep> ::= "]:"
+<cite_details> ::= <cite_field> ("," <cite_field>)*
+<cite_field> ::= <cite_field_name> "=" <cite_field_value>
+<cite_field_name> ::= "title" | "author" | "year" | "url" | "doi"
+<cite_field_value> ::= <metadata_string>
+
+# ============================================================================
+# Math Expressions (LaTeX)
+# ============================================================================
+
+<math_inline> ::= <math_inline_delim> <math_content> <math_inline_delim>
+<math_inline_delim> ::= "$"
+<math_content> ::= [^$]+
+
+<math_display> ::= <math_display_delim> <math_display_content> <math_display_delim>
+<math_display_delim> ::= "$$"
+<math_display_content> ::= [^$]+
+
+<math_block> ::= <math_block_open> <math_block_content> <math_block_close>
+<math_block_open> ::= "\begin{" <math_env> "}"
+<math_block_close> ::= "\end{" <math_env> "}"
+<math_env> ::= "equation" | "align" | "gather" | "multline" | "array"
+<math_block_content> ::= [^\\]+ (?! "\end")
+
+# ============================================================================
+# HTML Entities
+# ============================================================================
+
+<html_entity> ::= <named_entity> | <decimal_entity> | <hex_entity>
+<named_entity> ::= "&" <entity_name> ";"
+<entity_name> ::= "amp" | "lt" | "gt" | "quot" | "apos" | "nbsp"
+                | "copy" | "reg" | "trade" | "mdash" | "ndash"
+<decimal_entity> ::= "&#" DIGIT+ ";"
+<hex_entity> ::= "&#x" [0-9a-fA-F]+ ";"
+
+# ============================================================================
+# Escape Sequences
+# ============================================================================
+
+<escape_sequence> ::= "\\" <escape_char>
+<escape_char> ::= "\" | "'" | "`" | "*" | "_" | "{" | "}" | "["
+                | "]" | "(" | ")" | "#" | "+" | "-" | "." | "!"
+                | "|" | "~" | "@"
+
+# ============================================================================
+# Plain Text
+# ============================================================================
+
+<plain_text> ::= <text_chars>+
+<text_chars> ::= [^*\[`!\\]+ (?! <special_prefix>)
+<special_prefix> ::= "**" | "~~" | "$$" | "[^" | "[@" | "!["
+                    | "\\" | "&" | "<"
+
+# ============================================================================
+# Nested Inline Elements
+# ============================================================================
+
+<nested_bold> ::= "**" <nested_bold_content> "**"
+<nested_bold_content> ::= <italic> | <inline_code> | <link> | <plain_text>
+
+<nested_italic> ::= "*" <nested_italic_content> "*"
+<nested_italic_content> ::= <bold> | <inline_code> | <link> | <plain_text>
+
+<nested_link> ::= "[" <nested_link_content> "](" <link_url> ")"
+<nested_link_content> ::= <bold> | <italic> | <inline_code> | <plain_text>
+
+# ============================================================================
+# Token Definitions
+# ============================================================================
+
+IDENTIFIER ::= [a-zA-Z_][a-zA-Z0-9_]*
+TEXT ::= [^\n]+
+URL ::= [^)]+
+NEWLINE ::= "\n"
+INDENT ::= ("  " | "\t")+
+DIGIT ::= [0-9]
+SPECIAL_CHAR ::= [*_`~\[\]{}()!#|\\]

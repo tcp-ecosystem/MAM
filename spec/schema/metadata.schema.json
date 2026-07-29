@@ -1,8 +1,8 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://mam.dev/schema/v1.0.0/metadata.schema.json",
+  "$id": "https://mam.dev/schema/v2.0.0/metadata.schema.json",
   "title": "MAM Metadata Schema",
-  "description": "JSON Schema for MAM YAML front matter",
+  "description": "JSON Schema for MAM YAML front matter. Validates module identity, versioning, dependencies, permissions, and discovery metadata.",
   "type": "object",
   "required": ["id", "version", "name", "author", "runtime"],
   "properties": {
@@ -11,12 +11,12 @@
       "pattern": "^[a-z][a-z0-9-]{0,63}$",
       "minLength": 1,
       "maxLength": 64,
-      "description": "Unique module identifier"
+      "description": "Unique module identifier — lowercase kebab-case, alphanumeric and hyphens only"
     },
     "version": {
       "type": "string",
       "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(-[a-zA-Z0-9.]+)?(\\+[a-zA-Z0-9.]+)?$",
-      "description": "Semantic version (MAJOR.MINOR.PATCH)"
+      "description": "Semantic version (MAJOR.MINOR.PATCH) — pre-release and build metadata optional"
     },
     "name": {
       "type": "string",
@@ -27,7 +27,8 @@
     "author": {
       "type": "string",
       "minLength": 1,
-      "description": "Module author"
+      "maxLength": 256,
+      "description": "Module author — name or organization"
     },
     "runtime": {
       "type": "string",
@@ -36,39 +37,185 @@
     },
     "tags": {
       "type": "array",
-      "items": { "type": "string", "pattern": "^[a-z0-9-]+$" },
+      "items": { "type": "string", "pattern": "^[a-z0-9-]+$", "maxLength": 64 },
       "uniqueItems": true,
-      "description": "Discovery tags"
+      "maxItems": 32,
+      "description": "Discovery tags for search and categorization"
     },
     "description": {
       "type": "string",
+      "minLength": 1,
       "maxLength": 1024,
-      "description": "Module description"
+      "description": "Brief module description — shown in search results"
     },
     "dependencies": {
       "type": "array",
       "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,63}$" },
-      "description": "Module dependencies"
+      "uniqueItems": true,
+      "description": "Module dependencies — other MAM module IDs"
     },
     "permissions": {
       "type": "array",
-      "items": { "type": "string", "enum": ["network", "filesystem", "environment", "exec", "memory"] },
-      "description": "Required permissions"
+      "items": {
+        "type": "string",
+        "enum": ["network", "filesystem", "environment", "exec", "memory", "database", "secrets"]
+      },
+      "uniqueItems": true,
+      "description": "Required runtime permissions"
     },
     "license": {
       "type": "string",
-      "description": "License identifier (SPDX)"
+      "pattern": "^[A-Za-z0-9._-]+$",
+      "description": "SPDX license identifier (e.g., MIT, Apache-2.0, GPL-3.0)"
     },
     "repository": {
       "type": "string",
       "format": "uri",
-      "description": "Source repository URL"
+      "pattern": "^https?://",
+      "description": "Source repository URL (https only)"
     },
     "mam_version": {
       "type": "string",
-      "default": "1.0.0",
-      "description": "MAM specification version"
+      "default": "2.0.0",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "description": "MAM specification version this module targets"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "data-processing", "api-client", "cli-tool", "library",
+        "framework", "middleware", "adapter", "generator",
+        "analyzer", "transformer", "validator", "orchestrator",
+        "utility", "integration", "infrastructure"
+      ],
+      "description": "Module category for discovery and classification"
+    },
+    "stability": {
+      "type": "string",
+      "enum": ["experimental", "beta", "stable", "mature", "deprecated"],
+      "default": "stable",
+      "description": "Module maturity level"
+    },
+    "homepage": {
+      "type": "string",
+      "format": "uri",
+      "pattern": "^https?://",
+      "description": "Module homepage URL"
+    },
+    "documentation": {
+      "type": "string",
+      "format": "uri",
+      "pattern": "^https?://",
+      "description": "Documentation URL"
+    },
+    "keywords": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1, "maxLength": 64 },
+      "uniqueItems": true,
+      "maxItems": 20,
+      "description": "Additional keywords beyond tags for search"
+    },
+    "min_mam_version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "description": "Minimum MAM runtime version required"
+    },
+    "max_mam_version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+$",
+      "description": "Maximum MAM runtime version supported"
+    },
+    "deprecated_reason": {
+      "type": "string",
+      "maxLength": 512,
+      "description": "Why this module is deprecated — required if stability=deprecated"
+    },
+    "replaces": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{0,63}$",
+      "description": "Module this one replaces (if renamed or forked)"
+    },
+    "compatibility": {
+      "type": "object",
+      "description": "Runtime compatibility constraints",
+      "properties": {
+        "min_python": {
+          "type": "string",
+          "pattern": "^[23](\\.[0-9]+)?$",
+          "description": "Minimum Python version (e.g., '3.10')"
+        },
+        "min_node": {
+          "type": "string",
+          "pattern": "^[0-9]+(\\.[0-9]+)?$",
+          "description": "Minimum Node.js version (e.g., '18')"
+        },
+        "platforms": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["linux", "darwin", "win32", "any"] },
+          "default": ["any"]
+        },
+        "architectures": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["x64", "arm64", "any"] },
+          "default": ["any"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "authors": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": { "type": "string", "minLength": 1 },
+          "email": { "type": "string", "format": "email" },
+          "url": { "type": "string", "format": "uri" },
+          "role": {
+            "type": "string",
+            "enum": ["author", "maintainer", "contributor"]
+          }
+        }
+      },
+      "description": "Detailed author list (alternative to single author string)"
+    },
+    "changelog_url": {
+      "type": "string",
+      "format": "uri",
+      "description": "Link to changelog"
+    },
+    "funding": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "type": { "type": "string", "enum": ["github", "open_collective", "patreon", "custom"] },
+          "url": { "type": "string", "format": "uri" }
+        }
+      },
+      "description": "Funding information"
     }
   },
-  "additionalProperties": false
+  "additionalProperties": false,
+  "examples": [
+    {
+      "id": "data-pipeline-v2",
+      "version": "2.1.0",
+      "name": "Data Pipeline V2",
+      "author": "MAM Team",
+      "runtime": "python",
+      "tags": ["etl", "pipeline", "data", "async"],
+      "description": "High-performance async data pipeline with built-in retry and circuit breaker patterns",
+      "dependencies": ["mam-logging", "mam-metrics"],
+      "permissions": ["network", "filesystem", "database"],
+      "license": "MIT",
+      "repository": "https://github.com/mam-modules/data-pipeline-v2",
+      "mam_version": "2.0.0",
+      "category": "orchestrator",
+      "stability": "stable",
+      "compatibility": {
+        "min_python": "3.10",
+        "platforms": ["linux", "darwin", "win32"]
+      }
+    }
+  ]
 }

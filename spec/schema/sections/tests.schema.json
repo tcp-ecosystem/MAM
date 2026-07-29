@@ -2,15 +2,319 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://mam.dev/schema/v1.0.0/sections/tests.schema.json",
   "title": "Tests Section Schema",
+  "description": "Test definitions, assertions, coverage requirements, and test framework configuration. Supports multiple testing frameworks and assertion patterns.",
   "type": "object",
   "required": ["type", "name", "content"],
   "properties": {
     "type": { "type": "string", "const": "section" },
     "name": { "type": "string", "const": "Tests" },
-    "content": { "type": "array", "items": { "oneOf": [{ "$ref": "#/definitions/CodeBlock" }, { "$ref": "#/definitions/List" }] }, "minItems": 1 }
+    "content": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          { "$ref": "#/definitions/CodeBlock" },
+          { "$ref": "#/definitions/List" },
+          { "$ref": "#/definitions/Paragraph" },
+          { "$ref": "#/definitions/Table" },
+          { "$ref": "#/definitions/TestSuite" }
+        ]
+      },
+      "minItems": 1
+    }
   },
   "definitions": {
-    "CodeBlock": { "type": "object", "required": ["type", "language", "value"], "properties": { "type": { "const": "codeblock" }, "language": { "type": "string" }, "value": { "type": "string", "minLength": 1 } } },
-    "List": { "type": "object", "required": ["type", "items"], "properties": { "type": { "const": "list" }, "items": { "type": "array", "items": { "type": "string" } } } }
-  }
+    "CodeBlock": {
+      "type": "object",
+      "required": ["type", "language", "value"],
+      "properties": {
+        "type": { "const": "codeblock" },
+        "language": {
+          "type": "string",
+          "enum": [
+            "python", "py", "javascript", "js", "typescript", "ts",
+            "rust", "go", "shell", "yaml", "json"
+          ]
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1
+        },
+        "title": {
+          "type": "string",
+          "description": "Test name or description"
+        },
+        "framework": {
+          "type": "string",
+          "enum": [
+            "pytest", "unittest", "jest", "mocha", "vitest",
+            "cargo-test", "go-test", "rspec", "junit",
+            "playwright", "cypress", "selenium", "k6", "locust"
+          ],
+          "description": "Testing framework used"
+        },
+        "tags": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "unit", "integration", "e2e", "smoke", "regression",
+              "performance", "security", "slow", "flaky", "skip",
+              "focus", "mocked"
+            ]
+          },
+          "description": "Test classification tags"
+        },
+        "expected_output": {
+          "type": "string"
+        },
+        "timeout": {
+          "type": "string",
+          "pattern": "^[0-9]+(ms|s|m)$",
+          "description": "Test timeout (e.g., '30s', '5m')"
+        },
+        "retries": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 10,
+          "default": 0,
+          "description": "Number of retries on failure"
+        },
+        "skip": {
+          "type": "boolean",
+          "default": false
+        },
+        "skip_reason": {
+          "type": "string",
+          "description": "Why this test is skipped"
+        },
+        "depends_on": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Other test names this test depends on"
+        }
+      }
+    },
+    "List": {
+      "type": "object",
+      "required": ["type", "items"],
+      "properties": {
+        "type": { "const": "list" },
+        "items": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              { "type": "string" },
+              { "$ref": "#/definitions/TestCase" }
+            ]
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "Paragraph": {
+      "type": "object",
+      "required": ["type", "value"],
+      "properties": {
+        "type": { "const": "paragraph" },
+        "value": { "type": "string", "minLength": 1 }
+      }
+    },
+    "Table": {
+      "type": "object",
+      "required": ["type", "headers", "rows"],
+      "properties": {
+        "type": { "const": "table" },
+        "headers": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 2,
+          "maxItems": 6
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": { "type": "string" },
+            "minItems": 2,
+            "maxItems": 6
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "TestSuite": {
+      "type": "object",
+      "required": ["type", "name", "tests"],
+      "properties": {
+        "type": { "const": "test-suite" },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 128
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 512
+        },
+        "framework": {
+          "type": "string",
+          "enum": [
+            "pytest", "unittest", "jest", "mocha", "vitest",
+            "cargo-test", "go-test", "rspec", "junit"
+          ]
+        },
+        "tests": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/TestCase" },
+          "minItems": 1
+        },
+        "coverage": {
+          "$ref": "#/definitions/CoverageConfig"
+        },
+        "setup": {
+          "type": "string",
+          "description": "Setup code run before all tests"
+        },
+        "teardown": {
+          "type": "string",
+          "description": "Teardown code run after all tests"
+        },
+        "fixtures": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Fixture names or paths"
+        },
+        "environment": {
+          "type": "object",
+          "additionalProperties": { "type": "string" },
+          "description": "Environment variables for test execution"
+        }
+      },
+      "additionalProperties": false
+    },
+    "TestCase": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "description": "Test case name"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 512
+        },
+        "given": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Preconditions (Given...)"
+        },
+        "when": {
+          "type": "string",
+          "description": "Action under test (When...)"
+        },
+        "then": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Expected outcomes (Then...)"
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "priority": {
+          "type": "string",
+          "enum": ["p0", "p1", "p2", "p3"],
+          "default": "p2"
+        },
+        "skip": {
+          "type": "boolean",
+          "default": false
+        },
+        "timeout": {
+          "type": "string",
+          "pattern": "^[0-9]+(ms|s|m)$"
+        }
+      },
+      "additionalProperties": false
+    },
+    "CoverageConfig": {
+      "type": "object",
+      "properties": {
+        "min_line_coverage": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "default": 80,
+          "description": "Minimum line coverage percentage"
+        },
+        "min_branch_coverage": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "default": 75,
+          "description": "Minimum branch coverage percentage"
+        },
+        "min_function_coverage": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "default": 90,
+          "description": "Minimum function coverage percentage"
+        },
+        "exclude_patterns": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Patterns to exclude from coverage"
+        },
+        "fail_on_decrease": {
+          "type": "boolean",
+          "default": true,
+          "description": "Fail CI if coverage decreases"
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "examples": [
+    {
+      "type": "section",
+      "name": "Tests",
+      "content": [
+        {
+          "type": "test-suite",
+          "name": "Core Processing Tests",
+          "framework": "pytest",
+          "description": "Tests for the main data processing pipeline",
+          "coverage": {
+            "min_line_coverage": 85,
+            "min_branch_coverage": 80,
+            "fail_on_decrease": true
+          },
+          "tests": [
+            {
+              "name": "test_process_valid_input",
+              "description": "Processing valid input returns expected output",
+              "given": ["A valid input dataset", "Default configuration"],
+              "when": "process_data() is called",
+              "then": ["Output matches expected schema", "No errors logged"],
+              "tags": ["unit", "regression"],
+              "priority": "p0"
+            },
+            {
+              "name": "test_process_empty_input",
+              "description": "Processing empty input returns empty result",
+              "given": ["An empty dataset"],
+              "when": "process_data() is called",
+              "then": ["Output is an empty list", "Warning is logged"],
+              "tags": ["unit", "edge-case"],
+              "priority": "p1"
+            }
+          ]
+        }
+      ]
+    }
+  ]
 }

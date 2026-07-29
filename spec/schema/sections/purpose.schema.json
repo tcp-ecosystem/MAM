@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://mam.dev/schema/v1.0.0/sections/purpose.schema.json",
   "title": "Purpose Section Schema",
-  "description": "Schema for the Purpose section - module objective description",
+  "description": "Declares the module's objective, target audience, problem domain, and success criteria. The Purpose section is the first section consumers read to understand what a module does and why it exists.",
   "type": "object",
   "required": ["type", "content"],
   "properties": {
@@ -13,7 +13,9 @@
       "items": {
         "oneOf": [
           { "$ref": "#/definitions/Paragraph" },
-          { "$ref": "#/definitions/List" }
+          { "$ref": "#/definitions/List" },
+          { "$ref": "#/definitions/Table" },
+          { "$ref": "#/definitions/PurposeBlock" }
         ]
       },
       "minItems": 1,
@@ -26,7 +28,12 @@
       "required": ["type", "value"],
       "properties": {
         "type": { "type": "string", "const": "paragraph" },
-        "value": { "type": "string", "minLength": 1 }
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 2048,
+          "description": "Free-text purpose description"
+        }
       }
     },
     "List": {
@@ -34,8 +41,170 @@
       "required": ["type", "items"],
       "properties": {
         "type": { "type": "string", "const": "list" },
-        "items": { "type": "array", "items": { "type": "string" }, "minItems": 1 }
+        "items": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              { "type": "string" },
+              { "$ref": "#/definitions/ListItem" }
+            ]
+          },
+          "minItems": 1
+        }
       }
+    },
+    "ListItem": {
+      "type": "object",
+      "required": ["value"],
+      "properties": {
+        "value": { "type": "string", "minLength": 1 },
+        "description": { "type": "string", "maxLength": 512 },
+        "priority": {
+          "type": "string",
+          "enum": ["primary", "secondary", "tertiary"],
+          "default": "primary"
+        }
+      }
+    },
+    "Table": {
+      "type": "object",
+      "required": ["type", "headers", "rows"],
+      "properties": {
+        "type": { "type": "string", "const": "table" },
+        "headers": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "maxItems": 6
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": { "type": "string" },
+            "minItems": 1,
+            "maxItems": 6
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "PurposeBlock": {
+      "type": "object",
+      "required": ["type", "statement"],
+      "properties": {
+        "type": { "const": "purpose-block" },
+        "statement": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 1024,
+          "description": "Core purpose statement — what this module does in one sentence"
+        },
+        "problem": {
+          "type": "string",
+          "maxLength": 1024,
+          "description": "What problem does this module solve?"
+        },
+        "audience": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Who is this module for? (e.g., ['developers', 'data-scientists', 'ops-team'])"
+        },
+        "success_criteria": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "description": "How to know if this module is working correctly"
+        },
+        "non_goals": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "What this module explicitly does NOT do"
+        },
+        "keywords": {
+          "type": "array",
+          "items": { "type": "string" },
+          "uniqueItems": true,
+          "description": "Keywords for discovery and tagging"
+        },
+        "category": {
+          "type": "string",
+          "enum": [
+            "data-processing",
+            "api-client",
+            "cli-tool",
+            "library",
+            "framework",
+            "middleware",
+            "adapter",
+            "generator",
+            "analyzer",
+            "transformer",
+            "validator",
+            "orchestrator",
+            "utility",
+            "integration",
+            "infrastructure"
+          ],
+          "description": "Module category for classification"
+        },
+        "complexity": {
+          "type": "string",
+          "enum": ["trivial", "simple", "moderate", "complex", "advanced"],
+          "default": "moderate",
+          "description": "Expected complexity for consumers"
+        },
+        "stability": {
+          "type": "string",
+          "enum": ["experimental", "beta", "stable", "mature", "deprecated"],
+          "default": "stable",
+          "description": "Module maturity level"
+        },
+        "example_use_cases": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1,
+          "maxItems": 10,
+          "description": "Concrete use case descriptions"
+        }
+      },
+      "additionalProperties": false
     }
-  }
+  },
+  "examples": [
+    {
+      "type": "section",
+      "name": "Purpose",
+      "content": [
+        {
+          "type": "purpose-block",
+          "statement": "A high-performance data pipeline orchestrator that coordinates ETL workflows across distributed systems.",
+          "problem": "Teams struggle to build reliable data pipelines that handle failures gracefully and scale with growing data volumes.",
+          "audience": ["data-engineers", "ml-engineers", "analytics-teams"],
+          "success_criteria": [
+            "Pipelines complete within SLA 99.9% of the time",
+            "Automatic retry on transient failures",
+            "Clear observability into pipeline state"
+          ],
+          "non_goals": [
+            "Does not provide a UI — use the companion dashboard module",
+            "Does not handle data storage — integrates with external warehouses"
+          ],
+          "keywords": ["etl", "pipeline", "orchestration", "data", "workflow"],
+          "category": "orchestrator",
+          "complexity": "complex",
+          "stability": "stable",
+          "example_use_cases": [
+            "Nightly data sync from production DB to analytics warehouse",
+            "Real-time event processing with downstream fan-out",
+            "ML feature engineering pipeline with dependency tracking"
+          ]
+        },
+        {
+          "type": "paragraph",
+          "value": "This module is designed to be composable — each step is an independent unit that can be tested, retried, and monitored in isolation."
+        }
+      ]
+    }
+  ]
 }

@@ -2,16 +2,211 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://mam.dev/schema/v1.0.0/sections/workflow.schema.json",
   "title": "Workflow Section Schema",
+  "description": "Defines the module execution flow: step sequencing, parallel/sequential execution, error handling, retry policies, and branching logic.",
   "type": "object",
   "required": ["type", "name", "content"],
   "properties": {
     "type": { "type": "string", "const": "section" },
     "name": { "type": "string", "const": "Workflow" },
-    "content": { "type": "array", "items": { "oneOf": [{ "$ref": "#/definitions/CodeBlock" }, { "$ref": "#/definitions/Paragraph" }, { "$ref": "#/definitions/List" }] }, "minItems": 1 }
+    "content": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          { "$ref": "#/definitions/CodeBlock" },
+          { "$ref": "#/definitions/Paragraph" },
+          { "$ref": "#/definitions/List" },
+          { "$ref": "#/definitions/Table" },
+          { "$ref": "#/definitions/WorkflowDefinition" }
+        ]
+      },
+      "minItems": 1
+    }
   },
   "definitions": {
-    "CodeBlock": { "type": "object", "required": ["type", "language", "value"], "properties": { "type": { "const": "codeblock" }, "language": { "type": "string" }, "value": { "type": "string" } } },
-    "Paragraph": { "type": "object", "required": ["type", "value"], "properties": { "type": { "const": "paragraph" }, "value": { "type": "string" } } },
-    "List": { "type": "object", "required": ["type", "items"], "properties": { "type": { "const": "list" }, "items": { "type": "array", "items": { "type": "string" } } } }
+    "CodeBlock": {
+      "type": "object",
+      "required": ["type", "language", "value"],
+      "properties": {
+        "type": { "const": "codeblock" },
+        "language": {
+          "type": "string",
+          "enum": ["yaml", "json", "toml", "python", "javascript", "mermaid", "plantuml", "bpmn"]
+        },
+        "value": { "type": "string", "minLength": 1 },
+        "title": { "type": "string" },
+        "description": { "type": "string", "maxLength": 512 }
+      }
+    },
+    "Paragraph": {
+      "type": "object",
+      "required": ["type", "value"],
+      "properties": {
+        "type": { "const": "paragraph" },
+        "value": { "type": "string", "minLength": 1 }
+      }
+    },
+    "List": {
+      "type": "object",
+      "required": ["type", "items"],
+      "properties": {
+        "type": { "const": "list" },
+        "items": {
+          "type": "array",
+          "items": {
+            "oneOf": [
+              { "type": "string" },
+              { "$ref": "#/definitions/Step" }
+            ]
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "Table": {
+      "type": "object",
+      "required": ["type", "headers", "rows"],
+      "properties": {
+        "type": { "const": "table" },
+        "headers": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 2,
+          "maxItems": 7
+        },
+        "rows": {
+          "type": "array",
+          "items": {
+            "type": "array",
+            "items": { "type": "string" },
+            "minItems": 2,
+            "maxItems": 7
+          },
+          "minItems": 1
+        }
+      }
+    },
+    "WorkflowDefinition": {
+      "type": "object",
+      "required": ["type", "name", "steps"],
+      "properties": {
+        "type": { "const": "workflow" },
+        "name": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "description": { "type": "string", "maxLength": 512 },
+        "version": { "type": "string", "default": "1.0.0" },
+        "trigger": {
+          "type": "string",
+          "enum": ["manual", "event", "schedule", "webhook", "api", "cron"],
+          "default": "manual"
+        },
+        "trigger_config": {
+          "type": "object",
+          "properties": {
+            "event": { "type": "string" },
+            "schedule": { "type": "string" },
+            "webhook_path": { "type": "string" }
+          }
+        },
+        "steps": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/Step" },
+          "minItems": 1
+        },
+        "variables": { "type": "object" },
+        "on_success": { "type": "array", "items": { "$ref": "#/definitions/Step" } },
+        "on_failure": { "type": "array", "items": { "$ref": "#/definitions/Step" } },
+        "on_complete": { "type": "array", "items": { "$ref": "#/definitions/Step" } },
+        "timeout": { "type": "string", "pattern": "^[0-9]+(s|m|h|d)$" },
+        "concurrency": {
+          "type": "string",
+          "enum": ["sequential", "parallel", "mixed"],
+          "default": "sequential"
+        },
+        "retry_policy": { "$ref": "#/definitions/RetryPolicy" },
+        "error_handling": { "$ref": "#/definitions/ErrorHandling" }
+      },
+      "additionalProperties": false
+    },
+    "Step": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1, "maxLength": 128 },
+        "type": {
+          "type": "string",
+          "enum": ["action", "condition", "parallel", "loop", "sub-workflow", "wait", "notification", "transform", "validate", "compensate"],
+          "default": "action"
+        },
+        "description": { "type": "string", "maxLength": 256 },
+        "module": { "type": "string" },
+        "function": { "type": "string" },
+        "args": { "type": "object" },
+        "condition": { "type": "string" },
+        "depends_on": { "type": "array", "items": { "type": "string" } },
+        "parallel": { "type": "array", "items": { "$ref": "#/definitions/Step" } },
+        "loop": {
+          "type": "object",
+          "properties": {
+            "items": { "type": "string" },
+            "variable": { "type": "string" },
+            "max_iterations": { "type": "integer", "minimum": 1, "default": 100 }
+          }
+        },
+        "retry": { "$ref": "#/definitions/RetryPolicy" },
+        "timeout": { "type": "string", "pattern": "^[0-9]+(s|m|h)$" },
+        "on_error": {
+          "type": "string",
+          "enum": ["fail", "skip", "retry", "compensate", "abort"],
+          "default": "fail"
+        },
+        "output": { "type": "string" },
+        "async": { "type": "boolean", "default": false }
+      },
+      "additionalProperties": false
+    },
+    "RetryPolicy": {
+      "type": "object",
+      "properties": {
+        "max_retries": { "type": "integer", "minimum": 0, "maximum": 10, "default": 3 },
+        "backoff": {
+          "type": "string",
+          "enum": ["fixed", "linear", "exponential", "jitter"],
+          "default": "exponential"
+        },
+        "initial_delay": { "type": "string", "pattern": "^[0-9]+(ms|s|m)$", "default": "1s" },
+        "max_delay": { "type": "string", "pattern": "^[0-9]+(s|m|h)$", "default": "5m" },
+        "retry_on": {
+          "type": "array",
+          "items": { "type": "string", "enum": ["error", "timeout", "rate-limit", "5xx", "custom"] },
+          "default": ["error", "timeout"]
+        }
+      },
+      "additionalProperties": false
+    },
+    "ErrorHandling": {
+      "type": "object",
+      "properties": {
+        "strategy": {
+          "type": "string",
+          "enum": ["fail-fast", "best-effort", "compensate", "skip-and-continue", "circuit-breaker"],
+          "default": "fail-fast"
+        },
+        "fallback": { "type": "string" },
+        "notification": {
+          "type": "object",
+          "properties": {
+            "enabled": { "type": "boolean", "default": true },
+            "channels": {
+              "type": "array",
+              "items": { "type": "string", "enum": ["email", "slack", "webhook", "log"] }
+            },
+            "on": {
+              "type": "array",
+              "items": { "type": "string", "enum": ["failure", "timeout", "degradation", "all"] }
+            }
+          }
+        }
+      },
+      "additionalProperties": false
+    }
   }
 }
