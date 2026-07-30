@@ -49,7 +49,7 @@ export class SnapshotTest {
     try {
       const content = await readFile(file, 'utf-8');
       const result = parseMAM(content, { source: file });
-      const snapshot = serializeToJSON(result.ast, 'json');
+      const snapshot = serializeToJSON(result.ast as any, 'json');
 
       const snapshotFile = join(this.config.snapshotDir, `${name}.snapshot.json`);
 

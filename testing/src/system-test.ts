@@ -72,7 +72,7 @@ export class SystemTest {
 
       // Analyze semantics
       const analyzeStart = performance.now();
-      const semanticResult = analyzeSemantics(parseResult.ast.sections as V2ModuleNode[]);
+      const semanticResult = analyzeSemantics(parseResult.ast.sections as any);
       const analyzeTimeMs = performance.now() - analyzeStart;
 
       // Collect semantic errors

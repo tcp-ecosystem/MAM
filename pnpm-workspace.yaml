@@ -11,3 +11,7 @@ packages:
   - "plugins/*"
   - "plugins/core/*"
   - "lsp"
+  - "package-manager"
+  - "reference"
+  - "testing"
+  - "registry/*"

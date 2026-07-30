@@ -6,7 +6,13 @@
  */
 
 import type { CompileTarget } from '@mam/compiler';
-import type { CompileResult, CompileStats } from '@mam/compiler';
+import type { CompileResult } from '@mam/compiler';
+
+interface CompileStats {
+  filesCompiled: number;
+  totalLines: number;
+  timeMs: number;
+}
 import type { SemanticResult, SemanticError, SemanticWarning } from '@mam/compiler';
 import type { ValidationError, ValidationWarning, ValidationReport } from '@mam/validator';
 

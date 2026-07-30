@@ -39,6 +39,7 @@ export interface ApiResponse<T = unknown> {
     total?: number;
     page?: number;
     limit?: number;
+    offset?: number;
   };
 }
 
@@ -82,7 +83,7 @@ export class RegistryServer {
    * Search modules
    */
   async handleSearch(query: string, options: { limit?: number; offset?: number } = {}): Promise<ApiResponse> {
-    const results = await this.search.search(query, options);
+    const results = await this.search.search({ text: query, ...options });
     return {
       success: true,
       data: results.modules,

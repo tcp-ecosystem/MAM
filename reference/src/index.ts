@@ -125,7 +125,7 @@ async function buildCommand(file: string, options: any): Promise<void> {
     // Validate
     if (options.validate) {
       console.log(chalk.gray('Validating...'));
-      const validationResult = validate(parseResult.ast);
+      const validationResult = validate(parseResult.ast as any);
       
       if (validationResult.errors.length > 0) {
         console.error(chalk.red('Validation errors:'));
@@ -205,7 +205,7 @@ async function validateCommand(file: string, options: any): Promise<void> {
     }
 
     // Validate
-    const validationResult = validate(parseResult.ast);
+    const validationResult = validate(parseResult.ast as any);
 
     // Semantic analysis
     let semanticResult = null;

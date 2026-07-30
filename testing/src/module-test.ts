@@ -73,7 +73,7 @@ export class ModuleTest {
       let validateTimeMs = 0;
       if (config.validateFirst !== false) {
         const validateStart = performance.now();
-        const validationResult = validate(parseResult.ast);
+        const validationResult = validate(parseResult.ast as any);
         validateTimeMs = performance.now() - validateStart;
 
         for (const error of validationResult.errors) {

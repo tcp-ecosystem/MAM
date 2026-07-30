@@ -215,7 +215,7 @@ export class MAMPackage {
    */
   validate(): ValidationResult {
     if (!this.manifest) {
-      return { valid: false, errors: ['No package loaded'] };
+      return { valid: false, errors: ['No package loaded'], warnings: [] };
     }
 
     const errors: string[] = [];

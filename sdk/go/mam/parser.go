@@ -34,18 +34,18 @@ func ParseFile(path string) (*Module, error) {
 	if err := scanner.Err(); err != nil {
 		return nil, fmt.Errorf("reading %s: %w", path, err)
 	}
-	return Parse(lines, path)
+	return ParseLines(lines, path)
 }
 
 // ParseString is a convenience wrapper that splits raw content into lines and
-// delegates to Parse.
+// delegates to ParseLines.
 func ParseString(content, filePath string) (*Module, error) {
 	lines := strings.Split(content, "\n")
-	return Parse(lines, filePath)
+	return ParseLines(lines, filePath)
 }
 
-// Parse builds a Module AST from pre-split lines.
-func Parse(lines []string, filePath string) (*Module, error) {
+// ParseLines builds a Module AST from pre-split lines.
+func ParseLines(lines []string, filePath string) (*Module, error) {
 	mod := &Module{
 		ContentNode: ContentNode{Type: NodeModule, Location: SourceLocation{File: filePath, Line: 1, Column: 1}},
 		Path:        filePath,

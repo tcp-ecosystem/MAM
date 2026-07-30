@@ -337,7 +337,7 @@ export class RegistryClient {
     // attach auth
     if (this.auth) {
       const authHeaders = await this.auth.getAuthHeaders();
-      Object.assign(init.headers, authHeaders);
+      init.headers = { ...init.headers, ...authHeaders };
     }
 
     // set content-type for bodies
