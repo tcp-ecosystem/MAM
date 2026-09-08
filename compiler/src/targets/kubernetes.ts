@@ -29,33 +29,42 @@ export class KubernetesTarget implements CompileTargetHandler {
   }
 
   private compileModule(mod: V2ModuleNode, config: CompilerConfig): string[] {
+    const comments: string[] = [];
     if (config.includeComments) {
-      const comments: string[] = [];
       comments.push(`# Module: ${mod.name}`);
       comments.push(`# Type: ${mod.moduleType}`);
       if (mod.description) comments.push(`# ${mod.description}`);
       comments.push('');
-      return [...comments, ...this.compileGeneric(mod, config)];
     }
 
+    let result: string[];
     switch (mod.moduleType) {
       case 'agent':
-        return this.compileAgent(mod as unknown as V2AgentNode, config);
+        result = this.compileAgent(mod as unknown as V2AgentNode, config);
+        break;
       case 'tool':
-        return this.compileTool(mod as unknown as V2ToolNode, config);
+        result = this.compileTool(mod as unknown as V2ToolNode, config);
+        break;
       case 'memory':
-        return this.compileMemory(mod as unknown as V2MemoryNode, config);
+        result = this.compileMemory(mod as unknown as V2MemoryNode, config);
+        break;
       case 'workflow':
-        return this.compileWorkflow(mod as unknown as V2WorkflowNode, config);
+        result = this.compileWorkflow(mod as unknown as V2WorkflowNode, config);
+        break;
       case 'team':
-        return this.compileTeam(mod as unknown as V2TeamNode, config);
+        result = this.compileTeam(mod as unknown as V2TeamNode, config);
+        break;
       case 'policy':
-        return this.compilePolicy(mod as unknown as V2PolicyNode, config);
+        result = this.compilePolicy(mod as unknown as V2PolicyNode, config);
+        break;
       case 'system':
-        return this.compileSystem(mod as unknown as V2SystemNode, config);
+        result = this.compileSystem(mod as unknown as V2SystemNode, config);
+        break;
       default:
-        return this.compileGeneric(mod, config);
+        result = this.compileGeneric(mod, config);
     }
+
+    return [...comments, ...result];
   }
 
   private toK8sName(name: string): string {

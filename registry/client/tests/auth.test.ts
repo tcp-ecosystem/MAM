@@ -287,7 +287,7 @@ describe('RegistryAuth', () => {
         removeItem: async (k: string) => { store.delete(k); },
       };
 
-      const auth = new RegistryAuth(makeConfig({ storage } as any));
+      const auth = new RegistryAuth(makeConfig({ tokenStorage: storage } as any));
       await auth.clearTokens();
       expect(store.has('mam_auth_token')).toBe(false);
     });

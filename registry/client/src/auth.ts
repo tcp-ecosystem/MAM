@@ -73,6 +73,9 @@ export class RegistryAuth {
     this.config = config;
     this._fetch = config.fetch ?? globalThis.fetch;
     this._token = config.token ?? null;
+    if (this._token) {
+      this._tokenExpiry = this.extractExpiry(this._token);
+    }
   }
 
   // -------------------------------------------------------------------------
@@ -278,7 +281,7 @@ export class RegistryAuth {
   }
 
   private isTokenExpired(): boolean {
-    if (this._tokenExpiry === null) return true;
+    if (this._tokenExpiry === null) return false;
     return Date.now() >= this._tokenExpiry;
   }
 

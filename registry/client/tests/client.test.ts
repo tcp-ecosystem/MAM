@@ -135,7 +135,7 @@ describe('RegistryClient', () => {
     it('sends DELETE', async () => {
       const fetch = fakeFetch(async (_url, init) => {
         expect(init.method).toBe('DELETE');
-        return jsonResponse(null, 204);
+        return new Response(null, { status: 204 });
       });
       const client = new RegistryClient(makeConfig({ fetch }));
 

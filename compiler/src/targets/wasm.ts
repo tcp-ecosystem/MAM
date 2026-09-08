@@ -28,34 +28,42 @@ export class WasmTarget implements CompileTargetHandler {
 
   private compileModule(mod: V2ModuleNode, indent: number, config: CompilerConfig): string[] {
     const pad = ' '.repeat(indent);
+    const lines: string[] = [];
 
     if (config.includeComments) {
-      const lines: string[] = [];
       lines.push(`;; Module: ${mod.name}`);
       lines.push(`;; Type: ${mod.moduleType}`);
       if (mod.description) lines.push(`;; ${mod.description}`);
       lines.push('');
-      return lines;
     }
 
     switch (mod.moduleType) {
       case 'agent':
-        return this.compileAgent(mod as unknown as V2AgentNode, indent, config);
+        lines.push(...this.compileAgent(mod as unknown as V2AgentNode, indent, config));
+        break;
       case 'tool':
-        return this.compileTool(mod as unknown as V2ToolNode, indent, config);
+        lines.push(...this.compileTool(mod as unknown as V2ToolNode, indent, config));
+        break;
       case 'memory':
-        return this.compileMemory(mod as unknown as V2MemoryNode, indent, config);
+        lines.push(...this.compileMemory(mod as unknown as V2MemoryNode, indent, config));
+        break;
       case 'workflow':
-        return this.compileWorkflow(mod as unknown as V2WorkflowNode, indent, config);
+        lines.push(...this.compileWorkflow(mod as unknown as V2WorkflowNode, indent, config));
+        break;
       case 'team':
-        return this.compileTeam(mod as unknown as V2TeamNode, indent, config);
+        lines.push(...this.compileTeam(mod as unknown as V2TeamNode, indent, config));
+        break;
       case 'policy':
-        return this.compilePolicy(mod as unknown as V2PolicyNode, indent, config);
+        lines.push(...this.compilePolicy(mod as unknown as V2PolicyNode, indent, config));
+        break;
       case 'system':
-        return this.compileSystem(mod as unknown as V2SystemNode, indent, config);
+        lines.push(...this.compileSystem(mod as unknown as V2SystemNode, indent, config));
+        break;
       default:
-        return this.compileGeneric(mod, indent, config);
+        lines.push(...this.compileGeneric(mod, indent, config));
     }
+
+    return lines;
   }
 
   private compileAgent(mod: V2AgentNode, indent: number, config: CompilerConfig): string[] {
