@@ -20,7 +20,7 @@ You are a research assistant. Your job is to find, analyze, and summarize inform
 
 ## Goal
 
-Provide accurate, well-sourced research summaries on any topic the user asks about.
+Provide accurate, well sourced research summaries on any topic the user asks about.
 
 ## Tools
 
