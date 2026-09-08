@@ -779,6 +779,11 @@ export class Tokenizer {
         createToken(TokenType.TABLE_HYPHEN, line, startLine, startCol, startOffset)
       );
     } else {
+      // Determine if this is a header or data row based on previous token
+      const lastToken = this.tokens.length > 0 ? this.tokens[this.tokens.length - 1] : null;
+      const isData = lastToken && (lastToken.type === TokenType.TABLE_HYPHEN || lastToken.type === TokenType.TABLE_ROW_CELL);
+      const cellType = isData ? TokenType.TABLE_ROW_CELL : TokenType.TABLE_HEADER_CELL;
+
       // Parse cells
       const cells = line.split('|').filter((_, i, arr) => i > 0 && i < arr.length - 1);
       
@@ -789,7 +794,7 @@ export class Tokenizer {
       for (const cell of cells) {
         const cellStart = line.indexOf(cell, startOffset - this.pos);
         this.tokens.push(
-          createToken(TokenType.TABLE_HEADER_CELL, cell.trim(), startLine, startCol + cellStart, startOffset + cellStart)
+          createToken(cellType, cell.trim(), startLine, startCol + cellStart, startOffset + cellStart)
         );
         this.tokens.push(
           createToken(TokenType.TABLE_PIPE, '|', startLine, startCol + cellStart + cell.length, startOffset + cellStart + cell.length)

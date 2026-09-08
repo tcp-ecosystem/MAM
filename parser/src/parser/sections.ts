@@ -554,6 +554,15 @@ function parseTable(
 
   // Parse data rows
   while (pos < tokens.length) {
+    // Skip whitespace between table rows
+    while (pos < tokens.length && tokens[pos]!.type === TokenType.WHITESPACE) {
+      pos++;
+    }
+    // Also skip TABLE_PIPE at the start of a row (left border)
+    if (pos < tokens.length && tokens[pos]!.type === TokenType.TABLE_PIPE) {
+      pos++;
+    }
+
     const token = tokens[pos]!;
     
     if (token.type === TokenType.TABLE_ROW_CELL || token.type === TokenType.TABLE_HEADER_CELL) {

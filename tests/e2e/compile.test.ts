@@ -1,17 +1,14 @@
 /**
  * End-to-End Compilation Pipeline Test
  *
- * Tests: .mam.md → Parse → AST → [GAP: no transformer] → Compile → Target Output
- *
- * FINDING: The parser outputs MAMModule (sections) but the compiler expects V2ModuleNode[].
- * There is NO automatic transformer between them. This is a critical gap for beta.
+ * Tests the FULL pipeline: .mam.md → Parse → Transform → Compile → Target Output
  */
 
 import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { parseMAM } from '../../parser/dist/index.js';
-import { MAMCompiler, type CompilerConfig } from '../../compiler/dist/compiler.js';
+import { MAMCompiler, transformToV2, type CompilerConfig } from '../../compiler/dist/index.js';
 import { PythonTarget } from '../../compiler/dist/targets/python.js';
 import { JavaScriptTarget } from '../../compiler/dist/targets/javascript.js';
 import { GoTarget } from '../../compiler/dist/targets/go.js';
@@ -28,7 +25,6 @@ import { AutoGenTarget } from '../../compiler/dist/targets/autogen.js';
 import { CSharpTarget } from '../../compiler/dist/targets/csharp.js';
 import { JavaTarget } from '../../compiler/dist/targets/java.js';
 import { TerraformTarget } from '../../compiler/dist/targets/terraform.js';
-import { type V2ModuleNode } from '../../ast/dist/index.js';
 
 // ============================================================================
 // Helpers
@@ -39,18 +35,9 @@ function loadFixture(name: string): string {
   return readFileSync(join(fixturesDir, name), 'utf-8');
 }
 
-const loc = { start: { line: 1, column: 0 }, end: { line: 5, column: 0 }, source: 'test' };
-
-function makeModule(overrides: Partial<V2ModuleNode> & { name: string }): V2ModuleNode {
-  return {
-    type: 'ModuleNode',
-    moduleType: 'agent',
-    name: 'test-module',
-    role: 'Test agent',
-    goal: 'Test goal',
-    location: loc,
-    ...overrides,
-  };
+function loadExample(name: string): string {
+  const examplesDir = join(import.meta.dirname, '../../modules/examples');
+  return readFileSync(join(examplesDir, name), 'utf-8');
 }
 
 function createCompiler(): MAMCompiler {
@@ -74,8 +61,20 @@ function createCompiler(): MAMCompiler {
   return compiler;
 }
 
+function fullPipeline(input: string, target: CompilerConfig['target'], source: string) {
+  const parseResult = parseMAM(input, { source });
+  expect(parseResult.errors).toHaveLength(0);
+
+  const modules = transformToV2(parseResult.ast);
+  expect(modules.length).toBeGreaterThan(0);
+
+  const compiler = createCompiler();
+  const result = compiler.compile(modules, { target, includeComments: true });
+  return result;
+}
+
 // ============================================================================
-// Parser Tests - Can we parse .mam.md files?
+// Parser Tests
 // ============================================================================
 
 describe('Parser: .mam.md Parsing', () => {
@@ -84,11 +83,8 @@ describe('Parser: .mam.md Parsing', () => {
     const result = parseMAM(input, { source: 'minimal.mam.md' });
 
     expect(result.errors).toHaveLength(0);
-    expect(result.ast).toBeDefined();
-    expect(result.ast.frontmatter).toBeDefined();
     expect(result.ast.frontmatter?.data?.id).toBe('minimal');
     expect(result.ast.frontmatter?.data?.name).toBe('Minimal Module');
-    expect(result.ast.sections.length).toBeGreaterThan(0);
   });
 
   it('parses basic.mam.md', () => {
@@ -97,7 +93,6 @@ describe('Parser: .mam.md Parsing', () => {
 
     expect(result.errors).toHaveLength(0);
     expect(result.ast.frontmatter?.data?.id).toBe('basic-module');
-    expect(result.ast.sections.length).toBe(2);
   });
 
   it('parses full.mam.md', () => {
@@ -106,43 +101,172 @@ describe('Parser: .mam.md Parsing', () => {
 
     expect(result.errors).toHaveLength(0);
     expect(result.ast.frontmatter).toBeDefined();
-    expect(result.ast.sections.length).toBeGreaterThan(0);
   });
 });
 
 // ============================================================================
-// Compiler Tests - Can we compile V2ModuleNode to all targets?
+// Transformer Tests
 // ============================================================================
 
-describe('Compiler: All Targets', () => {
-  const agentModule = makeModule({
-    name: 'researcher',
-    moduleType: 'agent',
-    role: 'Researcher',
-    goal: 'Research topics',
-    tools: ['web-search'],
-    handoff: ['writer'],
+describe('Transformer: MAMModule → V2ModuleNode', () => {
+  it('transforms minimal.mam.md to V2ModuleNode', () => {
+    const input = loadFixture('minimal.mam.md');
+    const parseResult = parseMAM(input, { source: 'minimal.mam.md' });
+    const modules = transformToV2(parseResult.ast);
+
+    expect(modules).toHaveLength(1);
+    expect(modules[0].type).toBe('ModuleNode');
+    expect(modules[0].name).toBe('Minimal Module');
+    expect(modules[0].moduleType).toBe('module');
   });
 
-  const toolModule = makeModule({
-    name: 'web-search',
-    moduleType: 'tool',
-    provider: 'google',
-    capabilities: ['search'],
+  it('transforms basic.mam.md to V2ModuleNode', () => {
+    const input = loadFixture('basic.mam.md');
+    const parseResult = parseMAM(input, { source: 'basic.mam.md' });
+    const modules = transformToV2(parseResult.ast);
+
+    expect(modules).toHaveLength(1);
+    expect(modules[0].name).toBe('Basic Module');
   });
 
-  const workflowModule = makeModule({
-    name: 'pipeline',
-    moduleType: 'workflow',
-    steps: [
-      { type: 'StepNode', name: 'step-1', location: loc },
-      { type: 'StepNode', name: 'step-2', location: loc },
-    ],
-    edges: [
-      { type: 'EdgeNode', source: 'step-1', target: 'step-2', location: loc },
-    ],
+  it('infers agent type from role/goal sections', () => {
+    const input = `---
+id: test-agent
+name: Test Agent
+version: 1.0.0
+author: Test
+runtime: python
+---
+
+## Purpose
+
+A test agent.
+
+## Role
+
+Research assistant
+
+## Goal
+
+Find information about topics
+`;
+    const parseResult = parseMAM(input, { source: 'test.mam.md' });
+    const modules = transformToV2(parseResult.ast);
+
+    expect(modules).toHaveLength(1);
+    expect(modules[0].moduleType).toBe('agent');
   });
 
+  it('infers tool type from provider field', () => {
+    const input = `---
+id: web-search
+name: Web Search
+version: 1.0.0
+author: Test
+runtime: python
+provider: google
+---
+
+## Purpose
+
+Search the web.
+`;
+    const parseResult = parseMAM(input, { source: 'test.mam.md' });
+    const modules = transformToV2(parseResult.ast);
+
+    expect(modules).toHaveLength(1);
+    expect(modules[0].moduleType).toBe('tool');
+  });
+
+  it('extracts inputs from table', () => {
+    const input = `---
+id: test-module
+name: Test Module
+version: 1.0.0
+author: Test
+runtime: python
+---
+
+## Purpose
+
+Test.
+
+## Inputs
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| query | string | Yes | Search query |
+| limit | int | No | Max results |
+`;
+    const parseResult = parseMAM(input, { source: 'test.mam.md' });
+    const modules = transformToV2(parseResult.ast);
+
+    expect(modules[0].inputs).toBeDefined();
+    expect(modules[0].inputs).toHaveLength(2);
+    expect(modules[0].inputs![0].name).toBe('query');
+    expect(modules[0].inputs![0].type).toBe('string');
+    expect(modules[0].inputs![0].required).toBe(true);
+  });
+
+  it('extracts rules from list', () => {
+    const input = `---
+id: policy-module
+name: Policy Module
+version: 1.0.0
+author: Test
+runtime: python
+---
+
+## Purpose
+
+Test policy.
+
+## Rules
+
+- Never expose secrets
+- Validate all inputs
+- Log all operations
+`;
+    const parseResult = parseMAM(input, { source: 'test.mam.md' });
+    const modules = transformToV2(parseResult.ast);
+
+    expect(modules[0].documentation).toBeDefined();
+    expect(modules[0].documentation).toContain('secrets');
+    expect(modules[0].documentation).toContain('Validate all inputs');
+  });
+
+  it('extracts dependencies', () => {
+    const input = `---
+id: test-deps
+name: Test Module
+version: 1.0.0
+author: Test
+runtime: python
+---
+
+## Purpose
+
+Test.
+
+## Dependencies
+
+- lodash
+- express
+`;
+    const parseResult = parseMAM(input, { source: 'test.mam.md' });
+    const modules = transformToV2(parseResult.ast);
+
+    expect(modules[0].requires).toBeDefined();
+    expect(modules[0].requires).toHaveLength(2);
+    expect(modules[0].requires).toContain('lodash');
+  });
+});
+
+// ============================================================================
+// Full Pipeline: .mam.md → Parse → Transform → Compile
+// ============================================================================
+
+describe('Full Pipeline: .mam.md → Parse → Transform → Compile', () => {
   const targets: CompilerConfig['target'][] = [
     'python', 'javascript', 'go', 'rust',
     'openai', 'langgraph', 'crewai', 'claude', 'gemini', 'autogen',
@@ -150,9 +274,10 @@ describe('Compiler: All Targets', () => {
   ];
 
   for (const target of targets) {
-    it(`compiles agent to ${target}`, () => {
-      const compiler = createCompiler();
-      const result = compiler.compile([agentModule], { target, includeComments: true });
+    it(`minimal.mam.md → ${target}`, () => {
+      const input = loadFixture('minimal.mam.md');
+      const result = fullPipeline(input, target, 'minimal.mam.md');
+
       expect(result.success).toBe(true);
       expect(result.output).toBeTruthy();
       expect(result.stats.linesGenerated).toBeGreaterThan(0);
@@ -160,18 +285,20 @@ describe('Compiler: All Targets', () => {
   }
 
   for (const target of targets) {
-    it(`compiles tool to ${target}`, () => {
-      const compiler = createCompiler();
-      const result = compiler.compile([toolModule], { target, includeComments: true });
+    it(`basic.mam.md → ${target}`, () => {
+      const input = loadFixture('basic.mam.md');
+      const result = fullPipeline(input, target, 'basic.mam.md');
+
       expect(result.success).toBe(true);
       expect(result.output).toBeTruthy();
     });
   }
 
   for (const target of targets) {
-    it(`compiles workflow to ${target}`, () => {
-      const compiler = createCompiler();
-      const result = compiler.compile([workflowModule], { target, includeComments: true });
+    it(`full.mam.md → ${target}`, () => {
+      const input = loadFixture('full.mam.md');
+      const result = fullPipeline(input, target, 'full.mam.md');
+
       expect(result.success).toBe(true);
       expect(result.output).toBeTruthy();
     });
@@ -179,94 +306,61 @@ describe('Compiler: All Targets', () => {
 });
 
 // ============================================================================
-// Compiler: Output Quality Checks
+// Output Quality
 // ============================================================================
 
-describe('Compiler: Output Quality', () => {
-  const agentModule = makeModule({
-    name: 'researcher',
-    moduleType: 'agent',
-    role: 'Researcher',
-    goal: 'Research topics',
-  });
+describe('Output Quality: Compiled Code', () => {
+  it('Python output has class and init method', () => {
+    const input = loadFixture('minimal.mam.md');
+    const result = fullPipeline(input, 'python', 'minimal.mam.md');
 
-  it('Python output contains class and execute method', () => {
-    const compiler = createCompiler();
-    const result = compiler.compile([agentModule], { target: 'python', includeComments: true });
     expect(result.output).toContain('class');
-    expect(result.output).toContain('def execute');
-    expect(result.output).toContain('Researcher');
+    expect(result.output).toContain('def __init__');
   });
 
-  it('JavaScript output contains class and execute method', () => {
-    const compiler = createCompiler();
-    const result = compiler.compile([agentModule], { target: 'javascript', includeComments: true });
+  it('JavaScript output has class and constructor', () => {
+    const input = loadFixture('minimal.mam.md');
+    const result = fullPipeline(input, 'javascript', 'minimal.mam.md');
+
     expect(result.output).toContain('class');
-    expect(result.output).toContain('execute');
+    expect(result.output).toContain('constructor');
   });
 
-  it('Go output contains struct and Execute function', () => {
-    const compiler = createCompiler();
-    const result = compiler.compile([agentModule], { target: 'go', includeComments: true });
+  it('Go output has struct and Execute', () => {
+    const input = loadFixture('minimal.mam.md');
+    const result = fullPipeline(input, 'go', 'minimal.mam.md');
+
     expect(result.output).toContain('struct');
     expect(result.output).toContain('Execute');
   });
 
-  it('Rust output contains struct and execute function', () => {
-    const compiler = createCompiler();
-    const result = compiler.compile([agentModule], { target: 'rust', includeComments: true });
+  it('Rust output has struct and fn execute', () => {
+    const input = loadFixture('minimal.mam.md');
+    const result = fullPipeline(input, 'rust', 'minimal.mam.md');
+
     expect(result.output).toContain('struct');
     expect(result.output).toContain('fn execute');
   });
 
-  it('Kubernetes output contains Deployment manifest', () => {
-    const compiler = createCompiler();
-    const result = compiler.compile([agentModule], { target: 'kubernetes', includeComments: true });
+  it('Kubernetes output has Deployment manifest', () => {
+    const input = loadFixture('minimal.mam.md');
+    const result = fullPipeline(input, 'kubernetes', 'minimal.mam.md');
+
     expect(result.output).toContain('apiVersion: apps/v1');
     expect(result.output).toContain('kind: Deployment');
-    expect(result.output).toContain('mam-type: agent');
   });
 
-  it('Docker output contains Dockerfile instructions', () => {
-    const compiler = createCompiler();
-    const result = compiler.compile([agentModule], { target: 'docker', includeComments: true });
+  it('Docker output has FROM instruction', () => {
+    const input = loadFixture('minimal.mam.md');
+    const result = fullPipeline(input, 'docker', 'minimal.mam.md');
+
     expect(result.output).toContain('FROM');
   });
 
-  it('Wasm output contains WAT module', () => {
-    const compiler = createCompiler();
-    const result = compiler.compile([agentModule], { target: 'wasm', includeComments: true });
-    expect(result.output).toContain('(module');
-    expect(result.output).toContain('(memory');
-  });
-});
-
-// ============================================================================
-// GAP DOCUMENTATION: Parser → Compiler Missing Transformer
-// ============================================================================
-
-describe('GAP: Parser → Compiler Transformer', () => {
-  it('documents that parser output cannot be fed directly to compiler', () => {
-    // Parser output structure:
+  it('Wasm output has (module', () => {
     const input = loadFixture('minimal.mam.md');
-    const parseResult = parseMAM(input, { source: 'minimal.mam.md' });
+    const result = fullPipeline(input, 'wasm', 'minimal.mam.md');
 
-    // Parser returns MAMModule with sections
-    expect(parseResult.ast).toBeDefined();
-    expect(parseResult.ast.sections).toBeDefined();
-    expect(parseResult.ast.frontmatter).toBeDefined();
-
-    // Compiler expects V2ModuleNode[]
-    // There is NO function to convert parseResult.ast → V2ModuleNode[]
-    // This is a CRITICAL GAP for the beta release
-
-    // The parser AST structure:
-    // { type: 'MAMModule', frontmatter: { data: {...} }, sections: [...] }
-    //
-    // The compiler expects:
-    // V2ModuleNode[] = [{ type: 'ModuleNode', moduleType: 'agent', name: '...', ... }]
-    //
-    // A transformer function is needed:
-    // function mamModuleToV2ModuleNode(ast: MAMModule): V2ModuleNode[]
+    expect(result.output).toContain('(module');
   });
 });

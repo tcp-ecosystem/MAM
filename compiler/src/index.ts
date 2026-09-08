@@ -20,3 +20,4 @@ export { AutoGenTarget } from './targets/autogen.js';
 export { KubernetesTarget } from './targets/kubernetes.js';
 export { TerraformTarget } from './targets/terraform.js';
 export { SemanticAnalyzer, analyzeSemantics, type SemanticResult, type SemanticError, type SemanticWarning, type AnalyzerConfig } from './analyzer/index.js';
+export { MAMTransformer, transformToV2 } from './transformer.js';
