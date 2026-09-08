@@ -112,6 +112,8 @@ export interface V2ModuleNode extends V2BaseNode {
   state?: V2StateDefinition;
   lifecycle?: V2LifecycleDefinition;
   documentation?: string;
+  rules?: string[];
+  prompts?: string[];
   tests?: string;
   examples?: string;
 

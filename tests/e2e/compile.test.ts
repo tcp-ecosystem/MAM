@@ -230,9 +230,9 @@ Test policy.
     const parseResult = parseMAM(input, { source: 'test.mam.md' });
     const modules = transformToV2(parseResult.ast);
 
-    expect(modules[0].documentation).toBeDefined();
-    expect(modules[0].documentation).toContain('secrets');
-    expect(modules[0].documentation).toContain('Validate all inputs');
+    expect(modules[0].rules).toBeDefined();
+    expect(modules[0].rules).toContain('Never expose secrets');
+    expect(modules[0].rules).toContain('Validate all inputs');
   });
 
   it('extracts dependencies', () => {

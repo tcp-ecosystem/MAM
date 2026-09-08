@@ -1092,18 +1092,23 @@ export class Tokenizer {
     while (end < this.input.length) {
       const char = this.input[end]!;
       
-      // Stop at special characters
-      if (char === '\n' || char === '#' || char === '`' || char === '-' || 
+      // Stop at newlines and most special characters
+      if (char === '\n' || char === '#' || char === '`' ||
           char === '*' || char === '_' || char === '>' || char === '|' ||
           char === '[' || char === '!' || char === '~') {
         break;
       }
-      
-      // Stop at front matter separator
-      if (char === '-' && end + 2 < this.input.length && 
-          this.input[end + 1] === '-' && this.input[end + 2] === '-' &&
-          (end === 0 || this.input[end - 1] === '\n')) {
-        break;
+
+      // Special handling for hyphens: only stop at word boundaries
+      // "well-sourced" should NOT break, but "- list item" or "---" should
+      if (char === '-') {
+        const prevChar = end > 0 ? this.input[end - 1] : '\n';
+        const nextChar = end + 1 < this.input.length ? this.input[end + 1] : '\n';
+        const isWordBoundary = (prevChar === ' ' || prevChar === '\t' || prevChar === '\n' || prevChar === '\r' || end === 0) ||
+                               (nextChar === ' ' || nextChar === '\t' || nextChar === '\n' || nextChar === '\r' || end + 1 >= this.input.length);
+        if (isWordBoundary) {
+          break;
+        }
       }
       
       end++;

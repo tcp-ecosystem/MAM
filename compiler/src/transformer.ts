@@ -266,10 +266,8 @@ export class MAMTransformer {
       examples: examplesSection ? this.extractText(examplesSection.content) : undefined,
       tests: testsSection ? this.extractText(testsSection.content) : undefined,
       memory: data.memory as V2MemoryReference | undefined,
-      documentation: [
-        rulesSection ? this.extractList(rulesSection.content).join('\n') : '',
-        promptSection ? this.extractText(promptSection.content) : '',
-      ].filter(Boolean).join('\n\n') || undefined,
+      rules: rulesSection ? this.extractList(rulesSection.content) : undefined,
+      prompts: promptSection ? this.extractList(promptSection.content) : undefined,
     };
   }
 
@@ -367,6 +365,7 @@ export class MAMTransformer {
 
     let allow: string[] = [];
     let deny: string[] = [];
+    const otherRules: string[] = [];
 
     if (allowSection) {
       allow = this.extractList(allowSection.content);
@@ -385,7 +384,7 @@ export class MAMTransformer {
         } else if (lower.startsWith('deny:')) {
           deny.push(rule.slice(5).trim());
         } else {
-          allow.push(rule);
+          otherRules.push(rule);
         }
       }
     }
@@ -395,6 +394,7 @@ export class MAMTransformer {
       allow,
       deny,
       permissions: permissionsSection ? this.parsePermissions(permissionsSection.content) : undefined,
+      rules: otherRules.length > 0 ? otherRules : undefined,
     };
   }
 
@@ -431,12 +431,6 @@ export class MAMTransformer {
     const rulesSection = this.findSection(sections, 'Rules');
     const docsSection = this.findSection(sections, 'Documentation');
 
-    const documentation = rulesSection
-      ? this.extractList(rulesSection.content).join('\n')
-      : docsSection
-        ? this.extractText(docsSection.content)
-        : undefined;
-
     return {
       ...base,
       inputs: inputsSection ? this.parseInputs(inputsSection.content) : undefined,
@@ -445,7 +439,8 @@ export class MAMTransformer {
       permissions: permissionsSection ? this.parsePermissions(permissionsSection.content) : undefined,
       examples: examplesSection ? this.extractText(examplesSection.content) : undefined,
       tests: testsSection ? this.extractText(testsSection.content) : undefined,
-      documentation,
+      rules: rulesSection ? this.extractList(rulesSection.content) : undefined,
+      documentation: docsSection ? this.extractText(docsSection.content) : undefined,
     };
   }
 
