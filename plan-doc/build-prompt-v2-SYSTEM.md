@@ -14,7 +14,7 @@
 | AST | ✅ | `ast/src/nodes/v2.ts` |
 | Semantic Analyzer | ✅ | `compiler/src/analyzer/index.ts` |
 | Validator | ✅ | `validator/src/` |
-| Compiler | ✅ | `compiler/src/` (8 targets) |
+| Compiler | ✅ | `compiler/src/` (16 targets) |
 | Runtime | ✅ | `runtime/src/v2/index.ts` |
 | CLI | ✅ | `cli/src/` (18 commands) |
 | Package Manager | ✅ | `package-manager/src/` |
@@ -24,23 +24,23 @@
 | Visualization Engine | ✅ | `visualization/src/` |
 | Reference Implementation | ✅ | `reference/src/index.ts` |
 
-### Compiler Targets ✅
-- [x] Python
-- [x] JavaScript
-- [x] Go
-- [x] Rust
-- [x] OpenAI SDK
-- [x] LangGraph
-- [x] CrewAI
-- [x] Claude SDK
-- [x] Docker
-- [ ] C# (future)
-- [ ] Java (future)
-- [ ] WebAssembly (future)
-- [ ] Gemini SDK (future)
-- [ ] AutoGen (future)
-- [ ] Kubernetes (future)
-- [ ] Terraform (future)
+### Compiler Targets ✅ (16 total)
+- [x] Python (py)
+- [x] JavaScript (js)
+- [x] Go (go)
+- [x] Rust (rs)
+- [x] C# (cs)
+- [x] Java (java)
+- [x] WebAssembly (wasm)
+- [x] Kubernetes (yaml)
+- [x] Terraform (tf)
+- [x] Docker (Dockerfile)
+- [x] OpenAI SDK (json)
+- [x] LangGraph (py)
+- [x] CrewAI (py)
+- [x] Gemini SDK (py)
+- [x] AutoGen (py)
+- [x] Claude SDK (ts)
 
 ### CLI Commands ✅
 - [x] mam init

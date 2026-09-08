@@ -26,7 +26,7 @@
 | Team syntax | ✅ | `ast/src/nodes/v2.ts` |
 | Policy syntax | ✅ | `ast/src/nodes/v2.ts` |
 | Edge syntax (`->`) | ✅ | `parser/src/parser/dsl.ts` |
-| Compiler targets | ✅ | `compiler/src/targets/` (8 targets) |
+| Compiler targets | ✅ | `compiler/src/targets/` (16 targets) |
 
 ### From Section 3: System ✅
 | Concept | Status | Implementation |

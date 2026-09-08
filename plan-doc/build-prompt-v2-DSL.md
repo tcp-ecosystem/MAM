@@ -16,7 +16,7 @@
 | Phase 5: AST | ✅ | `ast/src/nodes/v2.ts` |
 | Phase 6: Semantic Analyzer | ✅ | `compiler/src/analyzer/index.ts` |
 | Phase 7: Validator | ✅ | `validator/src/` |
-| Phase 8: Compiler | ✅ | `compiler/src/` (8 targets) |
+| Phase 8: Compiler | ✅ | `compiler/src/` (16 targets) |
 | Phase 9: Runtime Specification | ✅ | `runtime/src/v2/index.ts` |
 | Phase 10: Plugin API | ✅ | `plugins/api/src/` |
 | Phase 11: Package Manager | ✅ | `package-manager/src/` |
