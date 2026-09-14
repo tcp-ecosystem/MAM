@@ -222,6 +222,9 @@ graph TB
 | mam lint | MAM Linter | Code linter |
 | mam build | MAM Builder | Module builder |
 | mam run | MAM Runner | Module runner |
+| mam test | MAM Test | Test runner |
+| mam viz | MAM Visualize | Graph visualization |
+| mam audit | MAM Audit | Security audit |
 
 ---
 
@@ -455,34 +458,36 @@ graph TB
 ```mermaid
 graph TB
     subgraph "Today"
-        A[MAM MVP]
-        B[9 Compiler Targets]
-        C[18 CLI Commands]
-        D[4 Core Plugins]
+        A[MAM Beta]
+        B[16 Compiler Targets]
+        C[34 CLI Commands]
+        D[5 Core Plugins]
+        E[4 SDKs]
     end
     
     subgraph "Tomorrow"
-        E[Universal Standard]
-        F[100+ Modules]
-        G[50+ Plugins]
-        H[Enterprise Adoption]
+        F[Universal Standard]
+        G[100+ Modules]
+        H[50+ Plugins]
+        I[Enterprise Adoption]
     end
     
     subgraph "Future"
-        I[AI Orchestration Standard]
-        J[System Description Language]
-        K[Open Ecosystem]
+        J[AI Orchestration Standard]
+        K[System Description Language]
+        L[Open Ecosystem]
     end
     
-    A --> E
-    B --> F
-    C --> G
-    D --> H
-    
+    A --> F
+    B --> G
+    C --> H
+    D --> I
     E --> I
+    
     F --> J
     G --> K
-    H --> K
+    H --> L
+    I --> L
 ```
 
 ---

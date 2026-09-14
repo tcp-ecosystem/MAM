@@ -1017,7 +1017,7 @@ export class MAMLinter {
   async lintFile(filePath: string, options: LintOptions): Promise<LintResult> {
     const absPath = resolve(filePath);
 
-    const ignorePatterns = [...DEFAULT_IGNORE, ...(options.ignore || []), ...(this.config.ignore || [])];
+    const ignorePatterns = [...DEFAULT_IGNORE, ...(Array.isArray(options.ignore) ? options.ignore : []), ...(Array.isArray(this.config.ignore) ? this.config.ignore : [])];
     if (shouldIgnore(absPath, ignorePatterns)) {
       return { file: absPath, passed: true, diagnostics: [], stats: { timeMs: 0, rulesChecked: 0, errors: 0, warnings: 0, info: 0, fixable: 0, linesChecked: 0, filesScanned: 0 }, score: 100 };
     }

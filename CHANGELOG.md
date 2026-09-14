@@ -28,6 +28,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Parser parseTable: whitespace and TABLE_PIPE tokens now consumed between table rows
 - V2ModuleNode: added `rules` and `prompts` fields (previously missing from interface)
 - Transformer: rules now populate `rules` field instead of `documentation`
+- **Critical**: Section parser H1 hierarchy bug — H1 sections no longer consume H2+ content as nested sections (line 258: added `parentLevel === 1` break condition)
+- **Critical**: Indented list items (`- item` after 4-space indent) — `readListItem()` now emits NEWLINE token after consuming line end, and `nextToken` no longer resets `atLineStart` after list item parsing
+- **Critical**: MAM edge syntax `->` in text — `readText()` now skips `->` as a unit instead of breaking at `-` or `>` individually
 - Transformer: prompts now populate `prompts` field instead of `documentation`
 - @mam/package-manager: added `@types/node` devDependency, tsconfig `"types": ["node"]`
 - @mam/plugin-api: tsconfig `"types": ["node"]` for Node.js type definitions

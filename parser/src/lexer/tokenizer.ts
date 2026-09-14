@@ -94,6 +94,7 @@ export class Tokenizer {
   private codeBlockLanguage: string = '';
   private codeBlockDepth: number = 0;
   private lastTokenType: TokenType | null = null;
+  private atLineStart: boolean = false;
 
   constructor(options: TokenizerOptions = {}) {
     this.source = options.source || '<input>';
@@ -231,36 +232,42 @@ export class Tokenizer {
       // Priority 1: Front matter separator
       if (this.isAtLineStart() && this.isFrontMatterSeparator(remaining)) {
         this.readFrontMatterSeparator();
+        this.atLineStart = false;
         return;
       }
 
       // Priority 2: Code fence
       if (this.isCodeFence(remaining)) {
         this.readCodeFence();
+        this.atLineStart = false;
         return;
       }
 
       // Priority 3: Headings (must be at line start)
       if (char === '#' && this.isAtLineStart()) {
         this.readHeading();
+        this.atLineStart = false;
         return;
       }
 
       // Priority 4: Horizontal rule (must be at line start)
       if (this.isAtLineStart() && this.isHorizontalRule(remaining)) {
         this.readHorizontalRule();
+        this.atLineStart = false;
         return;
       }
 
       // Priority 5: Blockquote
       if (char === '>' && this.isAtLineStart()) {
         this.readBlockquote();
+        this.atLineStart = false;
         return;
       }
 
       // Priority 6: Table
       if (char === '|' && this.isAtLineStart()) {
         this.readTableRow();
+        this.atLineStart = false;
         return;
       }
 
@@ -273,11 +280,13 @@ export class Tokenizer {
       // Priority 8: Inline formatting
       if (this.trackInline && this.isInlineFormatting(remaining)) {
         this.readInlineFormatting();
+        this.atLineStart = false;
         return;
       }
 
       // Priority 9: Regular text
       this.readText();
+      this.atLineStart = false;
     } finally {
       this.depth--;
     }
@@ -301,7 +310,7 @@ export class Tokenizer {
   }
 
   private isAtLineStart(): boolean {
-    return this.column === 0 || this.pos === 0;
+    return this.column === 0 || this.pos === 0 || this.atLineStart;
   }
 
   private isEOF(): boolean {
@@ -356,6 +365,7 @@ export class Tokenizer {
         this.line++;
         this.column = 0;
         this.lastTokenType = TokenType.NEWLINE;
+        this.atLineStart = true;
       } else if (char === ' ' || char === '\t') {
         const startCol = this.column;
         const startOffset = this.pos;
@@ -670,9 +680,12 @@ export class Tokenizer {
       this.consumeChar(); // newline
       this.line++;
       this.column = 0;
+      this.atLineStart = true;
     }
   }
 
+  // ==========================================================================
+  // Tables
   // ==========================================================================
   // Lists
   // ==========================================================================
@@ -760,6 +773,11 @@ export class Tokenizer {
       this.consumeChar();
       this.line++;
       this.column = 0;
+      this.atLineStart = true;
+      this.tokens.push(
+        createToken(TokenType.NEWLINE, '\n', this.line - 1, 0, this.pos - 1)
+      );
+      this.lastTokenType = TokenType.NEWLINE;
     }
   }
 
@@ -808,6 +826,7 @@ export class Tokenizer {
       this.consumeChar();
       this.line++;
       this.column = 0;
+      this.atLineStart = true;
     }
   }
 
@@ -863,6 +882,7 @@ export class Tokenizer {
       this.consumeChar();
       this.line++;
       this.column = 0;
+      this.atLineStart = true;
     }
   }
 
@@ -1094,16 +1114,30 @@ export class Tokenizer {
       
       // Stop at newlines and most special characters
       if (char === '\n' || char === '#' || char === '`' ||
-          char === '*' || char === '_' || char === '>' || char === '|' ||
+          char === '*' || char === '_' || char === '|' ||
           char === '[' || char === '!' || char === '~') {
         break;
       }
 
+      // Allow > in text when it's part of -> (MAM edge syntax)
+      if (char === '>') {
+        const prevChar = end > 0 ? this.input[end - 1] : '';
+        if (prevChar !== '-') {
+          break;
+        }
+      }
+
       // Special handling for hyphens: only stop at word boundaries
       // "well-sourced" should NOT break, but "- list item" or "---" should
+      // "-> " (MAM edge syntax) should NOT break
       if (char === '-') {
         const prevChar = end > 0 ? this.input[end - 1] : '\n';
         const nextChar = end + 1 < this.input.length ? this.input[end + 1] : '\n';
+        // Don't stop if this is part of -> (MAM edge syntax)
+        if (nextChar === '>') {
+          end += 2; // skip both - and >
+          continue;
+        }
         const isWordBoundary = (prevChar === ' ' || prevChar === '\t' || prevChar === '\n' || prevChar === '\r' || end === 0) ||
                                (nextChar === ' ' || nextChar === '\t' || nextChar === '\n' || nextChar === '\r' || end + 1 >= this.input.length);
         if (isWordBoundary) {

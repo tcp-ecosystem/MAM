@@ -8,11 +8,13 @@
 
 | Metric | Value |
 |--------|-------|
-| Total Files | 205 |
-| TypeScript Files | 122 |
-| Documentation Files | 15 |
-| Configuration Files | 8 |
-| Total Size | ~580KB |
+| Total Packages | 19 |
+| Source TypeScript Files | 225 |
+| Test TypeScript Files | 74 |
+| Total Tests | 2300+ |
+| CLI Commands | 34 |
+| Compiler Targets | 16 |
+| Module Types | 25+ |
 
 ---
 
@@ -196,15 +198,23 @@
 |------|------|-------------|
 | `compiler/src/index.ts` | 690B | Compiler exports |
 | `compiler/src/compiler.ts` | 13.8KB | Main compiler |
+| `compiler/src/transformer.ts` | 15KB | MAMModule → V2ModuleNode transformer |
 | `compiler/src/analyzer/index.ts` | 13.5KB | Semantic analyzer |
 | `compiler/src/targets/python.ts` | 6.9KB | Python target |
 | `compiler/src/targets/javascript.ts` | 2.4KB | JavaScript target |
 | `compiler/src/targets/go.ts` | 2.4KB | Go target |
 | `compiler/src/targets/rust.ts` | 19.1KB | Rust target |
+| `compiler/src/targets/csharp.ts` | 5KB | C# target |
+| `compiler/src/targets/java.ts` | 5KB | Java target |
+| `compiler/src/targets/wasm.ts` | 4KB | WebAssembly target |
 | `compiler/src/targets/openai.ts` | 4.5KB | OpenAI SDK target |
 | `compiler/src/targets/langgraph.ts` | 3.9KB | LangGraph target |
 | `compiler/src/targets/crewai.ts` | 4.6KB | CrewAI target |
+| `compiler/src/targets/gemini.ts` | 4KB | Gemini target |
+| `compiler/src/targets/autogen.ts` | 4KB | AutoGen target |
 | `compiler/src/targets/claude.ts` | 1.6KB | Claude SDK target |
+| `compiler/src/targets/kubernetes.ts` | 4KB | Kubernetes target |
+| `compiler/src/targets/terraform.ts` | 4KB | Terraform target |
 | `compiler/src/targets/docker.ts` | 1.4KB | Docker target |
 | `compiler/package.json` | 1KB | Package config |
 
@@ -270,6 +280,17 @@
 
 ---
 
+## SDK Files
+
+| Directory | Files | Description |
+|-----------|-------|-------------|
+| `sdk/javascript/` | 9 TS files | JavaScript SDK (96 tests) |
+| `sdk/python/` | Python files | Python SDK |
+| `sdk/go/` | Go files | Go SDK |
+| `sdk/rust/` | Rust files | Rust SDK |
+
+---
+
 ## Testing Files
 
 | File | Size | Description |
@@ -306,14 +327,54 @@
 
 ## Example Modules
 
-| File | Size | Description |
-|------|------|-------------|
-| `modules/examples/authentication.mam.md` | 4KB | Auth module |
-| `modules/examples/bug-hunter.mam.md` | 5KB | Multi-agent system |
-| `modules/templates/basic.mam.md` | 1KB | Basic template |
+### Basic Examples (6)
+
+| File | Description |
+|------|-------------|
+| `examples/basic/hello.mam.md` | Simple greeting module |
+| `examples/basic/calculator.mam.md` | Calculator with inputs/outputs |
+| `examples/basic/password-gen.mam.md` | Password generator |
+| `examples/basic/string-utils.mam.md` | String utilities |
+| `examples/basic/temperature.mam.md` | Temperature converter |
+| `examples/basic/text-transform.mam.md` | Text transformations |
+
+### Advanced Examples (7)
+
+| File | Description |
+|------|-------------|
+| `examples/advanced/agent.mam.md` | AI agent with tools |
+| `examples/advanced/api-gateway.mam.md` | API gateway system |
+| `examples/advanced/data-pipeline.mam.md` | Data processing pipeline |
+| `examples/advanced/knowledge-graph.mam.md` | Knowledge graph system |
+| `examples/advanced/monitoring-agent.mam.md` | Monitoring agent |
+| `examples/advanced/multi-agent-debate.mam.md` | Multi-agent debate system |
+| `examples/advanced/workflow.mam.md` | Complex workflow |
+
+### Plugin Examples (5)
+
+| File | Description |
+|------|-------------|
+| `examples/plugins/custom-section/custom-section.mam.md` | Custom section plugin |
+| `examples/plugins/export-plugin/export-plugin.mam.md` | Export plugin |
+| `examples/plugins/memory-plugin/memory-plugin.mam.md` | Memory plugin |
+| `examples/plugins/runtime-plugin/runtime-plugin.mam.md` | Runtime plugin |
+| `examples/plugins/validation-plugin/validation-plugin.mam.md` | Validation plugin |
 
 ---
 
-**Last Updated:** 2026-07-24
-**Total Files:** 205
-**Total Size:** ~580KB
+## Compiled Outputs
+
+| Directory | Files | Description |
+|-----------|-------|-------------|
+| `output/examples/` | 143 | Compiled from 13 real modules × 16 targets |
+| `output/minimal/` | 13 | Minimal example outputs |
+| `output/basic/` | 13 | Basic example outputs |
+| `output/full/` | 13 | Full example outputs |
+| `output/agent/` | 13 | Agent example outputs |
+| `output/tool/` | 13 | Tool example outputs |
+
+---
+
+**Last Updated:** 2026-09-14
+**Total Packages:** 19
+**Total Tests:** 2300+

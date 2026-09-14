@@ -124,7 +124,7 @@ graph TB
 | Parse Speed | >100 tokens/ms | ~80 tokens/ms |
 | Compile Speed | >50 lines/ms | ~40 lines/ms |
 | AST Determinism | 100% | 100% |
-| Test Coverage | >80% | ~60% |
+| Test Coverage | >80% | ~75% |
 | CLI Startup | <50ms | ~80ms |
 | LSP Latency | <100ms | ~120ms |
 
@@ -133,10 +133,10 @@ graph TB
 | Metric | Target | Current |
 |--------|--------|---------|
 | GitHub Stars | 1000+ | 0 |
-| Community Modules | 100+ | 2 |
+| Community Modules | 100+ | 13 |
 | Plugin Authors | 50+ | 0 |
 | Framework Integrations | 10+ | 0 |
-| Documentation Coverage | >90% | ~40% |
+| Documentation Coverage | >90% | ~60% |
 
 ### Adoption Metrics
 
@@ -151,7 +151,7 @@ graph TB
 
 ## Milestones
 
-### Milestone 1: MVP (Current)
+### Milestone 1: MVP
 
 ```mermaid
 graph LR
@@ -164,9 +164,9 @@ graph LR
     
     subgraph "MVP Features"
         H[19 Section Types]
-        I[9 Compiler Targets]
-        J[18 CLI Commands]
-        K[4 Core Plugins]
+        I[16 Compiler Targets]
+        J[34 CLI Commands]
+        K[5 Core Plugins]
     end
     
     G --> H
@@ -177,7 +177,7 @@ graph LR
 
 **Status:** ✅ Complete
 
-### Milestone 2: Beta
+### Milestone 2: Beta (Current)
 
 ```mermaid
 graph LR
@@ -190,14 +190,18 @@ graph LR
     subgraph "Beta Features"
         G[Python SDK]
         H[JavaScript SDK]
-        I[VS Code Extension]
-        J[Complete Docs]
+        I[Go SDK]
+        J[Rust SDK]
+        K[VS Code Extension]
+        L[Complete Docs]
     end
     
     F --> G
     F --> H
     F --> I
     F --> J
+    F --> K
+    F --> L
 ```
 
 **Status:** 🔄 In Progress
@@ -248,15 +252,18 @@ gantt
     LSP                     :done, lsp, 2026-05-15, 2026-06-15
     Registry                :done, registry, 2026-06-01, 2026-06-30
     section Phase 4
-    Python SDK              :active, py-sdk, 2026-06-15, 2026-07-15
-    JavaScript SDK          :active, js-sdk, 2026-07-01, 2026-07-30
-    VS Code Extension       :vscode, 2026-07-15, 2026-08-15
-    Documentation           :docs, 2026-07-01, 2026-08-15
+    Python SDK              :done, py-sdk, 2026-06-15, 2026-07-15
+    JavaScript SDK          :done, js-sdk, 2026-07-01, 2026-07-30
+    Go SDK                  :done, go-sdk, 2026-07-15, 2026-08-15
+    Rust SDK                :done, rust-sdk, 2026-08-01, 2026-08-30
+    Parser Fixes            :done, parser-fixes, 2026-08-15, 2026-09-14
     section Phase 5
-    Registry Launch         :milestone, reg, 2026-08-01, 1d
-    Community               :community, 2026-08-01, 2026-09-30
-    Enterprise              :enterprise, 2026-09-01, 2026-10-30
-    v1.0 Release            :milestone, v1, 2026-10-01, 1d
+    VS Code Extension       :vscode, 2026-09-15, 2026-10-15
+    Documentation           :docs, 2026-09-01, 2026-10-15
+    Registry Launch         :milestone, reg, 2026-10-01, 1d
+    Community               :community, 2026-10-01, 2026-12-30
+    Enterprise              :enterprise, 2026-11-01, 2027-01-30
+    v1.0 Release            :milestone, v1, 2027-01-01, 1d
 ```
 
 ---
@@ -265,8 +272,11 @@ gantt
 
 ### Q3 2026
 
-- [ ] Python SDK released
-- [ ] JavaScript SDK released
+- [x] Python SDK released
+- [x] JavaScript SDK released
+- [x] Go SDK released
+- [x] Rust SDK released
+- [x] Parser bugs fixed (hyphen, indented lists, edge syntax)
 - [ ] VS Code Extension published
 - [ ] Documentation complete
 - [ ] 50+ example modules

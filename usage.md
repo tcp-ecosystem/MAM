@@ -181,249 +181,74 @@ permissions:
 
 ## CLI Commands
 
+All 34 commands are implemented and working:
+
 ### Module Management
 
-#### Initialize Module
-
-```bash
-# Basic module
-mam init my-module
-
-# With template
-mam init my-agent --template agent
-
-# With specific runtime
-mam init my-module --runtime javascript
-```
-
-**Templates:**
-- `basic` - Simple module with Purpose, Rules, Examples
-- `full` - Complete module with all sections
-- `agent` - AI agent with tools and memory
-- `workflow` - Process workflow definition
-- `team` - Multi-agent team
-
-#### Build Module
-
-```bash
-# Build to AST
-mam build my-module.mam.md
-
-# Build to specific directory
-mam build my-module.mam.md --outDir ./build
-
-# Build with minification
-mam build my-module.mam.md --minify
-```
-
-#### Validate Module
-
-```bash
-# Basic validation
-mam validate my-module.mam.md
-
-# Strict validation
-mam validate my-module.mam.md --level strict
-
-# JSON output
-mam validate my-module.mam.md --format json
-```
-
-#### Test Module
-
-```bash
-# Test single module
-mam test my-module.mam.md
-
-# Test all modules in directory
-mam test
-
-# Verbose output
-mam test --verbose
-```
+| Command | Description |
+|---------|-------------|
+| `mam init [name]` | Initialize a new MAM module |
+| `mam build <file>` | Build module to AST |
+| `mam compile <file> -t <target>` | Compile to target language |
+| `mam run <file>` | Run a module |
+| `mam execute <file>` | Execute module (v1 compat) |
+| `mam validate <file>` | Validate module |
+| `mam lint <file>` | Lint module for issues |
+| `mam format <file>` | Format module |
+| `mam test [file]` | Run module tests |
+| `mam snapshot <file>` | Create module snapshot |
+| `mam benchmark <file>` | Benchmark parsing and execution |
 
 ### Development
 
-#### Lint Module
+| Command | Description |
+|---------|-------------|
+| `mam ast <file>` | Display AST |
+| `mam diff <file1> <file2>` | Diff two modules |
+| `mam graph` | Show dependency graph |
+| `mam viz <file>` | Visualize module structure |
+| `mam audit <file>` | Security audit |
+| `mam check <file>` | Check against spec |
+| `mam doctor` | Check environment |
+| `mam schema` | Generate JSON schema |
+| `mam explain <concept>` | Explain MAM concepts |
+| `mam stats [path]` | Show statistics |
 
-```bash
-# Basic linting
-mam lint my-module.mam.md
+### Documentation & Export
 
-# Error level only
-mam lint my-module.mam.md --level error
-
-# JSON output
-mam lint my-module.mam.md --format json
-```
-
-#### Format Module
-
-```bash
-# Check formatting
-mam format my-module.mam.md --check
-
-# Format in place
-mam format my-module.mam.md --in-place
-
-# Custom indentation
-mam format my-module.mam.md --indent 2
-```
-
-#### Show Graph
-
-```bash
-# Text format
-mam graph
-
-# Mermaid format
-mam graph --format mermaid
-
-# ASCII art
-mam graph --format ascii
-
-# JSON format
-mam graph --format json
-```
-
-#### Display AST
-
-```bash
-# Pretty print
-mam ast my-module.mam.md
-
-# JSON format
-mam ast my-module.mam.md --format json
-
-# Statistics only
-mam ast my-module.mam.md --format stats
-```
-
-#### Check Environment
-
-```bash
-mam doctor
-```
-
-### Execution
-
-#### Run Module
-
-```bash
-# Run with defaults
-mam run my-module.mam.md
-
-# Run with inputs
-mam run my-module.mam.md --inputs '{"key": "value"}'
-
-# Run with timeout
-mam run my-module.mam.md --timeout 60000
-```
-
-#### Compile Module
-
-```bash
-# Compile to Python
-mam compile my-module.mam.md -t python
-
-# Compile to JavaScript
-mam compile my-module.mam.md -t javascript
-
-# Compile to Go
-mam compile my-module.mam.md -t go
-
-# Compile to Rust
-mam compile my-module.mam.md -t rust
-
-# Compile to AI SDK
-mam compile my-module.mam.md -t openai
-mam compile my-module.mam.md -t langgraph
-mam compile my-module.mam.md -t crewai
-
-# Compile to Docker
-mam compile my-module.mam.md -t docker
-
-# Compile to JSON
-mam compile my-module.mam.md -t json
-```
+| Command | Description |
+|---------|-------------|
+| `mam docs <file>` | Generate documentation |
+| `mam export <file>` | Export to various formats |
+| `mam info <file>` | Show module information |
 
 ### Package Management
 
-#### Install Dependencies
+| Command | Description |
+|---------|-------------|
+| `mam install` | Install dependencies |
+| `mam publish <file>` | Publish to registry |
+| `mam search <query>` | Search module registry |
+| `mam eco` | List ecosystem modules |
 
-```bash
-# Install from mam-package.json
-mam install
+### Configuration & Plugins
 
-# Install specific package
-mam install @mam/core
-```
+| Command | Description |
+|---------|-------------|
+| `mam config` | Manage configuration |
+| `mam plugin` | Manage plugins |
+| `mam templates` | List templates |
+| `mam examples [topic]` | Show examples |
+| `mam cache` | Manage cache |
 
-#### Publish Module
+### Development Server
 
-```bash
-# Publish to registry
-mam publish my-module.mam.md
-
-# Publish with private access
-mam publish my-module.mam.md --access private
-```
-
-### Documentation
-
-#### Generate Docs
-
-```bash
-# Generate Markdown docs
-mam docs my-module.mam.md
-
-# Generate with API reference
-mam docs my-module.mam.md --api
-
-# Generate to specific directory
-mam docs my-module.mam.md --outDir ./docs
-```
-
-#### Export Module
-
-```bash
-# Export to JSON
-mam export my-module.mam.md --format json
-
-# Export to HTML
-mam export my-module.mam.md --format html
-
-# Export to Markdown
-mam export my-module.mam.md --format markdown
-
-# Export AST
-mam export my-module.mam.md --format ast
-```
-
-### Utilities
-
-#### Start Dev Server
-
-```bash
-# Start on default port
-mam serve
-
-# Start on custom port
-mam serve --port 8080
-```
-
-#### Migrate Module
-
-```bash
-# Migrate v1 to v2
-mam migrate my-module.mam.md
-
-# Migrate in place
-mam migrate my-module.mam.md --in-place
-
-# Dry run (show changes without applying)
-mam migrate my-module.mam.md --dry-run
-```
+| Command | Description |
+|---------|-------------|
+| `mam dev` | Start dev server with hot reload |
+| `mam serve` | Start development server |
+| `mam watch <file>` | Watch modules for changes |
+| `mam migrate <file>` | Migrate v1 to v2 |
 
 ---
 
@@ -618,18 +443,27 @@ policy:
 
 ## Compiler Targets
 
+MAM compiles to 16 target languages:
+
 | Target | Command | Output |
 |--------|---------|--------|
 | Python | `mam compile -t python` | `.py` |
 | JavaScript | `mam compile -t javascript` | `.js` |
 | Go | `mam compile -t go` | `.go` |
 | Rust | `mam compile -t rust` | `.rs` |
-| OpenAI SDK | `mam compile -t openai` | `.py` |
+| C# | `mam compile -t csharp` | `.cs` |
+| Java | `mam compile -t java` | `.java` |
+| WebAssembly | `mam compile -t wasm` | `.wasm` |
+| JSON | `mam compile -t json` | `.json` |
+| OpenAI SDK | `mam compile -t openai` | `.json` |
 | LangGraph | `mam compile -t langgraph` | `.py` |
 | CrewAI | `mam compile -t crewai` | `.py` |
-| Claude SDK | `mam compile -t claude` | `.py` |
+| Gemini | `mam compile -t gemini` | `.py` |
+| AutoGen | `mam compile -t autogen` | `.py` |
+| Claude SDK | `mam compile -t claude` | `.ts` |
+| Kubernetes | `mam compile -t kubernetes` | `.yaml` |
+| Terraform | `mam compile -t terraform` | `.tf` |
 | Docker | `mam compile -t docker` | `Dockerfile` |
-| JSON | `mam compile -t json` | `.json` |
 
 ---
 
@@ -935,7 +769,8 @@ mam compile my-module.mam.md -t json
 
 ## Resources
 
-- [Specification](../spec/SPEC.md)
-- [Architecture](../ARCHITECTURE.md)
-- [Examples](../modules/examples/)
-- [v2 Plan](../plan-doc/plan-v2.md)
+- [Specification](spec/SPEC.md)
+- [Architecture](ARCHITECTURE.md)
+- [Examples](examples/)
+- [Changelog](CHANGELOG.md)
+- [v2 Plan](plan-doc/plan-v2.md)

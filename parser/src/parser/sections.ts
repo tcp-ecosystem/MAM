@@ -253,9 +253,10 @@ function parseSectionContent(
     }
 
     // Stop at heading of same or higher level
+    // Special case: H1 is always the title, not a container — any new heading breaks it
     if (isHeadingToken(token.type)) {
       const nextLevel = getHeadingLevel(token.type);
-      if (nextLevel <= parentLevel) {
+      if (nextLevel <= parentLevel || parentLevel === 1) {
         break;
       }
     }
