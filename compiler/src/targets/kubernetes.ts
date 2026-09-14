@@ -6,6 +6,7 @@
 
 import { V2ModuleNode, V2AgentNode, V2ToolNode, V2MemoryNode, V2WorkflowNode, V2TeamNode, V2PolicyNode, V2SystemNode } from '@mam/ast';
 import { CompileTargetHandler, CompilerConfig } from '../compiler.js';
+import { generateModuleContext } from '../context.js';
 
 export class KubernetesTarget implements CompileTargetHandler {
   name = 'kubernetes';
@@ -18,6 +19,8 @@ export class KubernetesTarget implements CompileTargetHandler {
     lines.push('---');
 
     for (const mod of modules) {
+      lines.push(generateModuleContext(mod, 'kubernetes'));
+      lines.push('---');
       const parts = this.compileModule(mod, config);
       if (parts.length > 0) {
         lines.push(...parts);

@@ -6,6 +6,7 @@
 
 import { V2ModuleNode, V2AgentNode, V2ToolNode, V2MemoryNode, V2WorkflowNode, V2TeamNode, V2PolicyNode, V2SystemNode } from '@mam/ast';
 import { CompileTargetHandler, CompilerConfig } from '../compiler.js';
+import { generateModuleContext } from '../context.js';
 
 export class AutoGenTarget implements CompileTargetHandler {
   name = 'autogen';
@@ -26,6 +27,8 @@ export class AutoGenTarget implements CompileTargetHandler {
     lines.push('');
 
     for (const mod of modules) {
+      lines.push(generateModuleContext(mod, 'autogen'));
+      lines.push('');
       lines.push(...this.compileModule(mod, indent, config));
       lines.push('');
     }

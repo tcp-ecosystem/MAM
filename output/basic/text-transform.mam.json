@@ -1,0 +1,95 @@
+{
+4"_generator": "MAM Compiler",
+4"_target": "json",
+4"_source": "C:\\Users\\USER\\LifeJiggy\\Prompt_AI-Support\\MAM\\examples\\basic\\text-transform.mam.md",
+4"_version": "1.0.0",
+4"_moduleContext": {
+44"name": "Text Transform",
+44"type": "module",
+44"version": "1.0.0",
+44"author": "MAM Team",
+44"description": "Transform text between different cases and formats with length tracking",
+44"purpose": "Transform text between different cases and formats with length tracking",
+44"inputs": [
+444{
+4444"name": "text",
+4444"type": "string",
+4444"required": true,
+4444"description": "The text to transform"
+444},
+444{
+4444"name": "transform",
+4444"type": "string",
+4444"required": true,
+4444"description": "The transformation to apply: \"uppercase\", \"lowercase\", \"title\", \"snake\", \"kebab\""
+444}
+44],
+44"outputs": [
+444{
+4444"name": "transformed_text",
+4444"type": "string",
+4444"description": "The transformed text"
+444},
+444{
+4444"name": "original_length",
+4444"type": "int",
+4444"description": "Length of the original text"
+444},
+444{
+4444"name": "new_length",
+4444"type": "int",
+4444"description": "Length of the transformed text"
+444}
+44],
+44"capabilities": [
+444"example",
+444"beginner",
+444"text",
+444"transformation"
+44],
+44"rules": [
+444"Non-alphabetic characters (numbers, symbols, spaces) must be preserved",
+444"Empty strings must return empty results without errors",
+444"The original_length and new_length must accurately reflect character counts",
+444"snake_case and kebab_case must handle multiple consecutive spaces gracefully",
+444"Title case must capitalize the first letter of each word"
+44],
+44"dependencies": [],
+44"permissions": {
+444"network": "N/A",
+444"filesystem": "N/A"
+44},
+44"tests": "See source module for test definitions",
+44"examples": "See source module for usage examples",
+44"references": "See https://github.com/tcp-ecosystems/MAM"
+4},
+4"name": "Text Transform",
+4"module": {
+44"format": "mam/v1",
+44"type": "prompt",
+44"version": "1.0.0"
+4},
+4"metadata": {
+44"generatedAt": "2026-09-14T22:18:10.399Z",
+44"sourceHash": "d00cc7d19eab39cf"
+4},
+4"sections": [],
+4"inputs": {},
+4"outputs": {},
+4"config": {
+44"timeout_ms": 30000,
+44"retry": {
+444"maxAttempts": 3,
+444"backoffMs": 1000
+44},
+44"cache": {
+444"enabled": false,
+444"ttlMs": 0
+44}
+4},
+4"plugins": [],
+4"hooks": {
+44"before": [],
+44"after": []
+4}
+}

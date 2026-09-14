@@ -6,6 +6,7 @@
  */
 
 import { V2ModuleNode, V2AgentNode, V2ToolNode, V2MemoryNode, V2WorkflowNode, V2TeamNode, V2PolicyNode, V2SystemNode } from '@mam/ast';
+import { generateModuleContext } from './context.js';
 
 // ============================================================================
 // Types
@@ -150,6 +151,8 @@ class PythonTargetHandler implements CompileTargetHandler {
     lines.push('');
 
     for (const mod of modules) {
+      lines.push(generateModuleContext(mod, 'python'));
+      lines.push('');
       lines.push(...this.compileModule(mod, indent, config));
       lines.push('');
     }
@@ -384,6 +387,8 @@ class JavaScriptTargetHandler implements CompileTargetHandler {
     lines.push('');
 
     for (const mod of modules) {
+      lines.push(generateModuleContext(mod, 'javascript'));
+      lines.push('');
       lines.push(...this.compileModule(mod, config));
       lines.push('');
     }
@@ -427,6 +432,9 @@ class JSONTargetHandler implements CompileTargetHandler {
   name = 'json';
 
   compile(modules: V2ModuleNode[], config: CompilerConfig): string {
-    return JSON.stringify(modules, null, config.indent || 2);
+    if (modules.length === 1) {
+      return generateModuleContext(modules[0], 'json');
+    }
+    return JSON.stringify(modules.map(m => JSON.parse(generateModuleContext(m, 'json'))), null, config.indent || 2);
   }
 }

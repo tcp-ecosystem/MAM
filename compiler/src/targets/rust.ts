@@ -7,6 +7,7 @@
 
 import { V2ModuleNode, V2AgentNode, V2ToolNode, V2MemoryNode, V2WorkflowNode, V2TeamNode, V2PolicyNode, V2SystemNode, V2StepNode, V2EdgeNode, V2PortDefinition, V2PermissionSet } from '@mam/ast';
 import { CompileTargetHandler, CompilerConfig } from '../compiler.js';
+import { generateModuleContext } from '../context.js';
 
 // ============================================================================
 // Rust Target
@@ -33,8 +34,10 @@ export class RustTarget implements CompileTargetHandler {
     lines.push(...this.generateErrorEnum(indent));
     lines.push('');
 
-    // Generate modules
+    // Generate modules with context
     for (const mod of modules) {
+      lines.push(generateModuleContext(mod, 'rust'));
+      lines.push('');
       lines.push(...this.compileModule(mod, indent, config));
       lines.push('');
     }

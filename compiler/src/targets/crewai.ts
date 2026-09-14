@@ -6,6 +6,7 @@
 
 import { V2ModuleNode, V2AgentNode, V2ToolNode, V2TeamNode } from '@mam/ast';
 import { CompileTargetHandler, CompilerConfig } from '../compiler.js';
+import { generateModuleContext } from '../context.js';
 
 export class CrewAITarget implements CompileTargetHandler {
   name = 'crewai';
@@ -24,6 +25,8 @@ export class CrewAITarget implements CompileTargetHandler {
     lines.push('');
 
     for (const mod of modules) {
+      lines.push(generateModuleContext(mod, 'crewai'));
+      lines.push('');
       lines.push(...this.compileModule(mod, indent, config));
       lines.push('');
     }

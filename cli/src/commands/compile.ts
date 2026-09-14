@@ -381,6 +381,241 @@ function ictx(ctx: GeneratorContext, level: number): string {
 }
 
 // ---------------------------------------------------------------------------
+// Module Context Generator (CLI)
+// ---------------------------------------------------------------------------
+
+interface ParsedModuleInfo {
+  name: string;
+  type: string;
+  version: string;
+  author: string;
+  description: string;
+  inputs: Array<{ name: string; type: string; required: boolean; description: string }>;
+  outputs: Array<{ name: string; type: string; description: string }>;
+  capabilities: string[];
+  rules: string[];
+  dependencies: string[];
+  permissions: { network?: string; filesystem?: string };
+  tests: string;
+  examples: string;
+}
+
+function extractModuleInfo(ctx: GeneratorContext): ParsedModuleInfo {
+  const info: ParsedModuleInfo = {
+    name: basename(ctx.filePath, extname(ctx.filePath)),
+    type: 'module',
+    version: '1.0.0',
+    author: 'MAM User',
+    description: 'N/A',
+    inputs: [],
+    outputs: [],
+    capabilities: [],
+    rules: [],
+    dependencies: [],
+    permissions: { network: 'N/A', filesystem: 'N/A' },
+    tests: 'N/A',
+    examples: 'N/A',
+  };
+
+  // Try to extract from AST frontmatter
+  const ast = ctx.ast as { frontmatter?: { data?: Record<string, unknown> }; sections?: Array<{ name: string; content: unknown[] }> } | null;
+  if (ast?.frontmatter?.data) {
+    const d = ast.frontmatter.data;
+    if (d.name) info.name = String(d.name);
+    if (d.type) info.type = String(d.type);
+    if (d.version) info.version = String(d.version);
+    if (d.author) info.author = String(d.author);
+    if (d.description) info.description = String(d.description);
+    if (Array.isArray(d.capabilities)) info.capabilities = d.capabilities.map(String);
+    if (Array.isArray(d.tags)) info.capabilities.push(...d.tags.map(String));
+  }
+
+  // Try to extract from sections
+  if (ast?.sections) {
+    for (const section of ast.sections) {
+      const sectionName = section.name.toLowerCase();
+
+      // Purpose / Description
+      if (sectionName === 'purpose' || sectionName === 'description') {
+        const text = section.content
+          .map((n: unknown) => {
+            const node = n as { type: string; value?: string };
+            return node.value || '';
+          })
+          .filter(Boolean)
+          .join(' ');
+        if (text && info.description === 'N/A') info.description = text;
+      }
+
+      // Rules - extract list items
+      if (sectionName === 'rules') {
+        for (const node of section.content) {
+          const n = node as { type: string; items?: Array<{ content: Array<{ type: string; value?: string }> }> };
+          if (n.type === 'list' && n.items) {
+            for (const item of n.items) {
+              const text = item.content.map((c: { type: string; value?: string }) => c.value || '').filter(Boolean).join(' ');
+              if (text) info.rules.push(text);
+            }
+          }
+        }
+      }
+
+      // Inputs - extract from table
+      if (sectionName === 'inputs') {
+        for (const node of section.content) {
+          const n = node as { type: string; headers?: string[]; rows?: string[][] };
+          if (n.type === 'table' && n.rows) {
+            for (const row of n.rows) {
+              info.inputs.push({
+                name: row[0] || '',
+                type: row[1] || 'unknown',
+                required: (row[2] || '').toLowerCase() === 'yes' || (row[2] || '').toLowerCase() === 'true',
+                description: row[3] || '',
+              });
+            }
+          }
+        }
+      }
+
+      // Outputs - extract from table
+      if (sectionName === 'outputs') {
+        for (const node of section.content) {
+          const n = node as { type: string; headers?: string[]; rows?: string[][] };
+          if (n.type === 'table' && n.rows) {
+            for (const row of n.rows) {
+              info.outputs.push({
+                name: row[0] || '',
+                type: row[1] || 'unknown',
+                description: row[2] || '',
+              });
+            }
+          }
+        }
+      }
+
+      // Dependencies
+      if (sectionName === 'dependencies') {
+        for (const node of section.content) {
+          const n = node as { type: string; items?: Array<{ content: Array<{ type: string; value?: string }> }> };
+          if (n.type === 'list' && n.items) {
+            for (const item of n.items) {
+              const text = item.content.map((c: { type: string; value?: string }) => c.value || '').filter(Boolean).join(' ');
+              if (text && text !== 'None (standard library only)') info.dependencies.push(text);
+            }
+          }
+        }
+      }
+
+      // Tests - just note that tests exist, don't embed raw code
+      if (sectionName === 'tests') {
+        info.tests = 'See source module for test definitions';
+      }
+
+      // Examples - just note that examples exist, don't embed raw code
+      if (sectionName === 'examples') {
+        info.examples = 'See source module for usage examples';
+      }
+    }
+  }
+
+  return info;
+}
+
+function generateCLIContext(ctx: GeneratorContext, target: string): string {
+  const info = extractModuleInfo(ctx);
+  const lines: string[] = [];
+
+  lines.push('MAM Module Context');
+  lines.push('==================');
+  lines.push(`Name: ${info.name}`);
+  lines.push(`Type: ${info.type}`);
+  lines.push(`Version: ${info.version}`);
+  lines.push(`Author: ${info.author}`);
+  lines.push(`Description: ${info.description}`);
+  lines.push('');
+  lines.push(`Purpose: ${info.description}`);
+  lines.push('');
+
+  // Inputs
+  lines.push('Inputs:');
+  if (info.inputs.length > 0) {
+    for (const inp of info.inputs) {
+      lines.push(`  - ${inp.name}: ${inp.type} (required: ${inp.required})${inp.description ? ' — ' + inp.description : ''}`);
+    }
+  } else {
+    lines.push('  N/A');
+  }
+  lines.push('');
+
+  // Outputs
+  lines.push('Outputs:');
+  if (info.outputs.length > 0) {
+    for (const out of info.outputs) {
+      lines.push(`  - ${out.name}: ${out.type}${out.description ? ' — ' + out.description : ''}`);
+    }
+  } else {
+    lines.push('  N/A');
+  }
+  lines.push('');
+
+  lines.push('Capabilities:');
+  if (info.capabilities.length > 0) {
+    for (const cap of info.capabilities) lines.push(`  - ${cap}`);
+  } else {
+    lines.push('  N/A');
+  }
+  lines.push('');
+
+  lines.push('Rules:');
+  if (info.rules.length > 0) {
+    for (const rule of info.rules) lines.push(`  - ${rule}`);
+  } else {
+    lines.push('  N/A');
+  }
+  lines.push('');
+
+  lines.push('Dependencies:');
+  if (info.dependencies.length > 0) {
+    for (const dep of info.dependencies) lines.push(`  - ${dep}`);
+  } else {
+    lines.push('  N/A');
+  }
+  lines.push('');
+
+  lines.push('Permissions:');
+  lines.push(`  Network: ${info.permissions.network}`);
+  lines.push(`  Filesystem: ${info.permissions.filesystem}`);
+  lines.push('');
+  lines.push(`Tests: ${info.tests}`);
+  lines.push('');
+  lines.push(`Examples: ${info.examples}`);
+  lines.push('');
+  lines.push('References: See https://github.com/tcp-ecosystems/MAM');
+
+  // Format based on target
+  if (target === 'json') {
+    return JSON.stringify({ _generator: 'MAM Compiler', _moduleContext: info }, null, 2);
+  }
+  if (['python', 'openai', 'langgraph', 'crewai', 'gemini', 'autogen'].includes(target)) {
+    return '"""\n' + lines.map(l => l ? `    ${l}` : '').join('\n') + '\n"""';
+  }
+  if (target === 'javascript' || target === 'typescript') {
+    return '/**\n' + lines.map(l => l ? ` * ${l}` : ' *').join('\n') + '\n */';
+  }
+  if (target === 'rust') {
+    return lines.map(l => l ? `//! ${l}` : '//!').join('\n');
+  }
+  if (target === 'csharp') {
+    return lines.map(l => l ? `/// ${l}` : '///').join('\n');
+  }
+  if (target === 'wasm') {
+    return lines.map(l => l ? `;; ${l}` : ';;').join('\n');
+  }
+  // Default: line comments
+  return lines.map(l => l ? `// ${l}` : '//').join('\n');
+}
+
+// ---------------------------------------------------------------------------
 // Python Generator
 // ---------------------------------------------------------------------------
 
@@ -389,6 +624,7 @@ class PythonGenerator {
     const L: string[] = [];
     const i0 = ictx(ctx, 0), i1 = ictx(ctx, 1), i2 = ictx(ctx, 2), i3 = ictx(ctx, 3), i4 = ictx(ctx, 4), i5 = ictx(ctx, 5);
     L.push('"""'); L.push('Auto-generated by MAM Compiler'); L.push(`Target: python`); L.push(`Source: ${ctx.filePath}`); L.push('"""'); L.push('');
+    L.push(generateCLIContext(ctx, 'python')); L.push('');
     L.push('from __future__ import annotations'); L.push('import json, os, sys, re, time'); L.push('from typing import Any, Optional, Dict, List, Union'); L.push('from dataclasses import dataclass, field'); L.push('from enum import Enum'); L.push('from pathlib import Path'); L.push('');
     L.push('class MAMError(Exception):');
     L.push(`${i1}"""Base error for MAM modules."""`);
@@ -448,6 +684,7 @@ class JavaScriptGenerator {
     const L: string[] = [];
     const i1 = ictx(ctx, 1), i2 = ictx(ctx, 2), i3 = ictx(ctx, 3), i4 = ictx(ctx, 4);
     L.push('/**'); L.push(' * Auto-generated by MAM Compiler'); L.push(` * Target: javascript`); L.push(` * Source: ${ctx.filePath}`); L.push(' */'); L.push('');
+    L.push(generateCLIContext(ctx, 'javascript')); L.push('');
     L.push('"use strict";'); L.push(''); L.push('Object.defineProperty(exports, "__esModule", { value: true });'); L.push('');
     L.push('class MAMError extends Error {'); L.push(`${i1}constructor(message, code = "UNKNOWN", details = {}) {`); L.push(`${i2}super(message);`); L.push(`${i2}this.name = "MAMError"; this.code = code; this.details = details;`); L.push(`${i1}}`); L.push(`${i1}toJSON() { return { name: this.name, message: this.message, code: this.code, details: this.details }; }`); L.push('}'); L.push('');
     L.push('class ValidationError extends MAMError {'); L.push(`${i1}constructor(msg) { super(msg, "VALIDATION"); this.name = "ValidationError"; }`); L.push('}'); L.push('');
@@ -474,6 +711,7 @@ class TypeScriptGenerator {
     const L: string[] = [];
     const i1 = ictx(ctx, 1), i2 = ictx(ctx, 2), i3 = ictx(ctx, 3), i4 = ictx(ctx, 4);
     L.push('/**'); L.push(' * Auto-generated by MAM Compiler'); L.push(` * Target: typescript`); L.push(` * Source: ${ctx.filePath}`); L.push(' */'); L.push('');
+    L.push(generateCLIContext(ctx, 'typescript')); L.push('');
     L.push('export interface MAMErrorDetails { code: string; details: Record<string, unknown>; }'); L.push('');
     L.push('export class MAMError extends Error {'); L.push(`${i1}readonly code: string; readonly details: Record<string, unknown>;`); L.push(`${i1}constructor(message: string, code = "UNKNOWN", details: Record<string, unknown> = {}) { super(message); this.name = "MAMError"; this.code = code; this.details = details; }`); L.push(`${i1}toJSON(): MAMErrorDetails { return { name: this.name, message: this.message, code: this.code, details: this.details } as any; }`); L.push('}'); L.push('');
     L.push('export class ValidationError extends MAMError {'); L.push(`${i1}constructor(message: string) { super(message, "VALIDATION"); this.name = "ValidationError"; }`); L.push('}'); L.push('');
@@ -502,6 +740,7 @@ class GoGenerator {
     const pkg = basename(ctx.filePath, extname(ctx.filePath)).replace(/[^a-zA-Z0-9]/g, '_').toLowerCase();
     const L: string[] = [];
     L.push(`package ${pkg}`); L.push('');
+    L.push(generateCLIContext(ctx, 'go')); L.push('');
     L.push('import ("encoding/json"; "fmt"; "os"; "sync"; "time")'); L.push('');
     L.push('type MAMError struct { Message string; Code string; Details map[string]interface{} }');
     L.push('func (e *MAMError) Error() string { return fmt.Sprintf("[%s] %s", e.Code, e.Message) }');
@@ -540,6 +779,7 @@ class RustGenerator {
   generate(ctx: GeneratorContext): string {
     const i1 = ictx(ctx, 1), i2 = ictx(ctx, 2), i3 = ictx(ctx, 3), i4 = ictx(ctx, 4);
     const L: string[] = [];
+    L.push(generateCLIContext(ctx, 'rust')); L.push('');
     L.push('use std::collections::HashMap; use std::fmt; use std::time::{Duration, Instant};'); L.push('');
     L.push('#[derive(Debug, Clone)] pub struct MAMError { pub message: String, pub code: String, pub details: HashMap<String, String> }');
     L.push('impl fmt::Display for MAMError { fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result { write!(f, "[{}] {}", self.code, self.message) } }');
@@ -573,6 +813,7 @@ class CSharpGenerator {
     const i1 = ictx(ctx, 1), i2 = ictx(ctx, 2), i3 = ictx(ctx, 3), i4 = ictx(ctx, 4);
     const ns = basename(ctx.filePath, extname(ctx.filePath)).replace(/[^a-zA-Z0-9]/g, '');
     const L: string[] = [];
+    L.push(generateCLIContext(ctx, 'csharp')); L.push('');
     L.push('using System; using System.Collections.Generic; using System.Diagnostics; using System.Text.Json;'); L.push('');
     L.push(`namespace ${ns} {`); L.push('');
     L.push(`${i1}public class MAMError : Exception { public string Code { get; } public Dictionary<string, object> Details { get; }`); L.push(`${i2}public MAMError(string msg, string code = "UNKNOWN", Dictionary<string, object>? d = null) : base(msg) { Code = code; Details = d ?? new(); }`); L.push(`${i1}}`); L.push('');
@@ -597,6 +838,7 @@ class JavaGenerator {
     const i1 = ictx(ctx, 1), i2 = ictx(ctx, 2), i3 = ictx(ctx, 3), i4 = ictx(ctx, 4);
     const cls = basename(ctx.filePath, extname(ctx.filePath)).replace(/[^a-zA-Z0-9]/g, '');
     const L: string[] = [];
+    L.push(generateCLIContext(ctx, 'java')); L.push('');
     L.push('import java.util.*; import java.time.Instant; import java.time.Duration;'); L.push('');
     L.push(`public class ${cls} {`); L.push('');
     L.push(`${i1}public static class MAMException extends Exception { public final String code; public final Map<String, Object> details;`); L.push(`${i2}public MAMException(String m, String c, Map<String, Object> d) { super(m); code = c; details = d != null ? d : Map.of(); }`); L.push(`${i1}}`); L.push('');
@@ -620,7 +862,7 @@ class WASMGenerator {
   generate(ctx: GeneratorContext): string {
     const i1 = ictx(ctx, 1), i2 = ictx(ctx, 2);
     const L: string[] = [];
-    L.push(';; Auto-generated by MAM Compiler (WAT text format)'); L.push(';; Target: wasm'); L.push('');
+    L.push(generateCLIContext(ctx, 'wasm')); L.push('');
     L.push('(module'); L.push(`${i1}(memory (export "memory") 1)`); L.push(`${i1}(global $timeout_ms (mut i32) (i32.const 30000))`); L.push('');
     L.push(`${i1}(func (export "init") (param $timeout i32)`); L.push(`${i2}(global.set $timeout_ms (local.get $timeout))`); L.push(`${i1})`); L.push('');
     L.push(`${i1}(func (export "execute") (result i32)`); L.push(`${i2}(i32.store (i32.const 256) (i32.const 1))`); L.push(`${i2}// Core logic placeholder`); L.push(`${i2}(i32.store (i32.const 260) (i32.const 0))`); L.push(`${i2}(i32.store (i32.const 264) (i32.const 0))`); L.push(`${i2}(i32.load (i32.const 256))`); L.push(`${i1})`); L.push('');
@@ -640,10 +882,28 @@ class WASMGenerator {
 
 class JsonGenerator {
   generate(ctx: GeneratorContext): string {
+    const moduleInfo = extractModuleInfo(ctx);
     return JSON.stringify({
       _generator: 'MAM Compiler', _target: 'json', _source: ctx.filePath, _version: '1.0.0',
-      name: basename(ctx.filePath, extname(ctx.filePath)),
-      module: { format: 'mam/v1', type: 'prompt', version: '1.0.0' },
+      _moduleContext: {
+        name: moduleInfo.name,
+        type: moduleInfo.type,
+        version: moduleInfo.version,
+        author: moduleInfo.author,
+        description: moduleInfo.description,
+        purpose: moduleInfo.description,
+        inputs: moduleInfo.inputs,
+        outputs: moduleInfo.outputs,
+        capabilities: moduleInfo.capabilities,
+        rules: moduleInfo.rules,
+        dependencies: moduleInfo.dependencies,
+        permissions: moduleInfo.permissions,
+        tests: moduleInfo.tests,
+        examples: moduleInfo.examples,
+        references: 'See https://github.com/tcp-ecosystems/MAM',
+      },
+      name: moduleInfo.name,
+      module: { format: 'mam/v1', type: 'prompt', version: moduleInfo.version },
       metadata: { generatedAt: new Date().toISOString(), sourceHash: CacheManager.computeHash(ctx.sourceContent) },
       sections: [], inputs: {}, outputs: {},
       config: { timeout_ms: 30000, retry: { maxAttempts: 3, backoffMs: 1000 }, cache: { enabled: false, ttlMs: 0 } },
@@ -658,7 +918,8 @@ class JsonGenerator {
 
 class OpenAIGenerator {
   generate(ctx: GeneratorContext): string {
-    return JSON.stringify({
+    const contextJson = generateCLIContext(ctx, 'json');
+    return contextJson + '\n' + JSON.stringify({
       model: 'gpt-4', temperature: 0.7, max_tokens: 4096, top_p: 1, frequency_penalty: 0, presence_penalty: 0,
       messages: [{ role: 'system', content: 'You are a helpful assistant.' }, { role: 'user', content: '{{user_input}}' }],
       functions: [], function_call: 'auto', tools: [], tool_choice: 'auto',
@@ -676,6 +937,7 @@ class LangGraphGenerator {
     const i1 = ictx(ctx, 1), i2 = ictx(ctx, 2), i3 = ictx(ctx, 3);
     const L: string[] = [];
     L.push('"""Auto-generated by MAM Compiler | Target: langgraph"""'); L.push('');
+    L.push(generateCLIContext(ctx, 'langgraph')); L.push('');
     L.push('from typing import TypedDict, Any, Annotated'); L.push('from langgraph.graph import StateGraph, END'); L.push('import operator'); L.push('');
     L.push('class AgentState(TypedDict):'); L.push(`${i1}messages: Annotated[list[Any], operator.add]`); L.push(`${i1}next_node: str`); L.push(`${i1}context: dict[str, Any]`); L.push('');
     L.push('def classify_input(state: AgentState) -> dict[str, Any]:'); L.push(`${i1}last_msg = state["messages"][-1] if state["messages"] else None`); L.push(`${i1}return {"next_node": "process" if last_msg else "end"}`); L.push('');
@@ -695,6 +957,7 @@ class CrewAIGenerator {
     const i1 = ictx(ctx, 1), i2 = ictx(ctx, 2);
     const L: string[] = [];
     L.push('"""Auto-generated by MAM Compiler | Target: crewai"""'); L.push('');
+    L.push(generateCLIContext(ctx, 'crewai')); L.push('');
     L.push('from crewai import Agent, Task, Crew, Process'); L.push('from crewai.tools import BaseTool'); L.push('from typing import List'); L.push('');
     L.push('class DefaultTool(BaseTool):'); L.push(`${i1}name: str = "default_tool"`); L.push(`${i1}description: str = "A default tool"`); L.push(`${i1}def _run(self, query: str) -> str: return f"Result: {query}"`); L.push('');
     L.push('def create_agents() -> List[Agent]:'); L.push(`${i1}return [Agent(role="Researcher", goal="Research topics thoroughly.", verbose=True, allow_delegation=False, tools=[DefaultTool()]),`); L.push(`${i1}        Agent(role="Writer", goal="Write based on research.", verbose=True, allow_delegation=False, tools=[DefaultTool()])]`); L.push('');
@@ -714,6 +977,7 @@ class GeminiGenerator {
     const i1 = ictx(ctx, 1), i2 = ictx(ctx, 2), i3 = ictx(ctx, 3);
     const L: string[] = [];
     L.push('"""Auto-generated by MAM Compiler | Target: gemini"""'); L.push('');
+    L.push(generateCLIContext(ctx, 'gemini')); L.push('');
     L.push('import google.generativeai as genai'); L.push('from typing import Optional, Dict, Any'); L.push('');
     L.push('class GeminiModule:'); L.push(`${i1}def __init__(self, api_key: Optional[str] = None, model: str = "gemini-pro"):`); L.push(`${i2}if api_key: genai.configure(api_key=api_key)`); L.push(`${i2}self.model = genai.GenerativeModel(model_name=model)`); L.push(`${i2}self.chat = self.model.start_chat(history=[])`); L.push('');
     L.push(`${i1}def generate(self, prompt: str, **kwargs) -> str:`); L.push(`${i2}return self.model.generate_content(prompt, generation_config=genai.types.GenerationConfig(`); L.push(`${i3}temperature=kwargs.get("temperature", 0.7), max_output_tokens=kwargs.get("max_tokens", 2048), top_p=kwargs.get("top_p", 0.95))).text`); L.push('');
@@ -733,6 +997,7 @@ class AutoGenGenerator {
     const i1 = ictx(ctx, 1), i2 = ictx(ctx, 2), i3 = ictx(ctx, 3);
     const L: string[] = [];
     L.push('"""Auto-generated by MAM Compiler | Target: autogen"""'); L.push('');
+    L.push(generateCLIContext(ctx, 'autogen')); L.push('');
     L.push('from autogen import AssistantAgent, UserProxyAgent'); L.push('from typing import Optional, Dict, Any'); L.push('');
     L.push('class AutoGenModule:'); L.push(`${i1}def __init__(self, config: Optional[Dict[str, Any]] = None):`); L.push(`${i2}self.config = config or {}`); L.push(`${i2}self.assistant = AssistantAgent(name="assistant", llm_config=self.config.get("llm_config", {"model": "gpt-4", "temperature": 0.7}), system_message="You are a helpful assistant.")`); L.push(`${i2}self.user_proxy = UserProxyAgent(name="user_proxy", human_input_mode="NEVER", max_consecutive_auto_reply=10, is_termination_msg=lambda x: x.get("content", "").rstrip().endswith("TERMINATE"))`); L.push('');
     L.push(`${i1}def execute(self, message: str) -> Dict[str, Any]:`); L.push(`${i2}self.user_proxy.initiate_chat(self.assistant, message=message)`); L.push(`${i2}history = [{"role": m.get("role", "unknown"), "content": m.get("content", "")} for m in self.user_proxy.chat_messages.get(self.assistant.name, [])]`); L.push(`${i2}return {"success": True, "output": {"chat_history": history}}`); L.push('');
@@ -751,6 +1016,7 @@ class KubernetesGenerator {
     const name = basename(ctx.filePath, extname(ctx.filePath)).toLowerCase().replace(/[^a-z0-9-]/g, '-');
     const L: string[] = [];
     L.push(`# Auto-generated by MAM Compiler | Target: kubernetes | Source: ${ctx.filePath}`); L.push('');
+    L.push(generateCLIContext(ctx, 'kubernetes')); L.push('');
     L.push('apiVersion: apps/v1'); L.push('kind: Deployment'); L.push('metadata:'); L.push(`${i1}name: ${name}`); L.push(`${i1}labels:`); L.push(`${i2}app: ${name}`); L.push(`${i2}managed-by: mam-compiler`); L.push('spec:'); L.push(`${i1}replicas: 1`); L.push(`${i1}selector:`); L.push(`${i2}matchLabels:`); L.push(`${i3}app: ${name}`); L.push(`${i1}template:`); L.push(`${i2}metadata:`); L.push(`${i3}labels:`); L.push(`${i4}app: ${name}`); L.push(`${i2}spec:`); L.push(`${i3}containers:`); L.push(`${i4}- name: ${name}`); L.push(`${i4}  image: mam/${name}:latest`); L.push(`${i4}  ports:`); L.push(`${i4}  - containerPort: 8080`); L.push(`${i4}  resources:`); L.push(`${i4}    requests: { memory: "128Mi", cpu: "100m" }`); L.push(`${i4}    limits: { memory: "256Mi", cpu: "500m" }`); L.push(`${i4}  env:`); L.push(`${i4}  - name: MAM_MODULE`); L.push(`${i4}    value: "${name}"`); L.push('');
     L.push('---'); L.push('apiVersion: v1'); L.push('kind: Service'); L.push('metadata:'); L.push(`${i1}name: ${name}-svc`); L.push('spec:'); L.push(`${i1}selector:`); L.push(`${i2}app: ${name}`); L.push(`${i1}ports:`); L.push(`${i2}- port: 80`); L.push(`${i2}  targetPort: 8080`); L.push(`${i1}type: ClusterIP`); L.push('');
     return L.join('\n');
@@ -767,6 +1033,7 @@ class TerraformGenerator {
     const name = basename(ctx.filePath, extname(ctx.filePath)).toLowerCase().replace(/[^a-z0-9-]/g, '_');
     const L: string[] = [];
     L.push(`# Auto-generated by MAM Compiler | Target: terraform | Source: ${ctx.filePath}`); L.push('');
+    L.push(generateCLIContext(ctx, 'terraform')); L.push('');
     L.push('terraform {'); L.push(`${i1}required_version = ">= 1.0"`); L.push(`${i1}required_providers {`); L.push(`${i2}aws = { source = "hashicorp/aws", version = "~> 5.0" }`); L.push(`${i1}}`); L.push('}'); L.push('');
     L.push('variable "region" { description = "AWS region"; type = string; default = "us-east-1" }'); L.push('');
     L.push(`resource "aws_ecs_cluster" "${name}" {`); L.push(`${i1}name = "${name}-cluster"`); L.push(`${i1}setting { name = "containerInsights"; value = "enabled" }`); L.push('}'); L.push('');
@@ -786,6 +1053,7 @@ class DockerGenerator {
     const name = basename(ctx.filePath, extname(ctx.filePath)).toLowerCase().replace(/[^a-z0-9-]/g, '-');
     const L: string[] = [];
     L.push(`# Auto-generated by MAM Compiler | Target: docker | Source: ${ctx.filePath}`); L.push('');
+    L.push(generateCLIContext(ctx, 'docker')); L.push('');
     L.push('FROM node:20-alpine AS builder'); L.push('WORKDIR /app'); L.push('COPY package*.json ./'); L.push('RUN npm ci --only=production'); L.push('COPY . .'); L.push('RUN npm run build 2>/dev/null || true'); L.push('');
     L.push('FROM node:20-alpine AS production'); L.push('ARG NODE_ENV=production'); L.push('ENV NODE_ENV=${NODE_ENV}'); L.push(`ENV MAM_MODULE=${name}`); L.push('');
     L.push('RUN addgroup -g 1001 -S mamgroup && adduser -S mamuser -u 1001 -G mamgroup'); L.push('WORKDIR /app'); L.push('COPY --from=builder --chown=mamuser:mamgroup /app/node_modules ./node_modules'); L.push('COPY --from=builder --chown=mamuser:mamgroup /app/package*.json ./'); L.push('COPY --from=builder --chown=mamuser:mamgroup /app/dist ./dist'); L.push('USER mamuser'); L.push('EXPOSE 8080'); L.push('HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 CMD wget --no-verbose --tries=1 --spider http://localhost:8080/health || exit 1'); L.push('CMD ["node", "dist/index.js"]'); L.push('');
@@ -802,6 +1070,7 @@ class ClaudeGenerator {
     const i1 = ictx(ctx, 1), i2 = ictx(ctx, 2), i3 = ictx(ctx, 3), i4 = ictx(ctx, 4);
     const L: string[] = [];
     L.push('/** Auto-generated by MAM Compiler | Target: claude */'); L.push('');
+    L.push(generateCLIContext(ctx, 'typescript')); L.push('');
     L.push('export interface ClaudeMessage { role: "user" | "assistant" | "system"; content: string; }'); L.push('');
     L.push('export interface ClaudeConfig { model: string; max_tokens: number; temperature: number; system?: string; tools?: Array<{ name: string; description: string; input_schema: Record<string, unknown> }>; stream: boolean; }'); L.push('');
     L.push('export interface ClaudeResponse { id: string; type: string; role: string; content: Array<{ type: string; text: string }>; model: string; stop_reason: string; usage: { input_tokens: number; output_tokens: number }; }'); L.push('');

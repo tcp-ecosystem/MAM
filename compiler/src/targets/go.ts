@@ -6,6 +6,7 @@
 
 import { V2ModuleNode } from '@mam/ast';
 import { CompileTargetHandler, CompilerConfig } from '../compiler.js';
+import { generateModuleContext } from '../context.js';
 
 export class GoTarget implements CompileTargetHandler {
   name = 'go';
@@ -24,6 +25,8 @@ export class GoTarget implements CompileTargetHandler {
     lines.push('');
 
     for (const mod of modules) {
+      lines.push(generateModuleContext(mod, 'go'));
+      lines.push('');
       lines.push(...this.compileModule(mod, config));
       lines.push('');
     }

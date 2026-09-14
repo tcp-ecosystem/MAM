@@ -458,6 +458,18 @@ function parseList(
             (tokens[pos]!.type === TokenType.BULLET_LIST || tokens[pos]!.type === TokenType.NUMBERED_LIST)) {
           break;
         }
+        // Check if next line is a heading or code fence - end the list
+        if (pos < tokens.length &&
+            (tokens[pos]!.type === TokenType.HEADING_1 ||
+             tokens[pos]!.type === TokenType.HEADING_2 ||
+             tokens[pos]!.type === TokenType.HEADING_3 ||
+             tokens[pos]!.type === TokenType.HEADING_4 ||
+             tokens[pos]!.type === TokenType.HEADING_5 ||
+             tokens[pos]!.type === TokenType.HEADING_6 ||
+             tokens[pos]!.type === TokenType.CODE_FENCE_BACKTICK ||
+             tokens[pos]!.type === TokenType.CODE_FENCE_TILDE)) {
+          break;
+        }
         itemText += '\n';
         continue;
       }

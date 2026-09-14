@@ -6,6 +6,7 @@
 
 import { V2ModuleNode } from '@mam/ast';
 import { CompileTargetHandler, CompilerConfig } from '../compiler.js';
+import { generateModuleContext } from '../context.js';
 
 export class JavaScriptTarget implements CompileTargetHandler {
   name = 'javascript';
@@ -22,6 +23,8 @@ export class JavaScriptTarget implements CompileTargetHandler {
     lines.push('');
 
     for (const mod of modules) {
+      lines.push(generateModuleContext(mod, 'javascript'));
+      lines.push('');
       lines.push(...this.compileModule(mod, config));
       lines.push('');
     }

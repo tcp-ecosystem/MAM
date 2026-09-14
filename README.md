@@ -6,9 +6,36 @@ MAM is a **System Description Language (SDL)** whose reference syntax is Markdow
 
 ---
 
+## MAM as Context Subagent
+
+MAM functions as a **concrete context subagent** for AI systems:
+
+| Capability | Description |
+|------------|-------------|
+| **Context Engine** | Single `.mam.md` files contain complete system context |
+| **Knowledge Graph** | Modules define relationships, dependencies, and interactions |
+| **Runtime Agnostic** | Same context compiles to 16 target environments |
+| **Self-Documenting** | Markdown source serves as human-readable documentation |
+| **Machine-Readable** | AST and compiled outputs are machine-interpretable |
+| **Composable** | Modules compose into larger systems via imports and edges |
+
+```text
+Human Intent (Markdown) → MAM Parser → AST → Compiler → 16 Target Runtimes
+                          ↑                                    ↓
+                    Context Subagent                    Executable Code
+```
+
+**Why Context Matters:**
+- AI agents need structured context to reason about systems
+- MAM provides that context in a portable, composable format
+- Compiled outputs retain the semantic meaning of the source
+- Every module is a self-contained context unit
+
+---
+
 ## What is MAM?
 
-MAM (Markdown as Module) is not another programming language. It is a **declarative language for describing modular systems**.
+MAM (Markdown as Module) is not another programming language. It is a **declarative language for describing modular systems** with built-in context preservation.
 
 Just as:
 - SQL describes **data**
@@ -17,7 +44,17 @@ Just as:
 - Terraform describes **infrastructure**
 - Dockerfile describes **containers**
 
-**MAM describes intelligent systems.**
+**MAM describes intelligent systems with complete context.**
+
+### Context Subagent Role
+
+MAM acts as a context subagent by:
+
+1. **Capturing Intent** - Markdown naturally expresses human reasoning
+2. **Preserving Semantics** - AST maintains meaning through compilation
+3. **Enabling Reasoning** - AI agents can parse and reason about MAM modules
+4. **Supporting Composition** - Modules build on each other via clear interfaces
+5. **Providing Traceability** - Every compiled output traces back to source
 
 ---
 
@@ -46,6 +83,7 @@ Markdown + YAML + Metadata + Python + Mermaid + Rules + Prompts + Memory = MAM
 
 > **Everything is a module. Every module exposes capabilities. Modules compose into systems. Systems compile into runtimes.**
 
+- **Context First** — Every module is a self-contained context unit
 - **Markdown First** — Markdown is the source of truth
 - **Human First** — Never sacrifice readability
 - **Machine Friendly** — Every section must be parsable
@@ -59,13 +97,26 @@ Markdown + YAML + Metadata + Python + Mermaid + Rules + Prompts + Memory = MAM
 ## Architecture
 
 ```text
-Layer 7:  Human (Designer)
-Layer 6:  MAM DSL Source (.mam / .mam.md)
-Layer 5:  MAM Compiler (mamc)
-Layer 4:  MAM AST (Machine Agent Module IR)
-Layer 3:  Semantic Analyzer + Validator
-Layer 2:  Target Runtime (Python, JS, Go, Rust, OpenAI, LangGraph...)
+Layer 7:  Human (Designer) — Provides intent via Markdown
+Layer 6:  MAM DSL Source (.mam / .mam.md) — Context-rich source
+Layer 5:  MAM Compiler (mamc) — Context transformation engine
+Layer 4:  MAM AST (Machine Agent Module IR) — Semantic representation
+Layer 3:  Semantic Analyzer + Validator — Context verification
+Layer 2:  Target Runtime (Python, JS, Go, Rust, OpenAI, LangGraph...) — Executable context
 Layer 1:  Operating System
+```
+
+### Context Flow
+
+```text
+┌─────────────────────────────────────────────────────────────┐
+│                    MAM Context Pipeline                      │
+├─────────────────────────────────────────────────────────────┤
+│  Human Intent  →  Markdown Source  →  AST  →  Compiled Code │
+│       ↓                ↓              ↓           ↓         │
+│  Reasoning      Context        Semantic     Executable     │
+│  Purpose        Capture        Meaning      Context        │
+└─────────────────────────────────────────────────────────────┘
 ```
 
 ---
@@ -74,6 +125,7 @@ Layer 1:  Operating System
 
 | Feature | Description |
 |---------|-------------|
+| Context-Rich | Every module contains complete system context |
 | Human-readable | Markdown syntax anyone can understand |
 | LLM-native | AI agents can parse and execute directly |
 | Modular | Each section is independent and composable |
@@ -377,6 +429,30 @@ policy:
 
 ---
 
+## Compiled Outputs
+
+The `output/` folder contains compiled examples demonstrating MAM's context preservation:
+
+```text
+output/
+├── agent/          # AI agent module (16 targets)
+├── basic/          # Basic examples (6 modules × 16 targets)
+├── examples/       # Advanced examples (7 modules × 16 targets)
+├── full/           # Full-featured module
+├── minimal/        # Minimal module
+└── tool/           # Tool module
+```
+
+**Each compiled output:**
+- Retains the semantic meaning of the source module
+- Is ready to execute in its target environment
+- Demonstrates MAM's context preservation across runtimes
+- Can be traced back to its `.mam.md` source
+
+See [output/README.md](output/README.md) for details.
+
+---
+
 ## Project Structure
 
 ```text
@@ -474,19 +550,28 @@ mam/
 
 ## Philosophy
 
-> **MAM is a language for describing systems.**
+> **MAM is a language for describing systems with complete context.**
 
 Not AI. Not infrastructure. Not applications.
 
 **Systems.**
 
-AI systems are simply one category. MAM provides a unique identity: not a general-purpose language, but a language for designing and orchestrating modular systems.
+AI systems are simply one category. MAM provides a unique identity: not a general-purpose language, but a language for designing and orchestrating modular systems with preserved context.
+
+### Context Subagent Value
+
+MAM enables AI agents to:
+- **Understand** system intent through human-readable Markdown
+- **Reason** about system structure via AST representation
+- **Execute** system definitions across multiple runtimes
+- **Compose** systems from reusable, context-rich modules
+- **Trace** compiled outputs back to their source intent
 
 ---
 
 ## North Star
 
-> **"Describe Systems. Compile Anywhere."**
+> **"Describe Systems with Context. Compile Anywhere."**
 
 ---
 

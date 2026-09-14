@@ -1,0 +1,81 @@
+{
+4"_generator": "MAM Compiler",
+4"_target": "json",
+4"_source": "C:\\Users\\USER\\LifeJiggy\\Prompt_AI-Support\\MAM\\examples\\basic\\hello.mam.md",
+4"_version": "1.0.0",
+4"_moduleContext": {
+44"name": "Hello World",
+44"type": "module",
+44"version": "1.0.0",
+44"author": "MAM Team",
+44"description": "Minimal MAM module demonstrating core concepts",
+44"purpose": "Minimal MAM module demonstrating core concepts",
+44"inputs": [
+444{
+4444"name": "name",
+4444"type": "string",
+4444"required": false,
+4444"description": "Name to greet (defaults to \"World\")"
+444}
+44],
+44"outputs": [
+444{
+4444"name": "greeting",
+4444"type": "string",
+4444"description": "The generated greeting message"
+444},
+444{
+4444"name": "timestamp",
+4444"type": "string",
+4444"description": "ISO-8601 timestamp of execution"
+444}
+44],
+44"capabilities": [
+444"example",
+444"beginner",
+444"hello-world"
+44],
+44"rules": [
+444"Always return a greeting message",
+444"Include a timestamp with every response",
+444"Never expose internal errors to the caller"
+44],
+44"dependencies": [],
+44"permissions": {
+444"network": "N/A",
+444"filesystem": "N/A"
+44},
+44"tests": "See source module for test definitions",
+44"examples": "See source module for usage examples",
+44"references": "See https://github.com/tcp-ecosystems/MAM"
+4},
+4"name": "Hello World",
+4"module": {
+44"format": "mam/v1",
+44"type": "prompt",
+44"version": "1.0.0"
+4},
+4"metadata": {
+44"generatedAt": "2026-09-14T22:18:04.728Z",
+44"sourceHash": "0e4a0a79e8e3c619"
+4},
+4"sections": [],
+4"inputs": {},
+4"outputs": {},
+4"config": {
+44"timeout_ms": 30000,
+44"retry": {
+444"maxAttempts": 3,
+444"backoffMs": 1000
+44},
+44"cache": {
+444"enabled": false,
+444"ttlMs": 0
+44}
+4},
+4"plugins": [],
+4"hooks": {
+44"before": [],
+44"after": []
+4}
+}

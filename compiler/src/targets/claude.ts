@@ -6,6 +6,7 @@
 
 import { V2ModuleNode, V2AgentNode } from '@mam/ast';
 import { CompileTargetHandler, CompilerConfig } from '../compiler.js';
+import { generateModuleContext } from '../context.js';
 
 export class ClaudeTarget implements CompileTargetHandler {
   name = 'claude';
@@ -22,6 +23,8 @@ export class ClaudeTarget implements CompileTargetHandler {
     lines.push('');
 
     for (const mod of modules) {
+      lines.push(generateModuleContext(mod, 'claude'));
+      lines.push('');
       lines.push(...this.compileModule(mod, config));
       lines.push('');
     }

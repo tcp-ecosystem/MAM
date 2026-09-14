@@ -1,0 +1,61 @@
+{
+4"_generator": "MAM Compiler",
+4"_target": "json",
+4"_source": "C:\\Users\\USER\\LifeJiggy\\Prompt_AI-Support\\MAM\\examples\\advanced\\api-gateway.mam.md",
+4"_version": "1.0.0",
+4"_moduleContext": {
+44"name": "API Gateway with Rate Limiting",
+44"type": "module",
+44"version": "1.0.0",
+44"author": "MAM Team",
+44"description": "An API gateway system with rate limiting, authentication middleware, and request routing. Demonstrates tool-based architecture with network and execution permissions.",
+44"purpose": "An API gateway system with rate limiting, authentication middleware, and request routing. Demonstrates tool-based architecture with network and execution permissions.",
+44"inputs": [],
+44"outputs": [],
+44"capabilities": [
+444"api",
+444"gateway",
+444"rate-limiting",
+444"auth",
+444"advanced"
+44],
+44"rules": [],
+44"dependencies": [],
+44"permissions": {
+444"network": "N/A",
+444"filesystem": "N/A"
+44},
+44"tests": "See source module for test definitions",
+44"examples": "See source module for usage examples",
+44"references": "See https://github.com/tcp-ecosystems/MAM"
+4},
+4"name": "API Gateway with Rate Limiting",
+4"module": {
+44"format": "mam/v1",
+44"type": "prompt",
+44"version": "1.0.0"
+4},
+4"metadata": {
+44"generatedAt": "2026-09-14T22:20:20.282Z",
+44"sourceHash": "05a230098cafeec9"
+4},
+4"sections": [],
+4"inputs": {},
+4"outputs": {},
+4"config": {
+44"timeout_ms": 30000,
+44"retry": {
+444"maxAttempts": 3,
+444"backoffMs": 1000
+44},
+44"cache": {
+444"enabled": false,
+444"ttlMs": 0
+44}
+4},
+4"plugins": [],
+4"hooks": {
+44"before": [],
+44"after": []
+4}
+}
