@@ -385,32 +385,42 @@ function ictx(ctx: GeneratorContext, level: number): string {
 // ---------------------------------------------------------------------------
 
 interface ParsedModuleInfo {
+  id: string;
   name: string;
   type: string;
   version: string;
   author: string;
+  license: string;
   description: string;
+  tags: string[];
+  runtime: { language: string; version: string };
   inputs: Array<{ name: string; type: string; required: boolean; description: string }>;
   outputs: Array<{ name: string; type: string; description: string }>;
   capabilities: string[];
   rules: string[];
+  workflow: Array<{ name: string; next?: string }>;
   dependencies: string[];
-  permissions: { network?: string; filesystem?: string };
+  permissions: { network?: string; filesystem?: string; python?: string; memory?: string; exec?: string };
   tests: string;
   examples: string;
 }
 
 function extractModuleInfo(ctx: GeneratorContext): ParsedModuleInfo {
   const info: ParsedModuleInfo = {
+    id: basename(ctx.filePath, extname(ctx.filePath)).toLowerCase().replace(/[^a-z0-9]+/g, '-'),
     name: basename(ctx.filePath, extname(ctx.filePath)),
     type: 'module',
     version: '1.0.0',
     author: 'MAM User',
+    license: 'MIT',
     description: 'N/A',
+    tags: [],
+    runtime: { language: 'python', version: '>=3.12' },
     inputs: [],
     outputs: [],
     capabilities: [],
     rules: [],
+    workflow: [],
     dependencies: [],
     permissions: { network: 'N/A', filesystem: 'N/A' },
     tests: 'N/A',
@@ -421,13 +431,28 @@ function extractModuleInfo(ctx: GeneratorContext): ParsedModuleInfo {
   const ast = ctx.ast as { frontmatter?: { data?: Record<string, unknown> }; sections?: Array<{ name: string; content: unknown[] }> } | null;
   if (ast?.frontmatter?.data) {
     const d = ast.frontmatter.data;
+    if (d.id) info.id = String(d.id);
     if (d.name) info.name = String(d.name);
     if (d.type) info.type = String(d.type);
     if (d.version) info.version = String(d.version);
     if (d.author) info.author = String(d.author);
+    if (d.license) info.license = String(d.license);
     if (d.description) info.description = String(d.description);
     if (Array.isArray(d.capabilities)) info.capabilities = d.capabilities.map(String);
-    if (Array.isArray(d.tags)) info.capabilities.push(...d.tags.map(String));
+    if (Array.isArray(d.tags)) info.tags = d.tags.map(String);
+    if (d.runtime && typeof d.runtime === 'object') {
+      const rt = d.runtime as Record<string, unknown>;
+      if (rt.language) info.runtime.language = String(rt.language);
+      if (rt.version) info.runtime.version = String(rt.version);
+    }
+    if (d.permissions && typeof d.permissions === 'object') {
+      const p = d.permissions as Record<string, unknown>;
+      if (p.network) info.permissions.network = String(p.network);
+      if (p.filesystem) info.permissions.filesystem = String(p.filesystem);
+      if (p.python) info.permissions.python = String(p.python);
+      if (p.memory) info.permissions.memory = String(p.memory);
+      if (p.exec) info.permissions.exec = String(p.exec);
+    }
   }
 
   // Try to extract from sections
@@ -506,6 +531,25 @@ function extractModuleInfo(ctx: GeneratorContext): ParsedModuleInfo {
         }
       }
 
+      // Workflow
+      if (sectionName === 'workflow') {
+        for (const node of section.content) {
+          const n = node as { type: string; items?: Array<{ content: Array<{ type: string; value?: string }> }>; value?: string };
+          if (n.type === 'list' && n.items) {
+            for (const item of n.items) {
+              const text = item.content.map((c: { type: string; value?: string }) => c.value || '').filter(Boolean).join(' ');
+              if (text) info.workflow.push({ name: text });
+            }
+          } else if (n.value) {
+            // Handle simple text workflow
+            const steps = n.value.split(/\n|→|->/).map(s => s.trim()).filter(Boolean);
+            for (const step of steps) {
+              info.workflow.push({ name: step });
+            }
+          }
+        }
+      }
+
       // Tests - just note that tests exist, don't embed raw code
       if (sectionName === 'tests') {
         info.tests = 'See source module for test definitions';
@@ -527,12 +571,30 @@ function generateCLIContext(ctx: GeneratorContext, target: string): string {
 
   lines.push('MAM Module Context');
   lines.push('==================');
+  lines.push(`Id: ${info.id}`);
   lines.push(`Name: ${info.name}`);
   lines.push(`Type: ${info.type}`);
   lines.push(`Version: ${info.version}`);
   lines.push(`Author: ${info.author}`);
+  lines.push(`License: ${info.license}`);
   lines.push(`Description: ${info.description}`);
   lines.push('');
+
+  // Tags
+  lines.push('Tags:');
+  if (info.tags.length > 0) {
+    for (const tag of info.tags) lines.push(`  - ${tag}`);
+  } else {
+    lines.push('  N/A');
+  }
+  lines.push('');
+
+  // Runtime
+  lines.push('Runtime:');
+  lines.push(`  Language: ${info.runtime.language}`);
+  lines.push(`  Version: ${info.runtime.version}`);
+  lines.push('');
+
   lines.push(`Purpose: ${info.description}`);
   lines.push('');
 
@@ -574,6 +636,17 @@ function generateCLIContext(ctx: GeneratorContext, target: string): string {
   }
   lines.push('');
 
+  // Workflow
+  lines.push('Workflow:');
+  if (info.workflow.length > 0) {
+    for (const step of info.workflow) {
+      lines.push(`  - ${step.name}${step.next ? ` → ${step.next}` : ''}`);
+    }
+  } else {
+    lines.push('  N/A');
+  }
+  lines.push('');
+
   lines.push('Dependencies:');
   if (info.dependencies.length > 0) {
     for (const dep of info.dependencies) lines.push(`  - ${dep}`);
@@ -583,8 +656,11 @@ function generateCLIContext(ctx: GeneratorContext, target: string): string {
   lines.push('');
 
   lines.push('Permissions:');
-  lines.push(`  Network: ${info.permissions.network}`);
-  lines.push(`  Filesystem: ${info.permissions.filesystem}`);
+  lines.push(`  Network: ${info.permissions.network || 'N/A'}`);
+  lines.push(`  Filesystem: ${info.permissions.filesystem || 'N/A'}`);
+  if (info.permissions.python) lines.push(`  Python: ${info.permissions.python}`);
+  if (info.permissions.memory) lines.push(`  Memory: ${info.permissions.memory}`);
+  if (info.permissions.exec) lines.push(`  Exec: ${info.permissions.exec}`);
   lines.push('');
   lines.push(`Tests: ${info.tests}`);
   lines.push('');
@@ -886,28 +962,27 @@ class JsonGenerator {
     return JSON.stringify({
       _generator: 'MAM Compiler', _target: 'json', _source: ctx.filePath, _version: '1.0.0',
       _moduleContext: {
+        id: moduleInfo.id,
         name: moduleInfo.name,
         type: moduleInfo.type,
         version: moduleInfo.version,
         author: moduleInfo.author,
+        license: moduleInfo.license,
         description: moduleInfo.description,
+        tags: moduleInfo.tags,
+        runtime: moduleInfo.runtime,
         purpose: moduleInfo.description,
         inputs: moduleInfo.inputs,
         outputs: moduleInfo.outputs,
         capabilities: moduleInfo.capabilities,
         rules: moduleInfo.rules,
+        workflow: moduleInfo.workflow,
         dependencies: moduleInfo.dependencies,
         permissions: moduleInfo.permissions,
         tests: moduleInfo.tests,
         examples: moduleInfo.examples,
         references: 'See https://github.com/tcp-ecosystems/MAM',
       },
-      name: moduleInfo.name,
-      module: { format: 'mam/v1', type: 'prompt', version: moduleInfo.version },
-      metadata: { generatedAt: new Date().toISOString(), sourceHash: CacheManager.computeHash(ctx.sourceContent) },
-      sections: [], inputs: {}, outputs: {},
-      config: { timeout_ms: 30000, retry: { maxAttempts: 3, backoffMs: 1000 }, cache: { enabled: false, ttlMs: 0 } },
-      plugins: [], hooks: { before: [], after: [] },
     }, null, ctx.targetOptions.minify ? 0 : ctx.targetOptions.indent);
   }
 }

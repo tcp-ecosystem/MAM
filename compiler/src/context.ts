@@ -63,11 +63,36 @@ function buildContextLines(mod: V2ModuleNode): string[] {
 
   lines.push('MAM Module Context');
   lines.push('==================');
+  lines.push(`Id: ${na(meta?.id) || mod.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`);
   lines.push(`Name: ${na(mod.name)}`);
   lines.push(`Type: ${na(mod.moduleType)}`);
   lines.push(`Version: ${na(meta?.version) || '1.0.0'}`);
   lines.push(`Author: ${na(meta?.author) || 'MAM User'}`);
+  lines.push(`License: ${na(meta?.license) || 'MIT'}`);
   lines.push(`Description: ${na(mod.description)}`);
+  lines.push('');
+
+  // Tags
+  lines.push('Tags:');
+  if (meta?.tags && Array.isArray(meta.tags)) {
+    lines.push(...listItems(meta.tags.map(String)));
+  } else if (mod.capabilities && mod.capabilities.length > 0) {
+    lines.push(...listItems(mod.capabilities));
+  } else {
+    lines.push('  N/A');
+  }
+  lines.push('');
+
+  // Runtime
+  lines.push('Runtime:');
+  if (meta?.runtime && typeof meta.runtime === 'object') {
+    const rt = meta.runtime as Record<string, unknown>;
+    lines.push(`  Language: ${na(rt.language) || 'python'}`);
+    lines.push(`  Version: ${na(rt.version) || '>=3.12'}`);
+  } else {
+    lines.push('  Language: python');
+    lines.push('  Version: >=3.12');
+  }
   lines.push('');
 
   lines.push(`Purpose: ${na(mod.description || mod.documentation)}`);
@@ -106,15 +131,21 @@ function buildContextLines(mod: V2ModuleNode): string[] {
   lines.push('');
 
   // Workflow
+  lines.push('Workflow:');
   if (mod.steps && mod.steps.length > 0) {
-    lines.push('Workflow:');
     for (const step of mod.steps) {
       const edge = mod.edges?.find(e => e.source === step.name);
       const target = edge ? ` → ${edge.target}` : '';
       lines.push(`  - ${step.name}${target}`);
     }
-    lines.push('');
+  } else if (mod.edges && mod.edges.length > 0) {
+    for (const edge of mod.edges) {
+      lines.push(`  - ${edge.source} → ${edge.target}`);
+    }
+  } else {
+    lines.push('  N/A');
   }
+  lines.push('');
 
   // Dependencies
   lines.push('Dependencies:');
@@ -192,20 +223,28 @@ function formatAsCSharpDoc(contextLines: string[]): string {
 
 function formatAsJSON(mod: V2ModuleNode): string {
   const meta = mod.metadata as Record<string, unknown> | undefined;
+  const runtime = meta?.runtime as Record<string, unknown> | undefined;
   const context: Record<string, unknown> = {
     _generator: 'MAM Compiler',
     _moduleContext: {
+      id: meta?.id || mod.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
       name: mod.name,
       type: mod.moduleType,
       version: meta?.version || '1.0.0',
       author: meta?.author || 'MAM User',
+      license: meta?.license || 'MIT',
       description: mod.description || 'N/A',
+      tags: (meta?.tags as string[]) || mod.capabilities || [],
+      runtime: {
+        language: runtime?.language || 'python',
+        version: runtime?.version || '>=3.12',
+      },
       purpose: mod.description || mod.documentation || 'N/A',
-      inputs: mod.inputs?.map(i => ({ name: i.name, type: i.type, required: i.required })) || [],
-      outputs: mod.outputs?.map(o => ({ name: o.name, type: o.type })) || [],
+      inputs: mod.inputs?.map(i => ({ name: i.name, type: i.type, required: i.required, description: i.description })) || [],
+      outputs: mod.outputs?.map(o => ({ name: o.name, type: o.type, description: o.description })) || [],
       capabilities: mod.capabilities || [],
       rules: mod.rules || [],
-      workflow: mod.steps?.map(s => s.name) || [],
+      workflow: mod.steps?.map(s => ({ name: s.name, next: mod.edges?.find(e => e.source === s.name)?.target })) || [],
       dependencies: mod.requires || [],
       permissions: mod.permissions || { network: 'N/A', filesystem: 'N/A' },
       tests: mod.tests || 'See source module',
