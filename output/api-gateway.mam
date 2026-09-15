@@ -1,0 +1,14 @@
+---
+id: api-gateway
+name: API Gateway with Rate Limiting
+version: 1.0.0
+type: module
+author: MAM Team
+license: MIT
+tags: [api, gateway, rate-limiting, auth, advanced]
+runtime: python >=3.12
+---
+
+# API Gateway with Rate Limiting
+
+An API gateway system with rate limiting, authentication middleware, and request routing. Demonstrates tool-based architecture with network and execution permissions.

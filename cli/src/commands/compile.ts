@@ -23,7 +23,7 @@ export type CompileTarget =
   | 'python' | 'javascript' | 'typescript' | 'go' | 'rust'
   | 'csharp' | 'java' | 'wasm' | 'json' | 'openai'
   | 'langgraph' | 'crewai' | 'gemini' | 'autogen'
-  | 'kubernetes' | 'terraform' | 'docker' | 'claude';
+  | 'kubernetes' | 'terraform' | 'docker' | 'claude' | 'mam';
 
 export type OutputFormat = 'file' | 'directory' | 'stdout';
 
@@ -147,7 +147,7 @@ const TARGET_EXTENSIONS: Record<CompileTarget, string> = {
   rust: 'rs', csharp: 'cs', java: 'java', wasm: 'wasm',
   json: 'json', openai: 'json', langgraph: 'py', crewai: 'py',
   gemini: 'py', autogen: 'py', kubernetes: 'yaml', terraform: 'tf',
-  docker: 'Dockerfile', claude: 'ts',
+  docker: 'Dockerfile', claude: 'ts', mam: 'mam',
 };
 
 // ---------------------------------------------------------------------------
@@ -1160,6 +1160,70 @@ class ClaudeGenerator {
   }
 }
 
+class MamGenerator {
+  generate(ctx: GeneratorContext): string {
+    const info = extractModuleInfo(ctx);
+    const lines: string[] = [];
+    lines.push('---');
+    lines.push(`id: ${info.id}`);
+    lines.push(`name: ${info.name}`);
+    lines.push(`version: ${info.version}`);
+    lines.push(`type: ${info.type}`);
+    if (info.author) lines.push(`author: ${info.author}`);
+    if (info.license) lines.push(`license: ${info.license}`);
+    if (info.tags.length > 0) lines.push(`tags: [${info.tags.join(', ')}]`);
+    if (info.runtime.language) lines.push(`runtime: ${info.runtime.language} ${info.runtime.version}`);
+    lines.push('---');
+    lines.push('');
+    lines.push(`# ${info.name}`);
+    lines.push('');
+    lines.push(info.description);
+    lines.push('');
+    if (info.rules.length > 0) {
+      lines.push('## Rules');
+      lines.push('');
+      for (const rule of info.rules) lines.push(`- ${rule}`);
+      lines.push('');
+    }
+    if (info.workflow.length > 0) {
+      lines.push('## Workflow');
+      lines.push('');
+      for (const step of info.workflow) lines.push(`- ${step.name}`);
+      lines.push('');
+    }
+    if (info.inputs.length > 0) {
+      lines.push('## Inputs');
+      lines.push('');
+      lines.push('| Name | Type | Required | Description |');
+      lines.push('|------|------|----------|-------------|');
+      for (const inp of info.inputs) lines.push(`| ${inp.name} | ${inp.type} | ${inp.required ? 'Yes' : 'No'} | ${inp.description || ''} |`);
+      lines.push('');
+    }
+    if (info.outputs.length > 0) {
+      lines.push('## Outputs');
+      lines.push('');
+      lines.push('| Name | Type | Description |');
+      lines.push('|------|------|-------------|');
+      for (const out of info.outputs) lines.push(`| ${out.name} | ${out.type} | ${out.description || ''} |`);
+      lines.push('');
+    }
+    if (info.capabilities.length > 0) {
+      lines.push('## Capabilities');
+      lines.push('');
+      for (const cap of info.capabilities) lines.push(`- ${cap}`);
+      lines.push('');
+    }
+    if (info.permissions.network !== 'N/A' || info.permissions.filesystem !== 'N/A') {
+      lines.push('## Permissions');
+      lines.push('');
+      if (info.permissions.network !== 'N/A') lines.push(`- Network: ${info.permissions.network}`);
+      if (info.permissions.filesystem !== 'N/A') lines.push(`- Filesystem: ${info.permissions.filesystem}`);
+      lines.push('');
+    }
+    return lines.join('\n');
+  }
+}
+
 // ---------------------------------------------------------------------------
 // Generator Registry
 // ---------------------------------------------------------------------------
@@ -1170,7 +1234,7 @@ const GENERATORS: Partial<Record<CompileTarget, new () => { generate(ctx: Genera
   wasm: WASMGenerator, json: JsonGenerator, openai: OpenAIGenerator,
   langgraph: LangGraphGenerator, crewai: CrewAIGenerator, gemini: GeminiGenerator,
   autogen: AutoGenGenerator, kubernetes: KubernetesGenerator, terraform: TerraformGenerator,
-  docker: DockerGenerator, claude: ClaudeGenerator,
+  docker: DockerGenerator, claude: ClaudeGenerator, mam: MamGenerator,
 };
 
 // ---------------------------------------------------------------------------
@@ -1303,8 +1367,8 @@ class OutputWriter {
     if (!existsSync(outDir)) await mkdir(outDir, { recursive: true });
     const ext = TARGET_EXTENSIONS[target];
     let base = basename(filePath, extname(filePath));
-    // Strip .mam suffix if present (e.g., hello.mam.md → hello)
-    if (base.endsWith('.mam')) {
+    // For .mam target, strip .mam suffix to avoid hello.mam.mam
+    if (target === 'mam' && base.endsWith('.mam')) {
       base = base.slice(0, -4);
     }
     const outFile = join(outDir, `${base}.${ext}`);

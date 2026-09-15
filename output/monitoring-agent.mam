@@ -1,0 +1,14 @@
+---
+id: monitoring-agent
+name: System Monitoring Agent
+version: 1.0.0
+type: module
+author: MAM Team
+license: MIT
+tags: [agent, monitoring, alerting, metrics, advanced]
+runtime: python >=3.12
+---
+
+# System Monitoring Agent
+
+A monitoring agent that collects system metrics, detects anomalies using statistical analysis, and sends alerts. Includes AlertManager and MetricsCollector tool modules with filesystem and network permissions.

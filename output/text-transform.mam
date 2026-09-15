@@ -1,0 +1,37 @@
+---
+id: text-transform
+name: Text Transform
+version: 1.0.0
+type: module
+author: MAM Team
+license: MIT
+tags: [example, beginner, text, transformation]
+runtime: python >=3.12
+---
+
+# Text Transform
+
+Transform text between different cases and formats with length tracking
+
+## Rules
+
+- Non-alphabetic characters (numbers, symbols, spaces) must be preserved
+- Empty strings must return empty results without errors
+- The original_length and new_length must accurately reflect character counts
+- snake_case and kebab_case must handle multiple consecutive spaces gracefully
+- Title case must capitalize the first letter of each word
+
+## Inputs
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| text | string | Yes | The text to transform |
+| transform | string | Yes | The transformation to apply: "uppercase", "lowercase", "title", "snake", "kebab" |
+
+## Outputs
+
+| Name | Type | Description |
+|------|------|-------------|
+| transformed_text | string | The transformed text |
+| original_length | int | Length of the original text |
+| new_length | int | Length of the transformed text |

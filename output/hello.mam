@@ -1,0 +1,33 @@
+---
+id: hello-world
+name: Hello World
+version: 1.0.0
+type: module
+author: MAM Team
+license: MIT
+tags: [example, beginner, hello-world]
+runtime: python >=3.12
+---
+
+# Hello World
+
+Minimal MAM module demonstrating core concepts
+
+## Rules
+
+- Always return a greeting message
+- Include a timestamp with every response
+- Never expose internal errors to the caller
+
+## Inputs
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| name | string | No | Name to greet (defaults to "World") |
+
+## Outputs
+
+| Name | Type | Description |
+|------|------|-------------|
+| greeting | string | The generated greeting message |
+| timestamp | string | ISO-8601 timestamp of execution |

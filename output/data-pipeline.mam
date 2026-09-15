@@ -1,0 +1,14 @@
+---
+id: data-pipeline
+name: ETL Data Pipeline
+version: 1.0.0
+type: module
+author: MAM Team
+license: MIT
+tags: [workflow, etl, pipeline, data, advanced]
+runtime: python >=3.12
+---
+
+# ETL Data Pipeline
+
+A multi-step ETL pipeline that extracts data from sources, runs parallel transform and validate steps, loads into a target, and produces a report.

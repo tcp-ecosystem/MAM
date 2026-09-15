@@ -1,0 +1,37 @@
+---
+id: calculator
+name: Calculator
+version: 1.0.0
+type: module
+author: MAM Team
+license: MIT
+tags: [example, beginner, arithmetic, calculator]
+runtime: python >=3.12
+---
+
+# Calculator
+
+Perform basic arithmetic operations with input validation and error handling
+
+## Rules
+
+- Division by zero must return an error message, not raise an exception
+- Invalid operation types must return an error message
+- All numeric inputs must be validated before processing
+- The operation_performed field must describe the operation in human-readable form
+- Results must be rounded to 10 decimal places to avoid floating-point artifacts
+
+## Inputs
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| operation | string | Yes | The arithmetic operation to perform: "add", "subtract", "multiply", "divide" |
+| a | number | Yes | The first operand |
+| b | number | Yes | The second operand |
+
+## Outputs
+
+| Name | Type | Description |
+|------|------|-------------|
+| result | number | The result of the arithmetic operation |
+| operation_performed | string | Description of the operation performed |

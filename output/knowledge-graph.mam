@@ -1,0 +1,14 @@
+---
+id: knowledge-graph
+name: Knowledge Graph Builder
+version: 1.0.0
+type: module
+author: MAM Team
+license: MIT
+tags: [knowledge-graph, workflow, nlp, entity-extraction, advanced]
+runtime: python >=3.12
+---
+
+# Knowledge Graph Builder
+
+A multi-step workflow that ingests text, extracts entities and relationships, builds a knowledge graph, and supports natural language queries.

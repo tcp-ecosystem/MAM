@@ -1,0 +1,14 @@
+---
+id: content-pipeline
+name: Content Pipeline Workflow
+version: 1.0.0
+type: module
+author: MAM Team
+license: MIT
+tags: [workflow, pipeline, content, advanced]
+runtime: python >=3.12
+---
+
+# Content Pipeline Workflow
+
+Multi-step content pipeline with branching and parallel execution

@@ -1,0 +1,36 @@
+---
+id: string-utils
+name: String Utilities
+version: 1.0.0
+type: module
+author: MAM Team
+license: MIT
+tags: [example, beginner, string, utilities]
+runtime: python >=3.12
+---
+
+# String Utilities
+
+Common string manipulation utilities with Unicode support and error handling
+
+## Rules
+
+- Empty strings must return appropriate empty results, not errors
+- Truncation must add "..." when text exceeds max length
+- Email extraction must use pattern matching, not external libraries
+- Palindrome detection must be case-insensitive and ignore non-alphanumeric characters
+- Word counting must handle multiple spaces and leading/trailing whitespace
+- Unicode characters must be handled correctly throughout
+
+## Inputs
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| text | string | Yes | The input text to process |
+| operation | string | Yes | The operation to perform: "reverse", "count_words", "is_palindrome", "truncate", "extract_emails" |
+
+## Outputs
+
+| Name | Type | Description |
+|------|------|-------------|
+| result | string/number/list | The result of the operation (type varies by operation) |

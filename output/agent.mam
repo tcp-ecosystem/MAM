@@ -1,0 +1,14 @@
+---
+id: research-agent
+name: Research Agent System
+version: 1.0.0
+type: module
+author: MAM Team
+license: MIT
+tags: [agent, multi-agent, research, advanced]
+runtime: python >=3.12
+---
+
+# Research Agent System
+
+Multi-agent system that researches topics, analyzes findings, and produces reports

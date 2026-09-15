@@ -1,0 +1,14 @@
+---
+id: multi-agent-debate
+name: Multi-Agent Debate System
+version: 1.0.0
+type: module
+author: MAM Team
+license: MIT
+tags: [agent, multi-agent, debate, reasoning, advanced]
+runtime: python >=3.12
+---
+
+# Multi-Agent Debate System
+
+A structured debate system where an Advocate argues FOR a proposition, an Opponent argues AGAINST it, and a Judge evaluates both arguments to produce a balanced verdict.
