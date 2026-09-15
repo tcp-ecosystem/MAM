@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MAM - Markdown as Module</title>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{--bg:#0d1117;--surface:#161b22;--border:#30363d;--text:#e6edf3;--muted:#8b949e;--accent:#4CAF50;--accent-hover:#45a049;--code-bg:#0d1117}
+  html{scroll-behavior:smooth}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.6}
+  a{color:var(--accent);text-decoration:none}a:hover{text-decoration:underline}
+  .container{max-width:1100px;margin:0 auto;padding:0 24px}
+  nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(13,17,23,.85);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);padding:16px 0}
+  nav .container{display:flex;align-items:center;justify-content:space-between}
+  nav .logo{font-size:1.4rem;font-weight:700;color:var(--accent)}
+  nav ul{list-style:none;display:flex;gap:24px}
+  nav ul li a{color:var(--muted);font-size:.9rem;transition:color .2s}
+  nav ul li a:hover{color:var(--text);text-decoration:none}
+  .btn{display:inline-block;padding:12px 28px;border-radius:6px;font-weight:600;font-size:.95rem;transition:all .2s;border:none;cursor:pointer}
+  .btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:var(--accent-hover);text-decoration:none}
+  .btn-outline{border:1px solid var(--border);color:var(--text);background:transparent}.btn-outline:hover{border-color:var(--muted);text-decoration:none}
+  .hero{padding:160px 0 100px;text-align:center}
+  .hero h1{font-size:3rem;font-weight:700;line-height:1.15;max-width:700px;margin:0 auto}
+  .hero h1 span{color:var(--accent)}
+  .hero .tagline{font-size:1.2rem;color:var(--muted);margin:24px auto 0;max-width:600px}
+  .hero .actions{margin-top:40px;display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
+  .hero .badge{display:inline-block;margin-bottom:20px;padding:6px 14px;border:1px solid var(--accent);border-radius:999px;font-size:.8rem;color:var(--accent);letter-spacing:.5px;text-transform:uppercase}
+  section{padding:100px 0}
+  .section-title{font-size:2rem;font-weight:700;text-align:center;margin-bottom:16px}
+  .section-sub{text-align:center;color:var(--muted);margin-bottom:60px;font-size:1.05rem;max-width:600px;margin-left:auto;margin-right:auto}
+  .code-section{display:grid;grid-template-columns:1fr 1fr;gap:32px;align-items:start}
+  .code-block{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+  .code-block-header{padding:12px 20px;border-bottom:1px solid var(--border);font-size:.85rem;color:var(--muted);display:flex;align-items:center;gap:8px}
+  .code-block-header .dot{width:8px;height:8px;border-radius:50%}
+  .code-block-header .dot:nth-child(1){background:#ff5f57}
+  .code-block-header .dot:nth-child(2){background:#febc2e}
+  .code-block-header .dot:nth-child(3){background:#28c840}
+  .code-block pre{padding:24px;margin:0;overflow-x:auto;font-size:.875rem;line-height:1.7}
+  .code-block code{font-family:'SF Mono',SFMono-Regular,Consolas,'Liberation Mono',Menlo,Courier,monospace;color:var(--text)}
+  .features-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:24px;margin-top:48px}
+  .feature-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:32px;transition:border-color .2s,transform .2s}
+  .feature-card:hover{border-color:var(--accent);transform:translateY(-2px)}
+  .feature-card .icon{width:48px;height:48px;border-radius:10px;background:rgba(76,175,80,.12);display:flex;align-items:center;justify-content:center;font-size:1.4rem;margin-bottom:16px}
+  .feature-card h3{font-size:1.1rem;margin-bottom:8px}
+  .feature-card p{color:var(--muted);font-size:.9rem}
+  .install-section{text-align:center}
+  .install-cmd{display:inline-flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:16px 28px;font-family:'SF Mono',SFMono-Regular,Consolas,'Liberation Mono',Menlo,Courier,monospace;font-size:1.05rem;margin-top:24px;user-select:all;cursor:text}
+  .install-cmd .prompt{color:var(--accent)}
+  .install-cmd .copy-btn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:1rem;padding:4px;border-radius:4px;transition:color .2s}
+  .install-cmd .copy-btn:hover{color:var(--text)}
+  .quickstart{max-width:700px;margin:60px auto 0}
+  .quickstart .step{display:flex;gap:16px;margin-bottom:24px;align-items:flex-start}
+  .quickstart .step-num{min-width:32px;height:32px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:.85rem}
+  .quickstart .step-content{flex:1}
+  .quickstart .step-content p{color:var(--muted);margin-bottom:8px;font-size:.95rem}
+  .quickstart .step-content code{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:4px 10px;font-family:'SF Mono',SFMono-Regular,Consolas,'Liberation Mono',Menlo,Courier,monospace;font-size:.9rem}
+  footer{border-top:1px solid var(--border);padding:40px 0;text-align:center;color:var(--muted);font-size:.85rem}
+  footer .links{display:flex;justify-content:center;gap:24px;margin-bottom:16px}
+  @media(max-width:768px){
+    .hero h1{font-size:2.2rem}
+    .code-section{grid-template-columns:1fr}
+    .features-grid{grid-template-columns:1fr}
+    nav ul{display:none}
+  }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="container">
+    <div class="logo">MAM</div>
+    <ul>
+      <li><a href="#features">Features</a></li>
+      <li><a href="#example">Example</a></li>
+      <li><a href="#install">Install</a></li>
+      <li><a href="https://github.com/nicholasgasior/mam">GitHub</a></li>
+    </ul>
+  </div>
+</nav>
+
+<section class="hero">
+  <div class="container">
+    <div class="badge">Open Source</div>
+    <h1><span>MAM</span> &mdash; Markdown as Module</h1>
+    <p class="tagline">System Description Language whose reference syntax is Markdown</p>
+    <div class="actions">
+      <a href="#install" class="btn btn-primary">Get Started</a>
+      <a href="https://github.com/nicholasgasior/mam" class="btn btn-outline">View on GitHub</a>
+    </div>
+  </div>
+</section>
+
+<section id="example">
+  <div class="container">
+    <h2 class="section-title">Write once, compile to anything</h2>
+    <p class="section-sub">Define your module in a single <code>.mam.md</code> file and compile it to 17+ targets.</p>
+    <div class="code-section">
+      <div class="code-block">
+        <div class="code-block-header"><span class="dot"></span><span class="dot"></span><span class="dot"></span>my-module.mam.md</div>
+        <pre><code># My Module
+
+@version 1.0.0
+@author developer
+
+## Variables
+
+- `url` : string = "https://api.example.com"
+- `timeout` : number = 30
+- `debug` : boolean = false
+
+## Inputs
+
+- `name` : string, required
+- `count` : number, default 10
+
+## Functions
+
+### greet
+
+Greets a user by name.
+
+- **param** `name` : string
+- **returns** string
+
+```
+return "Hello, " + name + "!"
+```
+
+### fetch_data
+
+Fetches data from the API.
+
+- **param** `endpoint` : string
+- **param** `options` : object
+- **returns** object
+
+```
+response = http.get(url + endpoint, options)
+return response.json()
+```</code></pre>
+      </div>
+      <div class="code-block">
+        <div class="code-block-header"><span class="dot"></span><span class="dot"></span><span class="dot"></span>output / compiled</div>
+        <pre><code><span style="color:#7ee787"># Python</span>
+
+url = "https://api.example.com"
+timeout = 30
+debug = False
+
+def greet(name: str) &rarr; str:
+    """Greets a user by name."""
+    return "Hello, " + name + "!"
+
+def fetch_data(endpoint: str, options: dict) &rarr; dict:
+    """Fetches data from the API."""
+    response = requests.get(url + endpoint, **options)
+    return response.json()
+
+
+<span style="color:#7ee787"># TypeScript</span>
+
+export const url = "https://api.example.com";
+export const timeout = 30;
+export const debug = false;
+
+export function greet(name: string): string {
+  return "Hello, " + name + "!";
+}
+
+export function fetchData(
+  endpoint: string,
+  options: RequestInit
+): Promise&lt;Response&gt; {
+  return fetch(url + endpoint, options)
+    .then((r) =&gt; r.json());
+}
+
+
+<span style="color:#7ee787"># Go</span>
+
+package mymodule
+
+const URL = "https://api.example.com"
+const Timeout = 30
+const Debug = false
+
+func Greet(name string) string {
+    return "Hello, " + name + "!"
+}
+
+func FetchData(endpoint string, 
+    options map[string]interface{},
+) (map[string]interface{}, error) {
+    resp, err := http.Get(URL + endpoint)
+    if err != nil {
+        return nil, err
+    }
+    defer resp.Body.Close()
+    var result map[string]interface{}
+    json.NewDecoder(resp.Body).Decode(&amp;result)
+    return result, nil
+}</code></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="features">
+  <div class="container">
+    <h2 class="section-title">Features</h2>
+    <p class="section-sub">Everything you need to describe systems in Markdown and compile them anywhere.</p>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="icon">17</div>
+        <h3>17 Compilation Targets</h3>
+        <p>Python, TypeScript, Go, Rust, Java, C, C++, Ruby, PHP, Swift, Kotlin, and more. One source, many outputs.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">&#128196;</div>
+        <h3>Standalone .mam Files</h3>
+        <p>Single-file module definitions using a superset of Markdown. Human-readable, machine-compilable.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">&#128279;</div>
+        <h3>Context Embedding</h3>
+        <p>Embed and compose modules together. Reference other .mam files and build complex system descriptions from simple parts.</p>
+      </div>
+      <div class="feature-card">
+        <div class="icon">&#128421;</div>
+        <h3>CLI Tools</h3>
+        <p>Powerful command-line interface for initializing, compiling, validating, and managing your MAM modules.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="install" class="install-section">
+  <div class="container">
+    <h2 class="section-title">Install MAM</h2>
+    <p class="section-sub">Get up and running in seconds with npm.</p>
+    <div class="install-cmd">
+      <span class="prompt">$</span>
+      <span>npm i -g @mam/cli</span>
+      <button class="copy-btn" onclick="navigator.clipboard.writeText('npm i -g @mam/cli').then(()=>this.textContent='&#10003;')" title="Copy">&#128203;</button>
+    </div>
+    <div class="quickstart">
+      <h2 class="section-title">Quick Start</h2>
+      <p class="section-sub">Create your first module in two commands.</p>
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <p>Initialize a new MAM module:</p>
+          <code>mam init my-module</code>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <p>Compile it to your target language:</p>
+          <code>mam compile my-module.mam.md --target python</code>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="container">
+    <div class="links">
+      <a href="https://github.com/nicholasgasior/mam">GitHub</a>
+      <a href="https://www.npmjs.com/package/@mam/cli">npm</a>
+      <a href="https://github.com/nicholasgasior/mam/issues">Issues</a>
+    </div>
+    <p>MAM &mdash; Markdown as Module. Released under the MIT License.</p>
+  </div>
+</footer>
+
+<script>
+document.querySelectorAll('a[href^="#"]').forEach(a=>{
+  a.addEventListener('click',e=>{
+    e.preventDefault();
+    const t=document.querySelector(a.getAttribute('href'));
+    if(t)t.scrollIntoView({behavior:'smooth',block:'start'});
+  });
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,39 @@
+{
+  "name": "mam-language",
+  "displayName": "MAM - Markdown as Module",
+  "description": "Syntax highlighting and language support for MAM modules",
+  "version": "0.1.0",
+  "publisher": "tcp-ecosystems",
+  "engines": { "vscode": "^1.85.0" },
+  "categories": ["Programming Languages", "Syntax Highlighting"],
+  "activationEvents": ["onLanguage:mam"],
+  "main": "./out/extension.js",
+  "contributes": {
+    "languages": [{
+      "id": "mam",
+      "aliases": ["MAM", "mam"],
+      "extensions": [".mam", ".mam.md"],
+      "configuration": "./language-configuration.json"
+    }],
+    "grammars": [{
+      "language": "mam",
+      "scopeName": "source.mam",
+      "path": "./syntaxes/mam.tmLanguage.json"
+    }],
+    "icons": {
+      "mam": {
+        "extensions": ["mam", "mam.md"],
+        "light": "./icons/mam-light.svg",
+        "dark": "./icons/mam-dark.svg"
+      }
+    }
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.85.0",
+    "typescript": "^5.3.0"
+  },
+  "scripts": {
+    "build": "tsc -p .",
+    "package": "vsce package"
+  }
+}

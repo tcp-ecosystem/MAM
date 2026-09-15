@@ -1,31 +1,22 @@
 {
-  "name": "mam-workspace",
+  "name": "mam-monorepo",
   "version": "0.1.0",
   "private": true,
-  "description": "MAM — Markdown as Module: Universal module format for humans, LLMs, and agents",
-  "author": "LifeJiggy",
-  "license": "MIT",
-  "type": "module",
-  "engines": {
-    "node": ">=20.0.0",
-    "pnpm": ">=8.0.0"
-  },
+  "description": "MAM - Markdown as Module: System Description Language",
   "scripts": {
-    "build": "turbo run build",
-    "test": "turbo run test",
-    "lint": "turbo run lint",
-    "format": "prettier --write .",
-    "typecheck": "turbo run typecheck",
-    "clean": "turbo run clean",
-    "dev": "turbo run dev --parallel"
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "lint": "pnpm -r lint",
+    "clean": "pnpm -r clean",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "pnpm build && changeset publish"
   },
   "devDependencies": {
-    "@changesets/cli": "^2.27.0",
-    "eslint": "^8.56.0",
-    "prettier": "^3.2.0",
-    "turbo": "^1.12.0",
-    "typescript": "^5.3.0",
-    "vitest": "^1.2.0"
+    "@changesets/cli": "^2.27.0"
   },
-  "packageManager": "pnpm@8.14.0"
+  "engines": {
+    "node": ">=18"
+  },
+  "packageManager": "pnpm@9.0.0"
 }

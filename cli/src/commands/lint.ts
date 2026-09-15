@@ -320,10 +320,10 @@ const BUILT_IN_RULES: LintRuleDefinition[] = [
   // ── Section Completeness ──
   {
     id: 'SEC100', name: 'require-purpose', description: 'Module should have a Purpose section',
-    severity: 'warning', group: ['recommended'], category: 'section', fixable: false, hasSuggestions: false,
+    severity: 'warning', group: ['recommended'], category: 'section', fixable: true, hasSuggestions: false,
     check: (ctx) => {
       if (!ctx.sections.some(s => s.name === 'Purpose')) {
-        return [{ ruleId: 'SEC100', message: 'Module is missing a Purpose section', severity: 'warning', line: 1, column: 1, source: ctx.filePath, group: 'recommended', category: 'section', suggestions: ['Add a ## Purpose section'] }];
+        return [{ ruleId: 'SEC100', message: 'Module is missing a Purpose section', severity: 'warning', line: 1, column: 1, source: ctx.filePath, group: 'recommended', category: 'section', fix: { range: [0, 0], replacement: '## Purpose\n\nTODO: Add purpose description\n\n', description: 'Add missing Purpose section' } }];
       }
       return [];
     },
@@ -341,12 +341,12 @@ const BUILT_IN_RULES: LintRuleDefinition[] = [
   },
   {
     id: 'SEC102', name: 'require-inputs-outputs', description: 'Module should define Inputs and/or Outputs',
-    severity: 'info', group: ['recommended'], category: 'section', fixable: false, hasSuggestions: false,
+    severity: 'info', group: ['recommended'], category: 'section', fixable: true, hasSuggestions: false,
     check: (ctx) => {
       const hasInputs = ctx.sections.some(s => s.name === 'Inputs');
       const hasOutputs = ctx.sections.some(s => s.name === 'Outputs');
       if (!hasInputs && !hasOutputs) {
-        return [{ ruleId: 'SEC102', message: 'Module should define Inputs and/or Outputs sections', severity: 'info', line: 1, column: 1, source: ctx.filePath, group: 'recommended', category: 'section' }];
+        return [{ ruleId: 'SEC102', message: 'Module should define Inputs and/or Outputs sections', severity: 'info', line: 1, column: 1, source: ctx.filePath, group: 'recommended', category: 'section', fix: { range: [0, 0], replacement: '## Inputs\n\nTODO: Add inputs\n\n## Outputs\n\nTODO: Add outputs\n\n', description: 'Add missing Inputs and Outputs sections' } }];
       }
       return [];
     },
@@ -473,6 +473,19 @@ const BUILT_IN_RULES: LintRuleDefinition[] = [
         }
       }
       return diagnostics;
+    },
+  },
+
+  // ── Frontmatter ──
+  {
+    id: 'FRONT001', name: 'require-frontmatter', description: 'Module should have YAML frontmatter',
+    severity: 'warning', group: ['recommended'], category: 'frontmatter', fixable: true, hasSuggestions: false,
+    check: (ctx) => {
+      if (Object.keys(ctx.frontmatter).length === 0) {
+        const name = ctx.filePath.split(/[\\/]/).pop()?.replace(/\.mam\.md$/, '') || 'module';
+        return [{ ruleId: 'FRONT001', message: 'Module is missing YAML frontmatter', severity: 'warning', line: 1, column: 1, source: ctx.filePath, group: 'recommended', category: 'frontmatter', fix: { range: [0, 0], replacement: `---\nname: ${name}\nversion: 1.0.0\ndescription: TODO\nauthor: TODO\ntags: []\n---\n\n`, description: 'Add missing YAML frontmatter' } }];
+      }
+      return [];
     },
   },
 
@@ -636,14 +649,16 @@ const BUILT_IN_RULES: LintRuleDefinition[] = [
   },
   {
     id: 'A11Y003', name: 'heading-order', description: 'Heading levels should not skip',
-    severity: 'warning', group: ['recommended', 'accessibility'], category: 'accessibility', fixable: false, hasSuggestions: false,
+    severity: 'warning', group: ['recommended', 'accessibility'], category: 'accessibility', fixable: true, hasSuggestions: false,
     check: (ctx) => {
       const diagnostics: LintDiagnostic[] = [];
       for (let i = 1; i < ctx.sections.length; i++) {
         const prev = ctx.sections[i - 1]!;
         const curr = ctx.sections[i]!;
         if (curr.level > prev.level + 1) {
-          diagnostics.push({ ruleId: 'A11Y003', message: `Heading level skips from ${prev.level} to ${curr.level}`, severity: 'warning', line: curr.line, column: 1, source: ctx.filePath, group: 'accessibility', category: 'accessibility' });
+          const fixedLevel = prev.level + 1;
+          const hashes = '#'.repeat(fixedLevel);
+          diagnostics.push({ ruleId: 'A11Y003', message: `Heading level skips from ${prev.level} to ${curr.level}`, severity: 'warning', line: curr.line, column: 1, source: ctx.filePath, group: 'accessibility', category: 'accessibility', fix: { range: [0, 0], replacement: `${hashes} ${curr.name}`, description: `Fix heading level from ${curr.level} to ${fixedLevel}` } });
         }
       }
       return diagnostics;
@@ -790,12 +805,13 @@ const BUILT_IN_RULES: LintRuleDefinition[] = [
   // ── Table Quality ──
   {
     id: 'TBL100', name: 'table-alignment', description: 'Tables should have alignment specified',
-    severity: 'info', group: ['style'], category: 'table', fixable: false, hasSuggestions: false,
+    severity: 'info', group: ['style'], category: 'table', fixable: true, hasSuggestions: false,
     check: (ctx) => {
       const diagnostics: LintDiagnostic[] = [];
       for (const t of ctx.tables) {
         if (!t.hasAlignment) {
-          diagnostics.push({ ruleId: 'TBL100', message: 'Table is missing column alignment', severity: 'info', line: t.line, column: 1, source: ctx.filePath, group: 'style', category: 'table' });
+          const alignment = ':---'.repeat(t.columns);
+          diagnostics.push({ ruleId: 'TBL100', message: 'Table is missing column alignment', severity: 'info', line: t.line, column: 1, source: ctx.filePath, group: 'style', category: 'table', fix: { range: [0, 0], replacement: `| ${alignment.split(':').filter(Boolean).join(' | ')} |`, description: 'Add default column alignment' } });
         }
       }
       return diagnostics;
@@ -876,6 +892,9 @@ function formatText(result: LintResult): string {
 
   lines.push('');
   lines.push(chalk.gray(`  ${stats.errors} error(s), ${stats.warnings} warning(s), ${stats.info} info — ${stats.fixable} fixable`));
+  if (stats.fixable > 0) {
+    lines.push(chalk.cyan(`  Run with --fix to auto-fix ${stats.fixable} issue(s)`));
+  }
   lines.push(chalk.gray(`  Score: ${score}/100`));
   return lines.join('\n');
 }
@@ -921,6 +940,28 @@ function applyFixes(content: string, diagnostics: LintDiagnostic[]): string {
     if (d.ruleId === 'STY001') result = result.replace(/[ \t]+$/gm, '');
     else if (d.ruleId === 'STY002') result = result.replace(/\n{3,}/g, '\n\n');
     else if (d.ruleId === 'STY003' && !result.endsWith('\n')) result += '\n';
+    else if (d.ruleId === 'FRONT001') result = d.fix.replacement + result;
+    else if (d.ruleId === 'SEC100') result = result.trimEnd() + '\n\n' + d.fix.replacement;
+    else if (d.ruleId === 'SEC102') result = result.trimEnd() + '\n\n' + d.fix.replacement;
+    else if (d.ruleId === 'A11Y003') {
+      const lines = result.split('\n');
+      const lineIdx = d.line - 1;
+      if (lineIdx >= 0 && lineIdx < lines.length) {
+        const hashes = '#'.repeat(parseInt(d.fix.description.match(/to (\d+)/)?.[1] || '2', 10));
+        const sectionName = lines[lineIdx]!.replace(/^#+\s+/, '');
+        lines[lineIdx] = `${hashes} ${sectionName}`;
+        result = lines.join('\n');
+      }
+    } else if (d.ruleId === 'TBL100') {
+      const lines = result.split('\n');
+      const lineIdx = d.line - 1;
+      if (lineIdx >= 0 && lineIdx < lines.length && lines[lineIdx]!.includes('|')) {
+        const cells = lines[lineIdx]!.split('|').filter(c => c.trim());
+        const alignment = cells.map(() => ':---').join(' | ');
+        lines.splice(lineIdx + 1, 0, `| ${alignment} |`);
+        result = lines.join('\n');
+      }
+    }
   }
   return result;
 }
@@ -1128,9 +1169,15 @@ export async function lintCommand(options: LintOptions): Promise<void> {
     // Apply fixes
     if (options.fix && result.diagnostics.some(d => d.fix)) {
       const content = await readFile(filePath, 'utf-8');
+      const fixedDiagnostics = result.diagnostics.filter(d => d.fix);
       const fixed = applyFixes(content, result.diagnostics);
       await writeFile(filePath, fixed, 'utf-8');
-      if (!options.quiet) console.log(chalk.green(`  Applied fixes to ${filePath}`));
+      if (!options.quiet) {
+        console.log(chalk.green(`  Applied ${fixedDiagnostics.length} fix(es) to ${filePath}`));
+        for (const d of fixedDiagnostics) {
+          console.log(chalk.gray(`    - ${d.fix!.description}`));
+        }
+      }
     }
 
     // Save new baseline
@@ -1170,7 +1217,8 @@ export async function lintCommand(options: LintOptions): Promise<void> {
       if (!options.quiet) console.log(chalk.gray(`  Baseline saved to ${options.baseline}`));
     }
 
-    process.exit(result.passed ? 0 : 1);
+    const fixedCount = options.fix ? result.diagnostics.filter(d => d.fix).length : 0;
+    process.exit(result.passed || (options.fix && fixedCount > 0) ? 0 : 1);
   } catch (error) {
     if (spinner) spinner.fail((error as Error).message);
     else console.error(chalk.red(`  Error: ${(error as Error).message}`));

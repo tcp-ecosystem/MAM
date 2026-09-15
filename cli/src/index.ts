@@ -56,13 +56,17 @@ program
   .command('init')
   .description('Initialize a new MAM module')
   .argument('[name]', 'Module name')
-  .option('-t, --template <template>', 'Template (basic|full|agent|workflow|team|tool|memory|policy)', 'basic')
-  .option('-r, --runtime <runtime>', 'Runtime (python|javascript|go|rust)', 'python')
+  .option('-t, --template <template>', 'Template (basic|advanced|workflow)', 'basic')
   .option('-d, --dir <dir>', 'Target directory')
-  .option('--no-git', 'Skip git init')
   .action(async (name, options) => {
-    const { initCommand } = await import('./commands/init.js');
-    await initCommand({ name, ...options });
+    const { initModule } = await import('./commands/init.js');
+    const result = await initModule({ name, ...options });
+    if (result.success) {
+      console.log(chalk.green(`Created module: ${result.file}`));
+    } else {
+      console.error(chalk.red(result.error));
+      process.exit(1);
+    }
   });
 
 program
@@ -299,16 +303,14 @@ program
 program
   .command('test')
   .description('Run tests for a MAM module')
-  .argument('[file]', 'MAM module file (optional)')
-  .option('-d, --dir <dir>', 'Test directory', '.')
-  .option('--coverage', 'Generate coverage report')
-  .option('--snapshot', 'Update snapshots')
-  .option('--watch', 'Watch mode')
-  .option('-v, --verbose', 'Verbose output')
-  .option('-f, --format <format>', 'Output format (text|json|tap)', 'text')
-  .action(async (file, options) => {
-    const { testCommand } = await import('./commands/test.js');
-    await testCommand({ file, ...options });
+  .argument('<file>', 'Path to .mam.md file')
+  .option('-v, --verbose', 'Show detailed results', false)
+  .option('--timeout <ms>', 'Test timeout in milliseconds', '30000')
+  .action(async (file: string, options: { verbose: boolean; timeout: string }) => {
+    const { runTests, formatTestResult } = await import('./commands/test.js');
+    const result = await runTests({ file, verbose: options.verbose, timeout: parseInt(options.timeout) });
+    console.log(formatTestResult(result, options.verbose));
+    process.exit(result.failed > 0 ? 1 : 0);
   });
 
 // ─── DOCUMENTATION ───────────────────────────────────────────────

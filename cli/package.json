@@ -38,8 +38,11 @@
     "vitest": "^1.2.0",
     "@types/node": "^20.11.0"
   },
-  "files": ["dist", "templates"],
-  "keywords": ["mam", "markdown", "cli", "ai", "agents"],
+  "files": ["dist", "README.md"],
+  "repository": { "type": "git", "url": "https://github.com/tcp-ecosystems/MAM.git" },
+  "keywords": ["mam", "markdown", "module", "sdl", "compiler"],
   "author": "LifeJiggy",
-  "license": "MIT"
+  "license": "MIT",
+  "bugs": { "url": "https://github.com/tcp-ecosystems/MAM/issues" },
+  "homepage": "https://github.com/tcp-ecosystems/MAM#readme"
 }

@@ -20,9 +20,15 @@ program
   .version(pkg.version);
 
 // Register commands
-program.command('init').description('Initialize a new MAM module').action(async () => {
-  const { initCommand } = await import('./commands/init.js');
-  await initCommand({});
+program.command('init').description('Initialize a new MAM module').argument('[name]', 'Module name').action(async (name: string) => {
+  const { initModule } = await import('./commands/init.js');
+  const result = await initModule({ name: name || 'my-module' });
+  if (result.success) {
+    console.log(`Created: ${result.file}`);
+  } else {
+    console.error(`Error: ${result.error}`);
+    process.exit(1);
+  }
 });
 
 program.command('build').description('Build module to AST').argument('[file]').action(async (file: string) => {

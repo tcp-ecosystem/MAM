@@ -1,0 +1,139 @@
+{
+  "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
+  "name": "MAM",
+  "scopeName": "source.mam",
+  "patterns": [
+    { "include": "#frontmatter" },
+    { "include": "#headings" },
+    { "include": "#bold" },
+    { "include": "#italic" },
+    { "include": "#code-inline" },
+    { "include": "#code-block" },
+    { "include": "#lists" },
+    { "include": "#links" },
+    { "include": "#comments" },
+    { "include": "#keywords" },
+    { "include": "#operators" }
+  ],
+  "repository": {
+    "frontmatter": {
+      "begin": "^---\\s*$",
+      "end": "^---\\s*$",
+      "beginCaptures": { "0": { "name": "punctuation.definition.frontmatter.mam" } },
+      "endCaptures": { "0": { "name": "punctuation.definition.frontmatter.mam" } },
+      "patterns": [
+        {
+          "match": "^(\\w+):\\s*(.*)$",
+          "captures": {
+            "1": { "name": "entity.name.tag.frontmatter.mam" },
+            "2": { "name": "string.unquoted.frontmatter.mam" }
+          }
+        }
+      ]
+    },
+    "headings": {
+      "patterns": [
+        {
+          "match": "^#\\s+(.*)$",
+          "name": "markup.heading.heading-1.mam",
+          "captures": { "1": { "name": "entity.name.section.mam" } }
+        },
+        {
+          "match": "^##\\s+(.*)$",
+          "name": "markup.heading.heading-2.mam",
+          "captures": { "1": { "name": "entity.name.section.mam" } }
+        },
+        {
+          "match": "^###\\s+(.*)$",
+          "name": "markup.heading.heading-3.mam",
+          "captures": { "1": { "name": "entity.name.section.mam" } }
+        },
+        {
+          "match": "^####+\\s+(.*)$",
+          "name": "markup.heading.heading-4.mam",
+          "captures": { "1": { "name": "entity.name.section.mam" } }
+        }
+      ]
+    },
+    "bold": {
+      "match": "\\*\\*(.+?)\\*\\*",
+      "captures": { "1": { "name": "markup.bold.mam" } }
+    },
+    "italic": {
+      "match": "\\*(.+?)\\*",
+      "captures": { "1": { "name": "markup.italic.mam" } }
+    },
+    "code-inline": {
+      "match": "`([^`]+)`",
+      "captures": { "1": { "name": "string.quoted.code.mam" } }
+    },
+    "code-block": {
+      "patterns": [
+        {
+          "begin": "```(\\w+)?\\s*$",
+          "end": "^```\\s*$",
+          "beginCaptures": {
+            "0": { "name": "punctuation.definition.code-block.begin.mam" },
+            "1": { "name": "entity.name.tag.code-block.mam" }
+          },
+          "endCaptures": {
+            "0": { "name": "punctuation.definition.code-block.end.mam" }
+          },
+          "patterns": [
+            { "match": "->|=>", "name": "keyword.operator.edge.mam" }
+          ]
+        }
+      ]
+    },
+    "lists": {
+      "patterns": [
+        {
+          "match": "^\\s*[-*+]\\s+",
+          "name": "punctuation.definition.list.mam"
+        },
+        {
+          "match": "^\\s*\\d+\\.\\s+",
+          "name": "punctuation.definition.list.ordered.mam"
+        }
+      ]
+    },
+    "links": {
+      "patterns": [
+        {
+          "match": "\\[([^\\]]+)\\]\\(([^)]+)\\)",
+          "captures": {
+            "1": { "name": "string.unquoted.link.text.mam" },
+            "2": { "name": "string.unquoted.link.url.mam" }
+          }
+        }
+      ]
+    },
+    "comments": {
+      "match": "^\\s*<!--.*?-->",
+      "name": "comment.line.mam"
+    },
+    "keywords": {
+      "patterns": [
+        {
+          "match": "\\b(Purpose|Inputs|Outputs|Capabilities|Rules|Workflow|Dependencies|Permissions|Tests|Examples|References)\\b",
+          "name": "keyword.control.section.mam"
+        },
+        {
+          "match": "\\b(required|optional|yes|no|true|false)\\b",
+          "name": "keyword.other.mam"
+        },
+        {
+          "match": "->|=>",
+          "name": "keyword.operator.edge.mam"
+        }
+      ]
+    },
+    "operators": {
+      "patterns": [
+        { "match": "->", "name": "keyword.operator.arrow.mam" },
+        { "match": "=>", "name": "keyword.operator.fat-arrow.mam" },
+        { "match": "\\|", "name": "keyword.operator.pipe.mam" }
+      ]
+    }
+  }
+}
