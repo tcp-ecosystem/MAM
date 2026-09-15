@@ -1,0 +1,75 @@
+{
+4"_generator": "MAM Compiler",
+4"_target": "json",
+4"_source": "C:\\Users\\USER\\LifeJiggy\\Prompt_AI-Support\\MAM\\examples\\basic\\calculator.mam.md",
+4"_version": "1.0.0",
+4"_moduleContext": {
+44"id": "calculator",
+44"name": "Calculator",
+44"type": "module",
+44"version": "1.0.0",
+44"author": "MAM Team",
+44"license": "MIT",
+44"description": "Perform basic arithmetic operations with input validation and error handling",
+44"tags": [
+444"example",
+444"beginner",
+444"arithmetic",
+444"calculator"
+44],
+44"runtime": {
+444"language": "python",
+444"version": ">=3.12"
+44},
+44"purpose": "Perform basic arithmetic operations with input validation and error handling",
+44"inputs": [
+444{
+4444"name": "operation",
+4444"type": "string",
+4444"required": true,
+4444"description": "The arithmetic operation to perform: \"add\", \"subtract\", \"multiply\", \"divide\""
+444},
+444{
+4444"name": "a",
+4444"type": "number",
+4444"required": true,
+4444"description": "The first operand"
+444},
+444{
+4444"name": "b",
+4444"type": "number",
+4444"required": true,
+4444"description": "The second operand"
+444}
+44],
+44"outputs": [
+444{
+4444"name": "result",
+4444"type": "number",
+4444"description": "The result of the arithmetic operation"
+444},
+444{
+4444"name": "operation_performed",
+4444"type": "string",
+4444"description": "Description of the operation performed"
+444}
+44],
+44"capabilities": [],
+44"rules": [
+444"Division by zero must return an error message, not raise an exception",
+444"Invalid operation types must return an error message",
+444"All numeric inputs must be validated before processing",
+444"The operation_performed field must describe the operation in human-readable form",
+444"Results must be rounded to 10 decimal places to avoid floating-point artifacts"
+44],
+44"workflow": [],
+44"dependencies": [],
+44"permissions": {
+444"network": "N/A",
+444"filesystem": "N/A"
+44},
+44"tests": "See source module for test definitions",
+44"examples": "See source module for usage examples",
+44"references": "See https://github.com/tcp-ecosystems/MAM"
+4}
+}

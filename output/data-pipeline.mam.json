@@ -1,0 +1,40 @@
+{
+4"_generator": "MAM Compiler",
+4"_target": "json",
+4"_source": "C:\\Users\\USER\\LifeJiggy\\Prompt_AI-Support\\MAM\\examples\\advanced\\data-pipeline.mam.md",
+4"_version": "1.0.0",
+4"_moduleContext": {
+44"id": "data-pipeline",
+44"name": "ETL Data Pipeline",
+44"type": "module",
+44"version": "1.0.0",
+44"author": "MAM Team",
+44"license": "MIT",
+44"description": "A multi-step ETL pipeline that extracts data from sources, runs parallel transform and validate steps, loads into a target, and produces a report.",
+44"tags": [
+444"workflow",
+444"etl",
+444"pipeline",
+444"data",
+444"advanced"
+44],
+44"runtime": {
+444"language": "python",
+444"version": ">=3.12"
+44},
+44"purpose": "A multi-step ETL pipeline that extracts data from sources, runs parallel transform and validate steps, loads into a target, and produces a report.",
+44"inputs": [],
+44"outputs": [],
+44"capabilities": [],
+44"rules": [],
+44"workflow": [],
+44"dependencies": [],
+44"permissions": {
+444"network": "N/A",
+444"filesystem": "N/A"
+44},
+44"tests": "See source module for test definitions",
+44"examples": "See source module for usage examples",
+44"references": "See https://github.com/tcp-ecosystems/MAM"
+4}
+}

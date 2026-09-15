@@ -1,0 +1,39 @@
+{
+4"_generator": "MAM Compiler",
+4"_target": "json",
+4"_source": "C:\\Users\\USER\\LifeJiggy\\Prompt_AI-Support\\MAM\\examples\\advanced\\agent.mam.md",
+4"_version": "1.0.0",
+4"_moduleContext": {
+44"id": "research-agent",
+44"name": "Research Agent System",
+44"type": "module",
+44"version": "1.0.0",
+44"author": "MAM Team",
+44"license": "MIT",
+44"description": "Multi-agent system that researches topics, analyzes findings, and produces reports",
+44"tags": [
+444"agent",
+444"multi-agent",
+444"research",
+444"advanced"
+44],
+44"runtime": {
+444"language": "python",
+444"version": ">=3.12"
+44},
+44"purpose": "Multi-agent system that researches topics, analyzes findings, and produces reports",
+44"inputs": [],
+44"outputs": [],
+44"capabilities": [],
+44"rules": [],
+44"workflow": [],
+44"dependencies": [],
+44"permissions": {
+444"network": "N/A",
+444"filesystem": "N/A"
+44},
+44"tests": "N/A",
+44"examples": "N/A",
+44"references": "See https://github.com/tcp-ecosystems/MAM"
+4}
+}
