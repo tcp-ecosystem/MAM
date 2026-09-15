@@ -201,7 +201,7 @@ export async function initModule(options: InitOptions): Promise<{ success: boole
     await mkdir(outDir, { recursive: true });
   }
   
-  const outFile = join(outDir, `${name}.mam.md`);
+  const outFile = join(outDir, `${name}.mam`);
   if (existsSync(outFile)) {
     return { success: false, file: outFile, error: `File already exists: ${outFile}` };
   }
