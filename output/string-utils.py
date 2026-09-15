@@ -28,11 +28,11 @@ Source: C:\Users\USER\LifeJiggy\Prompt_AI-Support\MAM\examples\basic\string-util
     Purpose: Common string manipulation utilities with Unicode support and error handling
 
     Inputs:
-      - text: string (required: true) — The input text to process
-      - operation: string (required: true) — The operation to perform: "reverse", "count_words", "is_palindrome", "truncate", "extract_emails"
+      - text: string (required: true): The input text to process
+      - operation: string (required: true): The operation to perform: "reverse", "count_words", "is_palindrome", "truncate", "extract_emails"
 
     Outputs:
-      - result: string/number/list — The result of the operation (type varies by operation)
+      - result: string/number/list: The result of the operation (type varies by operation)
 
     Capabilities:
       N/A

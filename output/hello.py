@@ -27,11 +27,11 @@ Source: C:\Users\USER\LifeJiggy\Prompt_AI-Support\MAM\examples\basic\hello.mam.m
     Purpose: Minimal MAM module demonstrating core concepts
 
     Inputs:
-      - name: string (required: false) — Name to greet (defaults to "World")
+      - name: string (required: false): Name to greet (defaults to "World")
 
     Outputs:
-      - greeting: string — The generated greeting message
-      - timestamp: string — ISO-8601 timestamp of execution
+      - greeting: string: The generated greeting message
+      - timestamp: string: ISO-8601 timestamp of execution
 
     Capabilities:
       N/A

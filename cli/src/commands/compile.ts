@@ -602,7 +602,7 @@ function generateCLIContext(ctx: GeneratorContext, target: string): string {
   lines.push('Inputs:');
   if (info.inputs.length > 0) {
     for (const inp of info.inputs) {
-      lines.push(`  - ${inp.name}: ${inp.type} (required: ${inp.required})${inp.description ? ' — ' + inp.description : ''}`);
+      lines.push(`  - ${inp.name}: ${inp.type} (required: ${inp.required})${inp.description ? ': ' + inp.description : ''}`);
     }
   } else {
     lines.push('  N/A');
@@ -613,7 +613,7 @@ function generateCLIContext(ctx: GeneratorContext, target: string): string {
   lines.push('Outputs:');
   if (info.outputs.length > 0) {
     for (const out of info.outputs) {
-      lines.push(`  - ${out.name}: ${out.type}${out.description ? ' — ' + out.description : ''}`);
+      lines.push(`  - ${out.name}: ${out.type}${out.description ? ': ' + out.description : ''}`);
     }
   } else {
     lines.push('  N/A');
@@ -1302,7 +1302,11 @@ class OutputWriter {
     if (outFormat === 'stdout') { process.stdout.write(output); return written; }
     if (!existsSync(outDir)) await mkdir(outDir, { recursive: true });
     const ext = TARGET_EXTENSIONS[target];
-    const base = basename(filePath, extname(filePath));
+    let base = basename(filePath, extname(filePath));
+    // Strip .mam suffix if present (e.g., hello.mam.md → hello)
+    if (base.endsWith('.mam')) {
+      base = base.slice(0, -4);
+    }
     const outFile = join(outDir, `${base}.${ext}`);
     await writeFile(outFile, output, 'utf-8');
     written.push(outFile);

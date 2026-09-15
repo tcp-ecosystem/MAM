@@ -28,13 +28,13 @@ Source: C:\Users\USER\LifeJiggy\Prompt_AI-Support\MAM\examples\basic\calculator.
     Purpose: Perform basic arithmetic operations with input validation and error handling
 
     Inputs:
-      - operation: string (required: true) — The arithmetic operation to perform: "add", "subtract", "multiply", "divide"
-      - a: number (required: true) — The first operand
-      - b: number (required: true) — The second operand
+      - operation: string (required: true): The arithmetic operation to perform: "add", "subtract", "multiply", "divide"
+      - a: number (required: true): The first operand
+      - b: number (required: true): The second operand
 
     Outputs:
-      - result: number — The result of the arithmetic operation
-      - operation_performed: string — Description of the operation performed
+      - result: number: The result of the arithmetic operation
+      - operation_performed: string: Description of the operation performed
 
     Capabilities:
       N/A

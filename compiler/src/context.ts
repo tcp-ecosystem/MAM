@@ -102,7 +102,7 @@ function buildContextLines(mod: V2ModuleNode): string[] {
   lines.push('Inputs:');
   if (mod.inputs && mod.inputs.length > 0) {
     for (const inp of mod.inputs) {
-      lines.push(`  - ${inp.name}: ${inp.type} (required: ${inp.required})${inp.description ? ' — ' + inp.description : ''}`);
+      lines.push(`  - ${inp.name}: ${inp.type} (required: ${inp.required})${inp.description ? ': ' + inp.description : ''}`);
     }
   } else {
     lines.push('  N/A');
@@ -113,7 +113,7 @@ function buildContextLines(mod: V2ModuleNode): string[] {
   lines.push('Outputs:');
   if (mod.outputs && mod.outputs.length > 0) {
     for (const out of mod.outputs) {
-      lines.push(`  - ${out.name}: ${out.type}${out.description ? ' — ' + out.description : ''}`);
+      lines.push(`  - ${out.name}: ${out.type}${out.description ? ': ' + out.description : ''}`);
     }
   } else {
     lines.push('  N/A');
