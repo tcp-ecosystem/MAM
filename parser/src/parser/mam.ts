@@ -341,10 +341,12 @@ export class MAMParser {
 
       // Validate runtime
       const validRuntimes = ['python', 'javascript', 'typescript', 'rust', 'go', 'shell'];
-      if (!validRuntimes.includes(ast.frontmatter.data.runtime)) {
+      const runtimeStr = String(ast.frontmatter.data.runtime || '');
+      const runtimeLang = runtimeStr.split(/\s+/)[0].toLowerCase();
+      if (!validRuntimes.includes(runtimeLang)) {
         errors.push(
           new ParseError(
-            `Invalid runtime: "${ast.frontmatter.data.runtime}"`,
+            `Invalid runtime: "${ast.frontmatter.data.runtime}". Must be one of: ${validRuntimes.join(', ')}`,
             this.source,
             1,
             0,

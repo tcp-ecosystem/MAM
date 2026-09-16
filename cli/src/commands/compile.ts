@@ -1366,10 +1366,20 @@ class OutputWriter {
     if (outFormat === 'stdout') { process.stdout.write(output); return written; }
     if (!existsSync(outDir)) await mkdir(outDir, { recursive: true });
     const ext = TARGET_EXTENSIONS[target];
-    let base = basename(filePath, extname(filePath));
-    // For .mam target, strip .mam suffix to avoid hello.mam.mam
-    if (target === 'mam' && base.endsWith('.mam')) {
-      base = base.slice(0, -4);
+    const fullBase = basename(filePath);
+    // Determine base name based on input and target
+    let base: string;
+    if (target === 'mam') {
+      // .mam → .mam, .mam.md → .mam
+      base = fullBase.replace(/\.mam\.md$/, '').replace(/\.mam$/, '');
+    } else if (fullBase.endsWith('.mam.md')) {
+      // .mam.md → .mam.py (keep .mam prefix)
+      base = fullBase.replace(/\.md$/, ''); // hello.mam.md → hello.mam
+    } else if (fullBase.endsWith('.mam')) {
+      // .mam → .mam.py (keep .mam prefix)
+      base = fullBase; // test-audit.mam → test-audit.mam
+    } else {
+      base = fullBase.replace(/\.\w+$/, '');
     }
     const outFile = join(outDir, `${base}.${ext}`);
     await writeFile(outFile, output, 'utf-8');

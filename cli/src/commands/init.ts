@@ -17,7 +17,7 @@ type: module
 author: Your Name
 license: MIT
 tags: [mam, module]
-runtime: python >=3.12
+runtime: "python >=3.12"
 ---
 
 # ${name.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
@@ -72,7 +72,7 @@ type: module
 author: Your Name
 license: MIT
 tags: [mam, module, advanced]
-runtime: python >=3.12
+runtime: "python >=3.12"
 ---
 
 # ${name.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
@@ -143,7 +143,7 @@ type: workflow
 author: Your Name
 license: MIT
 tags: [mam, workflow, pipeline]
-runtime: python >=3.12
+runtime: "python >=3.12"
 ---
 
 # ${name.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
