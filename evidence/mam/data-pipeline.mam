@@ -1,0 +1,316 @@
+---
+id: data-pipeline
+name: ETL Data Pipeline
+version: 2.0.0
+type: module
+author: MAM Platform Team
+license: MIT
+tags: [etl, pipeline, data, parallel, validation, monitoring, production]
+runtime: python >=3.12
+---
+
+# ETL Data Pipeline
+
+Production-grade extract-transform-load pipeline with parallel stage execution, schema validation, dead-letter queue handling, checkpoint recovery, and comprehensive monitoring. Designed for batch processing of structured and semi-structured data at scale.
+
+## Purpose
+
+This module orchestrates the movement and transformation of data from heterogeneous sources through validated, auditable stages into target sinks. It provides exactly-once processing guarantees via idempotent checkpoints, automatic retry with exponential backoff, dead-letter routing for poison records, and real-time throughput/latency metrics. Suitable for nightly batch jobs, streaming micro-batches, and ad-hoc data migration tasks.
+
+## Inputs
+
+| Name | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| source_config | object | Yes | - | Source definition with `type` (s3, postgres, kafka, api), `connection_string`, `query_or_path`, and `format` (csv, json, parquet) |
+| target_config | object | Yes | - | Target definition with `type`, `connection_string`, `table_or_path`, and `write_mode` (append, upsert, overwrite) |
+| transform_stages | list[object] | Yes | - | Ordered list of transformation stages, each with `name`, `type` (filter, map, aggregate, join, deduplicate, enrich), and `params` |
+| schema | object | No | null | JSON Schema for validating records after transformation; null skips validation |
+| parallelism | int | No | 4 | Number of parallel worker processes for transform and load stages |
+| batch_size | int | No | 1000 | Records per batch for chunked processing and checkpointing |
+| checkpoint_enabled | bool | No | true | Enable periodic checkpointing for crash recovery |
+| checkpoint_interval_sec | int | No | 60 | Seconds between checkpoint writes |
+| dead_letter_path | string | No | /tmp/dlq | Path or topic for records that fail validation or transformation |
+| max_retries | int | No | 3 | Maximum retry attempts per batch before routing to dead letter |
+| retry_backoff_ms | int | No | 1000 | Initial backoff in milliseconds, doubled each retry |
+| metrics_endpoint | string | No | null | Prometheus pushgateway URL for emitting pipeline metrics |
+| alert_on_failure | bool | No | true | Send alert notification when pipeline enters failed state |
+| notification_webhook | string | No | null | Webhook URL for failure and completion notifications |
+
+## Outputs
+
+| Name | Type | Description |
+|------|------|-------------|
+| records_extracted | int | Total records read from source |
+| records_transformed | int | Records successfully passed through all transform stages |
+| records_loaded | int | Records written to target |
+| records_rejected | int | Records routed to dead letter queue |
+| batches_processed | int | Total number of batches processed |
+| pipeline_duration_ms | int | Wall-clock time from extract start to load completion |
+| stages | list[object] | Per-stage metrics with name, duration_ms, records_in, records_out, and errors |
+| checkpoint_path | string | Path to the latest checkpoint file for resume capability |
+| success | bool | Whether the pipeline completed without fatal errors |
+
+## Rules
+
+1. The pipeline MUST NOT proceed to the transform stage if extraction returns zero records unless `allow_empty_source: true` is set.
+2. Every record MUST be validated against the provided JSON Schema before entering the load stage. Invalid records are routed to the dead-letter queue with the validation error attached.
+3. Dead-letter records MUST include the original record, the error message, the stage that failed, and an ISO-8601 timestamp.
+4. Checkpoints MUST capture the last successfully processed batch number and must be atomically written (write-to-temp then rename).
+5. On crash recovery, the pipeline MUST resume from the last valid checkpoint, not from the beginning.
+6. Transform stages MUST be executed in the order specified by `transform_stages`. Parallelism applies within a single stage across batches, not across stages.
+7. The `join` transform type MUST declare both `left_key` and `right_key` and a `source` for the right side dataset.
+8. The `aggregate` transform MUST specify `group_by` keys and an `aggregations` list with `field`, `function` (sum, avg, count, min, max), and `output_name`.
+9. Load operations MUST be idempotent when `write_mode` is `upsert` or `overwrite`. The `append` mode MAY produce duplicates on retry.
+10. The pipeline MUST emit the following Prometheus metrics: `etl_records_total`, `etl_records_failed_total`, `etl_batch_duration_seconds`, `etl_stage_duration_seconds`, `etl_pipeline_duration_seconds`.
+11. When `alert_on_failure` is true, the pipeline MUST send a POST request to `notification_webhook` within 30 seconds of entering a failed state.
+12. Batch sizes MUST NOT exceed 10,000 records to prevent memory exhaustion.
+13. All file paths MUST support both local filesystem and S3-style URIs (`s3://bucket/path`).
+14. Transform functions MUST be pure: they MUST NOT have side effects beyond producing output records.
+15. The pipeline MUST log a structured JSON line at INFO level for each batch completion with counts and latency.
+
+## Workflow
+
+```yaml
+steps:
+  - id: initialize
+    description: Load configuration, validate inputs, and create checkpoint directory
+    action: setup_pipeline
+    params:
+      config: input_config
+      checkpoint_dir: /var/lib/etl/checkpoints/${pipeline_id}
+    extract:
+      pipeline_id: generated_id
+      start_time: current_timestamp
+
+  - id: extract
+    description: Read records from configured source
+    action: extract_source
+    params:
+      source: source_config
+      batch_size: batch_size
+    extract:
+      total_records: result.count
+      batches: result.batched_records
+    on_error: alert_and_exit
+    next: parallel_transform
+
+  - id: parallel_transform
+    description: Process batches through transform stages in parallel
+    action: parallel_map
+    params:
+      input: batches
+      workers: parallelism
+      stages: transform_stages
+    substeps:
+      - id: apply_stages
+        description: Execute each transform stage sequentially on the batch
+        action: run_transform_stages
+        params:
+          stages: transform_stages
+        extract:
+          transformed: result.records
+          errors: result.errors
+
+      - id: validate_records
+        description: Validate transformed records against JSON Schema
+        condition: schema != null
+        action: validate_schema
+        params:
+          records: transformed
+          schema: schema
+        extract:
+          valid: result.valid_records
+          invalid: result.invalid_records
+        on_error: route_to_dlq
+
+      - id: route_invalid
+        description: Send invalid records to dead letter queue
+        condition: invalid.length > 0
+        action: write_dead_letter
+        params:
+          records: invalid
+          stage: apply_stages
+          destination: dead_letter_path
+        next: load_batch
+
+      - id: load_batch
+        description: Write valid records to target in batch
+        action: load_target
+        params:
+          records: valid
+          target: target_config
+          batch_size: batch_size
+        extract:
+          loaded_count: result.written
+        next: checkpoint_batch
+
+      - id: checkpoint_batch
+        description: Persist progress for crash recovery
+        condition: checkpoint_enabled == true
+        action: write_checkpoint
+        params:
+          pipeline_id: pipeline_id
+          batch_number: current_batch
+          records_processed: loaded_count
+          interval: checkpoint_interval_sec
+
+  - id: emit_metrics
+    description: Push pipeline metrics to monitoring system
+    condition: metrics_endpoint != null
+    action: push_metrics
+    params:
+      endpoint: metrics_endpoint
+      metrics:
+        etl_records_total: total_records
+        etl_records_failed_total: records_rejected
+        etl_pipeline_duration_seconds: elapsed(start_time)
+
+  - id: notify_completion
+    description: Send completion notification if webhook configured
+    condition: notification_webhook != null
+    action: send_webhook
+    params:
+      url: notification_webhook
+      payload:
+        status: success
+        pipeline_id: pipeline_id
+        records_loaded: records_loaded
+        duration_ms: pipeline_duration_ms
+
+  - id: return_summary
+    description: Return pipeline execution summary
+    action: return
+    params:
+      records_extracted: total_records
+      records_transformed: records_transformed
+      records_loaded: records_loaded
+      records_rejected: records_rejected
+      pipeline_duration_ms: elapsed(start_time)
+```
+
+## Tests
+
+| ID | Scenario | Input | Expected Output |
+|----|----------|-------|-----------------|
+| T01 | Successful full pipeline | 5000 valid CSV records, simple map+filter transform | `success: true`, 5000 records loaded |
+| T02 | Empty source file | Source with 0 records | `success: true`, 0 loaded, no error |
+| T03 | Schema validation failure | 100 records, 12 fail schema | 88 loaded, 12 in DLQ, `records_rejected: 12` |
+| T04 | Transform function error | Stage with invalid field reference | Batch routed to DLQ with transform error |
+| T05 | Crash recovery via checkpoint | Kill pipeline at batch 5 of 10, restart | Resumes from batch 5, processes batches 5-10 |
+| T06 | Parallel processing correctness | 4000 records, parallelism=4 | All 4000 loaded, no duplicates or losses |
+| T07 | Upsert idempotency | Same batch loaded twice with upsert | Target contains exactly-once records |
+| T08 | Dead letter queue structure | 5 invalid records | Each DLQ entry has record, error, stage, timestamp |
+| T09 | Join transform | Two datasets joined on `user_id` | Merged output with fields from both sources |
+| T10 | Aggregate transform | 1000 sales records, group by `region` | One output row per region with sum/avg/count |
+| T11 | S3 source and target | Source s3://bucket/input/, target s3://bucket/output/ | Records read and written to S3 |
+| T12 | Alert on failure | Pipeline enters failed state | Webhook POST received within 30 seconds |
+| T13 | Batch size enforcement | 25000 records, batch_size=1000 | 25 batches processed |
+| T14 | Max retries exhausted | Upstream returns persistent 500 | Records routed to DLQ after 3 attempts |
+| T15 | Metrics emission | metrics_endpoint configured | Prometheus metrics pushed successfully |
+
+## Examples
+
+### Nightly Sales Aggregation
+
+```yaml
+source_config:
+  type: postgres
+  connection_string: postgres://analytics:pass@db:5432/sales
+  query_or_path: "SELECT * FROM raw_sales WHERE date = CURRENT_DATE - 1"
+  format: csv
+
+target_config:
+  type: postgres
+  connection_string: postgres://analytics:pass@db:5432/warehouse
+  table_or_path: daily_sales_summary
+  write_mode: upsert
+
+transform_stages:
+  - name: clean_nulls
+    type: filter
+    params:
+      remove_nulls: [amount, product_id, region]
+
+  - name: cast_types
+    type: map
+    params:
+      conversions:
+        amount: float
+        quantity: int
+        sale_date: date
+
+  - name: aggregate_by_region
+    type: aggregate
+    params:
+      group_by: [region, sale_date]
+      aggregations:
+        - field: amount
+          function: sum
+          output_name: total_revenue
+        - field: quantity
+          function: sum
+          output_name: total_units
+        - field: amount
+          function: avg
+          output_name: avg_order_value
+
+schema:
+  type: object
+  required: [region, sale_date, total_revenue, total_units]
+  properties:
+    region: { type: string }
+    sale_date: { type: string, format: date }
+    total_revenue: { type: number, minimum: 0 }
+    total_units: { type: integer, minimum: 0 }
+    avg_order_value: { type: number }
+
+parallelism: 4
+batch_size: 5000
+checkpoint_enabled: true
+metrics_endpoint: http://prometheus:9091/metrics/job/etl_sales
+notification_webhook: http://alerts.internal:8080/pipeline/daily-sales
+```
+
+### Streaming Micro-Batch from Kafka
+
+```python
+from data_pipeline import Pipeline, Source, Target, TransformStage
+
+pipeline = Pipeline(
+    source=Source(
+        type="kafka",
+        connection_string="kafka://broker:9092",
+        query_or_path="raw-events",
+        format="json",
+    ),
+    target=Target(
+        type="s3",
+        connection_string="s3://data-lake/processed/",
+        table_or_path="events/${date}/",
+        write_mode="append",
+    ),
+    stages=[
+        TransformStage("filter", type="filter", params={"field": "event_type", "op": "in", "values": ["click", "purchase"]}),
+        TransformStage("enrich", type="enrich", params={"source": "geo_lookup", "key": "ip", "fields": ["country", "city"]}),
+    ],
+    parallelism=8,
+    batch_size=2000,
+    checkpoint_interval_sec=30,
+)
+
+result = pipeline.run()
+print(f"Processed {result.records_loaded} records in {result.pipeline_duration_ms}ms")
+```
+
+### CLI Execution
+
+```bash
+# Run pipeline from config file
+python -m data_pipeline run --config pipeline.yaml --dry-run
+
+# Resume from checkpoint after failure
+python -m data_pipeline resume --checkpoint /var/lib/etl/checkpoints/2026-09-17/batch_005.ckpt
+
+# View pipeline metrics
+python -m data_pipeline metrics --endpoint http://prometheus:9090
+```

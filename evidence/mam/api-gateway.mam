@@ -1,0 +1,289 @@
+---
+id: api-gateway
+name: REST API Gateway
+version: 2.1.0
+type: module
+author: MAM Platform Team
+license: MIT
+tags: [api, gateway, rate-limiting, authentication, caching, load-balancing, production]
+runtime: python >=3.12
+---
+
+# REST API Gateway
+
+Production-grade API gateway providing rate limiting, JWT authentication, request routing, response caching, and round-robin load balancing. Designed for microservice architectures requiring centralized ingress control with sub-millisecond routing decisions.
+
+## Purpose
+
+This module acts as the single entry point for all client traffic. It enforces security policies, distributes load across upstream services, caches repeat queries, and emits structured telemetry for every request lifecycle event. The gateway is stateless horizontally scalable and suitable for containerized deployments behind a TCP load balancer.
+
+## Inputs
+
+| Name | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| upstream_services | list[object] | Yes | - | Array of upstream service definitions with `name`, `url`, `weight`, and `health_check_path` fields |
+| rate_limit_window_sec | int | No | 60 | Sliding window size in seconds for rate limit counters |
+| rate_limit_max_requests | int | No | 100 | Maximum requests per client per window before 429 response |
+| jwt_secret | string | Yes | - | HMAC-SHA256 secret for JWT signature verification |
+| jwt_algorithm | string | No | HS256 | JWT signing algorithm (HS256, HS384, HS512) |
+| jwt_issuer | string | No | gateway | Expected `iss` claim in incoming tokens |
+| cache_backend | string | No | redis | Cache storage backend: `redis`, `memcached`, or `local` |
+| cache_ttl_sec | int | No | 300 | Default TTL for cached responses in seconds |
+| cache_max_entries | int | No | 10000 | Maximum number of entries in the LRU cache |
+| load_balance_strategy | string | No | round_robin | Balancing algorithm: `round_robin`, `weighted_round_robin`, `least_connections`, `ip_hash` |
+| health_check_interval_sec | int | No | 15 | Seconds between upstream health checks |
+| log_level | string | No | info | Logging verbosity: `debug`, `info`, `warn`, `error` |
+| allowed_origins | list[string] | No | ["*"] | CORS allowed origins list |
+| tls_enabled | bool | No | false | Whether to terminate TLS at the gateway |
+
+## Outputs
+
+| Name | Type | Description |
+|------|------|-------------|
+| routed_request | object | Forwarded request with resolved upstream, rewritten headers, and correlation ID |
+| upstream_response | object | Response from the selected upstream service with status, headers, and body |
+| cache_hit | bool | Whether the response was served from cache |
+| rate_limit_remaining | int | Remaining requests in the current window for the client |
+| rate_limit_reset_at | string | ISO-8601 timestamp when the rate limit window resets |
+| load_balancer_state | object | Current health and connection count for each upstream |
+| telemetry | object | Structured log entry with latency, status, path, client IP, and upstream chosen |
+
+## Rules
+
+1. Every incoming request MUST carry a valid `Authorization: Bearer <jwt>` header unless the route is explicitly marked public.
+2. JWT tokens MUST be validated against the configured secret, algorithm, and issuer. Expired tokens MUST return 401.
+3. Rate limits are enforced per client IP unless a valid API key is present, in which case limits apply per API key.
+4. A request exceeding the rate limit MUST return `429 Too Many Requests` with `Retry-After` and `X-RateLimit-Reset` headers.
+5. Responses with `Cache-Control: no-store` or `Cache-Control: private` headers MUST NOT be cached.
+6. Cache keys are derived from HTTP method + normalized path + sorted query parameters + content-type accept header.
+7. When an upstream returns 5xx, the gateway MUST retry on the next healthy upstream up to 2 times before returning 502.
+8. Health checks MUST mark an upstream as unhealthy after 3 consecutive failures and re-enable after 2 consecutive successes.
+9. Load balancer MUST skip unhealthy upstreams entirely and redistribute weight proportionally among healthy nodes.
+10. All requests MUST receive a unique `X-Request-ID` UUID v4 header for distributed tracing.
+11. The gateway MUST return `405 Method Not Allowed` for unsupported HTTP methods on any routed path.
+12. CORS preflight requests MUST be handled without forwarding to upstream services.
+13. WebSocket upgrade requests MUST be supported for paths explicitly configured with `websocket: true`.
+14. Request and response body sizes MUST be limited to 10 MB by default, configurable per route.
+15. The gateway MUST emit a structured JSON log line for every request within 50ms of response completion.
+
+## Workflow
+
+```yaml
+steps:
+  - id: receive_request
+    description: Accept incoming HTTP request and extract client metadata
+    action: parse_headers
+    extract:
+      client_ip: X-Forwarded-For || remote_addr
+      request_id: X-Request-ID || generate_uuid_v4
+      auth_header: Authorization
+
+  - id: cors_check
+    description: Handle CORS preflight before any other processing
+    condition: method == OPTIONS
+    action: return_cors_headers
+    on_true: complete
+    on_false: next
+
+  - id: public_route_check
+    description: Determine if route requires authentication
+    action: lookup_route_config
+    extract:
+      route_config: find_route(path)
+    next: auth_check
+
+  - id: auth_check
+    description: Validate JWT token or skip for public routes
+    condition: route_config.auth_required == true
+    action: validate_jwt
+    params:
+      token: extract_bearer_token(auth_header)
+      secret: jwt_secret
+      algorithm: jwt_algorithm
+      issuer: jwt_issuer
+    on_true: next
+    on_false: rate_limit_check
+    on_error: return_401
+
+  - id: rate_limit_check
+    description: Check and decrement rate limit counter for client
+    action: check_rate_limit
+    params:
+      key: api_key || client_ip
+      window: rate_limit_window_sec
+      max: rate_limit_max_requests
+    extract:
+      allowed: result.allowed
+      remaining: result.remaining
+      reset_at: result.reset_at
+    on_true: next
+    on_false: return_429
+
+  - id: cache_lookup
+    description: Check response cache for identical previous request
+    condition: method in ["GET", "HEAD"]
+    action: cache_get
+    params:
+      key: build_cache_key(method, path, query, accept_header)
+      backend: cache_backend
+    extract:
+      cached_response: result.response
+    on_true: return_cached
+    on_false: next
+
+  - id: select_upstream
+    description: Choose target upstream via load balancer
+    action: load_balance_select
+    params:
+      strategy: load_balance_strategy
+      healthy_only: true
+    extract:
+      upstream: result.upstream
+
+  - id: forward_request
+    description: Proxy request to selected upstream with timeout and retry
+    action: proxy_request
+    params:
+      upstream_url: upstream.url
+      method: method
+      headers: rewrite_headers(original_headers, upstream)
+      body: request_body
+      timeout_ms: 5000
+      max_retries: 2
+    extract:
+      response: upstream_response
+    on_error: retry_or_502
+
+  - id: cache_store
+    description: Store cacheable responses for future requests
+    condition: response.status in [200, 203, 204, 301] AND should_cache(response)
+    action: cache_set
+    params:
+      key: build_cache_key(method, path, query, accept_header)
+      value: response
+      ttl: cache_ttl_sec
+      backend: cache_backend
+    next: emit_telemetry
+
+  - id: emit_telemetry
+    description: Log structured request lifecycle data
+    action: log_request
+    params:
+      request_id: request_id
+      method: method
+      path: path
+      status: response.status
+      latency_ms: elapsed_ms
+      upstream: upstream.name
+      cache_hit: cache_hit
+      client_ip: client_ip
+      rate_limit_remaining: remaining
+
+  - id: return_response
+    description: Send final response to client with gateway headers
+    action: send_response
+    params:
+      status: response.status
+      headers:
+        X-Request-ID: request_id
+        X-RateLimit-Remaining: remaining
+        X-RateLimit-Reset: reset_at
+        X-Upstream: upstream.name
+        X-Cache: cache_hit ? "HIT" : "MISS"
+      body: response.body
+```
+
+## Tests
+
+| ID | Scenario | Input | Expected Output |
+|----|----------|-------|-----------------|
+| T01 | Valid JWT with public route | Valid token, public path `/health` | 200 OK, no auth enforcement |
+| T02 | Valid JWT authenticated route | Valid token, protected path `/api/users` | Forwarded to upstream, 200 |
+| T03 | Expired JWT token | Token with `exp` in the past | 401 Unauthorized, `WWW-Authenticate` header |
+| T04 | Missing Authorization header | No auth header, protected route | 401 Unauthorized |
+| T05 | Rate limit exceeded | 101 requests in 60s window | 429 Too Many Requests, `Retry-After` header |
+| T06 | Rate limit remaining | 99th request in 100-limit window | 200 OK, `X-RateLimit-Remaining: 1` |
+| T07 | Cache HIT on repeat GET | Second identical GET within TTL | Response from cache, `X-Cache: HIT` |
+| T08 | Cache MISS on first request | First GET for a unique path | Response from upstream, `X-Cache: MISS` |
+| T09 | Cache bypass for POST | POST request with same path | Never cached, always forwarded |
+| T10 | Upstream 5xx triggers retry | Primary upstream returns 500 | Retried on next healthy upstream |
+| T11 | All upstreams unhealthy | All health checks failing | 503 Service Unavailable |
+| T12 | Round-robin distribution | 6 requests, 3 upstreams | 2 requests per upstream |
+| T13 | Weighted round-robin | Weights [3,1,1], 5 requests | 3 to first, 1 each to others |
+| T14 | CORS preflight handling | OPTIONS request with Origin header | 204 with CORS headers, no upstream call |
+| T15 | Request ID propagation | Any request without X-Request-ID | New UUID v4 generated and returned |
+| T16 | Body size limit exceeded | 11 MB request body | 413 Request Entity Too Large |
+| T17 | WebSocket upgrade | Upgrade header on configured path | 101 Switching Protocols |
+| T18 | Unknown route | Request to undefined path | 404 Not Found from gateway |
+
+## Examples
+
+### Basic Gateway Configuration
+
+```yaml
+gateway:
+  upstream_services:
+    - name: user-service
+      url: http://user-svc.internal:8080
+      weight: 3
+      health_check_path: /health
+    - name: order-service
+      url: http://order-svc.internal:8080
+      weight: 2
+      health_check_path: /health
+    - name: inventory-service
+      url: http://inventory-svc.internal:8080
+      weight: 1
+      health_check_path: /health
+
+  rate_limit_window_sec: 60
+  rate_limit_max_requests: 100
+
+  jwt_secret: ${JWT_SECRET}
+  jwt_algorithm: HS256
+  jwtIssuer: api-gateway
+
+  cache_backend: redis
+  cache_ttl_sec: 300
+
+  load_balance_strategy: weighted_round_robin
+```
+
+### curl Request with Authentication
+
+```bash
+TOKEN=$(curl -s -X POST https://auth.example.com/login \
+  -d '{"username":"admin","password":"secret"}' | jq -r .token)
+
+curl -s -H "Authorization: Bearer $TOKEN" \
+  https://gateway.example.com/api/users | jq .
+
+# Response headers include:
+# X-Request-ID: 550e8400-e29b-41d4-a716-446655440000
+# X-RateLimit-Remaining: 99
+# X-Cache: MISS
+# X-Upstream: user-service
+```
+
+### Programmatic Usage
+
+```python
+from api_gateway import Gateway, Upstream
+
+gateway = Gateway(
+    upstreams=[
+        Upstream(name="auth", url="http://auth:8080", weight=2),
+        Upstream(name="data", url="http://data:8080", weight=1),
+    ],
+    jwt_secret="my-secret-key",
+    cache_backend="redis",
+    rate_limit_max=500,
+)
+
+response = gateway.handle_request(
+    method="GET",
+    path="/api/v1/metrics",
+    headers={"Authorization": "Bearer <token>"},
+)
+print(response.status, response.headers["X-Cache"])
+```

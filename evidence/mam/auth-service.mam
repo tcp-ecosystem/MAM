@@ -1,0 +1,460 @@
+---
+id: auth-service
+name: Authentication & Authorization Service
+version: 3.0.0
+type: module
+author: MAM Platform Team
+license: MIT
+tags: [auth, jwt, oauth2, rbac, session, audit, production]
+runtime: python >=3.12
+---
+
+# Authentication & Authorization Service
+
+Production-grade authentication service providing JWT token lifecycle management, OAuth2/OIDC integration, server-side session management, role-based access control with hierarchical permissions, and comprehensive audit logging. Designed for multi-tenant SaaS platforms requiring centralized identity and access management.
+
+## Purpose
+
+This module implements the full identity stack for applications that need secure user authentication, third-party OAuth2 login, fine-grained authorization, and tamper-evident audit trails. It issues short-lived access tokens, long-lived refresh tokens, manages session revocation, enforces RBAC policies with attribute-based overrides, and logs every security-relevant event for compliance and forensic analysis.
+
+## Inputs
+
+| Name | Type | Required | Default | Description |
+|------|------|----------|---------|-------------|
+| jwt_access_secret | string | Yes | - | HMAC-SHA256 secret for signing access tokens |
+| jwt_refresh_secret | string | Yes | - | HMAC-SHA256 secret for signing refresh tokens (must differ from access secret) |
+| jwt_access_ttl_sec | int | No | 900 | Access token lifetime in seconds (default 15 minutes) |
+| jwt_refresh_ttl_sec | int | No | 604800 | Refresh token lifetime in seconds (default 7 days) |
+| jwt_algorithm | string | No | HS256 | JWT signing algorithm |
+| jwt_issuer | string | No | auth-service | Token issuer claim |
+| oauth2_providers | list[object] | No | [] | OAuth2 provider configs with `name`, `client_id`, `client_secret`, `authorization_url`, `token_url`, `userinfo_url`, `scopes`, and `redirect_uri` |
+| session_store | string | No | redis | Session storage backend: `redis`, `database`, or `memory` |
+| session_ttl_sec | int | No | 3600 | Server-side session lifetime in seconds |
+| max_sessions_per_user | int | No | 10 | Maximum concurrent sessions before oldest is revoked |
+| rbac_roles | list[object] | Yes | - | Role definitions with `name`, `permissions` (list of resource:action strings), and optional `parent` for hierarchy |
+| audit_log_sink | string | No | file | Audit destination: `file`, `database`, `kafka`, or `syslog` |
+| audit_log_path | string | No | /var/log/auth-service/audit.log | File path when sink is `file` |
+| password_hash_algorithm | string | No | bcrypt | Password hashing: `bcrypt`, `argon2id`, or `scrypt` |
+| password_min_length | int | No | 12 | Minimum password length requirement |
+| lockout_threshold | int | No | 5 | Failed attempts before account lockout |
+| lockout_duration_sec | int | No | 900 | Account lockout duration in seconds |
+| mfa_enabled | bool | No | false | Require multi-factor authentication |
+| mfa_issuer | string | No | auth-service | TOTP issuer name for MFA apps |
+
+## Outputs
+
+| Name | Type | Description |
+|------|------|-------------|
+| access_token | string | Signed JWT access token with user claims and permissions |
+| refresh_token | string | Signed JWT refresh token for obtaining new access tokens |
+| token_type | string | Always "Bearer" |
+| expires_in | int | Seconds until access token expiry |
+| session_id | string | Unique server-side session identifier |
+| user_profile | object | Authenticated user's profile with id, email, roles, and permissions |
+| auth_method | string | Authentication method used: `password`, `oauth2`, `token_refresh`, `session` |
+| audit_entry | object | Structured audit log record with event, actor, target, outcome, and metadata |
+
+## Rules
+
+1. Access tokens MUST contain claims: `sub` (user ID), `iss`, `iat`, `exp`, `roles`, `permissions`, `session_id`.
+2. Refresh tokens MUST contain claims: `sub`, `iss`, `iat`, `exp`, `session_id`, `family` (token rotation family ID).
+3. Access token TTL MUST NOT exceed 1 hour. Refresh token TTL MUST NOT exceed 30 days.
+4. Refresh token rotation MUST invalidate the previous refresh token and issue a new pair. If the old refresh token is reused, the entire token family MUST be revoked (token theft detection).
+5. Passwords MUST be hashed with the configured algorithm before storage. Raw passwords MUST NEVER appear in logs, audit entries, or error messages.
+6. Failed login attempts MUST be logged with the username, IP address, user agent, and timestamp. Successful logins MUST also be logged.
+7. After `lockout_threshold` consecutive failed attempts, the account MUST be locked for `lockout_duration_sec`. The lockout MUST reset on successful authentication.
+8. RBAC permission checks MUST traverse the role hierarchy. A child role inherits all parent permissions. Explicit deny always overrides inherited allow.
+9. Every authorization check MUST be audited with the resource, action, roles evaluated, and the decision (allow/deny).
+10. OAuth2 state parameter MUST be a cryptographically random string stored in session and validated on callback to prevent CSRF.
+11. OAuth2 tokens from external providers MUST be exchanged server-side. Client-side token exchange MUST NOT be supported.
+12. Sessions MUST be revocable by user ID (global logout), by session ID, or by IP address range.
+13. The `max_sessions_per_user` limit MUST evict the oldest session when exceeded.
+14. MFA TOTP secrets MUST be encrypted at rest and only decrypted during verification.
+15. Audit log entries MUST be immutable once written. If using Kafka, a dedicated topic with `retention.ms=31536000000` (1 year) MUST be used.
+16. All token signing and verification operations MUST use constant-time comparison to prevent timing attacks.
+17. The service MUST support token blacklisting for immediate revocation without waiting for expiry.
+
+## Workflow
+
+```yaml
+steps:
+  - id: receive_request
+    description: Accept authentication request and determine method
+    action: parse_request
+    extract:
+      request_type: body.type  # login, refresh, oauth2_init, oauth2_callback, logout, verify
+      client_ip: remote_addr
+      user_agent: User-Agent header
+    next: route_by_type
+
+  - id: route_by_type
+    description: Branch based on authentication method
+    action: switch
+    params:
+      value: request_type
+      cases:
+        password_login: authenticate_password
+        oauth2_init: initiate_oauth2
+        oauth2_callback: complete_oauth2
+        refresh_token: refresh_access_token
+        logout: revoke_session
+        verify: verify_token
+
+  # ── Password Authentication ──
+  - id: authenticate_password
+    description: Validate username/password and check lockout status
+    action: authenticate
+    params:
+      username: body.username
+      password: body.password
+    substeps:
+      - id: check_lockout
+        description: Verify account is not locked
+        action: check_account_lockout
+        params:
+          username: body.username
+        on_locked: return_423
+
+      - id: verify_password
+        description: Compare password hash against stored value
+        action: verify_password_hash
+        params:
+          stored_hash: user.password_hash
+          provided: body.password
+          algorithm: password_hash_algorithm
+        on_fail: increment_failure_count
+        on_success: next
+
+      - id: increment_failure_count
+        description: Track failed attempts and lock if threshold reached
+        action: record_failed_attempt
+        params:
+          username: body.username
+          threshold: lockout_threshold
+          lockout_duration: lockout_duration_sec
+
+      - id: reset_failure_count
+        description: Clear failed attempts on successful login
+        action: clear_failed_attempts
+        params:
+          username: body.username
+        next: issue_tokens
+
+  # ── OAuth2 Flow ──
+  - id: initiate_oauth2
+    description: Generate state and redirect to OAuth2 provider
+    action: oauth2_authorize
+    params:
+      provider: find_provider(body.provider)
+      scopes: body.scopes || provider.default_scopes
+      state: generate_csrf_token()
+      redirect: provider.redirect_uri
+    extract:
+      authorization_url: result.url
+      state_token: result.state
+
+  - id: complete_oauth2
+    description: Exchange code for tokens and create/update user
+    action: oauth2_exchange
+    params:
+      provider: find_provider(body.provider)
+      code: body.code
+      state: body.state
+      expected_state: session.oauth2_state
+    substeps:
+      - id: validate_state
+        description: Verify CSRF state parameter matches
+        action: constant_time_compare
+        params:
+          a: body.state
+          b: session.oauth2_state
+        on_fail: return_403
+
+      - id: exchange_code
+        description: Exchange authorization code for tokens server-side
+        action: exchangeAuthorization_code
+        params:
+          token_url: provider.token_url
+          code: body.code
+          client_id: provider.client_id
+          client_secret: provider.client_secret
+          redirect_uri: provider.redirect_uri
+
+      - id: fetch_profile
+        description: Retrieve user profile from provider
+        action: fetch_user_info
+        params:
+          userinfo_url: provider.userinfo_url
+          access_token: result.access_token
+
+      - id: upsert_user
+        description: Create or update local user from OAuth profile
+        action: upsert_user_from_oauth
+        params:
+          provider: body.provider
+          profile: result.profile
+        next: issue_tokens
+
+  # ── Token Refresh ──
+  - id: refresh_access_token
+    description: Validate refresh token and issue new token pair
+    action: refresh_tokens
+    params:
+      refresh_token: body.refresh_token
+      secret: jwt_refresh_secret
+    substeps:
+      - id: verify_refresh
+        description: Validate signature, expiry, and session existence
+        action: verify_jwt
+        params:
+          token: body.refresh_token
+          secret: jwt_refresh_secret
+        on_fail: return_401
+
+      - id: detect_rotation
+        description: Check if refresh token family is still valid
+        action: check_token_family
+        params:
+          family: decoded.family
+          session_id: decoded.session_id
+        on_reused: revoke_family_and_return_401
+
+      - id: rotate_refresh
+        description: Issue new access + refresh tokens, invalidate old refresh
+        action: rotate_token_pair
+        params:
+          user_id: decoded.sub
+          session_id: decoded.session_id
+          family: generate_new_family_id()
+        next: issue_tokens
+
+  # ── Token Verification ──
+  - id: verify_token
+    description: Validate access token and return claims
+    action: verify_access_token
+    params:
+      token: Authorization header bearer token
+      secret: jwt_access_secret
+      issuer: jwt_issuer
+    substeps:
+      - id: check_blacklist
+        description: Verify token is not revoked
+        action: check_token_blacklist
+        params:
+          jti: decoded.jti
+        on_blacklisted: return_401
+
+      - id: check_permissions
+        description: Evaluate required permissions against user roles
+        action: evaluate_rbac
+        params:
+          user_roles: decoded.roles
+          required_permission: body.required_permission
+          resource: body.resource
+        on_deny: return_403
+
+      - id: audit_access
+        description: Log the authorization decision
+        action: write_audit_log
+        params:
+          event: authorization.checked
+          actor: decoded.sub
+          resource: body.resource
+          action: body.required_permission
+          outcome: allowed
+        next: return_claims
+
+  # ── Logout ──
+  - id: revoke_session
+    description: Invalidate session and blacklist tokens
+    action: revoke_session
+    params:
+      session_id: body.session_id || token.session_id
+      user_id: token.sub
+    substeps:
+      - id: blacklist_tokens
+        description: Add current tokens to blacklist until expiry
+        action: blacklist_token_family
+        params:
+          family: token.family
+
+      - id: destroy_session
+        description: Remove session from store
+        action: delete_session
+        params:
+          session_id: body.session_id
+
+      - id: audit_logout
+        action: write_audit_log
+        params:
+          event: session.revoked
+          actor: token.sub
+          session_id: body.session_id
+          outcome: success
+
+  # ── Token Issuance ──
+  - id: issue_tokens
+    description: Create access + refresh tokens and persist session
+    action: create_token_pair
+    params:
+      user_id: user.id
+      roles: user.roles
+      permissions: resolved_permissions
+      access_secret: jwt_access_secret
+      refresh_secret: jwt_refresh_secret
+      access_ttl: jwt_access_ttl_sec
+      refresh_ttl: jwt_refresh_ttl_sec
+      issuer: jwt_issuer
+    substeps:
+      - id: create_session
+        action: persist_session
+        params:
+          store: session_store
+          user_id: user.id
+          ttl: session_ttl_sec
+          max_per_user: max_sessions_per_user
+
+      - id: audit_login
+        action: write_audit_log
+        params:
+          event: authentication.success
+          actor: user.id
+          method: request_type
+          ip: client_ip
+          user_agent: user_agent
+          session_id: session.id
+        next: return_tokens
+```
+
+## Tests
+
+| ID | Scenario | Input | Expected Output |
+|----|----------|-------|-----------------|
+| T01 | Successful password login | Valid username + password | 200, access_token, refresh_token, session_id |
+| T02 | Invalid password | Wrong password | 401 Unauthorized |
+| T03 | Account lockout | 5 consecutive wrong passwords | 423 Locked, lockout_until timestamp |
+| T04 | Lockout expiry | Wait lockout_duration_sec, then retry | Normal authentication allowed |
+| T05 | Access token validation | Valid token in Authorization header | 200, decoded claims returned |
+| T06 | Expired access token | Token past exp claim | 401 Unauthorized |
+| T07 | Refresh token rotation | Valid refresh token | New access + refresh pair, old refresh invalidated |
+| T08 | Refresh token reuse detection | Old refresh token after rotation | 401, entire token family revoked |
+| T09 | OAuth2 initiation | provider=google | Redirect URL with state parameter |
+| T10 | OAuth2 callback | Valid code + matching state | User created/updated, tokens issued |
+| T11 | OAuth2 CSRF detection | Mismatched state parameter | 403 Forbidden |
+| T12 | RBAC permission allowed | User with admin role, resource:users:read | 200, access granted |
+| T13 | RBAC permission denied | User with viewer role, resource:users:delete | 403 Forbidden |
+| T14 | RBAC hierarchy inheritance | Child role inherits parent permissions | All parent permissions available |
+| T15 | Session revocation | Logout with session_id | Session destroyed, tokens blacklisted |
+| T16 | Global logout by user ID | Admin revokes all sessions for user | All user sessions invalidated |
+| T17 | Max sessions enforcement | User creates 11th session | Oldest session revoked, new session created |
+| T18 | Audit log entry | Any auth event | Structured log with event, actor, outcome, ip, timestamp |
+| T19 | Password strength enforcement | Password shorter than min_length | 400 Bad Request with validation error |
+| T20 | MFA TOTP verification | Valid TOTP code | 200, MFA challenge passed |
+| T21 | Token blacklist | Blacklisted token presented | 401 Unauthorized |
+| T22 | Constant-time comparison | Timing attack simulation | No measurable timing difference |
+
+## Examples
+
+### Password Login Flow
+
+```python
+from auth_service import AuthService
+
+auth = AuthService(
+    jwt_access_secret="access-secret-key",
+    jwt_refresh_secret="refresh-secret-key",
+    rbac_roles=[
+        {"name": "admin", "permissions": ["users:*", "orders:*", "reports:*"]},
+        {"name": "editor", "parent": "viewer", "permissions": ["users:read", "orders:write"]},
+        {"name": "viewer", "permissions": ["users:read", "orders:read", "reports:read"]},
+    ],
+)
+
+result = auth.login(username="admin@example.com", password="SecureP@ss123!")
+print(f"Access token: {result.access_token}")
+print(f"Expires in: {result.expires_in}s")
+print(f"Session: {result.session_id}")
+```
+
+### OAuth2 Google Login
+
+```python
+auth = AuthService(
+    jwt_access_secret="...",
+    jwt_refresh_secret="...",
+    oauth2_providers=[
+        {
+            "name": "google",
+            "client_id": "google-client-id.apps.googleusercontent.com",
+            "client_secret": "GOCSPX-...",
+            "authorization_url": "https://accounts.google.com/o/oauth2/v2/auth",
+            "token_url": "https://oauth2.googleapis.com/token",
+            "userinfo_url": "https://www.googleapis.com/oauth2/v2/userinfo",
+            "scopes": ["openid", "email", "profile"],
+            "redirect_uri": "https://myapp.com/auth/callback/google",
+        }
+    ],
+)
+
+# Step 1: Redirect user
+auth_url = auth.initiate_oauth2("google", scopes=["openid", "email"])
+# Redirect user to auth_url
+
+# Step 2: Handle callback
+result = auth.complete_oauth2("google", code="4/0A...", state="csrf_token")
+print(f"User: {result.user_profile.email}")
+```
+
+### Authorization Check Middleware
+
+```python
+from auth_service import AuthService, require_permission
+
+auth = AuthService(jwt_access_secret="...", jwt_refresh_secret="...", rbac_roles=[...])
+
+# Decorator for route protection
+@require_permission(auth, "orders:write")
+def create_order(request):
+    return {"status": "created"}
+
+# Programmatic check
+claims = auth.verify_token(access_token)
+if auth.has_permission(claims, "reports:read"):
+    return generate_report()
+else:
+    return {"error": "insufficient permissions"}, 403
+```
+
+### Audit Log Query
+
+```python
+from auth_service import AuditLog
+
+audit = AuditLog(sink="database", connection_string="postgres://auth:pass@db/audit")
+
+# Query recent failed logins
+events = audit.query(
+    event="authentication.failure",
+    since="2026-09-16T00:00:00Z",
+    limit=100,
+)
+
+for entry in events:
+    print(f"{entry.timestamp} - {entry.actor} - {entry.ip} - {entry.outcome}")
+```
+
+### CLI Operations
+
+```bash
+# Start the auth service
+python -m auth-service serve --port 8080
+
+# Revoke a user's sessions
+python -m auth-service revoke --user-id usr_12345
+
+# Verify a token
+python -m auth-service verify --token "eyJhbG..."
+
+# Query audit logs
+python -m auth-service audit --event authentication.failure --since 2h --format json
+```
