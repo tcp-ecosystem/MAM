@@ -443,6 +443,219 @@ export interface ToolEngine {
   getSchema(toolName: string): ToolSchema | undefined;
 }
 
+export interface ContextEngine {
+  assemble(config: ContextConfig): Promise<ContextResult>;
+  addSource(source: ContextSource): void;
+  removeSource(sourceId: string): void;
+  getBudget(): TokenBudget;
+  getStats(): ContextEngineStats;
+}
+
+export interface ContextConfig {
+  budget: number;
+  sources: string[];
+  priorities: Record<string, ContextPriority>;
+  optimization?: ContextOptimization;
+}
+
+export interface ContextSource {
+  id: string;
+  name: string;
+  type: ContextSourceType;
+  priority: ContextPriority;
+  ttl?: number;
+  metadata?: Record<string, unknown>;
+}
+
+export interface ContextResult {
+  entries: ContextEntry[];
+  totalTokens: number;
+  budget: number;
+  droppedEntries: DroppedEntry[];
+  stats: ContextAssemblyStats;
+}
+
+export interface ContextEntry {
+  id: string;
+  sourceId: string;
+  content: string;
+  tokens: number;
+  priority: ContextPriority;
+  score: number;
+  metadata?: Record<string, unknown>;
+}
+
+export interface DroppedEntry {
+  id: string;
+  sourceId: string;
+  reason: ContextDropReason;
+}
+
+export interface ContextAssemblyStats {
+  totalSources: number;
+  selectedEntries: number;
+  droppedEntries: number;
+  tokensUsed: number;
+  tokensRemaining: number;
+  assemblyTimeMs: number;
+}
+
+export interface ContextEngineStats {
+  totalAssemblies: number;
+  averageTokensUsed: number;
+  averageAssemblyTimeMs: number;
+  cacheHitRate: number;
+  sourcesActive: number;
+}
+
+export interface KnowledgeEngine {
+  addSource(source: KnowledgeSource): Promise<void>;
+  removeSource(sourceId: string): Promise<void>;
+  retrieve(query: string, options?: KnowledgeRetrievalOptions): Promise<KnowledgeRetrievalResult>;
+  getStats(): KnowledgeEngineStats;
+}
+
+export interface KnowledgeSource {
+  id: string;
+  name: string;
+  type: KnowledgeSourceType;
+  config: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
+}
+
+export interface KnowledgeRetrievalOptions {
+  topK?: number;
+  threshold?: number;
+  filter?: Record<string, unknown>;
+  strategy?: KnowledgeRetrievalStrategy;
+}
+
+export interface KnowledgeRetrievalResult {
+  items: KnowledgeItem[];
+  query: string;
+  strategy: KnowledgeRetrievalStrategy;
+  timeMs: number;
+  totalCandidates: number;
+}
+
+export interface KnowledgeItem {
+  id: string;
+  sourceId: string;
+  content: string;
+  score: number;
+  rank: number;
+  metadata?: Record<string, unknown>;
+  provenance: KnowledgeProvenance;
+}
+
+export interface KnowledgeProvenance {
+  sourceId: string;
+  sourceName: string;
+  retrievedAt: number;
+  chunkIndex?: number;
+  documentId?: string;
+  confidence?: number;
+}
+
+export interface KnowledgeEngineStats {
+  totalSources: number;
+  totalRetrievals: number;
+  averageRetrievalTimeMs: number;
+  totalItemsIndexed: number;
+}
+
+export interface ModelEngine {
+  register(provider: ModelProvider): void;
+  unregister(providerId: string): void;
+  complete(request: ModelRequest): Promise<ModelResponse>;
+  getCapabilities(): ModelCapability[];
+  getStats(): ModelEngineStats;
+}
+
+export interface ModelProvider {
+  id: string;
+  name: string;
+  capabilities: ModelCapability[];
+  config: ModelProviderConfig;
+  adapter: ModelAdapter;
+}
+
+export interface ModelAdapter {
+  complete(request: ModelRequest, config: ModelProviderConfig): Promise<ModelResponse>;
+}
+
+export interface ModelRequest {
+  messages: ModelMessage[];
+  model?: string;
+  temperature?: number;
+  maxTokens?: number;
+  stop?: string[];
+  tools?: ToolDefinition[];
+  responseFormat?: ModelResponseFormat;
+}
+
+export interface ModelResponse {
+  content: string;
+  model: string;
+  usage: ModelUsage;
+  finishReason: ModelFinishReason;
+  toolCalls?: ModelToolCall[];
+}
+
+export interface ModelMessage {
+  role: ModelRole;
+  content: string;
+  name?: string;
+}
+
+export interface ModelToolCall {
+  id: string;
+  name: string;
+  arguments: Record<string, unknown>;
+}
+
+export interface ModelUsage {
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+}
+
+export interface ModelProviderConfig {
+  apiKey?: string;
+  baseUrl?: string;
+  temperature?: number;
+  maxTokens?: number;
+  timeout?: number;
+}
+
+export interface ModelEngineStats {
+  totalRequests: number;
+  totalTokensUsed: number;
+  averageLatencyMs: number;
+  requestsByProvider: Record<string, number>;
+  errorsByProvider: Record<string, number>;
+}
+
+export type ContextPriority = 'critical' | 'high' | 'medium' | 'low' | 'background';
+
+export type ContextSourceType = 'static' | 'dynamic' | 'computed' | 'external';
+
+export type ContextOptimization = 'none' | 'compress' | 'deduplicate' | 'summarize' | 'cache';
+
+export type ContextDropReason = 'budget_exceeded' | 'low_priority' | 'expired' | 'filtered';
+
+export type KnowledgeSourceType = 'document' | 'database' | 'api' | 'file' | 'custom';
+
+export type KnowledgeRetrievalStrategy = 'keyword' | 'semantic' | 'hybrid' | 'recency' | 'relevance';
+
+export type ModelCapability = 'text' | 'code' | 'reasoning' | 'structured_output' | 'function_calling' | 'multimodal' | 'embedding';
+
+export type ModelRole = 'system' | 'user' | 'assistant' | 'tool';
+
+export type ModelFinishReason = 'stop' | 'length' | 'tool_calls' | 'content_filter' | 'error';
+
+export type ModelResponseFormat = 'text' | 'json' | 'json_schema';
+
 export interface RetryPolicy {
   maxRetries: number;
   backoffMs: number;
