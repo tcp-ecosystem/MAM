@@ -52,7 +52,7 @@ export {
   type MemoryStats,
   type EventEmitter as V2EventEmitter,
   type EventListener as V2EventListener,
-  type Event as V2Event,
+  type MAMEvent as V2Event,
   type StateManager,
   type StateCallback,
   type StateChange,
