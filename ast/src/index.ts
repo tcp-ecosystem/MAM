@@ -85,7 +85,7 @@ export {
   VALID_MODULE_TYPES,
   isModuleType,
   getModuleTypeDefinition,
-} from './nodes/v2.js';
+} from './nodes/v2/index.js';
 
 // Visitor pattern
 export {

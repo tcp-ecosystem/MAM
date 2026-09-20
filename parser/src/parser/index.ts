@@ -48,3 +48,10 @@ export {
   ParseWarning,
   ParseWarningCode,
 } from './errors.js';
+
+export {
+  DSLParser,
+  parseDSL,
+  type DSLParserOptions,
+  type DSLParseResult,
+} from './dsl/index.js';

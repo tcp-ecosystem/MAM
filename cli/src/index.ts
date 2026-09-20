@@ -111,6 +111,7 @@ program
   .option('--no-memory', 'Disable memory/context persistence')
   .option('-v, --verbose', 'Verbose output')
   .option('-f, --format <format>', 'Output format (text|json)', 'text')
+  .option('--dry-run', 'Show execution plan without running')
   .action(async (file, options) => {
     const { runCommand } = await import('./commands/run.js');
     await runCommand({ ...options, file, timeout: parseInt(options.timeout) });

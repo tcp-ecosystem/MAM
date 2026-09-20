@@ -1,6 +1,6 @@
 # MAM Current State
 
-> **Last Updated: 2026-09-08**
+> **Last Updated: 2026-09-19**
 
 ---
 
@@ -8,7 +8,7 @@
 
 MAM (Markdown as Module) is a System Description Language (SDL) whose reference syntax is Markdown. It describes intelligent systems — agents, tools, workflows, teams, policies — and compiles them to 16 target languages.
 
-**Status: Beta-ready.** All packages build, 2222 tests pass, full pipeline works end-to-end.
+**Status: Beta-ready.** All packages build, 2222 tests pass, full pipeline works end-to-end. V2 Runtime: 93% complete (14/15 engines implemented).
 
 ---
 
@@ -128,6 +128,43 @@ The full `.mam.md → .mam.<target>` pipeline works:
 
 ---
 
+## V2 Runtime (Next-Gen) Implementation
+
+The V2 runtime implements the next-generation native execution engine for `.mam` files.
+
+| Engine | File | Lines | Description |
+|--------|------|-------|-------------|
+| Core Runtime | `v2/runtime.ts` | 410 | Orchestrator with topological sort, type-based dispatch |
+| Context Engine | `v2/context-engine.ts` | 464 | Priority-based assembly, caching, deduplication, compression |
+| Events | `v2/events.ts` | 472 | Middleware, batching, replay, wildcard support |
+| Knowledge/RAG | `v2/knowledge-engine.ts` | 658 | TF-IDF, cosine similarity, hybrid retrieval |
+| Memory Engine | `v2/memory-engine.ts` | 529 | Search, consolidation, indexing |
+| Memory Store | `v2/memory.ts` | 572 | TTL, LRU eviction, pressure monitoring, snapshots |
+| Model Engine | `v2/model-engine.ts` | 539 | Fallback, retry, rate limiting, health checks |
+| Permissions | `v2/permissions.ts` | 559 | Glob matching, inheritance, audit logging |
+| Plugins | `v2/plugins.ts` | 687 | Lifecycle, hot reload, dependency resolution |
+| Security | `v2/security.ts` | 841 | Secret detection, anomaly detection, policy validation |
+| State | `v2/state.ts` | 584 | Transactions, locking, namespaces, watchers |
+| Token Budget | `v2/token-budget.ts` | 407 | Allocation, defragmentation, warnings |
+| Tool Engine | `v2/tool-engine.ts` | 589 | Validation, caching, retry, permissions |
+| Types | `v2/types.ts` | 687 | 60+ interfaces defining the runtime contract |
+
+**Total: 14 files, ~7,700 lines of V2 runtime code**
+
+### V2 Runtime Status
+
+| Category | Engines | Status |
+|----------|---------|--------|
+| Core Runtime | Runtime, State, Events, Permissions, Plugins, Security | ✅ 6/6 Complete |
+| Intelligence | Context, Token Budget, Memory, Knowledge, Model, Tool | ✅ 6/6 Complete |
+| Orchestration | Workflow Engine, Module Registry, Dependency Resolver | ❌ 0/3 Missing |
+| Quality | Evaluation Engine | ❌ 0/1 Missing |
+| Operations | Observability, CLI Integration | ❌ 0/2 Missing |
+
+**Overall: 12/14 engines complete (86%)**
+
+---
+
 ## Known Issues
 
 1. **Parser hyphen bug**: Text containing hyphens (`well-sourced`) triggers `UNEXPECTED_CHARACTER` error. Workaround: avoid hyphens in prose.
@@ -146,6 +183,13 @@ The full `.mam.md → .mam.<target>` pipeline works:
 |------|----------|--------|
 | Parser hyphen fix | High | Known bug, workaround exists |
 | Runtime execution testing | High | Compiled output not verified running |
+| Workflow Engine (standalone) | Medium | `executeWorkflow()` in runtime.ts (basic) |
+| Module Registry (runtime-level) | Medium | `PluginRegistry` in plugins.ts |
+| Dependency Resolver (runtime-level) | Medium | `DependencyResolver` in package-manager + `topoSort()` in runtime |
+| CLI `mam run` | High | ✅ Complete (1144 lines, sandbox, hooks, plugins) |
+| Dry-run mode | High | ✅ Complete (run + execute commands) |
+| Evaluation Engine | Low | Not implemented |
+| Observability System | Low | Basic metrics in each engine |
 | Registry deployment | Medium | Local only |
 | VS Code Extension | Low | Future |
 | Runtime SDK | Low | Future |

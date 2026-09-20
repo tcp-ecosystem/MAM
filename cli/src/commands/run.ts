@@ -40,6 +40,7 @@ export interface RunOptions {
   trace?: boolean;
   historyFile?: string;
   envFile?: string;
+  dryRun?: boolean;
 }
 
 export interface ExecutionContext {
@@ -937,6 +938,87 @@ class ParallelRunner {
 // Main Execute Function
 // ---------------------------------------------------------------------------
 
+// ---------------------------------------------------------------------------
+// Dry Run
+// ---------------------------------------------------------------------------
+
+function generateDryRunOutput(ast: any, inputs: Record<string, unknown>, options: RunOptions): string {
+  const lines: string[] = [];
+
+  lines.push(chalk.cyan('\n  Dry Run — Execution Plan'));
+  lines.push(chalk.gray('  ' + '='.repeat(50)));
+  lines.push('');
+
+  lines.push(chalk.white(`  File:     ${options.file}`));
+  lines.push(chalk.white(`  Sandbox:  ${options.sandbox || 'vm'}`));
+  lines.push(chalk.white(`  Timeout:  ${options.timeout || 30000}ms`));
+  lines.push(chalk.white(`  Target:   ${options.target || 'default'}`));
+  lines.push('');
+
+  const fm = ast.frontmatter?.data;
+  if (fm?.name) {
+    lines.push(chalk.white(`  Module:   ${fm.name}`));
+  }
+  if (fm?.version) {
+    lines.push(chalk.white(`  Version:  ${fm.version}`));
+  }
+  if (fm?.type) {
+    lines.push(chalk.white(`  Type:     ${fm.type}`));
+  }
+  lines.push('');
+
+  lines.push(chalk.white('  Input Parameters:'));
+  if (Object.keys(inputs).length === 0) {
+    lines.push(chalk.gray('    (none)'));
+  } else {
+    for (const [key, value] of Object.entries(inputs)) {
+      lines.push(chalk.gray(`    ${key}: ${JSON.stringify(value)}`));
+    }
+  }
+  lines.push('');
+
+  const sections = ast.sections || [];
+  if (sections.length > 0) {
+    lines.push(chalk.white(`  Sections (${sections.length}):`));
+    for (let i = 0; i < sections.length; i++) {
+      const section = sections[i];
+      const contentCount = (section.content || []).length;
+      lines.push(chalk.gray(`    ${i + 1}. ${section.name} (${contentCount} items)`));
+
+      for (const content of section.content || []) {
+        if (content.type === 'codeblock') {
+          lines.push(chalk.gray(`       [CODE: ${content.language || 'text'}] ${(content.value || '').substring(0, 60)}...`));
+        } else if (content.type === 'table') {
+          lines.push(chalk.gray(`       [TABLE] ${(content.value || '').substring(0, 60)}...`));
+        } else if (content.type === 'list') {
+          lines.push(chalk.gray(`       [LIST] ${(content.value || '').substring(0, 60)}...`));
+        } else {
+          lines.push(chalk.gray(`       [TEXT] ${(content.value || '').substring(0, 60)}...`));
+        }
+      }
+    }
+  }
+  lines.push('');
+
+  lines.push(chalk.white('  Execution Steps:'));
+  lines.push(chalk.gray('    1. Load file'));
+  lines.push(chalk.gray('    2. Parse MAM module'));
+  lines.push(chalk.gray('    3. Validate syntax'));
+  lines.push(chalk.gray('    4. Initialize sandbox'));
+  lines.push(chalk.gray('    5. Load plugins'));
+  lines.push(chalk.gray('    6. Run before hooks'));
+  lines.push(chalk.gray('    7. Generate runtime code'));
+  lines.push(chalk.gray(`    8. Execute in ${options.sandbox || 'vm'} sandbox`));
+  lines.push(chalk.gray('    9. Run after hooks'));
+  lines.push(chalk.gray('   10. Collect results'));
+  lines.push('');
+
+  lines.push(chalk.cyan('  No side effects performed.'));
+  lines.push('');
+
+  return lines.join('\n');
+}
+
 async function executeRun(options: RunOptions): Promise<ExecutionResult> {
   const startTime = Date.now();
   const trace = new TraceCollector(options.trace || false);
@@ -969,6 +1051,22 @@ async function executeRun(options: RunOptions): Promise<ExecutionResult> {
     // Parse inputs
     const inputs = InputParser.parse(options.inputs);
     trace.add('init', `Inputs: ${JSON.stringify(inputs)}`);
+
+    // Dry-run mode: show execution plan without running
+    if (options.dryRun) {
+      const dryOutput = generateDryRunOutput(result.ast, inputs, options);
+      console.log(dryOutput);
+      return {
+        success: true,
+        output: { dryRun: true, plan: 'Execution plan displayed' },
+        errors: [],
+        warnings: [],
+        timeMs: Date.now() - startTime,
+        memoryUsedBytes: 0,
+        metadata: { dryRun: true },
+        trace: trace.getEntries(),
+      };
+    }
 
     // Parse environment
     const env = InputParser.parseEnv(options.env);
