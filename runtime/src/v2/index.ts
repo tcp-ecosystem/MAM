@@ -36,3 +36,4 @@ export { DefaultMemoryEngine } from './memory-engine.js';
 export { DefaultKnowledgeEngine } from './knowledge-engine.js';
 export { DefaultModelEngine } from './model-engine.js';
 export { DefaultToolEngine } from './tool-engine.js';
+export { SecurityManager } from './security.js';

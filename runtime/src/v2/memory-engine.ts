@@ -359,7 +359,7 @@ export class DefaultMemoryEngine implements MemoryEngine {
     const cutoff = Date.now() - ttlMs;
     const toRemove: string[] = [];
     for (const [id, record] of this.records.entries()) {
-      if (record.createdAt < cutoff) {
+      if (record.createdAt <= cutoff) {
         toRemove.push(id);
       }
     }
