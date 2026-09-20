@@ -104,7 +104,7 @@ program
   .option('-i, --inputs <inputs>', 'Input parameters (JSON string)')
   .option('-t, --timeout <timeout>', 'Execution timeout in ms', '30000')
   .option('--target <target>', 'Execution target (python|javascript|go|rust)')
-  .option('--sandbox <sandbox>', 'Sandbox type (process|vm|docker)', 'process')
+  .option('--sandbox <sandbox>', 'Sandbox type (process|vm|docker)', 'vm')
   .option('--env <env>', 'Environment variables (KEY=VALUE,...)')
   .option('--memory-limit <limit>', 'Memory limit in MB', '256')
   .option('--no-validate', 'Skip validation before execution')
@@ -113,7 +113,7 @@ program
   .option('-f, --format <format>', 'Output format (text|json)', 'text')
   .action(async (file, options) => {
     const { runCommand } = await import('./commands/run.js');
-    await runCommand({ file, timeout: parseInt(options.timeout), ...options });
+    await runCommand({ ...options, file, timeout: parseInt(options.timeout) });
   });
 
 program

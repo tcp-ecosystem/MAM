@@ -983,7 +983,7 @@ async function executeRun(options: RunOptions): Promise<ExecutionResult> {
       id: IDGenerator.generate(),
       inputs,
       env,
-      timeoutMs: options.timeout || DEFAULT_TIMEOUT_MS,
+      timeoutMs: Number(options.timeout) || DEFAULT_TIMEOUT_MS,
       memoryLimitBytes,
       sandboxType: options.sandbox || 'vm',
       plugins: [],
