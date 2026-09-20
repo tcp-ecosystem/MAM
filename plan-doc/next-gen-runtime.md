@@ -1140,17 +1140,17 @@ And yes—**this is absolutely worth diving into before writing the next build p
 |----------|---------|--------|
 | Core Runtime | Runtime, State, Events, Permissions, Plugins, Security | 6/6 Complete |
 | Intelligence | Context, Token Budget, Memory, Knowledge, Model, Tool | 6/6 Complete |
-| Orchestration | Workflow Engine, Module Registry, Dependency Resolver | 3/3 Complete |
+| Orchestration | Workflow Engine ✅, Module Registry ✅, Dependency Resolver ✅ | 3/3 Complete |
 | Quality | Evaluation Engine | 0/1 Missing |
 | Operations | Observability, CLI Integration | 1/2 Partial |
 
-**Overall: 14/15 engines complete (93%)**
+**Overall: 15/16 engines complete (94%)**
 
 ## Section-by-Section Status
 
 - **Section 1 (Foundation):** ✅ Existing pipeline intact, 16 targets verified
 - **Section 2 (Native Execution):** ✅ MAMV2Runtime + CLI `mam run` with dry-run
-- **Section 3 (Runtime Kernel):** ✅ All engines complete (Workflow via `executeWorkflow()`, Registry via `PluginRegistry`, Resolver via `topoSort()`)
+- **Section 3 (Runtime Kernel):** ✅ All engines complete — standalone WorkflowEngine (~500 lines), ModuleRegistry (349 lines), DependencyResolver in package-manager
 - **Section 4 (Intelligence Layer):** ✅ All 6 engines complete
 - **Section 5 (Context Engine):** ✅ 464 lines, priority assembly, caching, dedup
 - **Section 6 (Token Optimization):** ✅ 407 lines, allocation, defragmentation
@@ -1181,6 +1181,8 @@ And yes—**this is absolutely worth diving into before writing the next build p
 | token-budget.ts | 407 | Allocation, defragmentation, warnings |
 | tool-engine.ts | 589 | Validation, caching, retry, permissions |
 | types.ts | 687 | 60+ interfaces defining the runtime contract |
+| workflow-engine.ts | ~500 | Standalone DAG executor, validation, events, pause/resume |
+| module-registry.ts | 349 | Dependency graph, cycle detection, topo sort, lifecycle |
 
-**Total: ~7,700 lines of production V2 runtime code**
+**Total: ~8,500+ lines of production V2 runtime code**
 

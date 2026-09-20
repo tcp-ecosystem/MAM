@@ -37,3 +37,17 @@ export { DefaultKnowledgeEngine } from './knowledge-engine.js';
 export { DefaultModelEngine } from './model-engine.js';
 export { DefaultToolEngine } from './tool-engine.js';
 export { SecurityManager } from './security.js';
+export { WorkflowEngine } from './workflow-engine.js';
+export { ModuleRegistry } from './module-registry.js';
+export type {
+  ModuleStatus,
+  ModuleRecord,
+  DependencyGraph,
+  DependencyNode,
+  DependencyEdge,
+  DependencyTree,
+  RegistryStats,
+  ModuleLookupOptions,
+  RegistryEventType,
+  RegistryListener,
+} from './module-registry.js';

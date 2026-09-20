@@ -6,7 +6,7 @@
 
 ### Phase 2: Module Registry + Dependency Resolution + Capability Engine ✅ COMPLETE
 - `capabilities.ts`: 616 lines (V1, exists)
-- Module Registry: `PluginRegistry` in `runtime/src/v2/plugins.ts`
+- Module Registry: `module-registry.ts` (349 lines) — standalone class with dependency graph, cycle detection, topo sort
 - Dependency Resolver: `DependencyResolver` in `package-manager/src/resolver.ts` + `topoSort()` in runtime
 
 ### Phase 3: Execution Context + Engine + Lifecycle ✅ COMPLETE
@@ -16,7 +16,7 @@
 ### Phase 4: Workflow + State + Events ✅ COMPLETE
 - `state.ts`: 584 lines, full state management with transactions, locking, namespaces
 - `events.ts`: 472 lines, full event system with middleware, batching, replay
-- Workflow Engine: `executeWorkflow()` in `runtime.ts` (steps, edges, events)
+- Workflow Engine: `workflow-engine.ts` (~500 lines) — standalone DAG executor with validation, events, pause/resume
 
 ### Phase 5: Resource + Policy + Permission ✅ COMPLETE
 - `resources.ts`: 457 lines (V1, exists)
