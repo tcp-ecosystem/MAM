@@ -51,3 +51,20 @@ export type {
   RegistryEventType,
   RegistryListener,
 } from './module-registry.js';
+export { EvaluationEngine } from './evaluation-engine.js';
+export type {
+  EvaluationConfig,
+  QualityThresholds,
+  MetricWeights,
+  EvaluationResult,
+  QualityGrade,
+  EvaluationMetrics,
+  MetricScore,
+  CheckResult,
+  Suggestion,
+  BenchmarkResult,
+  ValidationRule,
+  ValidationResult,
+  EvaluableModule,
+  EvaluationReport,
+} from './evaluation-engine.js';

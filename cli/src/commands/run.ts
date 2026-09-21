@@ -11,6 +11,15 @@ import { resolve, basename, extname } from 'node:path';
 import { createHash } from 'node:crypto';
 import { EventEmitter } from 'node:events';
 import { parseMAM } from '@mam/parser';
+import { transformToV2 } from '@mam/compiler';
+import {
+  createV2Runtime,
+  type MemoryStore,
+  type StateManager,
+  type PermissionChecker,
+  type EventEmitter as V2EventEmitter,
+  type MAMEvent,
+} from '@mam/runtime/v2';
 import chalk from 'chalk';
 import ora from 'ora';
 
@@ -41,6 +50,7 @@ export interface RunOptions {
   historyFile?: string;
   envFile?: string;
   dryRun?: boolean;
+  v2?: boolean;
 }
 
 export interface ExecutionContext {
@@ -1064,6 +1074,83 @@ async function executeRun(options: RunOptions): Promise<ExecutionResult> {
         timeMs: Date.now() - startTime,
         memoryUsedBytes: 0,
         metadata: { dryRun: true },
+        trace: trace.getEntries(),
+      };
+    }
+
+    // V2 Runtime mode: execute natively using MAMV2Runtime
+    if (options.v2) {
+      trace.add('v2', 'Using V2 Runtime for native execution');
+      const v2Modules = transformToV2(result.ast);
+      if (v2Modules.length === 0) {
+        return {
+          success: false, output: {},
+          errors: ['No executable modules found after V2 transformation'],
+          warnings: [], timeMs: Date.now() - startTime,
+          memoryUsedBytes: 0, metadata: {},
+          trace: trace.getEntries(),
+        };
+      }
+      const runtime = createV2Runtime({
+        workingDir: process.cwd(),
+        defaultTimeout: Number(options.timeout) || DEFAULT_TIMEOUT_MS,
+        memoryLimit: InputParser.parseMemoryLimit(options.memoryLimit),
+        logging: options.verbose ?? false,
+        logLevel: options.verbose ? 'debug' : 'info',
+        pluginDirs: [],
+      });
+      const module = v2Modules[0];
+      class MemStore implements MemoryStore {
+        private data = new Map<string, unknown>();
+        async set(k: string, v: unknown) { this.data.set(k, v); }
+        async get(k: string) { return this.data.get(k); }
+        async delete(k: string) { this.data.delete(k); }
+        async has(k: string) { return this.data.has(k); }
+        async keys() { return Array.from(this.data.keys()); }
+        async clear() { this.data.clear(); }
+        async stats() { return { totalEntries: this.data.size, memoryUsed: 0, hitRate: 0, evictions: 0 }; }
+      }
+      class StateMgr implements StateManager {
+        private data = new Map<string, unknown>();
+        get(k: string) { return this.data.get(k); }
+        set(k: string, v: unknown) { this.data.set(k, v); }
+        delete(k: string) { this.data.delete(k); }
+        getAll() { return Object.fromEntries(this.data); }
+        subscribe() {}
+        unsubscribe() {}
+        history() { return []; }
+      }
+      class PermChecker implements PermissionChecker {
+        check() { return { allowed: true as const }; }
+        getAllowed() { return ['*']; }
+        getDenied() { return []; }
+      }
+      class EventMgr implements V2EventEmitter {
+        private evts: MAMEvent[] = [];
+        emit(_e: string, _d?: unknown) {}
+        on() {}
+        off() {}
+        once() {}
+        history() { return this.evts; }
+      }
+      const execResult = await runtime.execute(module, {
+        module,
+        allModules: new Map(v2Modules.map(m => [m.name, m])),
+        inputs,
+        memory: new MemStore(),
+        events: new EventMgr(),
+        state: new StateMgr(),
+        permissions: new PermChecker(),
+        options: { timeout: Number(options.timeout) || DEFAULT_TIMEOUT_MS },
+      });
+      return {
+        success: execResult.success,
+        output: execResult.output ?? {},
+        errors: execResult.error ? [execResult.error] : [],
+        warnings: [],
+        timeMs: Date.now() - startTime,
+        memoryUsedBytes: 0,
+        metadata: { v2: true, module: module.name, type: module.moduleType },
         trace: trace.getEntries(),
       };
     }

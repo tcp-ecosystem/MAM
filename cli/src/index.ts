@@ -112,6 +112,7 @@ program
   .option('-v, --verbose', 'Verbose output')
   .option('-f, --format <format>', 'Output format (text|json)', 'text')
   .option('--dry-run', 'Show execution plan without running')
+  .option('--v2', 'Use V2 Runtime for native execution (standalone .mam)')
   .action(async (file, options) => {
     const { runCommand } = await import('./commands/run.js');
     await runCommand({ ...options, file, timeout: parseInt(options.timeout) });
