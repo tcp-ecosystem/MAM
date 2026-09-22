@@ -70,6 +70,24 @@ The full `.mam.md → .mam.<target>` pipeline works:
    - `mam compile <file> --target <target> -o <dir>`
    - Output naming: `basename(filePath, '.md') + '.' + ext`
 
+### Full MAM Spec Support (plan-doc/full-mam.md)
+
+The parser and transformer support the canonical MAM specification:
+
+| Feature | Support |
+|---------|---------|
+| Structured runtime (`runtime: {language, version}`) | ✅ Parsed + validated |
+| Structured permissions (`permissions: {network: [internet], ...}`) | ✅ Mapped to `V2PermissionSet` |
+| Dependency version constraints (`{name, version}`) | ✅ Normalized to `name@version` |
+| Front-matter `capabilities` + `## Capabilities` (`### name`) | ✅ Merged into module capabilities |
+| Canonical metadata fields (`type`, `license`, `description`) | ✅ |
+| `runtime: python >=3.12` shorthand | ✅ Still supported |
+
+Canonical `.mam` examples live alongside `.mam.md` in `modules/examples/`:
+`authentication`, `bug-hunter`, `data_pipeline`, `memory`, `planner`,
+`prompt`, `rag`, `security`, `workflow`.
+
+
 ### All 16 Targets
 
 | Target | Extension | Status |

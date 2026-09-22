@@ -99,6 +99,7 @@ export function parseMAM(
     maxDepth: options?.maxDepth,
     strict: options?.strict,
     allowUnknownSections: options?.allowUnknownSections,
+    content: input,
   });
 
   return {

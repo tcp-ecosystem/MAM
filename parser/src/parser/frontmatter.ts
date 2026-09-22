@@ -6,6 +6,7 @@
 
 import { Token, TokenType, TokenMetadata } from '../lexer/tokens.js';
 import { ParseError, ParseErrorCode } from './errors.js';
+import { parse as parseYamlDocument } from 'yaml';
 
 export interface FrontMatterData {
   id: string;
@@ -35,7 +36,8 @@ export interface FrontMatterResult {
 export function parseFrontMatter(
   tokens: Token[],
   startIndex: number,
-  source: string
+  source: string,
+  content?: string
 ): FrontMatterResult {
   const errors: ParseError[] = [];
   let pos = startIndex;
@@ -89,10 +91,81 @@ export function parseFrontMatter(
     pos++;
   }
 
+  // Prefer robust YAML parsing when the raw document is available.
+  // Supports nested mappings (e.g. runtime: {language, version}), flow
+  // collections, block scalars and lists of objects per the MAM spec.
+  if (typeof content === 'string') {
+    const yamlText = extractFrontMatterText(content);
+    if (yamlText !== null) {
+      const parsed = parseFrontMatterYaml(yamlText, source, errors);
+      if (parsed) {
+        return { data: parsed, errors, endIndex: pos };
+      }
+    }
+  }
+
   // Parse YAML tokens into data
   const data = parseYAMLTokens(yamlTokens, source, errors);
 
   return { data, errors, endIndex: pos };
+}
+
+/**
+ * Extract the raw YAML front matter block from a document.
+ * Returns null when the document does not start with a `---` fence.
+ */
+function extractFrontMatterText(content: string): string | null {
+  const normalized = content.replace(/^\uFEFF/, '');
+  const lines = normalized.split(/\r?\n/);
+  let i = 0;
+  while (i < lines.length && lines[i]!.trim() === '') i++;
+  if (i >= lines.length || lines[i]!.trim() !== '---') return null;
+
+  const start = i + 1;
+  let j = start;
+  while (j < lines.length && lines[j]!.trim() !== '---') j++;
+  if (j >= lines.length) return null;
+
+  return lines.slice(start, j).join('\n');
+}
+
+/**
+ * Parse front matter using a full YAML parser.
+ * Returns null (without recording errors) when the block is unusable, so the
+ * caller can fall back to token-based parsing.
+ */
+function parseFrontMatterYaml(
+  yamlText: string,
+  source: string,
+  _errors: ParseError[]
+): FrontMatterData | null {
+  let parsed: unknown;
+  try {
+    parsed = parseYamlDocument(yamlText);
+  } catch {
+    return null;
+  }
+
+  if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+
+  const data = parsed as Record<string, unknown>;
+
+  // Validate a structured runtime ({language, version}) when provided.
+  const runtime = data.runtime;
+  if (runtime && typeof runtime === 'object' && !Array.isArray(runtime)) {
+    const rt = runtime as Record<string, unknown>;
+    if (!rt.language && !rt.name) return null;
+  }
+
+  // Validate required fields (same contract as the token parser).
+  for (const field of ['id', 'version', 'name', 'author', 'runtime'] as const) {
+    const value = data[field];
+    if (value === undefined || value === null || value === '') {
+      return null; // defer error reporting to the token parser
+    }
+  }
+
+  return data as FrontMatterData;
 }
 
 /**

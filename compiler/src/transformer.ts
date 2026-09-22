@@ -405,6 +405,8 @@ export class MAMTransformer {
     const toolsSection = this.findSection(sections, 'Tools');
     const policySection = this.findSection(sections, 'Policy');
     const dependenciesSection = this.findSection(sections, 'Dependencies');
+    const permissionsSection = this.findSection(sections, 'Permissions');
+    const capabilitiesSection = this.findSection(sections, 'Capabilities');
 
     return {
       ...base,
@@ -416,7 +418,13 @@ export class MAMTransformer {
         : Array.isArray(data.modules) ? data.modules.map(String) : undefined,
       tools: toolsSection ? this.extractList(toolsSection.content) : undefined,
       policy: policySection ? this.extractText(policySection.content) : undefined,
-      requires: dependenciesSection ? this.extractList(dependenciesSection.content) : undefined,
+      capabilities: this.extractCapabilities(data, capabilitiesSection),
+      permissions: permissionsSection
+        ? this.parsePermissions(permissionsSection.content)
+        : this.parsePermissionsFromData(data),
+      requires: dependenciesSection
+        ? this.extractList(dependenciesSection.content)
+        : this.extractDependenciesFromData(data),
     };
   }
 
@@ -424,6 +432,7 @@ export class MAMTransformer {
     const sections = ast.sections;
     const dependenciesSection = this.findSection(sections, 'Dependencies');
     const permissionsSection = this.findSection(sections, 'Permissions');
+    const capabilitiesSection = this.findSection(sections, 'Capabilities');
     const examplesSection = this.findSection(sections, 'Examples');
     const testsSection = this.findSection(sections, 'Tests');
     const inputsSection = this.findSection(sections, 'Inputs');
@@ -435,8 +444,13 @@ export class MAMTransformer {
       ...base,
       inputs: inputsSection ? this.parseInputs(inputsSection.content) : undefined,
       outputs: outputsSection ? this.parseOutputs(outputsSection.content) : undefined,
-      requires: dependenciesSection ? this.extractList(dependenciesSection.content) : undefined,
-      permissions: permissionsSection ? this.parsePermissions(permissionsSection.content) : undefined,
+      capabilities: this.extractCapabilities(data, capabilitiesSection),
+      requires: dependenciesSection
+        ? this.extractList(dependenciesSection.content)
+        : this.extractDependenciesFromData(data),
+      permissions: permissionsSection
+        ? this.parsePermissions(permissionsSection.content)
+        : this.parsePermissionsFromData(data),
       examples: examplesSection ? this.extractText(examplesSection.content) : undefined,
       tests: testsSection ? this.extractText(testsSection.content) : undefined,
       rules: rulesSection ? this.extractList(rulesSection.content) : undefined,
@@ -510,6 +524,113 @@ export class MAMTransformer {
     }
 
     return permissions;
+  }
+
+  /**
+   * Capabilities declared either in a `## Capabilities` section
+   * (list items and/or `### name` sub-headings) or in front matter.
+   */
+  private extractCapabilities(data: Record<string, unknown>, section?: ParserSection): string[] | undefined {
+    const capabilities: string[] = [];
+
+    if (section) {
+      for (const node of section.content) {
+        if (node.type === 'heading' && node.value) {
+          capabilities.push(String(node.value).trim());
+        }
+      }
+      if (capabilities.length === 0) {
+        capabilities.push(...this.extractList(section.content));
+      }
+    }
+
+    if (capabilities.length === 0 && Array.isArray(data.capabilities)) {
+      capabilities.push(...data.capabilities.map((c) => String(c)));
+    }
+
+    return capabilities.length > 0 ? capabilities : undefined;
+  }
+
+  /**
+   * Dependencies declared in front matter, supporting both string entries
+   * and structured `{name, version}` entries.
+   */
+  private extractDependenciesFromData(data: Record<string, unknown>): string[] | undefined {
+    const deps = data.dependencies ?? data.requires;
+    if (!Array.isArray(deps)) return undefined;
+    const result = deps
+      .map((dep) => {
+        if (typeof dep === 'string') return dep;
+        if (dep && typeof dep === 'object') {
+          const d = dep as Record<string, unknown>;
+          const name = d.name ?? d.id;
+          const version = d.version;
+          if (!name) return '';
+          return version ? `${name}@${version}` : String(name);
+        }
+        return String(dep);
+      })
+      .filter(Boolean);
+    return result.length > 0 ? result : undefined;
+  }
+
+  /**
+   * Permissions declared in front matter as either a string list or an
+   * object map (`{network: internet, filesystem: read}`).
+   */
+  private parsePermissionsFromData(data: Record<string, unknown>): V2PermissionSet | undefined {
+    const perms = data.permissions;
+    if (!perms) return undefined;
+    const result: V2PermissionSet = {};
+
+    if (Array.isArray(perms)) {
+      for (const item of perms) {
+        const lower = String(item).toLowerCase();
+        if (lower.includes('network') || lower.includes('internet')) result.network = 'internet';
+        else if (lower.includes('filesystem') || lower.includes('file')) result.filesystem = lower.includes('write') ? 'write' : 'read';
+        else if (lower.includes('python') || lower.includes('exec')) result.python = lower.includes('sandbox') ? 'sandbox' : 'full';
+        else if (lower.includes('memory')) result.memory = lower.includes('shared') ? 'shared' : 'local';
+      }
+      return Object.keys(result).length > 0 ? result : undefined;
+    }
+
+    if (typeof perms === 'object') {
+      const p = perms as Record<string, unknown>;
+      const asText = (v: unknown): string =>
+        Array.isArray(v) ? v.map(String).join(',') : String(v);
+
+      if (p.network !== undefined) {
+        const n = asText(p.network).toLowerCase();
+        result.network = n.includes('internet') ? 'internet' : n.includes('internal') ? 'internal' : 'none';
+      }
+      if (p.filesystem !== undefined) {
+        const f = asText(p.filesystem).toLowerCase();
+        result.filesystem = f.includes('write') ? 'write' : f.includes('none') ? 'none' : 'read';
+      }
+      if (p.python !== undefined) {
+        const py = asText(p.python).toLowerCase();
+        result.python = py.includes('sandbox') ? 'sandbox' : py.includes('none') ? 'none' : 'full';
+      }
+      if (p.memory !== undefined) {
+        const m = asText(p.memory).toLowerCase();
+        result.memory = m.includes('shared') ? 'shared' : m.includes('none') ? 'none' : 'local';
+      }
+      if (p.exec !== undefined) {
+        const e = asText(p.exec).toLowerCase();
+        result.exec = e.includes('deny') || e.includes('none') ? 'denied' : 'allowed';
+      }
+      const custom: Record<string, string> = {};
+      for (const [key, value] of Object.entries(p)) {
+        if (!['network', 'filesystem', 'python', 'memory', 'exec'].includes(key)) {
+          custom[key] = asText(value);
+        }
+      }
+      if (Object.keys(custom).length > 0) result.custom = custom;
+
+      return Object.keys(result).length > 0 ? result : undefined;
+    }
+
+    return undefined;
   }
 
   private parseMermaidFlowchart(mermaid: string): { steps: V2StepNode[]; edges: V2EdgeNode[] } {

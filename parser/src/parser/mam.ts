@@ -65,6 +65,8 @@ export interface ParserOptions {
   maxDepth?: number;
   strict?: boolean;
   allowUnknownSections?: boolean;
+  /** Raw document text, enabling robust YAML front matter parsing. */
+  content?: string;
 }
 
 export interface ParseResult {
@@ -89,6 +91,7 @@ export interface ParserStats {
 export class MAMParser {
   private tokens: Token[];
   private source: string;
+  private content?: string;
   private strict: boolean;
   private allowUnknownSections: boolean;
   private startTime: number = 0;
@@ -96,6 +99,7 @@ export class MAMParser {
   constructor(tokens: Token[], options: ParserOptions = {}) {
     this.tokens = tokens;
     this.source = options.source || '<input>';
+    this.content = options.content;
     this.strict = options.strict || false;
     this.allowUnknownSections = options.allowUnknownSections !== false;
   }
@@ -117,7 +121,7 @@ export class MAMParser {
     }
 
     // Parse front matter
-    const frontmatterResult = parseFrontMatter(this.tokens, startIndex, this.source);
+    const frontmatterResult = parseFrontMatter(this.tokens, startIndex, this.source, this.content);
     allErrors.push(...frontmatterResult.errors);
 
     // Parse sections
@@ -341,12 +345,18 @@ export class MAMParser {
 
       // Validate runtime
       const validRuntimes = ['python', 'javascript', 'typescript', 'rust', 'go', 'shell'];
-      const runtimeStr = String(ast.frontmatter.data.runtime || '');
-      const runtimeLang = runtimeStr.split(/\s+/)[0].toLowerCase();
+      const runtimeRaw: unknown = ast.frontmatter.data.runtime;
+      let runtimeLang = '';
+      if (runtimeRaw && typeof runtimeRaw === 'object' && !Array.isArray(runtimeRaw)) {
+        const rt = runtimeRaw as Record<string, unknown>;
+        runtimeLang = String(rt.language ?? rt.name ?? '').split(/\s+/)[0].toLowerCase();
+      } else {
+        runtimeLang = String(runtimeRaw || '').split(/\s+/)[0].toLowerCase();
+      }
       if (!validRuntimes.includes(runtimeLang)) {
         errors.push(
           new ParseError(
-            `Invalid runtime: "${ast.frontmatter.data.runtime}". Must be one of: ${validRuntimes.join(', ')}`,
+            `Invalid runtime: "${typeof runtimeRaw === 'object' ? JSON.stringify(runtimeRaw) : runtimeRaw}". Must be one of: ${validRuntimes.join(', ')}`,
             this.source,
             1,
             0,
@@ -381,6 +391,6 @@ export function parseMarkdown(
   const { tokenize } = require('../lexer/tokenizer.js');
   const result = tokenize(input, options);
   
-  const parser = new MAMParser(result.tokens, options);
+  const parser = new MAMParser(result.tokens, { ...options, content: input });
   return parser.parse();
 }
