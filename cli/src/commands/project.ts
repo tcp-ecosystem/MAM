@@ -354,3 +354,65 @@ export async function projectBuildCommand(options: ProjectOptions): Promise<Proj
 
   return summary;
 }
+
+// ---------------------------------------------------------------------------
+// run
+// ---------------------------------------------------------------------------
+
+export interface ProjectRunOptions extends ProjectOptions {
+  inputs?: string;
+  timeout?: number;
+  verbose?: boolean;
+  quiet?: boolean;
+  dryRun?: boolean;
+}
+
+export async function projectRunCommand(options: ProjectRunOptions): Promise<void> {
+  const project = await openProject(options);
+  const entry = await project.loadEntry();
+  if (!entry) {
+    console.error(chalk.red('No entry system found. Set build.entry in mam.toml or add system.mam.'));
+    process.exit(1);
+  }
+
+  const { runCommand } = await import('./run.js');
+  await runCommand({
+    file: entry.filePath,
+    inputs: options.inputs,
+    timeout: options.timeout,
+    verbose: options.verbose,
+    quiet: options.quiet,
+    format: options.format === 'json' ? 'json' : 'text',
+    dryRun: options.dryRun,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// test
+// ---------------------------------------------------------------------------
+
+export async function projectTestCommand(
+  options: ProjectOptions & { verbose?: boolean; timeout?: number },
+): Promise<void> {
+  const project = await openProject(options);
+  const modules = await project.loadAllModules();
+  const { runTests, formatTestResult } = await import('./test.js');
+
+  let total = 0;
+  let passed = 0;
+  let failed = 0;
+
+  for (const mod of modules) {
+    const result = await runTests({ file: mod.filePath, verbose: options.verbose, timeout: options.timeout });
+    total += result.total;
+    passed += result.passed;
+    failed += result.failed;
+    if (result.total > 0) {
+      console.log(chalk.cyan(`\n${mod.relativePath}`));
+      console.log(formatTestResult(result, !!options.verbose));
+    }
+  }
+
+  console.log(chalk.cyan(`\nProject tests: ${passed}/${total} passed, ${failed} failed (${modules.length} modules)`));
+  process.exit(failed > 0 ? 1 : 0);
+}

@@ -54,11 +54,18 @@ program
 
 program
   .command('init')
-  .description('Initialize a new MAM module')
-  .argument('[name]', 'Module name')
+  .description('Initialize a MAM project or module')
+  .argument('[name]', 'Module name (omit to initialize a project)')
   .option('-t, --template <template>', 'Template (basic|advanced|workflow)', 'basic')
   .option('-d, --dir <dir>', 'Target directory')
+  .option('--project', 'Initialize a full project (mam.toml + modules + system)')
+  .option('--force', 'Overwrite existing files')
   .action(async (name, options) => {
+    if (options.project || !name) {
+      const { projectInitCommand } = await import('./commands/project.js');
+      await projectInitCommand({ dir: options.dir, force: options.force });
+      return;
+    }
     const { initModule } = await import('./commands/init.js');
     const result = await initModule({ name, ...options });
     if (result.success) {
@@ -66,30 +73,6 @@ program
     } else {
       console.error(chalk.red(result.error));
       process.exit(1);
-    }
-  });
-
-program
-  .command('project')
-  .description('Manage a multi-file MAM project (mam.toml)')
-  .argument('<action>', 'Action (init|info|graph|validate|build)')
-  .option('-d, --dir <dir>', 'Project directory (defaults to cwd)')
-  .option('-t, --target <target>', 'Build target override')
-  .option('-f, --format <format>', 'Output format (text|json|mermaid)', 'text')
-  .option('--force', 'Overwrite existing files (init)')
-  .option('-q, --quiet', 'Suppress non-essential output')
-  .action(async (action, options) => {
-    const mod = await import('./commands/project.js');
-    const opts = { ...options };
-    switch (action) {
-      case 'init': await mod.projectInitCommand(opts); break;
-      case 'info': await mod.projectInfoCommand(opts); break;
-      case 'graph': await mod.projectGraphCommand(opts); break;
-      case 'validate': await mod.projectValidateCommand(opts); break;
-      case 'build': await mod.projectBuildCommand(opts); break;
-      default:
-        console.error(chalk.red(`Unknown project action: "${action}". Use init|info|graph|validate|build.`));
-        process.exit(1);
     }
   });
 
@@ -108,13 +91,25 @@ program
 
 program
   .command('build')
-  .description('Build a MAM module to AST')
-  .argument('<file>', 'MAM module file to build')
+  .description('Build a MAM project or module')
+  .argument('[file]', 'MAM module file (omit to build the project)')
   .option('-o, --outDir <outDir>', 'Output directory', './dist')
   .option('-f, --format <format>', 'Output format (json|ast|binary)', 'json')
   .option('--minify', 'Minify output')
   .option('--sourcemap', 'Generate source map')
+  .option('-t, --target <target>', 'Project build target override')
   .action(async (file, options) => {
+    const { findProject } = await import('./project/detect.js');
+    const project = await findProject();
+    if (project && !file) {
+      const { projectBuildCommand } = await import('./commands/project.js');
+      await projectBuildCommand({ target: options.target, format: options.format === 'json' ? 'json' : 'text' });
+      return;
+    }
+    if (!file) {
+      console.error(chalk.red('No file specified and no mam.toml found.'));
+      process.exit(1);
+    }
     const { buildCommand } = await import('./commands/build.js');
     await buildCommand({ file, ...options });
   });
@@ -136,8 +131,8 @@ program
 
 program
   .command('run')
-  .description('Run a .mam module natively')
-  .argument('<file>', '.mam module file to run')
+  .description('Run a .mam module or the project entry natively')
+  .argument('[file]', '.mam module file to run (omit to run the project entry)')
   .option('-i, --inputs <inputs>', 'Input parameters (JSON string)')
   .option('-t, --timeout <timeout>', 'Execution timeout in ms', '30000')
   .option('--target <target>', 'Execution target (python|javascript|go|rust)')
@@ -150,6 +145,24 @@ program
   .option('-f, --format <format>', 'Output format (text|json)', 'text')
   .option('--dry-run', 'Show execution plan without running')
   .action(async (file, options) => {
+    const { findProject } = await import('./project/detect.js');
+    const project = await findProject();
+    if (project && !file) {
+      const { projectRunCommand } = await import('./commands/project.js');
+      await projectRunCommand({
+        inputs: options.inputs,
+        format: options.format === 'json' ? 'json' : 'text',
+        timeout: parseInt(options.timeout),
+        verbose: options.verbose,
+        quiet: options.quiet,
+        dryRun: options.dryRun,
+      });
+      return;
+    }
+    if (!file) {
+      console.error(chalk.red('No file specified and no mam.toml found.'));
+      process.exit(1);
+    }
     const { runCommand } = await import('./commands/run.js');
     await runCommand({ ...options, file, timeout: parseInt(options.timeout) });
   });
@@ -180,14 +193,25 @@ program
 
 program
   .command('validate')
-  .description('Validate a MAM module')
-  .argument('<file>', 'MAM module file to validate')
+  .description('Validate a MAM project or module')
+  .argument('[file]', 'MAM module file (omit to validate the project)')
   .option('-l, --level <level>', 'Validation level (syntax|schema|semantic|strict)', 'schema')
   .option('-f, --format <format>', 'Output format (text|json)', 'text')
   .option('-W, --no-warnings', 'Hide warnings')
   .option('--fix', 'Auto-fix fixable issues')
   .option('--max-errors <n>', 'Maximum errors to report', '50')
   .action(async (file, options) => {
+    const { findProject } = await import('./project/detect.js');
+    const project = await findProject();
+    if (project && !file) {
+      const { projectValidateCommand } = await import('./commands/project.js');
+      await projectValidateCommand({ format: options.format === 'json' ? 'json' : 'text' });
+      return;
+    }
+    if (!file) {
+      console.error(chalk.red('No file specified and no mam.toml found.'));
+      process.exit(1);
+    }
     const { validateCommand } = await import('./commands/validate.js');
     await validateCommand({ file, ...options });
   });
@@ -300,6 +324,14 @@ program
   .option('--layout <layout>', 'Graph layout (horizontal|vertical|radial)', 'horizontal')
   .option('--no-orphans', 'Hide orphan modules')
   .action(async (options) => {
+    const { resolve } = await import('node:path');
+    const { findProject } = await import('./project/detect.js');
+    const project = await findProject(resolve(options.dir));
+    if (project && ['text', 'json', 'mermaid'].includes(options.format)) {
+      const { projectGraphCommand } = await import('./commands/project.js');
+      await projectGraphCommand({ dir: options.dir, format: options.format });
+      return;
+    }
     const { graphCommand } = await import('./commands/graph.js');
     await graphCommand(options);
   });
@@ -340,11 +372,22 @@ program
 
 program
   .command('test')
-  .description('Run tests for a MAM module')
-  .argument('<file>', 'Path to .mam.md file')
+  .description('Run tests for a MAM module or project')
+  .argument('[file]', 'Path to .mam.md file (omit to test the project)')
   .option('-v, --verbose', 'Show detailed results', false)
   .option('--timeout <ms>', 'Test timeout in milliseconds', '30000')
-  .action(async (file: string, options: { verbose: boolean; timeout: string }) => {
+  .action(async (file: string | undefined, options: { verbose: boolean; timeout: string }) => {
+    const { findProject } = await import('./project/detect.js');
+    const project = await findProject();
+    if (project && !file) {
+      const { projectTestCommand } = await import('./commands/project.js');
+      await projectTestCommand({ verbose: options.verbose, timeout: parseInt(options.timeout) });
+      return;
+    }
+    if (!file) {
+      console.error(chalk.red('No file specified and no mam.toml found.'));
+      process.exit(1);
+    }
     const { runTests, formatTestResult } = await import('./commands/test.js');
     const result = await runTests({ file, verbose: options.verbose, timeout: parseInt(options.timeout) });
     console.log(formatTestResult(result, options.verbose));
@@ -435,12 +478,23 @@ program
 
 program
   .command('info')
-  .description('Show information about a MAM module')
-  .argument('<file>', 'MAM module file')
+  .description('Show information about a MAM module or project')
+  .argument('[file]', 'MAM module file (omit to show project info)')
   .option('-f, --format <format>', 'Output format (text|json)', 'text')
   .option('--deps', 'Show dependencies')
   .option('--deps-tree', 'Show full dependency tree')
   .action(async (file, options) => {
+    const { findProject } = await import('./project/detect.js');
+    const project = await findProject();
+    if (project && !file) {
+      const { projectInfoCommand } = await import('./commands/project.js');
+      await projectInfoCommand({ format: options.format === 'json' ? 'json' : 'text' });
+      return;
+    }
+    if (!file) {
+      console.error(chalk.red('No file specified and no mam.toml found.'));
+      process.exit(1);
+    }
     console.log(chalk.cyan(`\nModule Info: ${file}\n`));
     const { readFile } = await import('node:fs/promises');
     const { parseMAM } = await import('@mam/parser');

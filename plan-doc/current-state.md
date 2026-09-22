@@ -100,7 +100,9 @@ form with identical content:
 ### Project Composition (`mam.toml`)
 
 Multi-file projects compose modules into a system (full-mam §19). A project is
-described by `mam.toml` and operated on with the `mam project` command:
+described by `mam.toml`. The project-aware commands are first-class `mam`
+commands: when run inside a directory containing `mam.toml` (and no explicit
+file argument), they operate on the whole project.
 
 ```toml
 [project]
@@ -114,14 +116,16 @@ outDir = "dist"
 targets = ["python"]
 ```
 
-| Command | Purpose |
-|---------|---------|
-| `mam project init` | Scaffold `mam.toml`, `modules/`, `system.mam` |
-| `mam project info` | Project summary (entry, targets, modules) |
-| `mam project graph` | Module dependency graph (text/json/mermaid) |
-| `mam project validate` | Parse + cross-file validation, cycles, missing deps |
-| `mam project build` | Compile all modules + entry to targets |
-| `mam new <type> <name>` | Scaffold a module from a template (`.mam` + `.mam.md`) |
+| Command | File mode | Project mode (inside a `mam.toml` project) |
+|---------|-----------|---------------------------------------------|
+| `mam init` | `mam init <name>` creates a module | `mam init` scaffolds `mam.toml`, `modules/`, `system.mam` |
+| `mam build [file]` | Builds one module | Compiles all modules + entry to targets |
+| `mam run [file]` | Runs one module natively | Runs the project entry system natively |
+| `mam validate [file]` | Validates one module | Validates all modules (dupes, cycles, missing deps) |
+| `mam graph` | Directory scan | Project dependency graph (text/json/mermaid) |
+| `mam test [file]` | Tests one module | Tests all project modules |
+| `mam info [file]` | Module summary | Project summary (entry, targets, modules) |
+| `mam new <type> <name>` | — | Scaffolds a module from a template (`.mam` + `.mam.md`) |
 
 Supporting library: `cli/src/project/` (TOML parser, manifest, loader, graph).
 Sample project: `examples/security-system/`.

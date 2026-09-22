@@ -27,3 +27,4 @@ export {
   type ProjectGraphNode,
   type ProjectGraphEdge,
 } from './graph.js';
+export { findProject } from './detect.js';

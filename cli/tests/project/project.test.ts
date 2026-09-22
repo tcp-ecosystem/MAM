@@ -3,9 +3,12 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import { mkdtemp, writeFile, mkdir, rm } from 'node:fs/promises';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
 import { parseToml } from '../../src/project/toml.js';
 import { parseManifest, validateManifest } from '../../src/project/manifest.js';
-import { globToRegExp } from '../../src/project/loader.js';
+import { globToRegExp, Project } from '../../src/project/loader.js';
 import { buildProjectGraph } from '../../src/project/graph.js';
 import type { LoadedModule } from '../../src/project/loader.js';
 
@@ -165,5 +168,53 @@ describe('buildProjectGraph', () => {
   it('detects cycles', () => {
     const graph = buildProjectGraph([mod('a', ['b']), mod('b', ['a'])]);
     expect(graph.cycles.length).toBeGreaterThan(0);
+  });
+});
+
+describe('Project loader (filesystem)', () => {
+  it('findProject returns null when no mam.toml exists', async () => {
+    const { findProject } = await import('../../src/project/detect.js');
+    const dir = await mkdtemp(join(tmpdir(), 'mam-null-'));
+    try {
+      expect(await findProject(dir)).toBeNull();
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('discovers modules and dedupes .mam/.mam.md twins', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'mam-proj-'));
+    const manifest = `[project]\nname = "t"\nversion = "1.0.0"\n[build]\nentry = "system.mam"\nmodules = ["**/*.mam", "**/*.mam.md"]\n`;
+    const moduleBody = `---\nid: a\nname: A\nversion: 1.0.0\nauthor: x\nruntime: python\n---\n\n# A\n\n## Purpose\n\np\n`;
+    try {
+      await mkdir(join(dir, 'modules'), { recursive: true });
+      await writeFile(join(dir, 'mam.toml'), manifest, 'utf-8');
+      await writeFile(join(dir, 'modules', 'a.mam'), moduleBody, 'utf-8');
+      await writeFile(join(dir, 'modules', 'a.mam.md'), moduleBody, 'utf-8');
+      const project = Project.create(dir, manifest);
+      const modules = await project.loadAllModules();
+      expect(modules.filter((m) => m.id === 'a')).toHaveLength(1);
+      expect(modules[0]?.filePath.endsWith('.mam')).toBe(true);
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
+  });
+
+  it('loads the entry system when declared', async () => {
+    const dir = await mkdtemp(join(tmpdir(), 'mam-entry-'));
+    const manifest = `[project]\nname = "t"\nversion = "1.0.0"\n[build]\nentry = "system.mam"\nmodules = ["**/*.mam"]\n`;
+    try {
+      await writeFile(join(dir, 'mam.toml'), manifest, 'utf-8');
+      await writeFile(
+        join(dir, 'system.mam'),
+        `---\nid: system\nname: Sys\nversion: 1.0.0\nauthor: x\ntype: system\nruntime: python\n---\n\n# Sys\n\n## Purpose\n\np\n`,
+        'utf-8',
+      );
+      const project = Project.create(dir, manifest);
+      const entry = await project.loadEntry();
+      expect(entry?.id).toBe('system');
+    } finally {
+      await rm(dir, { recursive: true, force: true });
+    }
   });
 });
