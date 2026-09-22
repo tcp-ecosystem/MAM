@@ -1,8 +1,9 @@
 /**
  * MAM Run Command
  *
- * Full execution engine with sandbox support (process, vm, docker),
- * environment management, timeout handling, memory limits, hooks,
+ * Native execution of `.mam` / `.mam.md` through the MAM runtime by default.
+ * Optional legacy sandbox execution (process, vm, docker) via --sandbox,
+ * with environment management, timeout handling, memory limits, hooks,
  * plugins, parallel execution, execution history, and benchmark mode.
  */
 
@@ -50,7 +51,6 @@ export interface RunOptions {
   historyFile?: string;
   envFile?: string;
   dryRun?: boolean;
-  v2?: boolean;
 }
 
 export interface ExecutionContext {
@@ -960,9 +960,11 @@ function generateDryRunOutput(ast: any, inputs: Record<string, unknown>, options
   lines.push('');
 
   lines.push(chalk.white(`  File:     ${options.file}`));
-  lines.push(chalk.white(`  Sandbox:  ${options.sandbox || 'vm'}`));
+  lines.push(chalk.white(`  Mode:     ${options.sandbox ? `legacy sandbox (${options.sandbox})` : 'native MAM runtime'}`));
   lines.push(chalk.white(`  Timeout:  ${options.timeout || 30000}ms`));
-  lines.push(chalk.white(`  Target:   ${options.target || 'default'}`));
+  if (options.target) {
+    lines.push(chalk.white(`  Target:   ${options.target}`));
+  }
   lines.push('');
 
   const fm = ast.frontmatter?.data;
@@ -1014,13 +1016,23 @@ function generateDryRunOutput(ast: any, inputs: Record<string, unknown>, options
   lines.push(chalk.gray('    1. Load file'));
   lines.push(chalk.gray('    2. Parse MAM module'));
   lines.push(chalk.gray('    3. Validate syntax'));
-  lines.push(chalk.gray('    4. Initialize sandbox'));
-  lines.push(chalk.gray('    5. Load plugins'));
-  lines.push(chalk.gray('    6. Run before hooks'));
-  lines.push(chalk.gray('    7. Generate runtime code'));
-  lines.push(chalk.gray(`    8. Execute in ${options.sandbox || 'vm'} sandbox`));
-  lines.push(chalk.gray('    9. Run after hooks'));
-  lines.push(chalk.gray('   10. Collect results'));
+  if (options.sandbox) {
+    lines.push(chalk.gray(`    4. Initialize ${options.sandbox} sandbox`));
+    lines.push(chalk.gray('    5. Load plugins'));
+    lines.push(chalk.gray('    6. Run before hooks'));
+    lines.push(chalk.gray('    7. Generate runtime code'));
+    lines.push(chalk.gray(`    8. Execute in ${options.sandbox} sandbox`));
+    lines.push(chalk.gray('    9. Run after hooks'));
+    lines.push(chalk.gray('   10. Collect results'));
+  } else {
+    lines.push(chalk.gray('    4. Transform to runtime module model'));
+    lines.push(chalk.gray('    5. Resolve dependencies and capabilities'));
+    lines.push(chalk.gray('    6. Initialize native runtime'));
+    lines.push(chalk.gray('    7. Execute MAM system (native semantics)'));
+    lines.push(chalk.gray('    8. Validate result and update state'));
+    lines.push(chalk.gray('    9. Emit events'));
+    lines.push(chalk.gray('   10. Collect results'));
+  }
   lines.push('');
 
   lines.push(chalk.cyan('  No side effects performed.'));
@@ -1078,14 +1090,16 @@ async function executeRun(options: RunOptions): Promise<ExecutionResult> {
       };
     }
 
-    // V2 Runtime mode: execute natively using MAMV2Runtime
-    if (options.v2) {
-      trace.add('v2', 'Using V2 Runtime for native execution');
+    // ── Native MAM execution (default for .mam / .mam.md) ──────────────
+    // Executes the MAM system model directly through the MAM native runtime.
+    // No compilation to Python/JavaScript. Use --sandbox for legacy execution.
+    if (!options.sandbox) {
+      trace.add('native', 'Native MAM execution');
       const v2Modules = transformToV2(result.ast);
       if (v2Modules.length === 0) {
         return {
           success: false, output: {},
-          errors: ['No executable modules found after V2 transformation'],
+          errors: ['No executable modules found after transformation'],
           warnings: [], timeMs: Date.now() - startTime,
           memoryUsedBytes: 0, metadata: {},
           trace: trace.getEntries(),
@@ -1150,7 +1164,7 @@ async function executeRun(options: RunOptions): Promise<ExecutionResult> {
         warnings: [],
         timeMs: Date.now() - startTime,
         memoryUsedBytes: 0,
-        metadata: { v2: true, module: module.name, type: module.moduleType },
+        metadata: { native: true, module: module.name, type: module.moduleType },
         trace: trace.getEntries(),
       };
     }

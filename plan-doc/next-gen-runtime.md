@@ -1149,7 +1149,7 @@ And yes—**this is absolutely worth diving into before writing the next build p
 ## Section-by-Section Status
 
 - **Section 1 (Foundation):** ✅ Existing pipeline intact, 16 targets verified
-- **Section 2 (Native Execution):** ✅ MAMV2Runtime + CLI `mam run` with V2 standalone execution
+- **Section 2 (Native Execution):** ✅ `mam run system.mam` executes natively (default, no compiler); `.mam.md` also supported
 - **Section 3 (Runtime Kernel):** ✅ All engines complete — standalone WorkflowEngine (~500 lines), ModuleRegistry (349 lines), DependencyResolver in package-manager
 - **Section 4 (Intelligence Layer):** ✅ All 6 engines complete
 - **Section 5 (Context Engine):** ✅ 464 lines, priority assembly, caching, dedup
@@ -1161,7 +1161,7 @@ And yes—**this is absolutely worth diving into before writing the next build p
 - **Section 11 (Agent Engine):** ✅ Interfaces in types.ts, composition ready
 - **Section 12 (Evaluation Engine):** ✅ ~450 lines, quality scoring, benchmarks, quality gates
 - **Section 13 (Security):** ✅ 841 lines, secret detection, anomaly detection
-- **Standalone Execution:** ✅ `mam run file.mam.md --v2` executes .mam natively
+- **Standalone Execution:** ✅ `mam run system.mam` — native MAM execution, no `--v2` flag, no compilation to Python/JS
 
 ## Implemented Files (runtime/src/v2/)
 

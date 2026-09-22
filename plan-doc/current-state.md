@@ -168,12 +168,15 @@ The V2 runtime implements the next-generation native execution engine for `.mam`
 
 ### Standalone Execution
 
-`.mam` files now execute natively via `mam run <file> --v2`:
+`.mam` is the canonical standalone artifact and executes natively by default.
+`.mam.md` remains source/legacy compatible and executes natively as well.
 
 ```bash
-mam run my-module.mam.md --v2          # Native V2 runtime execution
-mam run my-module.mam.md --v2 --format json  # JSON output
-mam run my-module.mam.md --dry-run     # Show execution plan
+mam run hello.mam                       # Native MAM execution (no compiler)
+mam run hello.mam --format json         # JSON output
+mam run hello.mam --dry-run             # Show execution plan
+mam run legacy.mam.md                   # .mam.md also executes natively
+mam run hello.mam --sandbox vm          # Legacy sandbox execution (opt-in)
 ```
 
 ---
@@ -201,7 +204,7 @@ mam run my-module.mam.md --dry-run     # Show execution plan
 | CLI `mam run` | High | ✅ Complete (sandbox, hooks, plugins, V2 runtime) |
 | Dry-run mode | High | ✅ Complete |
 | Evaluation Engine | Medium | ✅ Complete (~450 lines, quality scoring, benchmarks) |
-| Standalone `.mam` execution | High | ✅ Complete (`mam run file.mam.md --v2`) |
+| Standalone `.mam` execution | High | ✅ Complete (`mam run file.mam`, native runtime) |
 | Observability System | Low | Basic metrics in each engine |
 | Registry deployment | Medium | Local only |
 | VS Code Extension | Low | Future |

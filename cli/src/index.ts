@@ -99,12 +99,12 @@ program
 
 program
   .command('run')
-  .description('Run a MAM module')
-  .argument('<file>', 'MAM module file to run')
+  .description('Run a .mam module natively')
+  .argument('<file>', '.mam module file to run')
   .option('-i, --inputs <inputs>', 'Input parameters (JSON string)')
   .option('-t, --timeout <timeout>', 'Execution timeout in ms', '30000')
   .option('--target <target>', 'Execution target (python|javascript|go|rust)')
-  .option('--sandbox <sandbox>', 'Sandbox type (process|vm|docker)', 'vm')
+  .option('--sandbox <sandbox>', 'Legacy sandbox execution (process|vm|docker)')
   .option('--env <env>', 'Environment variables (KEY=VALUE,...)')
   .option('--memory-limit <limit>', 'Memory limit in MB', '256')
   .option('--no-validate', 'Skip validation before execution')
@@ -112,7 +112,6 @@ program
   .option('-v, --verbose', 'Verbose output')
   .option('-f, --format <format>', 'Output format (text|json)', 'text')
   .option('--dry-run', 'Show execution plan without running')
-  .option('--v2', 'Use V2 Runtime for native execution (standalone .mam)')
   .action(async (file, options) => {
     const { runCommand } = await import('./commands/run.js');
     await runCommand({ ...options, file, timeout: parseInt(options.timeout) });
