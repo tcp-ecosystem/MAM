@@ -97,6 +97,35 @@ form with identical content:
   `tool`, `memory`, `team`, `policy`, `system`, `plugin`, `service`,
   `component`, `resource`
 
+### Project Composition (`mam.toml`)
+
+Multi-file projects compose modules into a system (full-mam §19). A project is
+described by `mam.toml` and operated on with the `mam project` command:
+
+```toml
+[project]
+name = "security-system"
+version = "1.0.0"
+
+[build]
+entry = "system.mam"
+modules = ["modules/**/*.mam", "modules/**/*.mam.md"]
+outDir = "dist"
+targets = ["python"]
+```
+
+| Command | Purpose |
+|---------|---------|
+| `mam project init` | Scaffold `mam.toml`, `modules/`, `system.mam` |
+| `mam project info` | Project summary (entry, targets, modules) |
+| `mam project graph` | Module dependency graph (text/json/mermaid) |
+| `mam project validate` | Parse + cross-file validation, cycles, missing deps |
+| `mam project build` | Compile all modules + entry to targets |
+| `mam new <type> <name>` | Scaffold a module from a template (`.mam` + `.mam.md`) |
+
+Supporting library: `cli/src/project/` (TOML parser, manifest, loader, graph).
+Sample project: `examples/security-system/`.
+
 
 
 ### All 16 Targets

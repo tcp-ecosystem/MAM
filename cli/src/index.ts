@@ -70,6 +70,43 @@ program
   });
 
 program
+  .command('project')
+  .description('Manage a multi-file MAM project (mam.toml)')
+  .argument('<action>', 'Action (init|info|graph|validate|build)')
+  .option('-d, --dir <dir>', 'Project directory (defaults to cwd)')
+  .option('-t, --target <target>', 'Build target override')
+  .option('-f, --format <format>', 'Output format (text|json|mermaid)', 'text')
+  .option('--force', 'Overwrite existing files (init)')
+  .option('-q, --quiet', 'Suppress non-essential output')
+  .action(async (action, options) => {
+    const mod = await import('./commands/project.js');
+    const opts = { ...options };
+    switch (action) {
+      case 'init': await mod.projectInitCommand(opts); break;
+      case 'info': await mod.projectInfoCommand(opts); break;
+      case 'graph': await mod.projectGraphCommand(opts); break;
+      case 'validate': await mod.projectValidateCommand(opts); break;
+      case 'build': await mod.projectBuildCommand(opts); break;
+      default:
+        console.error(chalk.red(`Unknown project action: "${action}". Use init|info|graph|validate|build.`));
+        process.exit(1);
+    }
+  });
+
+program
+  .command('new')
+  .description('Create a new module from a template')
+  .argument('<type>', 'Module type (module|agent|tool|memory|workflow|team|policy|system|service|component|resource|plugin|api)')
+  .argument('<name>', 'Module name')
+  .option('-d, --dir <dir>', 'Output directory')
+  .option('--force', 'Overwrite existing files')
+  .option('-q, --quiet', 'Suppress non-essential output')
+  .action(async (type, name, options) => {
+    const { newCommand } = await import('./commands/new.js');
+    await newCommand(type, name, options);
+  });
+
+program
   .command('build')
   .description('Build a MAM module to AST')
   .argument('<file>', 'MAM module file to build')
@@ -660,22 +697,21 @@ program
   .description('List available templates')
   .option('-f, --format <format>', 'Output format (text|json)', 'text')
   .action(async (options) => {
-    console.log(chalk.cyan('\nAvailable Templates:\n'));
-    const templates = [
-      { name: 'basic', desc: 'Minimal MAM module' },
-      { name: 'full', desc: 'Full module with all sections' },
-      { name: 'agent', desc: 'AI agent module' },
-      { name: 'workflow', desc: 'Workflow/pipeline module' },
-      { name: 'team', desc: 'Multi-agent team module' },
-      { name: 'tool', desc: 'Tool/plugin module' },
-      { name: 'memory', desc: 'Memory/context module' },
-      { name: 'policy', desc: 'Safety policy module' },
-      { name: 'api', desc: 'API integration module' },
-      { name: 'rag', desc: 'RAG pipeline module' },
-    ];
-    for (const t of templates) {
-      console.log(chalk.white(`  ${t.name.padEnd(12)} ${chalk.gray(t.desc)}`));
+    const { listTemplateTypes } = await import('./commands/new.js');
+    const types = await listTemplateTypes();
+    if (options.format === 'json') {
+      console.log(JSON.stringify(types, null, 2));
+      return;
     }
+    console.log(chalk.cyan('\nAvailable Templates:\n'));
+    if (types.length === 0) {
+      console.log(chalk.gray('  (no templates found)'));
+      return;
+    }
+    for (const type of types) {
+      console.log(chalk.white(`  ${type.padEnd(12)} `) + chalk.gray(`mam new ${type} <name>`));
+    }
+    console.log('');
   });
 
 // ─── EXAMPLES ────────────────────────────────────────────────────
