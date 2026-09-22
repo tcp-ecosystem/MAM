@@ -8,7 +8,8 @@
  */
 
 import { readFile } from 'node:fs/promises';
-import { resolve, basename, extname } from 'node:path';
+import { resolve, basename, extname, dirname } from 'node:path';
+import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { EventEmitter } from 'node:events';
 import { parseMAM } from '@mam/parser';
@@ -1041,6 +1042,180 @@ function generateDryRunOutput(ast: any, inputs: Record<string, unknown>, options
   return lines.join('\n');
 }
 
+// ---------------------------------------------------------------------------
+// Target Runtime Routing
+// ---------------------------------------------------------------------------
+//
+// Compiled MAM targets (`.mam.py`, `.mam.js`, ...) are executed by their
+// respective implementation runtime. Native `.mam` / `.mam.md` artifacts are
+// handled by the MAM native runtime (see executeRun).
+
+export type TargetRuntimeKind =
+  | 'python'
+  | 'javascript'
+  | 'typescript'
+  | 'shell'
+  | 'go'
+  | 'rust';
+
+interface TargetRuntimeSpec {
+  kind: TargetRuntimeKind;
+  command: string;
+  args: string[];
+  /** For compiled languages: output binary path produced before execution. */
+  compile?: { command: string; args: (out: string) => string[] };
+}
+
+/**
+ * Detect the implementation runtime for a compiled target artifact.
+ * Returns null for native MAM artifacts (`.mam` / `.mam.md`).
+ */
+export function detectTargetRuntime(filePath: string): TargetRuntimeKind | null {
+  const name = basename(filePath).toLowerCase();
+  if (name.endsWith('.mam.py')) return 'python';
+  if (name.endsWith('.mam.js') || name.endsWith('.mam.mjs') || name.endsWith('.mam.cjs')) return 'javascript';
+  if (name.endsWith('.mam.ts')) return 'typescript';
+  if (name.endsWith('.mam.sh') || name.endsWith('.mam.bash')) return 'shell';
+  if (name.endsWith('.mam.go')) return 'go';
+  if (name.endsWith('.mam.rs')) return 'rust';
+  return null;
+}
+
+function resolveTargetSpec(kind: TargetRuntimeKind, filePath: string): TargetRuntimeSpec {
+  const isWin = process.platform === 'win32';
+  switch (kind) {
+    case 'python':
+      return { kind, command: isWin ? 'python' : 'python3', args: [filePath] };
+    case 'javascript':
+      return { kind, command: 'node', args: [filePath] };
+    case 'typescript':
+      return { kind, command: 'npx', args: ['tsx', filePath] };
+    case 'shell':
+      return { kind, command: isWin ? 'bash' : 'sh', args: [filePath] };
+    case 'go':
+      return { kind, command: 'go', args: ['run', filePath] };
+    case 'rust':
+      return {
+        kind,
+        command: '',
+        args: [],
+        compile: {
+          command: 'rustc',
+          args: (out) => [filePath, '-O', '-o', out],
+        },
+      };
+  }
+}
+
+interface SpawnOutcome {
+  code: number;
+  stdout: string;
+  stderr: string;
+  timedOut: boolean;
+}
+
+function runProcess(
+  command: string,
+  args: string[],
+  opts: { cwd: string; env: NodeJS.ProcessEnv; timeoutMs: number },
+): Promise<SpawnOutcome> {
+  return new Promise((resolvePromise) => {
+    const isWin = process.platform === 'win32';
+    const spawnOpts = { cwd: opts.cwd, env: opts.env, windowsHide: true };
+
+    let child;
+    try {
+      if (isWin) {
+        // Build a single command line and let cmd.exe resolve .cmd/.exe shims.
+        const line = [command, ...args]
+          .map((a) => (/[\s"]/.test(a) ? `"${a.replace(/"/g, '\\"')}"` : a))
+          .join(' ');
+        child = spawn(line, [], { ...spawnOpts, shell: true });
+      } else {
+        child = spawn(command, args, { ...spawnOpts, shell: false });
+      }
+    } catch (err) {
+      resolvePromise({ code: -1, stdout: '', stderr: (err as Error).message, timedOut: false });
+      return;
+    }
+
+    let stdout = '';
+    let stderr = '';
+    let timedOut = false;
+    const timer = setTimeout(() => {
+      timedOut = true;
+      child.kill();
+    }, opts.timeoutMs);
+
+    child.stdout?.on('data', (d) => { stdout += d.toString(); });
+    child.stderr?.on('data', (d) => { stderr += d.toString(); });
+    child.on('error', (err) => {
+      clearTimeout(timer);
+      resolvePromise({ code: -1, stdout, stderr: stderr + err.message, timedOut });
+    });
+    child.on('close', (code) => {
+      clearTimeout(timer);
+      resolvePromise({ code: code ?? -1, stdout, stderr, timedOut });
+    });
+  });
+}
+
+async function runTargetArtifact(
+  kind: TargetRuntimeKind,
+  filePath: string,
+  options: RunOptions,
+  trace: TraceCollector,
+  startTime: number,
+): Promise<ExecutionResult> {
+  const spec = resolveTargetSpec(kind, filePath);
+  const timeoutMs = Number(options.timeout) || DEFAULT_TIMEOUT_MS;
+  const env = { ...process.env, ...InputParser.parseEnv(options.env) };
+  const cwd = dirname(filePath);
+
+  trace.add('target', `Detected ${kind} target artifact`);
+
+  let command = spec.command;
+  let args = spec.args;
+
+  if (spec.compile) {
+    const outBin = resolve(cwd, `${basename(filePath, extname(filePath))}.bin${process.platform === 'win32' ? '.exe' : ''}`);
+    trace.add('target', `Compiling: ${spec.compile.command} ${spec.compile.args(outBin).join(' ')}`);
+    const compiled = await runProcess(spec.compile.command, spec.compile.args(outBin), { cwd, env, timeoutMs });
+    if (compiled.code !== 0) {
+      return {
+        success: false,
+        output: { stdout: compiled.stdout, stderr: compiled.stderr },
+        errors: [`Compilation failed (${spec.compile.command}) exit code ${compiled.code}`],
+        warnings: [],
+        timeMs: Date.now() - startTime,
+        memoryUsedBytes: 0,
+        metadata: { targetRuntime: kind, phase: 'compile', exitCode: compiled.code, file: filePath },
+        trace: trace.getEntries(),
+      };
+    }
+    command = outBin;
+    args = [];
+  }
+
+  trace.add('target', `Executing: ${command} ${args.join(' ')}`);
+  const outcome = await runProcess(command, args, { cwd, env, timeoutMs });
+
+  const errors: string[] = [];
+  if (outcome.timedOut) errors.push(`Execution timed out after ${timeoutMs}ms`);
+  if (outcome.code !== 0 && !outcome.timedOut) errors.push(`Process exited with code ${outcome.code}`);
+
+  return {
+    success: outcome.code === 0 && !outcome.timedOut,
+    output: { stdout: outcome.stdout, stderr: outcome.stderr },
+    errors,
+    warnings: [],
+    timeMs: Date.now() - startTime,
+    memoryUsedBytes: 0,
+    metadata: { targetRuntime: kind, command, exitCode: outcome.code, file: filePath },
+    trace: trace.getEntries(),
+  };
+}
+
 async function executeRun(options: RunOptions): Promise<ExecutionResult> {
   const startTime = Date.now();
   const trace = new TraceCollector(options.trace || false);
@@ -1052,6 +1227,12 @@ async function executeRun(options: RunOptions): Promise<ExecutionResult> {
   try {
     const filePath = resolve(options.file);
     trace.add('init', `Loading file: ${filePath}`);
+
+    // Compiled target artifacts execute via their implementation runtime.
+    const targetKind = detectTargetRuntime(filePath);
+    if (targetKind) {
+      return await runTargetArtifact(targetKind, filePath, options, trace, startTime);
+    }
 
     const content = await readFile(filePath, 'utf-8');
     trace.add('init', `File loaded: ${content.length} bytes`);
@@ -1320,6 +1501,24 @@ export async function runCommand(options: RunOptions): Promise<void> {
     const result = await executeRun(options);
     spinner.stop();
 
+    // Compiled target artifacts stream their own program output.
+    if (result.metadata && result.metadata.targetRuntime) {
+      if (options.format === 'json') {
+        console.log(ResultFormatter.format(result, 'json', options.verbose || false));
+      } else {
+        const out = (result.output as { stdout?: string; stderr?: string });
+        const stdout = out?.stdout ?? '';
+        const stderr = out?.stderr ?? '';
+        if (stdout) process.stdout.write(stdout.endsWith('\n') ? stdout : `${stdout}\n`);
+        if (stderr) process.stderr.write(stderr.endsWith('\n') ? stderr : `${stderr}\n`);
+        if (!result.success) {
+          const code = (result.metadata.exitCode as number) ?? 1;
+          console.error(chalk.red(`\n${result.metadata.targetRuntime} process exited with code ${code}`));
+        }
+      }
+      process.exit(result.success ? 0 : 1);
+    }
+
     const formatted = ResultFormatter.format(result, options.format || 'text', options.verbose || false);
     console.log(formatted);
 
@@ -1339,5 +1538,5 @@ export {
   ProcessSandbox, VMSandbox, DockerSandbox, SandboxFactory,
   HookManager, PluginManager, ResultFormatter, BenchmarkRunner,
   ParallelExecutor, ParallelRunner, RuntimeCodeGenerator,
-  executeRun,
+  executeRun, runTargetArtifact,
 };

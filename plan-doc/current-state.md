@@ -170,14 +170,22 @@ The V2 runtime implements the next-generation native execution engine for `.mam`
 
 `.mam` is the canonical standalone artifact and executes natively by default.
 `.mam.md` remains source/legacy compatible and executes natively as well.
+Compiled target artifacts execute through their own implementation runtime.
 
 ```bash
 mam run hello.mam                       # Native MAM execution (no compiler)
 mam run hello.mam --format json         # JSON output
 mam run hello.mam --dry-run             # Show execution plan
 mam run legacy.mam.md                   # .mam.md also executes natively
+mam run hello.mam.py                    # Python target -> runs with python
+mam run hello.mam.js                    # JavaScript target -> runs with node
+mam run hello.mam.sh                    # Shell target -> runs with sh/bash
 mam run hello.mam --sandbox vm          # Legacy sandbox execution (opt-in)
 ```
+
+Target routing by extension: `.mam.py` → python, `.mam.js`/`.mam.mjs`/`.mam.cjs`
+→ node, `.mam.ts` → tsx, `.mam.sh`/`.mam.bash` → shell, `.mam.go` → go run,
+`.mam.rs` → rustc + run.
 
 ---
 
