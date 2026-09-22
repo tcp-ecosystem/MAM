@@ -1,15 +1,42 @@
 ---
+# MAM Metadata
 id: data-workflow
-version: 1.0.0
 name: Workflow Module
+version: 1.0.0
+type: workflow
+
 author: MAM Team
-runtime: python
+description: >
+  Generic workflow engine with DAG-based step execution, conditions,
+  and error handling.
+
+license: MIT
+
+runtime:
+  language: python
+  version: ">=3.12"
+
 tags:
   - workflow
   - orchestration
   - pipeline
   - automation
-description: Generic workflow engine with DAG-based step execution, conditions, and error handling
+
+dependencies:
+  - name: mam-runtime
+    version: ">=1.0.0"
+
+capabilities:
+  - define
+  - validate
+  - run
+  - register_handler
+
+permissions:
+  filesystem:
+    - read
+  memory:
+    - local
 ---
 
 # Workflow Module
@@ -35,6 +62,24 @@ Orchestrates multi-step workflows as directed acyclic graphs (DAGs). Each step i
 | results | dict | Step-by-step results |
 | output | any | Final workflow output |
 | errors | list | List of errors encountered |
+
+## Capabilities
+
+### define
+
+Register a workflow as an ordered set of steps.
+
+### validate
+
+Validate the workflow DAG, detecting missing and circular dependencies.
+
+### run
+
+Execute a workflow in dependency order and return results.
+
+### register_handler
+
+Register a callable handler for use by workflow steps.
 
 ## Rules
 
@@ -244,23 +289,22 @@ class WorkflowEngine:
         }
 ```
 
-## Examples
+## Tests
 
-```python
-engine = WorkflowEngine()
+### Test: Simple Run
 
-engine.define("etl", [
-    Step(name="extract", handler="passthrough", params={"input": "raw-data"}),
-    Step(name="transform", handler="upper", depends_on=["extract"]),
-    Step(name="load", handler="length", depends_on=["transform"]),
-])
+Input:
 
-result = engine.run("etl", {"input": "hello world"})
-print(result["status"])   # completed
-print(result["output"])   # 11 (length of "HELLO WORLD")
+```yaml
+action: run
+workflow_id: simple
 ```
 
-## Tests
+Expected:
+
+```yaml
+status: completed
+```
 
 ```python
 def test_validate_missing_workflow():
@@ -306,6 +350,31 @@ def test_error_halts():
     assert result["status"] == "failed"
 ```
 
-## Dependencies
+## Examples
 
-- None (standard library only)
+### Basic Usage
+
+```python
+engine = WorkflowEngine()
+
+engine.define("etl", [
+    Step(name="extract", handler="passthrough", params={"input": "raw-data"}),
+    Step(name="transform", handler="upper", depends_on=["extract"]),
+    Step(name="load", handler="length", depends_on=["transform"]),
+])
+
+result = engine.run("etl", {"input": "hello world"})
+print(result["status"])   # completed
+print(result["output"])   # 11 (length of "HELLO WORLD")
+```
+
+### Expected Flow
+
+```text
+Define → Validate → Topological Sort → Execute Steps → Results
+```
+
+## References
+
+- MAM Workflow Examples
+- DAG execution and topological ordering

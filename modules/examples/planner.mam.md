@@ -1,15 +1,41 @@
 ---
+# MAM Metadata
 id: task-planner
-version: 1.0.0
 name: Planner Module
+version: 1.0.0
+type: module
+
 author: MAM Team
-runtime: python
+description: >
+  Task decomposition planner that breaks goals into ordered sub-tasks
+  with dependencies.
+
+license: MIT
+
+runtime:
+  language: python
+  version: ">=3.12"
+
 tags:
   - planner
   - task-management
   - decomposition
   - ai
-description: Task decomposition planner that breaks goals into ordered sub-tasks with dependencies
+
+dependencies:
+  - name: mam-planner
+    version: ">=1.0.0"
+
+capabilities:
+  - add_task
+  - validate
+  - topological_sort
+  - critical_path
+  - plan
+
+permissions:
+  filesystem:
+    - read
 ---
 
 # Planner Module
@@ -33,6 +59,28 @@ Decomposes a high-level goal into an ordered graph of sub-tasks. Each task has a
 | tasks | list | Ordered list of task dicts |
 | total_effort | string | Aggregate effort estimate |
 | critical_path | list | IDs of tasks on the critical path |
+
+## Capabilities
+
+### add_task
+
+Register a task with id, description, dependencies, priority, and effort.
+
+### validate
+
+Detect missing dependency references and circular dependencies.
+
+### topological_sort
+
+Return task ids in a valid dependency-respecting execution order.
+
+### critical_path
+
+Return ids of critical/high priority tasks on the dependency chain.
+
+### plan
+
+Produce a complete ordered plan for a goal.
 
 ## Rules
 
@@ -173,22 +221,21 @@ class TaskPlanner:
         }
 ```
 
-## Examples
+## Tests
 
-```python
-planner = TaskPlanner()
-planner.add_task("t1", "Define requirements", priority="critical")
-planner.add_task("t2", "Design architecture", dependencies=["t1"], priority="high")
-planner.add_task("t3", "Implement parser", dependencies=["t2"], priority="high")
-planner.add_task("t4", "Write tests", dependencies=["t2"], priority="medium")
-planner.add_task("t5", "Deploy", dependencies=["t3", "t4"], priority="critical")
+### Test: Add Task
 
-result = planner.plan("Build MAM parser")
-for task in result["tasks"]:
-    print(f"  [{task['priority']}] {task['description']}")
+Input:
+
+```yaml
+goal: Build MAM parser
 ```
 
-## Tests
+Expected:
+
+```yaml
+tasks: ordered
+```
 
 ```python
 def test_add_task():
@@ -229,6 +276,30 @@ def test_critical_path():
     assert p.critical_path() == ["t1", "t3"]
 ```
 
-## Dependencies
+## Examples
 
-- None (standard library only)
+### Basic Usage
+
+```python
+planner = TaskPlanner()
+planner.add_task("t1", "Define requirements", priority="critical")
+planner.add_task("t2", "Design architecture", dependencies=["t1"], priority="high")
+planner.add_task("t3", "Implement parser", dependencies=["t2"], priority="high")
+planner.add_task("t4", "Write tests", dependencies=["t2"], priority="medium")
+planner.add_task("t5", "Deploy", dependencies=["t3", "t4"], priority="critical")
+
+result = planner.plan("Build MAM parser")
+for task in result["tasks"]:
+    print(f"  [{task['priority']}] {task['description']}")
+```
+
+### Expected Flow
+
+```text
+Goal → Decompose → Dependencies → Validate → Topological Sort → Ordered Tasks
+```
+
+## References
+
+- MAM Planner Examples
+- Topological sorting (Kahn's algorithm)

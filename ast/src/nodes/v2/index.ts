@@ -29,6 +29,13 @@ export {
   type V2StateDefinition,
   type V2LifecycleDefinition,
   type V2MemoryReference,
+  type V2DependencyDefinition,
+  type V2ExportDefinition,
+  type V2ImportDefinition,
+  type V2HookDefinition,
+  type V2ConfigDefinition,
+  type V2TransformDefinition,
+  type V2ConstraintDefinition,
 } from './supporting.js';
 
 export {

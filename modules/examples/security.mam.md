@@ -1,15 +1,44 @@
 ---
+# MAM Metadata
 id: security-scanner
-version: 1.0.0
 name: Security Module
+version: 1.0.0
+type: module
+
 author: MAM Team
-runtime: python
+description: >
+  Security scanning module for detecting secrets, validating inputs,
+  and enforcing policies.
+
+license: MIT
+
+runtime:
+  language: python
+  version: ">=3.12"
+
 tags:
   - security
   - scanning
   - secrets
   - validation
-description: Security scanning module for detecting secrets, validating inputs, and enforcing policies
+
+dependencies:
+  - name: mam-policy
+    version: ">=1.0.0"
+
+capabilities:
+  - scan_secrets
+  - sanitize
+  - check_policy
+  - rate_limit
+
+permissions:
+  filesystem:
+    - read
+  network:
+    - none
+  python:
+    - sandbox
 ---
 
 # Security Module
@@ -37,6 +66,24 @@ Provides security primitives for MAM modules: secret detection in text, input sa
 | sanitized | string | Cleaned text (for sanitize action) |
 | allowed | bool | Whether the request is allowed (for rate_limit) |
 | remaining | int | Remaining requests in window |
+
+## Capabilities
+
+### scan_secrets
+
+Detect exposed secrets and credentials in text.
+
+### sanitize
+
+Strip control characters and normalize whitespace.
+
+### check_policy
+
+Evaluate text against allow/deny policy rules.
+
+### rate_limit
+
+Check and enforce fixed-window rate limits per client.
 
 ## Rules
 
@@ -166,29 +213,22 @@ class SecurityScanner:
         }
 ```
 
-## Examples
+## Tests
 
-```python
-scanner = SecurityScanner()
+### Test: Secret Detection
 
-findings = scanner.scan_secrets("AWS key: AKIAIOSFODNN7EXAMPLE")
-print(findings)  # [{'type': 'AWS Access Key', 'severity': 'critical', ...}]
+Input:
 
-clean = scanner.sanitize("Hello\x00\x01  World\n\n\n\nTest")
-print(clean)  # "Hello World\n\nTest"
-
-violations = scanner.check_policy(
-    "SELECT * FROM users",
-    {"deny": [{"pattern": r"(?i)select.*from", "reason": "Raw SQL not allowed"}]},
-)
-print(violations)  # [{'pattern': '...', 'reason': 'Raw SQL not allowed', ...}]
-
-result = scanner.rate_limit("client-1", window_sec=60, max_requests=5)
-print(result["allowed"])   # True
-print(result["remaining"]) # 4
+```yaml
+action: scan_secrets
+text: "api_key=supersecretkey1234567890"
 ```
 
-## Tests
+Expected:
+
+```yaml
+findings: at_least_one
+```
 
 ```python
 def test_scan_clean_text():
@@ -229,6 +269,37 @@ def test_policy_deny():
     assert v[0]["reason"] == "Dangerous command"
 ```
 
-## Dependencies
+## Examples
 
-- None (standard library only)
+### Basic Usage
+
+```python
+scanner = SecurityScanner()
+
+findings = scanner.scan_secrets("AWS key: AKIAIOSFODNN7EXAMPLE")
+print(findings)  # [{'type': 'AWS Access Key', 'severity': 'critical', ...}]
+
+clean = scanner.sanitize("Hello\x00\x01  World\n\n\n\nTest")
+print(clean)  # "Hello World\n\nTest"
+
+violations = scanner.check_policy(
+    "SELECT * FROM users",
+    {"deny": [{"pattern": r"(?i)select.*from", "reason": "Raw SQL not allowed"}]},
+)
+print(violations)
+
+result = scanner.rate_limit("client-1", window_sec=60, max_requests=5)
+print(result["allowed"])   # True
+print(result["remaining"]) # 4
+```
+
+### Expected Flow
+
+```text
+Request → Action → Scan/Sanitize/Policy/RateLimit → Findings
+```
+
+## References
+
+- MAM Security Examples
+- OWASP secret detection guidance

@@ -1,15 +1,43 @@
 ---
+# MAM Metadata
 id: memory-system
-version: 1.0.0
 name: Memory Module
+version: 1.0.0
+type: module
+
 author: MAM Team
-runtime: python
+description: >
+  Persistent memory system for AI agents with vector search and TTL support.
+
+license: MIT
+
+runtime:
+  language: python
+  version: ">=3.12"
+
 tags:
   - memory
   - state
   - persistence
   - ai
-description: Persistent memory system for AI agents with vector search and TTL support
+
+dependencies:
+  - name: mam-state
+    version: ">=1.0.0"
+
+capabilities:
+  - store
+  - retrieve
+  - search
+  - delete
+  - list_keys
+
+permissions:
+  filesystem:
+    - read
+    - write
+  memory:
+    - local
 ---
 
 # Memory Module
@@ -36,6 +64,28 @@ Provides a persistent memory layer for AI agents. Supports key-value storage, ve
 | result | any | Operation result (value, list, or match objects) |
 | success | bool | Whether the operation succeeded |
 | error | string | Error message if failed |
+
+## Capabilities
+
+### store
+
+Persist a value under a key within a namespace, with optional TTL.
+
+### retrieve
+
+Fetch a value by key, honoring expiration and namespace isolation.
+
+### search
+
+Rank entries by relevance to a query within a namespace.
+
+### delete
+
+Remove an entry by key.
+
+### list_keys
+
+List non-expired keys within a namespace.
 
 ## Rules
 
@@ -171,24 +221,23 @@ class MemorySystem:
         ]
 ```
 
-## Examples
+## Tests
 
-```python
-mem = MemorySystem()
+### Test: Store and Retrieve
 
-mem.store("goal", "Build a MAM parser", namespace="project")
-mem.store("lang", "TypeScript", namespace="project")
+Input:
 
-print(mem.retrieve("goal", "project"))  # Build a MAM parser
-
-mem.store("temp", "session data", ttl=60)
-print(mem.list_keys("project"))  # ['goal', 'lang']
-
-results = mem.search("parser", "project")
-print(results)  # [{'key': 'goal', 'value': 'Build a MAM parser', 'score': 0.0625}]
+```yaml
+action: store
+key: k
+value: v
 ```
 
-## Tests
+Expected:
+
+```yaml
+retrieve: v
+```
 
 ```python
 def test_store_and_retrieve():
@@ -222,6 +271,32 @@ def test_search():
     assert results[0]["key"] == "topic"
 ```
 
-## Dependencies
+## Examples
 
-- None (standard library only)
+### Basic Usage
+
+```python
+mem = MemorySystem()
+
+mem.store("goal", "Build a MAM parser", namespace="project")
+mem.store("lang", "TypeScript", namespace="project")
+
+print(mem.retrieve("goal", "project"))  # Build a MAM parser
+
+mem.store("temp", "session data", ttl=60)
+print(mem.list_keys("project"))  # ['goal', 'lang']
+
+results = mem.search("parser", "project")
+print(results)  # [{'key': 'goal', 'value': 'Build a MAM parser', 'score': 0.0625}]
+```
+
+### Expected Flow
+
+```text
+Request → Action → Store/Retrieve/Search/Delete/List → Result
+```
+
+## References
+
+- MAM Memory Examples
+- TTL and namespaced storage patterns

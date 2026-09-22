@@ -1,19 +1,44 @@
 ---
+# MAM Metadata
 id: authentication
-version: 1.0.0
 name: Authentication Module
+version: 1.0.0
+type: module
+
 author: LifeJiggy
+description: >
+  Secure authentication module with JWT token support.
+
+license: MIT
+
+runtime:
+  language: python
+  version: ">=3.12"
+
 tags:
   - auth
   - security
   - jwt
   - tokens
-runtime: python
-description: Secure authentication module with JWT token support
+
+dependencies:
+  - name: PyJWT
+    version: ">=2.8.0"
+  - name: cryptography
+    version: ">=41.0.0"
+
+capabilities:
+  - generate_token
+  - validate_token
+  - refresh_access_token
+  - hash_password
+  - verify_password
+
 permissions:
-  - network
-  - filesystem
-license: MIT
+  network:
+    - internet
+  filesystem:
+    - read
 ---
 
 # Authentication Module
@@ -41,6 +66,28 @@ Provide secure user authentication using JWT tokens. This module handles token g
 | user | dict | Authenticated user data |
 | error | string | Error message if failed |
 
+## Capabilities
+
+### generate_token
+
+Generate a signed JWT access token and refresh token for a subject.
+
+### validate_token
+
+Validate a JWT token and return its claims, or null when invalid or expired.
+
+### refresh_access_token
+
+Exchange a valid refresh token for a new access token.
+
+### hash_password
+
+Hash a password using a salted cryptographic digest.
+
+### verify_password
+
+Compare a password against a stored hash using constant-time comparison.
+
 ## Rules
 
 - Never expose secrets in logs or error messages
@@ -59,17 +106,17 @@ flowchart TD
     B -->|Login| C[Validate Credentials]
     B -->|Validate| D[Verify Token]
     B -->|Refresh| E[Refresh Token]
-    
+
     C --> F{Valid?}
     F -->|Yes| G[Generate Tokens]
     F -->|No| H[Return Error]
-    
+
     G --> I[Return Response]
-    
+
     D --> J{Valid?}
     J -->|Yes| K[Return Claims]
     J -->|No| H
-    
+
     E --> L{Refresh Valid?}
     L -->|Yes| G
     L -->|No| H
@@ -93,11 +140,11 @@ class Authenticator:
         self.algorithm = algorithm
         self.token_expiry = timedelta(hours=1)
         self.refresh_expiry = timedelta(days=30)
-    
+
     def generate_token(self, user_id: str, claims: Dict[str, Any] = None) -> Dict[str, str]:
         """Generate JWT access and refresh tokens"""
         now = datetime.utcnow()
-        
+
         access_payload = {
             "sub": user_id,
             "iat": now,
@@ -105,7 +152,7 @@ class Authenticator:
             "type": "access",
             **(claims or {})
         }
-        
+
         refresh_payload = {
             "sub": user_id,
             "iat": now,
@@ -113,13 +160,13 @@ class Authenticator:
             "type": "refresh",
             "jti": secrets.token_hex(16)
         }
-        
+
         return {
             "access_token": jwt.encode(access_payload, self.secret_key, self.algorithm),
             "refresh_token": jwt.encode(refresh_payload, self.secret_key, self.algorithm),
             "expires_in": int(self.token_expiry.total_seconds())
         }
-    
+
     def validate_token(self, token: str) -> Optional[Dict[str, Any]]:
         """Validate JWT token and return claims"""
         try:
@@ -129,14 +176,14 @@ class Authenticator:
             return None
         except jwt.InvalidTokenError:
             return None
-    
+
     def refresh_access_token(self, refresh_token: str) -> Optional[Dict[str, str]]:
         """Generate new access token from refresh token"""
         payload = self.validate_token(refresh_token)
-        
+
         if not payload or payload.get("type") != "refresh":
             return None
-        
+
         return self.generate_token(payload["sub"])
 
 def verify_password(password: str, hashed: str) -> bool:
@@ -159,7 +206,68 @@ When using this authentication module:
 4. Store refresh tokens securely (HTTP-only cookies)
 5. Log authentication attempts for security auditing
 
+## Tests
+
+### Test: Token Generation
+
+Input:
+
+```yaml
+secret: test-secret
+user: test-user
+```
+
+Expected:
+
+```yaml
+access_token: present
+refresh_token: present
+expires_in: 3600
+```
+
+### Test: Password Hashing
+
+Input:
+
+```yaml
+password: secure-password
+```
+
+Expected:
+
+```yaml
+verify_password: true
+```
+
+```python
+def test_token_generation():
+    auth = Authenticator("test-secret")
+    tokens = auth.generate_token("test-user")
+
+    assert "access_token" in tokens
+    assert "refresh_token" in tokens
+    assert "expires_in" in tokens
+    assert tokens["expires_in"] == 3600
+
+def test_token_validation():
+    auth = Authenticator("test-secret")
+    tokens = auth.generate_token("test-user")
+
+    claims = auth.validate_token(tokens["access_token"])
+    assert claims is not None
+    assert claims["sub"] == "test-user"
+
+def test_password_hashing():
+    password = "secure-password"
+    hashed = hash_password(password)
+
+    assert verify_password(password, hashed)
+    assert not verify_password("wrong-password", hashed)
+```
+
 ## Examples
+
+### Basic Usage
 
 ```python
 # Initialize authenticator
@@ -178,32 +286,10 @@ new_tokens = auth.refresh_access_token(tokens["refresh_token"])
 print(new_tokens)
 ```
 
-## Tests
+### Expected Flow
 
-```python
-def test_token_generation():
-    auth = Authenticator("test-secret")
-    tokens = auth.generate_token("test-user")
-    
-    assert "access_token" in tokens
-    assert "refresh_token" in tokens
-    assert "expires_in" in tokens
-    assert tokens["expires_in"] == 3600
-
-def test_token_validation():
-    auth = Authenticator("test-secret")
-    tokens = auth.generate_token("test-user")
-    
-    claims = auth.validate_token(tokens["access_token"])
-    assert claims is not None
-    assert claims["sub"] == "test-user"
-
-def test_password_hashing():
-    password = "secure-password"
-    hashed = hash_password(password)
-    
-    assert verify_password(password, hashed)
-    assert not verify_password("wrong-password", hashed)
+```text
+Login → Validate Credentials → Generate Tokens → Return Response
 ```
 
 ## References
@@ -212,18 +298,8 @@ def test_password_hashing():
 - [OWASP Authentication Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Authentication_Cheat_Sheet.html)
 - [Python JWT Library](https://pyjwt.readthedocs.io/)
 
-## Dependencies
-
-- PyJWT >= 2.8.0
-- cryptography >= 41.0.0
-
 ## Exports
 
 - `Authenticator` class
 - `verify_password` function
 - `hash_password` function
-
-## Permissions
-
-- `network`: Required for token validation with external services
-- `filesystem`: Required for secure key storage

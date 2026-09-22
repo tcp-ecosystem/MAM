@@ -1,15 +1,40 @@
 ---
+# MAM Metadata
 id: prompt-engine
-version: 1.0.0
 name: Prompt Module
+version: 1.0.0
+type: module
+
 author: MAM Team
-runtime: python
+description: >
+  Structured prompt template engine with variable interpolation,
+  few-shot examples, and chain-of-thought support.
+
+license: MIT
+
+runtime:
+  language: python
+  version: ">=3.12"
+
 tags:
   - prompt
   - templates
   - llm
   - ai
-description: Structured prompt template engine with variable interpolation, few-shot examples, and chain-of-thought support
+
+dependencies:
+  - name: mam-context
+    version: ">=1.0.0"
+
+capabilities:
+  - register
+  - render
+  - interpolate
+  - list_templates
+
+permissions:
+  filesystem:
+    - read
 ---
 
 # Prompt Module
@@ -34,6 +59,24 @@ Manages reusable prompt templates with variable interpolation, few-shot example 
 | rendered | string | The fully rendered prompt string |
 | token_estimate | int | Rough word-based token estimate |
 | template_id | string | The template that was rendered |
+
+## Capabilities
+
+### register
+
+Register a prompt template for later rendering.
+
+### interpolate
+
+Substitute `{{variable}}` placeholders with provided values.
+
+### render
+
+Render a template with variables, examples, and optional CoT scaffolding.
+
+### list_templates
+
+List all registered template identifiers.
 
 ## Rules
 
@@ -137,28 +180,23 @@ Step 1:"""
         return list(self._templates.keys())
 ```
 
-## Examples
+## Tests
 
-```python
-engine = PromptEngine()
+### Test: Interpolation
 
-engine.register(PromptTemplate(
-    template_id="summarize",
-    system="You are a concise summarizer.",
-    user="Summarize the following in {{length}} sentences:\n\n{{text}}",
-    required_variables=["text", "length"],
-))
+Input:
 
-result = engine.render(
-    "summarize",
-    variables={"text": "MAM transforms Markdown into executable modules.", "length": "1"},
-    chain_of_thought=True,
-)
-print(result["rendered"])
-print(f"~{result['token_estimate']} tokens")
+```yaml
+template_id: t
+variables:
+  name: Alice
 ```
 
-## Tests
+Expected:
+
+```yaml
+rendered: "Hello, Alice!"
+```
 
 ```python
 def test_interpolation():
@@ -201,6 +239,36 @@ def test_cot():
     assert "Step 1:" in result["rendered"]
 ```
 
-## Dependencies
+## Examples
 
-- None (standard library only)
+### Basic Usage
+
+```python
+engine = PromptEngine()
+
+engine.register(PromptTemplate(
+    template_id="summarize",
+    system="You are a concise summarizer.",
+    user="Summarize the following in {{length}} sentences:\n\n{{text}}",
+    required_variables=["text", "length"],
+))
+
+result = engine.render(
+    "summarize",
+    variables={"text": "MAM transforms Markdown into executable modules.", "length": "1"},
+    chain_of_thought=True,
+)
+print(result["rendered"])
+print(f"~{result['token_estimate']} tokens")
+```
+
+### Expected Flow
+
+```text
+Request → Lookup → Validate → Interpolate → Examples → CoT → Rendered Prompt
+```
+
+## References
+
+- MAM Prompt Examples
+- Chain-of-thought prompting

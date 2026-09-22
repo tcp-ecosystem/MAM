@@ -1,15 +1,42 @@
 ---
+# MAM Metadata
 id: rag-module
-version: 1.0.0
 name: RAG Module
+version: 1.0.0
+type: module
+
 author: MAM Team
-runtime: python
+description: >
+  Retrieval-Augmented Generation module with document chunking, embedding,
+  and similarity search.
+
+license: MIT
+
+runtime:
+  language: python
+  version: ">=3.12"
+
 tags:
   - rag
   - retrieval-augmented-generation
   - embeddings
   - ai
-description: Retrieval-Augmented Generation module with document chunking, embedding, and similarity search
+
+dependencies:
+  - name: mam-knowledge
+    version: ">=1.0.0"
+
+capabilities:
+  - index
+  - query
+  - chunk
+  - clear
+
+permissions:
+  filesystem:
+    - read
+  memory:
+    - local
 ---
 
 # RAG Module
@@ -36,6 +63,24 @@ Implements a Retrieval-Augmented Generation pipeline: chunk documents into overl
 | chunks | list | Retrieved chunks with scores |
 | total_indexed | int | Total chunks in index |
 | query | string | The original query |
+
+## Capabilities
+
+### index
+
+Chunk and embed documents into the retrieval index.
+
+### query
+
+Retrieve the top-k chunks most similar to a query.
+
+### chunk
+
+Split a document into overlapping token chunks.
+
+### clear
+
+Reset the index.
 
 ## Rules
 
@@ -151,26 +196,24 @@ class RAGIndex:
         self.vocab.clear()
 ```
 
-## Examples
+## Tests
 
-```python
-index = RAGIndex()
+### Test: Index and Query
 
-docs = [
-    "MAM is a specification-first project that transforms Markdown into a universal IR for AI.",
-    "The parser reads Markdown and produces a structured AST that agents can reason about.",
-    "Plugins extend MAM with custom section types, validators, and runtime contexts.",
-]
+Input:
 
-total = index.index(docs, chunk_size=50, overlap=10)
-print(f"Indexed {total} chunks")
-
-results = index.query("How does the parser work?", top_k=2)
-for r in results:
-    print(f"  [{r['score']}] {r['text'][:80]}...")
+```yaml
+action: index
+documents:
+  - "alpha beta gamma"
+  - "delta epsilon zeta"
 ```
 
-## Tests
+Expected:
+
+```yaml
+chunks: match
+```
 
 ```python
 def test_chunk_text():
@@ -202,6 +245,34 @@ def test_clear():
     assert len(idx.chunks) == 0
 ```
 
-## Dependencies
+## Examples
 
-- None (standard library only)
+### Basic Usage
+
+```python
+index = RAGIndex()
+
+docs = [
+    "MAM is a specification-first project that transforms Markdown into a universal IR for AI.",
+    "The parser reads Markdown and produces a structured AST that agents can reason about.",
+    "Plugins extend MAM with custom section types, validators, and runtime contexts.",
+]
+
+total = index.index(docs, chunk_size=50, overlap=10)
+print(f"Indexed {total} chunks")
+
+results = index.query("How does the parser work?", top_k=2)
+for r in results:
+    print(f"  [{r['score']}] {r['text'][:80]}...")
+```
+
+### Expected Flow
+
+```text
+Index → Chunk → Embed → Store → Query → Rank → Top-K
+```
+
+## References
+
+- MAM RAG Examples
+- TF-IDF and cosine similarity

@@ -1,14 +1,47 @@
 ---
+# MAM Metadata
 id: bug-hunter
-version: 2.0.0
 name: BugHunter System
+version: 2.0.0
+type: system
+
 author: LifeJiggy
-runtime: python
+description: >
+  Multi-agent bug hunting system that discovers, analyzes, and reports
+  vulnerabilities.
+
+license: MIT
+
+runtime:
+  language: python
+  version: ">=3.12"
+
 tags:
   - security
   - bug-bounty
   - multi-agent
-description: Multi-agent bug hunting system
+
+dependencies:
+  - name: recon
+    version: "^1.0"
+  - name: analyzer
+    version: "^1.0"
+  - name: reporter
+    version: "^1.0"
+
+capabilities:
+  - plan
+  - recon
+  - analyze
+  - report
+
+permissions:
+  network:
+    - internet
+  filesystem:
+    - read
+  python:
+    - sandbox
 ---
 
 # BugHunter System
@@ -16,6 +49,31 @@ description: Multi-agent bug hunting system
 ## Purpose
 
 Multi-agent security testing system that discovers, analyzes, and reports vulnerabilities.
+
+## Modules
+
+- Planner
+- Recon
+- Analyzer
+- Reporter
+
+## Capabilities
+
+### plan
+
+Create the execution strategy for a security testing run.
+
+### recon
+
+Discover attack surfaces and potential vulnerabilities.
+
+### analyze
+
+Assess discovered vulnerabilities for severity and impact.
+
+### report
+
+Generate comprehensive security reports.
 
 ## System Definition
 
@@ -40,6 +98,23 @@ memory:
 
 policy:
     SafeExecution
+
+## Rules
+
+- Operate only against authorized targets
+- Do not perform destructive actions
+- Preserve evidence
+- Validate results before reporting
+- Respect the SafeExecution policy at all times
+
+## Workflow
+
+```mermaid
+flowchart LR
+    Planner --> Recon
+    Recon --> Analyzer
+    Analyzer --> Reporter
+```
 
 ## Agent: Planner
 
@@ -233,3 +308,41 @@ permissions:
     filesystem: read
     network: internet
     python: sandbox
+
+## Tests
+
+### Test: System Composition
+
+Input:
+
+```yaml
+target: example.com
+```
+
+Expected:
+
+```yaml
+agents: 4
+tools: 4
+policy: SafeExecution
+```
+
+## Examples
+
+### Basic Usage
+
+```text
+BugHunter.run(target="example.com")
+  → Planner → Recon → Analyzer → Reporter
+```
+
+### Expected Flow
+
+```text
+Input → Plan → Recon → Analyze → Report
+```
+
+## References
+
+- MAM System Examples
+- Multi-agent orchestration

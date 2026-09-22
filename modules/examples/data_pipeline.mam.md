@@ -1,15 +1,43 @@
 ---
+# MAM Metadata
 id: data-pipeline
-version: 1.0.0
 name: Data Pipeline Module
+version: 1.0.0
+type: module
+
 author: MAM Team
-runtime: python
+description: >
+  Data processing pipeline with extract, transform, validate,
+  and load stages.
+
+license: MIT
+
+runtime:
+  language: python
+  version: ">=3.12"
+
 tags:
   - data
   - pipeline
   - etl
   - transformation
-description: Data processing pipeline with extract, transform, validate, and load stages
+
+dependencies:
+  - name: mam-transform
+    version: ">=1.0.0"
+
+capabilities:
+  - extract
+  - apply_transforms
+  - validate_schema
+  - run
+  - register_transform
+
+permissions:
+  filesystem:
+    - read
+  memory:
+    - local
 ---
 
 # Data Pipeline Module
@@ -37,6 +65,28 @@ Provides a reusable ETL (Extract-Transform-Load) pipeline framework. Handles dat
 | summary | dict | Pipeline execution summary (counts, errors, duration_ms) |
 | valid | bool | Whether all records passed validation |
 | errors | list | Validation or processing errors |
+
+## Capabilities
+
+### extract
+
+Extract records from list, json, csv, or text sources.
+
+### apply_transforms
+
+Apply configured transforms in order, routing failures to dead letter.
+
+### validate_schema
+
+Validate records against required fields, types, and patterns.
+
+### run
+
+Execute the full extract → transform → validate → load pipeline.
+
+### register_transform
+
+Register a custom transform function.
 
 ## Rules
 
@@ -220,25 +270,24 @@ class DataPipeline:
         }
 ```
 
-## Examples
+## Tests
 
-```python
-pipeline = DataPipeline()
+### Test: Full Pipeline
 
-data = "name,age\nAlice,30\nBob,twenty\nCharlie,25"
+Input:
 
-result = pipeline.run(
-    "csv", data,
-    transforms=["strip"],
-    schema={"required": ["name", "age"], "types": {"age": "int"}},
-)
-print(result["summary"])
-# {'total': 3, 'valid': 2, 'errors': 1, 'dead_letter': 0, 'duration_ms': ...}
-print(result["records"])
-# [{'name': 'Alice', 'age': '30'}, {'name': 'Charlie', 'age': '25'}]
+```yaml
+action: run
+source_type: list
+transforms:
+  - upper
 ```
 
-## Tests
+Expected:
+
+```yaml
+valid: true
+```
 
 ```python
 def test_extract_list():
@@ -274,6 +323,33 @@ def test_full_pipeline():
     assert result["records"][0] == "HELLO"
 ```
 
-## Dependencies
+## Examples
 
-- None (standard library only)
+### Basic Usage
+
+```python
+pipeline = DataPipeline()
+
+data = "name,age\nAlice,30\nBob,twenty\nCharlie,25"
+
+result = pipeline.run(
+    "csv", data,
+    transforms=["strip"],
+    schema={"required": ["name", "age"], "types": {"age": "int"}},
+)
+print(result["summary"])
+# {'total': 3, 'valid': 2, 'errors': 1, 'dead_letter': 0, 'duration_ms': ...}
+print(result["records"])
+# [{'name': 'Alice', 'age': '30'}, {'name': 'Charlie', 'age': '25'}]
+```
+
+### Expected Flow
+
+```text
+Extract → Transform → Validate → Load → Summary
+```
+
+## References
+
+- MAM Data Pipeline Examples
+- ETL and dead-letter queue patterns

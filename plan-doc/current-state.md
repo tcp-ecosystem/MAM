@@ -78,14 +78,25 @@ The parser and transformer support the canonical MAM specification:
 |---------|---------|
 | Structured runtime (`runtime: {language, version}`) | ✅ Parsed + validated |
 | Structured permissions (`permissions: {network: [internet], ...}`) | ✅ Mapped to `V2PermissionSet` |
-| Dependency version constraints (`{name, version}`) | ✅ Normalized to `name@version` |
+| Dependency version constraints (`{name, version}`) | ✅ `requires` (string) + `dependencies` (`V2DependencyDefinition[]`) |
 | Front-matter `capabilities` + `## Capabilities` (`### name`) | ✅ Merged into module capabilities |
+| Structured front-matter `inputs`/`outputs` | ✅ Mapped to `V2PortDefinition[]` |
+| `## Exports` section | ✅ Mapped to `V2ExportDefinition[]` |
+| `## Prompt` section | ✅ Mapped to `prompts[]` |
+| `## Modules` (system composition) | ✅ Mapped to `modules[]` |
+| Top-level `version`, `author`, `license`, `keywords` | ✅ Set on node |
 | Canonical metadata fields (`type`, `license`, `description`) | ✅ |
 | `runtime: python >=3.12` shorthand | ✅ Still supported |
 
-Canonical `.mam` examples live alongside `.mam.md` in `modules/examples/`:
-`authentication`, `bug-hunter`, `data_pipeline`, `memory`, `planner`,
-`prompt`, `rag`, `security`, `workflow`.
+Canonical modules ship in **both** `.mam` (canonical) and `.mam.md` (source)
+form with identical content:
+
+- **Examples** (`modules/examples/`): `authentication`, `bug-hunter`,
+  `data_pipeline`, `memory`, `planner`, `prompt`, `rag`, `security`, `workflow`
+- **Templates** (`modules/templates/`): `basic`, `agent`, `api`, `workflow`,
+  `tool`, `memory`, `team`, `policy`, `system`, `plugin`, `service`,
+  `component`, `resource`
+
 
 
 ### All 16 Targets

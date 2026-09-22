@@ -14,6 +14,8 @@ import {
   type V2PortDefinition,
   type V2PermissionSet,
   type V2MemoryReference,
+  type V2DependencyDefinition,
+  type V2ExportDefinition,
   type ModuleType,
 } from '@mam/ast';
 
@@ -208,6 +210,10 @@ export class MAMTransformer {
       name: String(data.name || 'unnamed-module'),
       description,
       location: this.loc(ast),
+      version: data.version ? String(data.version) : undefined,
+      author: data.author ? String(data.author) : undefined,
+      license: data.license ? String(data.license) : undefined,
+      keywords: Array.isArray(data.tags) ? data.tags.map((t) => String(t)) : undefined,
       metadata: {
         tags: data.tags,
         version: data.version,
@@ -278,17 +284,22 @@ export class MAMTransformer {
     const dependenciesSection = this.findSection(sections, 'Dependencies');
     const examplesSection = this.findSection(sections, 'Examples');
     const testsSection = this.findSection(sections, 'Tests');
+    const exportsSection = this.findSection(sections, 'Exports');
 
     return {
       ...base,
       provider: String(data.provider || ''),
-      capabilities: capabilitiesSection
-        ? this.extractList(capabilitiesSection.content)
-        : Array.isArray(data.capabilities) ? data.capabilities.map(String) : undefined,
-      permissions: permissionsSection ? this.parsePermissions(permissionsSection.content) : undefined,
-      requires: dependenciesSection ? this.extractList(dependenciesSection.content) : undefined,
+      capabilities: this.extractCapabilities(data, capabilitiesSection),
+      permissions: permissionsSection
+        ? this.parsePermissions(permissionsSection.content)
+        : this.parsePermissionsFromData(data),
+      requires: dependenciesSection
+        ? this.extractList(dependenciesSection.content)
+        : this.extractDependenciesFromData(data),
+      dependencies: this.parseDependencyDefinitions(data),
       examples: examplesSection ? this.extractText(examplesSection.content) : undefined,
       tests: testsSection ? this.extractText(testsSection.content) : undefined,
+      exports: exportsSection ? this.parseExports(exportsSection.content) : undefined,
     };
   }
 
@@ -407,6 +418,10 @@ export class MAMTransformer {
     const dependenciesSection = this.findSection(sections, 'Dependencies');
     const permissionsSection = this.findSection(sections, 'Permissions');
     const capabilitiesSection = this.findSection(sections, 'Capabilities');
+    const inputsSection = this.findSection(sections, 'Inputs');
+    const outputsSection = this.findSection(sections, 'Outputs');
+    const exportsSection = this.findSection(sections, 'Exports');
+    const promptSection = this.findSection(sections, 'Prompt');
 
     return {
       ...base,
@@ -418,6 +433,8 @@ export class MAMTransformer {
         : Array.isArray(data.modules) ? data.modules.map(String) : undefined,
       tools: toolsSection ? this.extractList(toolsSection.content) : undefined,
       policy: policySection ? this.extractText(policySection.content) : undefined,
+      inputs: inputsSection ? this.parseInputs(inputsSection.content) : this.parsePortsFromData(data.inputs),
+      outputs: outputsSection ? this.parseOutputs(outputsSection.content) : this.parsePortsFromData(data.outputs),
       capabilities: this.extractCapabilities(data, capabilitiesSection),
       permissions: permissionsSection
         ? this.parsePermissions(permissionsSection.content)
@@ -425,6 +442,9 @@ export class MAMTransformer {
       requires: dependenciesSection
         ? this.extractList(dependenciesSection.content)
         : this.extractDependenciesFromData(data),
+      dependencies: this.parseDependencyDefinitions(data),
+      exports: exportsSection ? this.parseExports(exportsSection.content) : undefined,
+      prompts: promptSection ? this.extractPromptStrings(promptSection.content) : undefined,
     };
   }
 
@@ -439,15 +459,18 @@ export class MAMTransformer {
     const outputsSection = this.findSection(sections, 'Outputs');
     const rulesSection = this.findSection(sections, 'Rules');
     const docsSection = this.findSection(sections, 'Documentation');
+    const exportsSection = this.findSection(sections, 'Exports');
+    const promptSection = this.findSection(sections, 'Prompt');
 
     return {
       ...base,
-      inputs: inputsSection ? this.parseInputs(inputsSection.content) : undefined,
-      outputs: outputsSection ? this.parseOutputs(outputsSection.content) : undefined,
+      inputs: inputsSection ? this.parseInputs(inputsSection.content) : this.parsePortsFromData(data.inputs),
+      outputs: outputsSection ? this.parseOutputs(outputsSection.content) : this.parsePortsFromData(data.outputs),
       capabilities: this.extractCapabilities(data, capabilitiesSection),
       requires: dependenciesSection
         ? this.extractList(dependenciesSection.content)
         : this.extractDependenciesFromData(data),
+      dependencies: this.parseDependencyDefinitions(data),
       permissions: permissionsSection
         ? this.parsePermissions(permissionsSection.content)
         : this.parsePermissionsFromData(data),
@@ -455,6 +478,8 @@ export class MAMTransformer {
       tests: testsSection ? this.extractText(testsSection.content) : undefined,
       rules: rulesSection ? this.extractList(rulesSection.content) : undefined,
       documentation: docsSection ? this.extractText(docsSection.content) : undefined,
+      exports: exportsSection ? this.parseExports(exportsSection.content) : undefined,
+      prompts: promptSection ? this.extractPromptStrings(promptSection.content) : undefined,
     };
   }
 
@@ -631,6 +656,98 @@ export class MAMTransformer {
     }
 
     return undefined;
+  }
+
+  /**
+   * Ports (inputs/outputs) declared in front matter as a string list or as
+   * structured `{name, type, required, description, default}` entries.
+   */
+  private parsePortsFromData(value: unknown): V2PortDefinition[] | undefined {
+    if (!Array.isArray(value)) return undefined;
+    const ports: V2PortDefinition[] = [];
+    for (const entry of value) {
+      if (typeof entry === 'string') {
+        ports.push({ name: entry, type: 'unknown', required: false });
+      } else if (entry && typeof entry === 'object') {
+        const e = entry as Record<string, unknown>;
+        const name = e.name ?? e.id;
+        if (!name) continue;
+        ports.push({
+          name: String(name),
+          type: String(e.type ?? 'unknown'),
+          required: Boolean(e.required ?? false),
+          description: e.description !== undefined ? String(e.description) : undefined,
+          default: e.default,
+        });
+      }
+    }
+    return ports.length > 0 ? ports : undefined;
+  }
+
+  /**
+   * Structured dependency definitions from front matter (`dependencies`).
+   * Complements the string form used by `requires`.
+   */
+  private parseDependencyDefinitions(data: Record<string, unknown>): V2DependencyDefinition[] | undefined {
+    const deps = data.dependencies ?? data.requires;
+    if (!Array.isArray(deps)) return undefined;
+    const result: V2DependencyDefinition[] = [];
+    for (const dep of deps) {
+      if (typeof dep === 'string') {
+        result.push({ name: dep, version: '', source: 'registry', optional: false, capabilities: [] });
+      } else if (dep && typeof dep === 'object') {
+        const d = dep as Record<string, unknown>;
+        const name = d.name ?? d.id;
+        if (!name) continue;
+        result.push({
+          name: String(name),
+          version: d.version !== undefined ? String(d.version) : '',
+          source: d.source !== undefined ? String(d.source) : 'registry',
+          optional: Boolean(d.optional ?? false),
+          capabilities: Array.isArray(d.capabilities) ? d.capabilities.map(String) : [],
+        });
+      }
+    }
+    return result.length > 0 ? result : undefined;
+  }
+
+  /**
+   * Exports declared in an `## Exports` section, from a table or list items.
+   */
+  private parseExports(content: ContentNode[]): V2ExportDefinition[] | undefined {
+    const exports: V2ExportDefinition[] = [];
+
+    const table = this.extractTable(content);
+    if (table.headers.length > 0) {
+      for (const row of table.rows) {
+        const name = (row[0] || '').replace(/`/g, '').trim();
+        if (name) exports.push({ name, type: (row[1] || 'unknown').trim(), selective: false });
+      }
+    }
+
+    for (const item of this.extractList(content)) {
+      const cleaned = item.replace(/`/g, '').trim();
+      if (!cleaned) continue;
+      const match = cleaned.match(/^([\w.\-]+)\s*[:\-]\s*(.+)$/);
+      if (match) {
+        exports.push({ name: match[1]!, type: match[2]!.trim(), selective: false });
+      } else {
+        const first = cleaned.split(/\s+/)[0]!;
+        exports.push({ name: first, type: cleaned.slice(first.length).trim() || 'unknown', selective: false });
+      }
+    }
+
+    return exports.length > 0 ? exports : undefined;
+  }
+
+  /**
+   * Prompt strings declared in a `## Prompt` section.
+   */
+  private extractPromptStrings(content: ContentNode[]): string[] | undefined {
+    const prompts = this.extractList(content);
+    if (prompts.length > 0) return prompts;
+    const text = this.extractText(content);
+    return text ? [text] : undefined;
   }
 
   private parseMermaidFlowchart(mermaid: string): { steps: V2StepNode[]; edges: V2EdgeNode[] } {
