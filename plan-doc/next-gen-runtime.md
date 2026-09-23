@@ -1132,19 +1132,20 @@ And yes—**this is absolutely worth diving into before writing the next build p
 
 ---
 
-# Implementation Status (Updated 2026-09-20)
+# Implementation Status (Updated 2026-09-22)
 
 ## Overall Progress
 
 | Category | Engines | Status |
 |----------|---------|--------|
-| Core Runtime | Runtime, State, Events, Permissions, Plugins, Security | 6/6 Complete |
-| Intelligence | Context, Token Budget, Memory, Knowledge, Model, Tool | 6/6 Complete |
+| Core Runtime | Runtime, State, Events, Permissions, Plugins, Security, Resource Manager, Policy Engine | 8/8 Complete |
+| Intelligence | Context, Token Budget, Memory, Knowledge, Model, Tool, Agent | 7/7 Complete |
 | Orchestration | Workflow Engine, Module Registry, Dependency Resolver | 3/3 Complete |
 | Quality | Evaluation Engine | 1/1 Complete |
-| Operations | CLI Integration | 1/1 Complete |
+| Operations | Observability, CLI Integration | 2/2 Complete |
+| Isolation | Sandboxing | 1/1 Complete |
 
-**Overall: 16/16 engines complete (100%)**
+**Overall: 22/22 engines complete (100%)** — ~11,000+ lines of production V2 runtime code
 
 ## Section-by-Section Status
 
@@ -1158,9 +1159,13 @@ And yes—**this is absolutely worth diving into before writing the next build p
 - **Section 8 (Memory Engine):** ✅ 529 lines, search, consolidation, indexing
 - **Section 9 (Model Engine):** ✅ 539 lines, fallback, retry, rate limiting
 - **Section 10 (Tool Engine):** ✅ 589 lines, validation, caching, retry
-- **Section 11 (Agent Engine):** ✅ Interfaces in types.ts, composition ready
+- **Section 11 (Agent Engine):** ✅ `agent-engine.ts` (254 lines) — agent as a composition of model, context, memory, knowledge, tools, workflow, state, policy
 - **Section 12 (Evaluation Engine):** ✅ ~450 lines, quality scoring, benchmarks, quality gates
 - **Section 13 (Security):** ✅ 841 lines, secret detection, anomaly detection
+- **Section 14 (Observability):** ✅ `observability.ts` (379 lines) — logs, metrics, traces, events, token usage, latency, cost, retrieval, tool/model calls
+- **Section 15 (Resource Manager):** ✅ `resource-manager.ts` (264 lines) — filesystem/network/storage/memory/service/tool/model resources with limits and permissions
+- **Section 16 (Policy Engine):** ✅ `policy-engine.ts` (194 lines) — operation/timeout/retry/execution-limit/network/data policies
+- **Section 17 (Sandboxing):** ✅ `sandbox.ts` (194 lines) — filesystem/network/process policies, resource limits, timeout, guarded API
 - **Standalone Execution:** ✅ `mam run system.mam` — native MAM execution, no `--v2` flag, no compilation to Python/JS
 
 ## Implemented Files (runtime/src/v2/)
@@ -1184,6 +1189,11 @@ And yes—**this is absolutely worth diving into before writing the next build p
 | workflow-engine.ts | ~500 | Standalone DAG executor, validation, events, pause/resume |
 | module-registry.ts | 349 | Dependency graph, cycle detection, topo sort, lifecycle |
 | evaluation-engine.ts | ~450 | Quality scoring, benchmarking, validation rules, quality gates |
+| observability.ts | 379 | Logs, metrics, traces, events, token usage, latency, cost, tool/model calls |
+| agent-engine.ts | 254 | Agent as a composition of model, context, memory, knowledge, tools |
+| resource-manager.ts | 264 | Resource registration, acquisition, limits, permissions |
+| policy-engine.ts | 194 | Operation/timeout/retry/execution-limit/network policies |
+| sandbox.ts | 194 | Filesystem/network/process policies, limits, timeout, guarded API |
 
-**Total: ~9,000+ lines of production V2 runtime code**
+**Total: 22 engines, ~11,000+ lines of production V2 runtime code**
 

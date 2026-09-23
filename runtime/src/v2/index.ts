@@ -68,3 +68,68 @@ export type {
   EvaluableModule,
   EvaluationReport,
 } from './evaluation-engine.js';
+export { ObservabilityEngine } from './observability.js';
+export type {
+  ObservabilityConfig,
+  ObservabilitySeverity,
+  TraceStatus,
+  LogEntry,
+  MetricSample,
+  TraceSpan,
+  RuntimeEvent,
+  TokenUsage,
+  ModelCallRecord,
+  ToolCallRecord,
+  RetrievalRecord,
+  ObservabilityStats,
+  ObservabilityReport,
+  ObservabilitySink,
+} from './observability.js';
+export { DefaultPolicyEngine, createPolicyEngine } from './policy-engine.js';
+export type {
+  PolicyKind,
+  RuntimePolicy,
+  TimeoutRule,
+  RetryRule,
+  ExecutionLimit,
+  PolicySummary,
+} from './policy-engine.js';
+export { ResourceManager, createResourceManager } from './resource-manager.js';
+export type {
+  ResourceType,
+  ResourceLimits,
+  ResourceDefinition,
+  ResourceLease,
+  ResourceStats,
+} from './resource-manager.js';
+export { AgentEngine, createAgentEngine } from './agent-engine.js';
+export type {
+  ModelInvokeOptions,
+  ModelResult,
+  ModelAdapter,
+  ContextSource,
+  ContextAdapter,
+  MemoryEntry,
+  MemoryAdapter,
+  KnowledgeHit,
+  KnowledgeAdapter,
+  ToolDefinitionLite,
+  ToolRegistry,
+  AgentPolicy,
+  AgentConfig,
+  AgentRunOptions,
+  AgentStep,
+  AgentRunResult,
+  Agent,
+} from './agent-engine.js';
+export { SandboxManager, createSandboxManager, PermissionViolationError } from './sandbox.js';
+export type {
+  SandboxFilesystemPolicy,
+  SandboxNetworkPolicy,
+  SandboxProcessPolicy,
+  SandboxResourceLimits,
+  SandboxConfig,
+  SandboxExecutionResult,
+  SandboxApi,
+  Sandbox,
+} from './sandbox.js';

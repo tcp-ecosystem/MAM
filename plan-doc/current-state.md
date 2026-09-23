@@ -8,7 +8,7 @@
 
 MAM (Markdown as Module) is a System Description Language (SDL) whose reference syntax is Markdown. It describes intelligent systems — agents, tools, workflows, teams, policies — and compiles them to 16 target languages.
 
-**Status: Beta-ready.** All packages build, 2222 tests pass, full pipeline works end-to-end. V2 Runtime: 100% complete (16/16 engines). `.mam` executes standalone.
+**Status: Beta-ready.** All packages build, 2222 tests pass, full pipeline works end-to-end. V2 Runtime: 100% complete (22/22 engines). `.mam` executes standalone.
 
 ---
 
@@ -214,21 +214,27 @@ The V2 runtime implements the next-generation native execution engine for `.mam`
 | Types | `v2/types.ts` | 687 | 60+ interfaces defining the runtime contract |
 | Workflow Engine | `v2/workflow-engine.ts` | ~500 | Standalone DAG executor with validation, events, pause/resume |
 | Module Registry | `v2/module-registry.ts` | 349 | Dependency graph, cycle detection, topological sort, lifecycle |
-| Evaluation Engine | `v2/evaluation-engine.ts` | ~450 | Quality scoring, benchmarking, validation rules, quality gates |
+| Evaluation Engine | `v2/evaluation-engine.ts` | 654 | Quality scoring, benchmarking, validation rules, quality gates |
+| Observability | `v2/observability.ts` | 379 | Logs, metrics, traces, events, token usage, latency, cost |
+| Agent Engine | `v2/agent-engine.ts` | 254 | Agent as a composition of model, context, memory, knowledge, tools |
+| Resource Manager | `v2/resource-manager.ts` | 264 | Resource registration, acquisition, limits, permissions |
+| Policy Engine | `v2/policy-engine.ts` | 194 | Operation/timeout/retry/execution-limit/network policies |
+| Sandbox | `v2/sandbox.ts` | 194 | Filesystem/network/process policies, limits, timeout, guarded API |
 
-**Total: 17 files, ~9,000+ lines of V2 runtime code**
+**Total: 22 files, ~11,000+ lines of V2 runtime code**
 
 ### V2 Runtime Status
 
 | Category | Engines | Status |
 |----------|---------|--------|
-| Core Runtime | Runtime, State, Events, Permissions, Plugins, Security | ✅ 6/6 Complete |
-| Intelligence | Context, Token Budget, Memory, Knowledge, Model, Tool | ✅ 6/6 Complete |
+| Core Runtime | Runtime, State, Events, Permissions, Plugins, Security, Resource Manager, Policy Engine | ✅ 8/8 Complete |
+| Intelligence | Context, Token Budget, Memory, Knowledge, Model, Tool, Agent | ✅ 7/7 Complete |
 | Orchestration | Workflow Engine, Module Registry, Dependency Resolver | ✅ 3/3 Complete |
 | Quality | Evaluation Engine | ✅ 1/1 Complete |
-| Operations | CLI Integration | ✅ 1/1 Complete |
+| Operations | Observability, CLI Integration | ✅ 2/2 Complete |
+| Isolation | Sandboxing | ✅ 1/1 Complete |
 
-**Overall: 16/16 engines complete (100%)**
+**Overall: 22/22 engines complete (100%)**
 
 ### Standalone Execution
 
