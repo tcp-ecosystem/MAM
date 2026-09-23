@@ -55,21 +55,23 @@ graph TB
 
 | Category | MAM Handles |
 |----------|-------------|
-| **Agents** | AI agent definitions, roles, goals, tools |
-| **Workflows** | Process flows, step sequences, handoffs |
-| **Policies** | Allow/deny rules, permissions |
-| **Memory** | Persistent state, knowledge bases |
-| **Tools** | External integrations, capabilities |
+| **Agents** | AI agent definitions, roles, goals, tools; agent engine composition |
+| **Workflows** | Process flows, step sequences, handoffs; workflow engine (DAG) |
+| **Policies** | Allow/deny rules, timeouts, retries, execution limits; policy engine |
+| **Memory** | Persistent state, knowledge bases; memory + knowledge engines |
+| **Tools** | External integrations, capabilities; tool engine |
 | **Teams** | Multi-agent coordination |
-| **Systems** | Complete system architectures |
-| **Modules** | Reusable components |
-| **Dependencies** | Module relationships |
-| **Events** | System events and triggers |
-| **State** | System state management |
+| **Systems** | Complete system architectures; `mam.toml` project composition |
+| **Modules** | Reusable components (`.mam` + `.mam.md`) |
+| **Dependencies** | Module relationships; dependency resolver + registry |
+| **Events** | System events and triggers; event engine |
+| **State** | System state management; state engine |
 | **Interfaces** | Public contracts |
-| **Resources** | External resources |
-| **Networks** | Communication patterns |
+| **Resources** | External resources; resource manager |
+| **Networks** | Communication patterns; sandbox network policy |
 | **Storage** | Data persistence |
+| **Observability** | Logs, metrics, traces, token usage, cost |
+| **Sandboxing** | Filesystem/network/process isolation, limits, timeout |
 
 ---
 
@@ -314,19 +316,29 @@ Human Intent
 
 | Component | Status | Tests |
 |-----------|--------|-------|
-| Parser | ✅ Complete | 170 tests |
-| AST | ✅ Complete | 482 tests |
-| Compiler | ✅ Complete | 72 tests |
+| Parser | ✅ Complete | 176 tests |
+| AST | ✅ Complete | 480+ tests |
+| Compiler | ✅ Complete | 72 tests (16 targets) |
 | Transformer | ✅ Complete | Included in compiler |
-| Runtime | ✅ Complete | 406 tests |
-| CLI | ✅ Complete | 34 commands |
-| Validator | ✅ Complete | 131 tests |
+| Runtime (V1) | ✅ Complete | 487 tests |
+| **V2 Runtime** | ✅ Complete | **22/22 engines, ~11,000 lines** |
+| CLI | ✅ Complete | 39 commands |
+| Validator | ✅ Complete | 130+ tests |
 | LSP | ✅ Complete | 65 tests |
-| Package Manager | ✅ Complete | 45 tests |
-| Registry | ✅ Complete | 63 tests |
+| Package Manager | ✅ Complete | 45+ tests |
+| Registry | ✅ Complete | 60+ tests |
 | SDKs | ✅ Complete | 96+ tests |
-| Testing Framework | ✅ Complete | 61 tests |
+| Testing Framework | ✅ Complete | 60+ tests |
 | Visualization | ✅ Complete | 95 tests |
 | Plugins | ✅ Complete | 83+ tests |
+| **Native Execution** | ✅ Complete | `mam run system.mam` (no compiler) |
+| **Project Composition** | ✅ Complete | `mam.toml` + project-aware commands |
 
-**Total: 19 packages, 2300+ tests, all passing**
+**Total: 19 packages, 2,000+ tests, all passing**
+
+### V2 Runtime Engines (22/22)
+
+Core (Runtime, State, Events, Permissions, Plugins, Security, Resource Manager,
+Policy Engine) · Intelligence (Context, Token Budget, Memory, Knowledge, Model,
+Tool, Agent) · Orchestration (Workflow, Module Registry, Dependency Resolver) ·
+Quality (Evaluation) · Operations (Observability, CLI) · Isolation (Sandboxing)

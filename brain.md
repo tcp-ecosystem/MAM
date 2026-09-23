@@ -149,12 +149,20 @@ graph TB
     M --> K
 ```
 
-**Runtime Features:**
-- Sandboxed execution (process isolation)
-- Memory persistence (vector, key-value, relational)
-- Tool integration (browser, python, search)
+**Runtime Features (implemented):**
+- Native `.mam` execution (`mam run system.mam`, no compiler)
+- Core engines: state, events, permissions, plugins, security, resource manager, policy engine
+- Context engine (priority assembly, caching, dedup, compression)
+- Token budget (allocation, defragmentation)
+- Memory engine + store (search, consolidation, TTL, indexing)
+- Knowledge / RAG (TF-IDF, cosine similarity, hybrid retrieval)
+- Model engine (fallback, retry, rate limiting)
+- Tool engine (validation, caching, retry, permissions)
+- Agent engine (composition of model, context, memory, knowledge, tools)
+- Evaluation (quality scoring, benchmarks, gates)
+- Observability (logs, metrics, traces, token usage, cost)
+- Sandboxing (filesystem/network/process policies, limits, timeout)
 - Error recovery (95%+ success rate)
-- State management (module, workspace, global)
 
 ### 4. Agent Orchestration
 
@@ -218,7 +226,9 @@ stateDiagram-v2
 | Parse Speed | Tokens per millisecond | ~80 | >100 |
 | Compile Speed | Lines per millisecond | ~40 | >50 |
 | AST Determinism | Same input → same output | 100% | 100% |
-| Test Coverage | Tests passing | 2300+ | >2500 |
+| Test Coverage | Tests passing | 2,000+ | >2500 |
+| V2 Runtime Engines | Native execution engines | 22/22 | 22/22 |
+| Runtime Code | V2 runtime lines | ~11,000 | — |
 | Error Recovery | Success rate after errors | >90% | >95% |
 | CLI Startup | Time to ready | ~80ms | <50ms |
 
@@ -233,8 +243,9 @@ graph LR
     C --> D[Phase 4: Compiler]
     D --> E[Phase 5: Runtime]
     E --> F[Phase 6: SDKs]
-    F --> G[Phase 7: Intelligence]
-    
+    F --> G[Phase 7: Intelligence Runtime]
+    G --> H[Phase 8: Native Execution]
+
     subgraph "Complete ✅"
         A
         B
@@ -242,10 +253,13 @@ graph LR
         D
         E
         F
-    end
-    
-    subgraph "Future"
         G
+        H
+    end
+
+    subgraph "Future"
+        I[Cloud Execution]
+        J[Enterprise]
     end
 ```
 
@@ -254,19 +268,20 @@ graph LR
 | Phase | Component | Status |
 |-------|-----------|--------|
 | 1 | Specification | ✅ |
-| 2 | Parser (170 tests) | ✅ |
-| 3 | AST (482 tests) | ✅ |
+| 2 | Parser (176 tests) | ✅ |
+| 3 | AST (480+ tests) | ✅ |
 | 4 | Compiler (72 tests, 16 targets) | ✅ |
-| 5 | Runtime (406 tests) | ✅ |
+| 5 | Runtime (487 tests) | ✅ |
 | 6 | SDKs (Python, JS, Go, Rust) | ✅ |
+| 7 | Intelligence Runtime (22/22 engines) | ✅ |
+| 8 | Native Execution + Project Composition | ✅ |
 
 ### Future Phases
 
 | Phase | Component | Status |
 |-------|-----------|--------|
-| 7 | AI Orchestration | ⏳ |
-| 8 | Cloud Execution | ⏳ |
-| 9 | Enterprise Features | ⏳ |
+| 9 | Cloud Execution | ⏳ |
+| 10 | Enterprise Features | ⏳ |
 
 ---
 
@@ -277,7 +292,8 @@ The MAM Brain is the intellectual core that enables MAM to:
 1. **Understand** human intent through declarative syntax
 2. **Transform** system descriptions via Transformer → V2ModuleNode
 3. **Compile** to 16 target languages
-4. **Execute** modules safely in sandboxes
-5. **Orchestrate** complex multi-agent systems
+4. **Execute** `.mam` natively through a 22-engine runtime
+5. **Orchestrate** multi-agent systems
+6. **Observe** and evaluate execution (traces, metrics, token usage, cost)
 
 > **The Brain doesn't just compute — it understands systems.**

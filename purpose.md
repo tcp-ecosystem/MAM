@@ -189,6 +189,27 @@ graph LR
 
 ---
 
+## What Is Built Today
+
+The purpose is now backed by a working implementation:
+
+| Capability | Status |
+|------------|--------|
+| **Native execution** | `mam run system.mam` executes `.mam` directly (no compilation to Python/JS) |
+| **Native runtime** | 22/22 engines, ~11,000 lines (`runtime/src/v2/`) |
+| **Full MAM spec** | structured runtime, capabilities, permissions, dependencies, inputs/outputs, exports |
+| **Canonical formats** | `.mam` (canonical) + `.mam.md` (source), byte-identical twins |
+| **Project composition** | `mam.toml` projects: `mam init / build / run / validate / graph / test / info` |
+| **Compilation** | 16 targets: Python, JS, Go, Rust, C#, Java, Wasm, K8s, Terraform, Docker, OpenAI, LangGraph, CrewAI, Gemini, AutoGen, Claude |
+| **Target routing** | `hello.mam.py` → python, `hello.mam.js` → node, etc. |
+| **Runtime engines** | Core, State, Events, Permissions, Plugins, Security, Resource, Policy, Workflow, Registry, Resolver, Context, Token Budget, Memory, Knowledge, Model, Tool, Agent, Evaluation, Observability, Sandbox, CLI |
+| **CLI** | 39 commands |
+| **Examples & templates** | 5 complete example projects + 9 modules in `modules/examples/`; 13 templates in `modules/templates/` |
+
+**Principle kept intact:** MAM describes. The runtime executes. The compiler translates.
+
+---
+
 ## Design Principles
 
 ### 1. Human First
@@ -285,6 +306,8 @@ A successful MAM module is:
 - Execute module workflows
 - Coordinate multi-agent systems
 - Manage memory and state
+- Compose context, retrieval, models, and tools at runtime
+- Observe and evaluate execution (traces, metrics, token usage, cost)
 
 ### For Organizations
 

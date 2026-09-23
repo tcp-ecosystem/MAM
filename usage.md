@@ -50,74 +50,84 @@ mam doctor
 
 ## Quick Start
 
-### 1. Create a Module
+### 1. Initialize a Project
 
 ```bash
-# Basic module
-mam init my-module
-
-# Agent module
-mam init my-agent --template agent
-
-# Workflow module
-mam init my-workflow --template workflow
-
-# Team module
-mam init my-team --template team
+mam init                # creates mam.toml + modules/ + system.mam (a complete project)
 ```
 
-### 2. Edit the Module
+### 2. Create a Module
+
+```bash
+mam new basic hello          # minimal module (writes hello.mam + hello.mam.md)
+mam new agent researcher     # agent module
+mam new workflow pipeline    # workflow module
+mam new tool scraper         # tool module
+mam new memory store         # memory module
+mam new system platform      # system module
+mam templates                # list all 13 available templates
+```
+
+### 3. Edit the Module (full MAM spec)
 
 ```markdown
 ---
-id: my-module
+id: hello
+name: Hello
 version: 1.0.0
-name: My Module
-author: YourName
-runtime: python
-tags:
-  - example
+type: module
+author: MAM Team
+license: MIT
+description: >
+  A greeting module.
+runtime:
+  language: python
+  version: ">=3.12"
+tags: [example]
+capabilities: [greet]
+permissions:
+  filesystem: [read]
 ---
 
-# My Module
+# Hello
 
 ## Purpose
 
 Describe what this module does.
 
-## Rules
+## Inputs
 
-- Rule 1
-- Rule 2
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| name | string | No | Name to greet |
 
-## Examples
+## Capabilities
 
-Example usage here.
+### greet
+
+Return a greeting.
 ```
 
-### 3. Validate
+### 4. Validate
 
 ```bash
-mam validate my-module.mam.md
+mam validate                  # validate the whole project (mam.toml)
+mam validate modules/hello.mam    # validate a single module
 ```
 
-### 4. Build
+### 5. Run Natively (no compilation)
 
 ```bash
-mam build my-module.mam.md
+mam run                       # run the project entry system natively
+mam run modules/hello.mam     # run a single module natively
 ```
 
-### 5. Compile
+### 6. Build / Compile
 
 ```bash
-# To Python
-mam compile my-module.mam.md -t python
-
-# To JavaScript
-mam compile my-module.mam.md -t javascript
-
-# To Rust
-mam compile my-module.mam.md -t rust
+mam build                     # compile the whole project to targets
+mam compile modules/hello.mam -t python
+mam run modules/hello.mam.py  # run a compiled target with its runtime (python)
 ```
 
 ---
@@ -139,19 +149,30 @@ mam compile my-module.mam.md -t rust
 ```yaml
 ---
 id: module-name
-version: 1.0.0
 name: Module Name
+version: 1.0.0
+type: module            # module|agent|tool|memory|workflow|team|policy|system|...
 author: Author Name
-runtime: python
-tags:
-  - tag1
-  - tag2
-description: Module description
+license: MIT
+description: >
+  Module description.
+runtime:
+  language: python
+  version: ">=3.12"
+tags: [tag1, tag2]
+dependencies:
+  - name: http-client
+    version: "^1.2"
+capabilities: [fetch, parse]
 permissions:
-  - network
-  - filesystem
+  network: [internet]
+  filesystem: [read]
 ---
 ```
+
+> The `runtime` may also be the shorthand string `runtime: python >=3.12`.
+> Structured permissions, dependency version constraints, and
+> `inputs`/`outputs` front-matter arrays are all supported.
 
 ### Standard Sections
 
@@ -181,21 +202,24 @@ permissions:
 
 ## CLI Commands
 
-All 34 commands are implemented and working:
+All 39 commands are implemented and working.
 
-### Module Management
+### Project & Module Management
 
 | Command | Description |
 |---------|-------------|
-| `mam init [name]` | Initialize a new MAM module |
-| `mam build <file>` | Build module to AST |
-| `mam compile <file> -t <target>` | Compile to target language |
-| `mam run <file>` | Run a module |
+| `mam init` | Initialize a project (`mam.toml` + `modules/` + `system.mam`); `mam init <name>` creates a module |
+| `mam new <type> <name>` | Create a module from a template (`.mam` + `.mam.md`) |
+| `mam build [file]` | Build a module, or the whole project when no file |
+| `mam compile <file> -t <target>` | Compile to a target language |
+| `mam run [file]` | Run a module or the project entry natively (no compiler) |
 | `mam execute <file>` | Execute module (v1 compat) |
-| `mam validate <file>` | Validate module |
+| `mam validate [file]` | Validate a module, or the whole project |
 | `mam lint <file>` | Lint module for issues |
 | `mam format <file>` | Format module |
-| `mam test [file]` | Run module tests |
+| `mam test [file]` | Run module tests, or all project tests |
+| `mam info [file]` | Show module info, or project summary |
+| `mam graph` | Show dependency graph (project-aware) |
 | `mam snapshot <file>` | Create module snapshot |
 | `mam benchmark <file>` | Benchmark parsing and execution |
 
@@ -690,24 +714,31 @@ deny:
 
 ---
 
-## File Structure
+## Project Structure
+
+A complete MAM project uses `mam.toml` to compose modules into a system:
 
 ```text
 my-project/
-├── authentication.mam.md
-├── database.mam.md
-├── api.mam.md
-├── security/
-│   ├── policy.mam.md
-│   └── scanner.mam.md
-├── agents/
-│   ├── researcher.mam.md
-│   └── analyzer.mam.md
-├── workflows/
-│   └── deploy.mam.md
-├── mam-package.json
-└── mam.lock
+├── mam.toml              ← project manifest (entry, module globs, targets)
+├── system.mam            ← entry system (composes the modules)
+├── system.mam.md         ← identical source twin
+└── modules/
+    ├── hello.mam         ← module in canonical .mam form
+    ├── hello.mam.md      ← identical source twin
+    ├── authentication.mam
+    ├── api.mam
+    └── ...
 ```
+
+> `mam init`, `mam build`, `mam run`, `mam validate`, `mam graph`,
+> `mam test` and `mam info` all operate on the whole project automatically
+> when run inside a directory containing `mam.toml`.
+
+Ready-made example projects live in `modules/examples/`: `core`, `basic`,
+`advanced`, `plugins` and `security-system` (each a full `mam.toml` project),
+plus 9 standalone full-spec modules. 13 reusable templates live in
+`modules/templates/`.
 
 ---
 
@@ -770,7 +801,9 @@ mam compile my-module.mam.md -t json
 ## Resources
 
 - [Specification](spec/SPEC.md)
-- [Architecture](ARCHITECTURE.md)
-- [Examples](examples/)
+- [Purpose](purpose.md)
+- [Goal](goal.md)
+- [Scope](scope.md)
+- [Examples](modules/examples/)
 - [Changelog](CHANGELOG.md)
 - [v2 Plan](plan-doc/plan-v2.md)
