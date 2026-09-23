@@ -1,0 +1,19 @@
+# MAM Core Anatomy Project
+
+[project]
+name = "core"
+version = "1.0.0"
+description = "Demonstrates the core MAM module anatomy"
+license = "MIT"
+authors = ["MAM Team"]
+
+[build]
+entry = "system.mam"
+modules = [
+  "modules/**/*.mam",
+  "modules/**/*.mam.md",
+]
+outDir = "dist"
+targets = ["python"]
+
+[dependencies]

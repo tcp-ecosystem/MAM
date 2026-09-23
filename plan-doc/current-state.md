@@ -92,7 +92,9 @@ Canonical modules ship in **both** `.mam` (canonical) and `.mam.md` (source)
 form with identical content:
 
 - **Examples** (`modules/examples/`): `authentication`, `bug-hunter`,
-  `data_pipeline`, `memory`, `planner`, `prompt`, `rag`, `security`, `workflow`
+  `data_pipeline`, `memory`, `planner`, `prompt`, `rag`, `security`, `workflow`,
+  plus complete projects `core`, `basic`, `advanced`, `plugins`,
+  `security-system`
 - **Templates** (`modules/templates/`): `basic`, `agent`, `api`, `workflow`,
   `tool`, `memory`, `team`, `policy`, `system`, `plugin`, `service`,
   `component`, `resource`
