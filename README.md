@@ -2,7 +2,9 @@
 
 > **Describe Systems. Compile Anywhere.**
 
-MAM is a **System Description Language (SDL)** whose reference syntax is Markdown. It transforms Markdown into a universal Intermediate Representation (IR) for AI systems, enabling developers to describe intelligent systems once and compile them to any compliant runtime.
+MAM is a **System Description Language (SDL)** whose reference syntax is Markdown. It transforms Markdown into a universal Intermediate Representation (IR) for AI systems, enabling developers to describe intelligent systems once, **execute them natively**, and compile them to any compliant runtime.
+
+Today MAM ships a working implementation: a full parser/AST/transformer/compiler, a **native `.mam` runtime with 22 engines**, **project composition** via `mam.toml`, and compilation to **16 targets** — all from a single, human-readable source.
 
 ---
 
@@ -12,23 +14,27 @@ MAM functions as a **concrete context subagent** for AI systems:
 
 | Capability | Description |
 |------------|-------------|
-| **Context Engine** | Single `.mam.md` files contain complete system context |
+| **Context Engine** | Single `.mam` / `.mam.md` files contain complete system context |
 | **Knowledge Graph** | Modules define relationships, dependencies, and interactions |
+| **Native Execution** | `.mam` runs directly through the MAM runtime (no compiler required) |
 | **Runtime Agnostic** | Same context compiles to 16 target environments |
 | **Self-Documenting** | Markdown source serves as human-readable documentation |
 | **Machine-Readable** | AST and compiled outputs are machine-interpretable |
-| **Composable** | Modules compose into larger systems via imports and edges |
+| **Composable** | Modules compose into systems via `mam.toml` projects |
 
 ```text
-Human Intent (Markdown) → MAM Parser → AST → Compiler → 16 Target Runtimes
+Human Intent (Markdown) → MAM Parser → AST → Transformer → V2ModuleNode
                           ↑                                    ↓
-                    Context Subagent                    Executable Code
+                    Context Subagent                    Native MAM Runtime
+                          │                              /              \
+                          │                          Executable Code  22 Engines
+                          └──────────── 16 Targets ── (Python, JS, ...)
 ```
 
 **Why Context Matters:**
 - AI agents need structured context to reason about systems
 - MAM provides that context in a portable, composable format
-- Compiled outputs retain the semantic meaning of the source
+- `.mam` can be **executed natively** or compiled to any target
 - Every module is a self-contained context unit
 
 ---
@@ -97,13 +103,22 @@ Markdown + YAML + Metadata + Python + Mermaid + Rules + Prompts + Memory = MAM
 ## Architecture
 
 ```text
-Layer 7:  Human (Designer) — Provides intent via Markdown
-Layer 6:  MAM DSL Source (.mam / .mam.md) — Context-rich source
-Layer 5:  MAM Compiler (mamc) — Context transformation engine
-Layer 4:  MAM AST (Machine Agent Module IR) — Semantic representation
+Layer 8:  Human (Designer) — Provides intent via Markdown
+Layer 7:  MAM DSL Source (.mam / .mam.md) — Context-rich source, canonical + source twins
+Layer 6:  MAM Parser → AST → Transformer → V2ModuleNode
+Layer 5:  MAM Native Runtime — 22 engines, executes .mam directly
+Layer 4:  MAM Compiler — 16 targets (Python, JS, Go, Rust, OpenAI, LangGraph, ...)
 Layer 3:  Semantic Analyzer + Validator — Context verification
-Layer 2:  Target Runtime (Python, JS, Go, Rust, OpenAI, LangGraph...) — Executable context
+Layer 2:  Target Runtime / Sandbox — Executable context
 Layer 1:  Operating System
+```
+
+**Two execution paths:**
+
+```text
+.mam
+ ├─► MAM Native Runtime (executes directly, 22 engines)
+ └─► MAM Compiler ──► Python / JS / Go / ... (.mam.py, .mam.js, ...)
 ```
 
 ### Context Flow
@@ -128,18 +143,21 @@ Layer 1:  Operating System
 | Context-Rich | Every module contains complete system context |
 | Human-readable | Markdown syntax anyone can understand |
 | LLM-native | AI agents can parse and execute directly |
+| Native Execution | `.mam` runs directly through the MAM runtime |
+| Project Composition | `mam.toml` projects compose modules into systems |
+| Full MAM Spec | structured runtime, permissions, capabilities, dependencies |
 | Modular | Each section is independent and composable |
 | Portable | Same module works across all runtimes |
 | Deterministic | Same input always produces same output |
 | Extensible | Add custom sections via plugins |
-| Type-safe | 25+ first-class module types |
-| Multi-target | Compile to Python, JS, Go, Rust, and more |
+| Type-safe | 19 first-class module types |
+| Multi-target | Compile to Python, JS, Go, Rust, and 12 more |
 
 ---
 
 ## Module Types
 
-MAM supports 25+ module types:
+MAM supports 19 module types:
 
 | Type | Description |
 |------|-------------|
@@ -171,8 +189,8 @@ MAM supports 25+ module types:
 
 ```bash
 # Clone the repository
-git clone https://github.com/tcp-ecosystems/mam.git
-cd mam
+git clone https://github.com/tcp-ecosystems/MAM.git
+cd MAM
 
 # Install dependencies
 pnpm install
@@ -181,28 +199,49 @@ pnpm install
 pnpm build
 ```
 
-### Create Your First Module
+### Initialize a Project
 
 ```bash
-# Initialize a new module
-mam init my-module
+mam init                # creates mam.toml + modules/ + system.mam
+```
 
-# Or with a specific template
-mam init my-agent --template agent
+### Create a Module
+
+```bash
+mam new basic hello          # minimal module (writes hello.mam + hello.mam.md)
+mam new agent researcher     # agent module
+mam new workflow pipeline    # workflow module
+mam new system platform      # system module
+mam templates                # list all 13 templates
+```
+
+### Run It Natively
+
+```bash
+mam validate            # validate the whole project
+mam run                 # run the project entry system natively (no compiler)
+mam build               # compile the whole project to targets
 ```
 
 ### Example Module
 
-```mam
+````mam
 ---
 id: authentication
-version: 1.0.0
 name: Authentication Module
-author: LifeJiggy
-runtime: python
-tags:
-  - auth
-  - security
+version: 1.0.0
+type: module
+author: MAM Team
+license: MIT
+description: >
+  Secure JWT authentication.
+runtime:
+  language: python
+  version: ">=3.12"
+tags: [auth, security]
+capabilities: [login, verify]
+permissions:
+  network: [internet]
 ---
 
 # Authentication Module
@@ -224,6 +263,16 @@ Authenticate users securely using JWT tokens.
 |------|------|-------------|
 | access_token | string | JWT token |
 
+## Capabilities
+
+### login
+
+Authenticate a user and return a token.
+
+### verify
+
+Verify a JWT token.
+
 ## Rules
 
 - Never expose secrets
@@ -239,27 +288,94 @@ def login(username: str, password: str) -> dict:
         return {"access_token": generate_token(username)}
     return {"error": "Invalid credentials"}
 ```
+````
+
+> `.mam` is the canonical artifact and executes natively. `.mam.md` is the
+> source-compatible twin — every module ships in both forms.
+
+---
+
+## Native Execution & Project Composition
+
+### Native `.mam` Execution
+
+`mam run system.mam` executes the MAM system model **directly through the MAM
+runtime** — it does NOT compile to Python or JavaScript first:
+
+```bash
+mam run hello.mam                       # native execution (default)
+mam run hello.mam --format json         # JSON output
+mam run hello.mam --dry-run             # show execution plan
+mam run legacy.mam.md                   # .mam.md also runs natively
+mam run hello.mam.py                    # compiled target routes to python
+mam run hello.mam.js                    # compiled target routes to node
 ```
+
+### Project Composition (`mam.toml`)
+
+Multi-file projects compose modules into a system:
+
+```toml
+[project]
+name = "security-system"
+version = "1.0.0"
+
+[build]
+entry = "system.mam"
+modules = ["modules/**/*.mam", "modules/**/*.mam.md"]
+outDir = "dist"
+targets = ["python"]
+```
+
+```text
+my-project/
+├── mam.toml              ← project manifest (entry, module globs, targets)
+├── system.mam            ← entry system (composes the modules)
+├── system.mam.md         ← identical source twin
+└── modules/
+    ├── hello.mam         ← module in canonical .mam form
+    ├── hello.mam.md      ← identical source twin
+    ├── authentication.mam
+    └── ...
+```
+
+All project commands are project-aware (no file argument = whole project):
+
+```bash
+mam init          # scaffold a project
+mam build         # compile all modules + entry to targets
+mam run           # run the entry system natively
+mam validate      # validate all modules (dupes, cycles, missing deps)
+mam graph         # project dependency graph
+mam test          # run tests across all modules
+mam info          # project summary
+```
+
+Ready-made example projects: `modules/examples/{core,basic,advanced,plugins,security-system}`.
+Reusable templates: `modules/templates/` (13 templates).
 
 ---
 
 ## CLI Commands
 
-All 34 commands are implemented and working:
+All 39 commands are implemented and working:
 
-### Module Management
+### Project & Module Management
 
 | Command | Description |
 |---------|-------------|
-| `mam init [name]` | Initialize a new MAM module |
-| `mam build <file>` | Build module to AST |
+| `mam init` | Initialize a project (`mam.toml` + `modules/` + `system.mam`); `mam init <name>` creates a module |
+| `mam new <type> <name>` | Create a module from a template (`.mam` + `.mam.md`) |
+| `mam build [file]` | Build a module, or the whole project when no file |
 | `mam compile <file> -t <target>` | Compile to target language |
-| `mam run <file>` | Run a module |
+| `mam run [file]` | Run a module or the project entry natively |
 | `mam execute <file>` | Execute module (v1 compat) |
-| `mam validate <file>` | Validate module |
+| `mam validate [file]` | Validate a module, or the whole project |
 | `mam lint <file>` | Lint module for issues |
 | `mam format <file>` | Format module |
-| `mam test [file]` | Run module tests |
+| `mam test [file]` | Run module tests, or all project tests |
+| `mam info [file]` | Show module info, or project summary |
+| `mam graph` | Show dependency graph (project-aware) |
 | `mam snapshot <file>` | Create module snapshot |
 | `mam benchmark <file>` | Benchmark parsing and execution |
 
@@ -447,23 +563,47 @@ output/
 - Retains the semantic meaning of the source module
 - Is ready to execute in its target environment
 - Demonstrates MAM's context preservation across runtimes
-- Can be traced back to its `.mam.md` source
+- Can be traced back to its `.mam` source
 
-See [output/README.md](output/README.md) for details.
+> `output/` is a generated directory. Author in `modules/` instead:
+> `mam build` compiles a whole `mam.toml` project, or
+> `mam compile <file> -t <target>` compiles a single module.
 
 ---
 
 ## Project Structure
 
 ```text
-mam/
+MAM/
 ├── spec/                    # Specification
-├── parser/                  # Lexer + Parser (170 tests)
-├── ast/                     # Abstract Syntax Tree (482 tests)
-├── compiler/                # Multi-target compiler (72 tests)
-├── validator/               # Validation rules (131 tests)
-├── runtime/                 # Execution engine (406 tests)
-├── cli/                     # Command-line interface (34 commands)
+├── parser/                  # Lexer + Parser (176 tests)
+├── ast/                     # Abstract Syntax Tree (480+ tests)
+├── compiler/                # Multi-target compiler (72 tests, 16 targets)
+├── validator/               # Validation rules (130+ tests)
+├── runtime/                 # Execution engine
+│   └── src/v2/              # Native MAM runtime — 22 engines, ~11,000 lines
+│       ├── runtime.ts       #   Core orchestrator (topo sort, type dispatch)
+│       ├── state.ts         #   State engine
+│       ├── events.ts        #   Event engine
+│       ├── permissions.ts   #   Permission engine
+│       ├── plugins.ts       #   Plugin registry
+│       ├── security.ts      #   Security engine
+│       ├── resource-manager.ts  #   Resource manager
+│       ├── policy-engine.ts     #   Policy engine
+│       ├── context-engine.ts    #   Context engine
+│       ├── token-budget.ts      #   Token budget
+│       ├── memory-engine.ts     #   Memory engine
+│       ├── knowledge-engine.ts  #   Knowledge / RAG
+│       ├── model-engine.ts      #   Model engine
+│       ├── tool-engine.ts       #   Tool engine
+│       ├── agent-engine.ts      #   Agent engine
+│       ├── workflow-engine.ts   #   Workflow engine (DAG)
+│       ├── module-registry.ts   #   Module registry
+│       ├── evaluation-engine.ts #   Evaluation
+│       ├── observability.ts     #   Observability
+│       └── sandbox.ts           #   Sandboxing
+├── cli/                     # Command-line interface (39 commands)
+│   └── src/project/         #   mam.toml project composition (TOML, loader, graph)
 ├── plugins/                 # Plugin system
 │   ├── api/                 # Plugin API
 │   ├── mermaid/             # Mermaid support
@@ -475,7 +615,7 @@ mam/
 ├── registry/                # Module registry - MAM Hub
 │   ├── client/              # Registry client
 │   └── server/              # Registry server
-├── testing/                 # Testing framework (61 tests)
+├── testing/                 # Testing framework (60+ tests)
 ├── visualization/           # Graph visualization (95 tests)
 ├── reference/               # Reference implementation (238 tests)
 ├── sdk/                     # Language SDKs
@@ -483,10 +623,9 @@ mam/
 │   ├── python/              # Python SDK
 │   ├── go/                  # Go SDK
 │   └── rust/                # Rust SDK
-├── examples/                # Example modules
-│   ├── basic/               # 6 basic examples
-│   ├── advanced/            # 7 advanced examples
-│   └── plugins/             # 5 plugin examples
+├── modules/                 # Modules
+│   ├── examples/            # Example projects (core, basic, advanced, plugins, security-system)
+│   └── templates/           # 13 reusable templates
 ├── tests/                   # E2E tests (65 tests)
 ├── tools/                   # Development tools
 ├── docs/                    # Documentation
@@ -514,6 +653,8 @@ mam/
 | 13 | ✅ | Visualization Engine |
 | 14 | ✅ | Reference Implementation |
 | 15 | ✅ | SDK (Python, JavaScript, Go, Rust) |
+| 16 | ✅ | Native `.mam` execution + V2 runtime (22 engines) |
+| 17 | ✅ | Project composition (`mam.toml`) + full MAM spec |
 
 ---
 
@@ -540,11 +681,16 @@ mam/
 | Total Packages | 19 |
 | Source TypeScript Files | 225 |
 | Test TypeScript Files | 74 |
-| Total Tests | 2300+ |
-| CLI Commands | 34 |
+| Total Tests | 2,000+ |
+| CLI Commands | 39 |
 | Compiler Targets | 16 |
-| Module Types | 25+ |
-| Development Phases | 15/15 complete |
+| V2 Runtime Engines | 22/22 |
+| V2 Runtime Lines | ~11,000 |
+| Module Types | 19 |
+| Templates | 13 |
+| Example Projects | 5 (core, basic, advanced, plugins, security-system) |
+| Native Execution | ✅ `mam run system.mam` |
+| Development Phases | 17/17 complete |
 
 ---
 
@@ -590,8 +736,10 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 ## Links
 
 - [Specification](spec/SPEC.md)
-- [Architecture](ARCHITECTURE.md)
-- [Examples](examples/)
+- [Usage Guide](usage.md)
+- [Purpose](purpose.md) · [Goal](goal.md) · [Scope](scope.md) · [Brain](brain.md)
+- [Examples](modules/examples/)
+- [Templates](modules/templates/)
 - [Plan](plan.md)
 - [v2 Plan](plan-doc/plan-v2.md)
 - [Changelog](CHANGELOG.md)
