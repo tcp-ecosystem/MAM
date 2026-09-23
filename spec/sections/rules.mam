@@ -1,0 +1,223 @@
+---
+id: section-rules
+name: Rules Section
+version: 1.0.0
+type: module
+author: MAM Team
+description: >
+  Specifies the Rules section of the MAM source format. The section defines
+  the behavioral constraints for a module including error handling, validation,
+  and operational guidelines.
+license: MIT
+runtime:
+  language: python
+  version: ">=3.12"
+tags:
+  - spec
+  - section
+  - rules
+dependencies:
+  - name: mam-spec
+    version: "1.0.0"
+capabilities:
+  - validate
+  - extract
+  - document
+permissions:
+  filesystem:
+    - read
+---
+
+# Rules Section
+
+## Purpose
+
+Defines the Rules section of the MAM specification. The section specifies what the module should and should not do including error handling, validation, and security constraints.
+
+## Inputs
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| content | string | Yes | Full MAM module text that contains the section |
+| rules | list | No | Rule declarations to validate directly |
+
+## Outputs
+
+| Name | Type | Description |
+|------|------|-------------|
+| rules | list | Extracted rule declarations |
+| valid | bool | Whether the rules pass validation |
+| errors | list | Validation errors found in the rules |
+
+## Capabilities
+
+### validate
+
+Checks specificity, measurability, consistency, and testability.
+
+### extract
+
+Pulls the rule declarations out of the section body.
+
+### document
+
+Renders the rules into a documentation fragment.
+
+## Rules
+
+- Rules must be valid and enforceable.
+- Rules must be specific and clear.
+- Rules must be consistent with each other.
+- Rules must cover all important aspects.
+- Rules must be documented.
+- Rules must be testable.
+- Rules must not contradict each other.
+- Rules must be reasonable and current.
+
+## Workflow
+
+```mermaid
+flowchart TD
+    A[Content] --> B[Extract]
+    B --> C[Validate]
+    C --> D[Document]
+    D --> E[Output]
+```
+
+## Python
+
+```python
+VAGUE_TERMS = ["stuff", "things", "various", "etc", "somehow", "good"]
+
+def validate_specificity(rule: str) -> bool:
+    lower = rule.lower()
+    return not any(term in lower for term in VAGUE_TERMS)
+
+def validate_measurable(rule: str) -> bool:
+    return len(rule.strip()) >= 12
+
+def validate_testable(rule: str) -> bool:
+    testable = ["validate", "check", "verify", "ensure", "must", "must not"]
+    lower = rule.lower()
+    return any(term in lower for term in testable)
+
+def validate_consistency(rules: list) -> list:
+    errors = []
+    lower_rules = [r.lower() for r in rules]
+    for rule in rules:
+        lower = rule.lower()
+        if lower.startswith("must not") and lower in lower_rules:
+            continue
+        if lower.startswith("must ") and "must not" + lower[len("must "):] in lower_rules:
+            errors.append("Contradicts another rule: " + rule)
+    return errors
+
+def validate_completeness(rules: list) -> list:
+    missing = []
+    if not any("input" in r.lower() for r in rules):
+        missing.append("No input validation rule")
+    if not any("error" in r.lower() for r in rules):
+        missing.append("No error handling rule")
+    return missing
+
+def extract_rules(content: str) -> list:
+    rules = []
+    in_section = False
+    for line in content.split("\n"):
+        if line.strip().startswith("## Rules"):
+            in_section = True
+            continue
+        if in_section and line.startswith("##"):
+            break
+        if in_section and line.strip().startswith("- [ ]"):
+            rules.append(line.strip()[5:].strip())
+        elif in_section and line.strip().startswith("- "):
+            rules.append(line.strip()[2:])
+    return rules
+
+def validate_rules(rules: list) -> list:
+    errors = []
+    for rule in rules:
+        if not validate_specificity(rule):
+            errors.append("Rule is vague: " + rule)
+        if not validate_measurable(rule):
+            errors.append("Rule is too short: " + rule)
+        if not validate_testable(rule):
+            errors.append("Rule is not testable: " + rule)
+    errors.extend(validate_consistency(rules))
+    return errors
+
+def document_rules(rules: list) -> str:
+    docs = "## Behavioral Rules\n\n"
+    for rule in rules:
+        docs += "- " + rule + "\n"
+    return docs
+```
+
+## Tests
+
+### Input
+
+```yaml
+content: |
+  ## Rules
+
+  - Must validate all inputs before processing
+  - Must not expose sensitive data
+  - Must handle errors gracefully
+```
+
+### Expected
+
+```yaml
+valid: true
+errors: []
+```
+
+```python
+def test_rules():
+    rules = ["Must validate all inputs before processing",
+             "Must not expose sensitive data",
+             "Must handle errors gracefully"]
+    assert validate_specificity("Must validate all inputs before processing")
+    assert validate_measurable("Must validate all inputs before processing")
+    assert validate_testable("Must validate all inputs before processing")
+    assert validate_consistency(rules) == []
+    assert validate_completeness(rules) == []
+    assert validate_rules(rules) == []
+    assert "Behavioral Rules" in document_rules(rules)
+```
+
+## Examples
+
+### Input Validation
+
+```markdown
+- Must validate all input parameters
+- Must check for null or undefined values
+- Must validate data types
+- Must reject invalid inputs
+```
+
+### Security
+
+```markdown
+- Must not expose sensitive data
+- Must use HTTPS for external calls
+- Must validate authentication
+- Must authorize access
+```
+
+### Error Handling
+
+```markdown
+- Must catch all exceptions
+- Must provide meaningful error messages
+- Must log errors
+- Must fail gracefully
+```
+
+## References
+
+- MAM specification, the canonical source format
+- Rules section reference documentation

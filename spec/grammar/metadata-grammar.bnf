@@ -1,0 +1,143 @@
+# MAM Metadata Grammar (BNF)
+# Version: 1.0.0
+# Complete front matter metadata specification for MAM modules
+
+# ============================================================================
+# Metadata Container
+# ============================================================================
+
+<metadata> ::= <meta_delimiter> <meta_content> <meta_delimiter>
+<meta_delimiter> ::= "---" NEWLINE
+<meta_content> ::= <meta_field>*
+
+# ============================================================================
+# Metadata Fields
+# ============================================================================
+
+<meta_field> ::= <meta_key> ":" <meta_value> NEWLINE
+<meta_key> ::= IDENTIFIER
+<meta_value> ::= <meta_scalar> | <meta_list> | <meta_object> | <meta_folded> | <meta_empty>
+
+# ============================================================================
+# Scalar Values
+# ============================================================================
+
+<meta_scalar> ::= <meta_string> | <meta_number> | <meta_boolean> | <meta_semver>
+<meta_string> ::= STRING | <meta_plain>
+<meta_plain> ::= [^\n#]+
+<meta_number> ::= NUMBER
+<meta_boolean> ::= "true" | "false"
+<meta_semver> ::= NUMBER "." NUMBER "." NUMBER
+
+# ============================================================================
+# List Values
+# ============================================================================
+
+<meta_list> ::= NEWLINE <meta_list_item>+
+<meta_list_item> ::= INDENT "-" <meta_list_value> NEWLINE
+<meta_list_value> ::= <meta_string> | <meta_number> | <meta_boolean>
+
+# ============================================================================
+# Object Values
+# ============================================================================
+
+<meta_object> ::= NEWLINE <meta_object_entry>+
+<meta_object_entry> ::= INDENT <meta_key> ":" <meta_object_value> NEWLINE
+<meta_object_value> ::= " " <meta_scalar> | NEWLINE <meta_object_entry>+
+                      | " " <meta_list> | <meta_empty>
+
+# ============================================================================
+# Folded Strings
+# ============================================================================
+
+<meta_folded> ::= ">" NEWLINE <meta_folded_line>+
+<meta_folded_line> ::= INDENT TEXT NEWLINE
+
+# ============================================================================
+# Empty Value
+# ============================================================================
+
+<meta_empty> ::= ""
+
+# ============================================================================
+# Standard Metadata Fields
+# ============================================================================
+
+# Required identity fields
+<meta_id_field> ::= "id" ":" <meta_id_value> NEWLINE
+<meta_id_value> ::= [a-z][a-z0-9-]{0,63}
+
+<meta_name_field> ::= "name" ":" <meta_name_value> NEWLINE
+<meta_name_value> ::= TEXT
+
+<meta_version_field> ::= "version" ":" <meta_version_value> NEWLINE
+<meta_version_value> ::= <meta_semver> <meta_prerelease>? <meta_build>?
+<meta_prerelease> ::= "-" <meta_identifier> ("." <meta_identifier>)*
+<meta_build> ::= "+" <meta_identifier> ("." <meta_identifier>)*
+<meta_identifier> ::= [a-zA-Z0-9-]+
+
+<meta_type_field> ::= "type" ":" <meta_type_value> NEWLINE
+<meta_type_value> ::= "module" | "agent" | "tool" | "memory" | "workflow"
+                    | "team" | "policy" | "system" | "service" | "component"
+                    | "resource" | "interface" | "contract" | "plugin"
+                    | "extension" | "runtime" | "package" | "repository"
+
+<meta_author_field> ::= "author" ":" <meta_author_value> NEWLINE
+<meta_author_value> ::= TEXT
+
+# Optional identity fields
+<meta_description_field> ::= "description" ":" <meta_description_value> NEWLINE
+<meta_description_value> ::= <meta_string> | <meta_folded>
+
+<meta_license_field> ::= "license" ":" <meta_license_value> NEWLINE
+<meta_license_value> ::= "MIT" | "Apache-2.0" | "GPL-3.0" | "BSD-2-Clause"
+                       | "BSD-3-Clause" | "ISC" | "MPL-2.0" | TEXT
+
+<meta_repository_field> ::= "repository" ":" <meta_repository_value> NEWLINE
+<meta_repository_value> ::= TEXT
+
+# Discovery and classification fields
+<meta_tags_field> ::= "tags" ":" <meta_tags_value> NEWLINE
+<meta_tags_value> ::= <meta_list> | <meta_empty>
+<meta_tag_value> ::= [a-z][a-z0-9-]*
+
+# Runtime fields
+<meta_runtime_field> ::= "runtime" ":" <meta_runtime_value> NEWLINE
+<meta_runtime_value> ::= <meta_string> | <meta_runtime_object>
+<meta_runtime_object> ::= NEWLINE <meta_runtime_entry>+
+<meta_runtime_entry> ::= INDENT "language" ":" <meta_runtime_lang> NEWLINE
+                       | INDENT "version" ":" <meta_runtime_ver> NEWLINE
+<meta_runtime_lang> ::= "python" | "javascript" | "typescript" | "rust"
+                      | "go" | "shell" | "mixed" | TEXT
+<meta_runtime_ver> ::= STRING | <meta_semver> | TEXT
+
+# Capability and permission fields
+<meta_capabilities_field> ::= "capabilities" ":" <meta_capabilities_value> NEWLINE
+<meta_capabilities_value> ::= <meta_list> | <meta_empty>
+
+<meta_permissions_field> ::= "permissions" ":" <meta_permissions_value> NEWLINE
+<meta_permissions_value> ::= <meta_object> | <meta_list> | <meta_empty>
+
+# Dependency fields
+<meta_dependencies_field> ::= "dependencies" ":" <meta_dependencies_value> NEWLINE
+<meta_dependencies_value> ::= <meta_list> | <meta_empty>
+<meta_dependency_value> ::= TEXT
+
+# ============================================================================
+# Comments and Blank Lines
+# ============================================================================
+
+<meta_comment> ::= "#" [^\n]* NEWLINE
+<meta_blank> ::= NEWLINE
+
+# ============================================================================
+# Token Definitions
+# ============================================================================
+
+IDENTIFIER ::= [a-zA-Z_][a-zA-Z0-9_]*
+STRING ::= "\"" [^"]* "\"" | "'" [^']* "'"
+NUMBER ::= [0-9]+ ("." [0-9]+)?
+TEXT ::= [^\n]+
+NEWLINE ::= "\n"
+INDENT ::= ("  " | "\t")+
+DIGIT ::= [0-9]

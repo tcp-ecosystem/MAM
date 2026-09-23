@@ -1,0 +1,191 @@
+---
+id: section-exports
+name: Exports Section
+version: 1.0.0
+type: module
+author: MAM Team
+description: >
+  Specifies the Exports section of the MAM source format. The section defines
+  the public interface of a module and declares what consumers can import and
+  use.
+license: MIT
+runtime:
+  language: python
+  version: ">=3.12"
+tags:
+  - spec
+  - section
+  - exports
+dependencies:
+  - name: mam-spec
+    version: "1.0.0"
+capabilities:
+  - validate
+  - extract
+  - document
+permissions:
+  filesystem:
+    - read
+---
+
+# Exports Section
+
+## Purpose
+
+Defines the Exports section of the MAM specification. The section declares the classes, functions, constants, and types that form the public API of the module.
+
+## Inputs
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| content | string | Yes | Full MAM module text that contains the section |
+| exports | list | No | Export declarations to validate directly |
+
+## Outputs
+
+| Name | Type | Description |
+|------|------|-------------|
+| exports | list | Extracted public API declarations |
+| valid | bool | Whether the section passes validation |
+| errors | list | Validation errors found in the exports |
+
+## Capabilities
+
+### validate
+
+Checks export names, duplicates, type annotations, and documentation.
+
+### extract
+
+Pulls the export declarations out of the section body.
+
+### document
+
+Renders the exports into documentation for the public API.
+
+## Rules
+
+- Export only the public API, never internal implementation.
+- Use descriptive names that follow language conventions.
+- Give every export a description.
+- Include type signatures when possible.
+- Use consistent formatting for all exports.
+- List each export only once.
+
+## Workflow
+
+```mermaid
+flowchart TD
+    A[Content] --> B[Extract]
+    B --> C[Validate]
+    C --> D[Document]
+    D --> E[Output]
+```
+
+## Python
+
+```python
+import re
+
+def validate_export_name(name: str, export_type: str) -> bool:
+    if export_type == "function":
+        return bool(re.match(r"^[a-z_][a-z0-9_]*$", name))
+    if export_type == "constant":
+        return bool(re.match(r"^[A-Z][A-Z0-9_]*$", name))
+    return bool(re.match(r"^[A-Za-z_][A-Za-z0-9_]*$", name))
+
+def check_duplicate_exports(exports: list) -> list:
+    seen = set()
+    duplicates = []
+    for export in exports:
+        name = export.split(" ")[0].strip("`")
+        if name in seen:
+            duplicates.append(name)
+        seen.add(name)
+    return duplicates
+
+def validate_type_annotation(annotation: str) -> bool:
+    return bool(re.match(r"^[A-Za-z_][A-Za-z0-9_\.,\s\[\]\(\)]*$", annotation))
+
+def extract_exports(content: str) -> list:
+    exports = []
+    in_section = False
+    for line in content.split("\n"):
+        if line.strip().startswith("## Exports"):
+            in_section = True
+            continue
+        if in_section and line.startswith("##"):
+            break
+        if in_section and line.strip().startswith("- "):
+            exports.append(line.strip()[2:].strip("`"))
+    return exports
+
+def validate_exports(exports: list) -> list:
+    errors = []
+    for export in exports:
+        name = export.split(" ")[0].strip("`")
+        if not validate_export_name(name, "function"):
+            errors.append("Invalid export name: " + name)
+    for dup in check_duplicate_exports(exports):
+        errors.append("Duplicate export: " + dup)
+    return errors
+
+def generate_docs(exports: list) -> str:
+    docs = "## Public API\n\n"
+    for export in exports:
+        docs += "- " + export + "\n"
+    return docs
+```
+
+## Tests
+
+### Input
+
+```yaml
+content: |
+  ## Exports
+
+  - verify_token - Verify token validity
+  - hash_password - Hash password securely
+  - DEFAULT_TIMEOUT - Default timeout in seconds
+```
+
+### Expected
+
+```yaml
+valid: true
+errors: []
+```
+
+```python
+def test_exports():
+    exports = ["verify_token", "hash_password", "DEFAULT_TIMEOUT"]
+    assert validate_export_name("verify_token", "function")
+    assert validate_export_name("DEFAULT_TIMEOUT", "constant")
+    assert validate_exports(exports) == []
+    assert check_duplicate_exports(exports) == []
+    assert "Public API" in generate_docs(exports)
+```
+
+## Examples
+
+### Functions
+
+```markdown
+- verify_token(token: str) -> bool - Verify token validity
+- hash_password(password: str) -> str - Hash password securely
+- generate_salt() -> bytes - Generate random salt
+```
+
+### Constants
+
+```markdown
+- DEFAULT_TIMEOUT - Default timeout (30 seconds)
+- MAX_RETRY_ATTEMPTS - Maximum retry attempts (3)
+- API_VERSION - API version string
+```
+
+## References
+
+- MAM specification, the canonical source format
+- Exports section reference documentation

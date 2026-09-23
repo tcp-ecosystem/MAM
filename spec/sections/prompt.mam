@@ -1,0 +1,187 @@
+---
+id: section-prompt
+name: Prompt Section
+version: 1.0.0
+type: module
+author: MAM Team
+description: >
+  Specifies the Prompt section of the MAM source format. The section holds LLM
+  instructions and prompts for AI agents and defines how the module interacts
+  with language models.
+license: MIT
+runtime:
+  language: python
+  version: ">=3.12"
+tags:
+  - spec
+  - section
+  - prompt
+dependencies:
+  - name: mam-spec
+    version: "1.0.0"
+capabilities:
+  - validate
+  - extract
+  - document
+permissions:
+  filesystem:
+    - read
+---
+
+# Prompt Section
+
+## Purpose
+
+Defines the Prompt section of the MAM specification. The section carries instructions for AI agents and describes how the module should interact with language models.
+
+## Inputs
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| content | string | Yes | Full MAM module text that contains the section |
+| variables | object | No | Template variables for prompt rendering |
+
+## Outputs
+
+| Name | Type | Description |
+|------|------|-------------|
+| prompt | string | Extracted prompt text |
+| valid | bool | Whether the prompt passes validation |
+| errors | list | Validation errors found in the prompt |
+
+## Capabilities
+
+### validate
+
+Checks clarity, structure, safety, and role definitions.
+
+### extract
+
+Pulls the prompt text out of the section body.
+
+### document
+
+Renders the prompt into a documentation fragment.
+
+## Rules
+
+- Instructions must be clear and specific.
+- Use a structured format when possible.
+- Follow AI safety guidelines.
+- Never generate harmful or illegal content.
+- Emphasize factual accuracy.
+- Be transparent about AI limitations.
+- Inform users about AI usage.
+
+## Workflow
+
+```mermaid
+flowchart TD
+    A[Content] --> B[Extract]
+    B --> C[Validate]
+    C --> D[Render]
+    D --> E[Output]
+```
+
+## Python
+
+```python
+HARMFUL_TERMS = ["steal", "fraud", "malware", "exploit", "bypass security"]
+
+def check_safety(prompt: str) -> bool:
+    return len(prompt.strip()) > 20
+
+def check_harmful(prompt: str) -> bool:
+    lower = prompt.lower()
+    return any(term in lower for term in HARMFUL_TERMS)
+
+def check_role(prompt: str) -> bool:
+    return "you are" in prompt.lower() or "as a" in prompt.lower()
+
+def extract_prompt(content: str) -> str:
+    prompt = []
+    in_prompt = False
+    for line in content.split("\n"):
+        if line.strip().startswith("## Prompt"):
+            in_prompt = True
+            continue
+        if in_prompt and line.startswith("##"):
+            break
+        if in_prompt:
+            prompt.append(line)
+    return "\n".join(prompt).strip()
+
+def validate_prompt(prompt: str) -> list:
+    errors = []
+    if not check_safety(prompt):
+        errors.append("Prompt is too short")
+    if check_harmful(prompt):
+        errors.append("Prompt contains harmful content")
+    if not check_role(prompt):
+        errors.append("Prompt is missing a role definition")
+    return errors
+
+def render_prompt(template: str, variables: dict) -> str:
+    result = template
+    for key, value in variables.items():
+        result = result.replace("{{" + key + "}}", str(value))
+    return result
+
+def document_prompt(prompt: str) -> str:
+    return "## AI Instructions\n\n" + prompt
+```
+
+## Tests
+
+### Input
+
+```yaml
+content: |
+  ## Prompt
+
+  You are a helpful assistant that helps users with their tasks.
+  Always be polite and professional.
+```
+
+### Expected
+
+```yaml
+valid: true
+errors: []
+```
+
+```python
+def test_prompt():
+    prompt = "You are a helpful assistant that helps users with their tasks."
+    assert check_safety(prompt)
+    assert not check_harmful(prompt)
+    assert check_role(prompt)
+    assert validate_prompt(prompt) == []
+    assert render_prompt("Hello {{name}}", {"name": "World"}) == "Hello World"
+    assert "AI Instructions" in document_prompt(prompt)
+```
+
+## Examples
+
+### Basic Assistant
+
+```markdown
+You are a helpful AI assistant. When users ask questions:
+1. Provide clear and accurate answers
+2. Acknowledge when you do not know
+3. Ask clarifying questions when needed
+```
+
+### Data Processor
+
+```markdown
+You are a data processing assistant. When users provide data:
+1. Validate the data format
+2. Identify any issues or anomalies
+3. Return results in the requested format
+```
+
+## References
+
+- MAM specification, the canonical source format
+- Prompt section reference documentation

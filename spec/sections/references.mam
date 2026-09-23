@@ -1,0 +1,199 @@
+---
+id: section-references
+name: References Section
+version: 1.0.0
+type: module
+author: MAM Team
+description: >
+  Specifies the References section of the MAM source format. The section lists
+  external links and documentation that complement the module functionality.
+license: MIT
+runtime:
+  language: python
+  version: ">=3.12"
+tags:
+  - spec
+  - section
+  - references
+dependencies:
+  - name: mam-spec
+    version: "1.0.0"
+capabilities:
+  - validate
+  - extract
+  - document
+permissions:
+  filesystem:
+    - read
+---
+
+# References Section
+
+## Purpose
+
+Defines the References section of the MAM specification. The section lists external resources such as documentation, standards, and related projects so that a module can carry its own knowledge context.
+
+## Inputs
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| content | string | Yes | Full MAM module text that contains the section |
+| refs | list | No | Reference declarations to validate directly |
+
+## Outputs
+
+| Name | Type | Description |
+|------|------|-------------|
+| refs | list | Extracted reference declarations |
+| valid | bool | Whether the references pass validation |
+| errors | list | Validation errors found in the references |
+
+## Capabilities
+
+### validate
+
+Checks URLs, HTTPS usage, descriptive text, duplicates, and secrets.
+
+### extract
+
+Pulls the reference declarations out of the section body.
+
+### document
+
+Renders the references into a documentation fragment.
+
+## Rules
+
+- All URLs must be valid and accessible.
+- Link text should describe the destination.
+- Links should not be broken.
+- Resources should be relevant to the module.
+- Never include URLs with secrets or tokens.
+- Prefer HTTPS when available.
+- Group related references when helpful.
+
+## Workflow
+
+```mermaid
+flowchart TD
+    A[Content] --> B[Extract]
+    B --> C[Validate]
+    C --> D[Document]
+    D --> E[Output]
+```
+
+## Python
+
+```python
+import re
+
+def validate_url(url: str) -> bool:
+    return bool(re.match(r"^https?://[^\s]+$", url))
+
+def check_https(url: str) -> bool:
+    return url.startswith("https://")
+
+def check_secrets(url: str) -> bool:
+    return "secret" not in url.lower() and "token" not in url.lower() and "key=" not in url.lower()
+
+def check_descriptive(text: str) -> bool:
+    return len(text.strip()) >= 3
+
+def check_duplicates(refs: list) -> list:
+    seen = set()
+    duplicates = []
+    for ref in refs:
+        if ref in seen:
+            duplicates.append(ref)
+        seen.add(ref)
+    return duplicates
+
+def extract_references(content: str) -> list:
+    refs = []
+    in_section = False
+    for line in content.split("\n"):
+        if line.strip().startswith("## References"):
+            in_section = True
+            continue
+        if in_section and line.startswith("##"):
+            break
+        if in_section and line.strip().startswith("- ["):
+            refs.append(line.strip()[2:])
+    return refs
+
+def validate_references(refs: list) -> list:
+    errors = []
+    for ref in refs:
+        match = re.match(r"\[([^\]]+)\]\((https?://[^)]+)\)", ref)
+        if not match:
+            errors.append("Invalid reference format: " + ref)
+            continue
+        url = match.group(2)
+        if not validate_url(url):
+            errors.append("Invalid URL: " + url)
+        if not check_https(url):
+            errors.append("URL is not HTTPS: " + url)
+        if not check_secrets(url):
+            errors.append("URL may contain a secret: " + url)
+        if not check_descriptive(match.group(1)):
+            errors.append("Reference text is not descriptive: " + ref)
+    return errors
+
+def document_references(refs: list) -> str:
+    docs = "## External References\n\n"
+    for ref in refs:
+        docs += "- " + ref + "\n"
+    return docs
+```
+
+## Tests
+
+### Input
+
+```yaml
+content: |
+  ## References
+
+  - [Python Documentation](https://docs.python.org/3/)
+  - [MAM Specification](https://example.com/spec)
+```
+
+### Expected
+
+```yaml
+valid: true
+errors: []
+```
+
+```python
+def test_references():
+    refs = ["[Python Docs](https://docs.python.org/3/)"]
+    assert validate_url("https://docs.python.org/3/")
+    assert check_https("https://docs.python.org/3/")
+    assert check_secrets("https://example.com/page")
+    assert check_descriptive("Python Docs")
+    assert validate_references(refs) == []
+    assert check_duplicates(refs) == []
+    assert "External References" in document_references(refs)
+```
+
+## Examples
+
+### Official Documentation
+
+```markdown
+- [Python Documentation](https://docs.python.org/3/)  Official Python docs
+- [FastAPI Documentation](https://fastapi.tiangolo.com/)  FastAPI framework
+```
+
+### Standards
+
+```markdown
+- [RFC 7519](https://datatracker.ietf.org/doc/html/rfc7519)  JSON Web Token specification
+- [RFC 6749](https://datatracker.ietf.org/doc/html/rfc6749)  OAuth 2.0 framework
+```
+
+## References
+
+- MAM specification, the canonical source format
+- References section reference documentation

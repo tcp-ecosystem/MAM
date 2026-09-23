@@ -1,0 +1,203 @@
+---
+id: section-capabilities
+name: Capabilities Section
+version: 1.0.0
+type: module
+author: MAM Team
+description: >
+  Specifies the Capabilities section of the MAM source format. The section
+  declares the runtime features, hardware requirements, and environmental
+  conditions that a module needs to function correctly.
+license: MIT
+runtime:
+  language: python
+  version: ">=3.12"
+tags:
+  - spec
+  - section
+  - capabilities
+dependencies:
+  - name: mam-spec
+    version: "1.0.0"
+capabilities:
+  - validate
+  - extract
+  - document
+permissions:
+  filesystem:
+    - read
+---
+
+# Capabilities Section
+
+## Purpose
+
+Defines the Capabilities section of the MAM specification. The section declares functional prerequisites as declarative requirements that the runtime must satisfy before executing a module.
+
+## Inputs
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| content | string | Yes | Full MAM module text that contains the section |
+| available | list | No | Capability names that the runtime can provide |
+
+## Outputs
+
+| Name | Type | Description |
+|------|------|-------------|
+| capabilities | list | Declared capability requirements |
+| valid | bool | Whether the section passes validation |
+| missing | list | Capabilities that are not available |
+
+## Capabilities
+
+### validate
+
+Checks capability names, categories, duplicates, and version constraints.
+
+### extract
+
+Pulls the capability list out of the section body.
+
+### document
+
+Renders the capabilities into a documentation fragment.
+
+## Rules
+
+- Include the section only when the module has specific requirements.
+- Capability names are case insensitive and use the category form.
+- List each capability only once.
+- Place more specific capabilities before general ones.
+- Use semver compatible version constraints when applicable.
+- Mark optional capabilities with a clear suffix.
+
+## Workflow
+
+```mermaid
+flowchart TD
+    A[Content] --> B[Validate]
+    B --> C[Extract]
+    C --> D[Resolve]
+    D --> E[Output]
+```
+
+## Python
+
+```python
+import re
+
+def validate_capability(name: str) -> bool:
+    return bool(re.match(r"^[a-z][a-z0-9:.\-+]{0,127}$", name))
+
+def validate_version_constraint(constraint: str) -> bool:
+    if ":" not in constraint:
+        return False
+    value = constraint.split(":", 2)[-1]
+    return bool(re.match(r"^[0-9]+(\.[0-9]+)*[+\-]?$", value)) or value in ("", "*")
+
+def check_duplicates(capabilities: list) -> list:
+    seen = set()
+    duplicates = []
+    for cap in capabilities:
+        lower = cap.lower()
+        if lower in seen:
+            duplicates.append(cap)
+        seen.add(lower)
+    return duplicates
+
+def extract_capabilities(content: str) -> list:
+    capabilities = []
+    in_section = False
+    for line in content.split("\n"):
+        if line.strip().startswith("## Capabilities"):
+            in_section = True
+            continue
+        if in_section and line.startswith("##"):
+            break
+        if in_section and line.strip().startswith("- "):
+            capabilities.append(line.strip()[2:].strip("`"))
+    return capabilities
+
+def validate_capabilities(capabilities: list) -> list:
+    errors = []
+    for cap in capabilities:
+        if not validate_capability(cap):
+            errors.append("Invalid capability: " + cap)
+    for dup in check_duplicates(capabilities):
+        errors.append("Duplicate capability: " + dup)
+    return errors
+
+def resolve_capabilities(capabilities: list, available: list) -> list:
+    missing = []
+    for cap in capabilities:
+        base = cap.split(":")[0]
+        if base not in available and cap not in available:
+            missing.append(cap)
+    return missing
+
+def document_capabilities(capabilities: list) -> str:
+    docs = "## Required Capabilities\n\n"
+    for cap in capabilities:
+        docs += "- " + cap + "\n"
+    return docs
+```
+
+## Tests
+
+### Input
+
+```yaml
+content: |
+  ## Capabilities
+
+  - runtime:python:3.12+
+  - network:https
+  - storage:sqlite
+available: [runtime, network, storage]
+```
+
+### Expected
+
+```yaml
+valid: true
+missing: []
+```
+
+```python
+def test_capabilities():
+    caps = ["runtime:python:3.12+", "network:https"]
+    assert validate_capability("runtime:python:3.12+")
+    assert validate_capabilities(caps) == []
+    assert resolve_capabilities(caps, ["runtime", "network"]) == []
+    assert "Required Capabilities" in document_capabilities(caps)
+    assert check_duplicates(["a", "a"]) == ["a"]
+```
+
+## Examples
+
+### Runtime Capabilities
+
+```markdown
+## Capabilities
+
+- runtime:python:3.12+
+- runtime:python:venv
+- runtime:python:pip
+```
+
+### Network Capabilities
+
+```markdown
+## Capabilities
+
+- network:https
+- network:dns
+- network:websocket
+- network:ipv4
+```
+
+## References
+
+- MAM specification, the canonical source format
+- Capabilities section reference documentation

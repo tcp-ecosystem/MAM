@@ -1,0 +1,200 @@
+---
+id: grammar-permissions
+name: Permissions Grammar
+version: 1.0.0
+type: module
+author: MAM Team
+description: >
+  Describes the grammar of the MAM permissions section: the security grants
+  a module requests from its execution environment.
+license: MIT
+runtime:
+  language: python
+  version: ">=3.12"
+tags:
+  - grammar
+  - permissions
+capabilities:
+  - parse
+  - validate
+  - assess
+permissions:
+  filesystem:
+    - read
+---
+
+# Permissions Grammar
+
+## Purpose
+
+Describes the grammar of the MAM permissions section, a markdown bullet list
+that declares the security grants a module needs: network, filesystem,
+environment, exec, and memory. This module parses a permissions block,
+validates each entry, and assesses the risk level.
+
+## Inputs
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| document | string | Yes | Permissions section text to parse |
+| strict | bool | No | Reject duplicate entries (default: true) |
+
+## Outputs
+
+| Name | Type | Description |
+|------|------|-------------|
+| permissions | list | Parsed permission names |
+| valid | bool | Whether all permissions are well formed |
+| errors | list | Validation errors |
+| risk | string | Highest risk level declared |
+
+## Capabilities
+
+### parse
+
+Parse a permissions section into a list of permission names.
+
+### validate
+
+Check that each permission follows the naming grammar.
+
+### assess
+
+Report the highest risk level among the declared permissions.
+
+## Rules
+
+- Permission names must match the pattern `^[a-z][a-z0-9:]{0,31}$`.
+- The base permission must be from the valid list.
+- Each permission should be listed only once.
+- High risk permissions should carry a justification.
+- Conflicting permissions such as network and network:none are rejected.
+- Validation must not raise; it returns the errors.
+
+## Workflow
+
+```mermaid
+flowchart TD
+    A[Document] --> B[Parse]
+    B --> C[Validate]
+    C --> D[Assess]
+    D --> E[Output]
+```
+
+## Python
+
+```python
+import re
+
+VALID = {"network", "filesystem", "environment", "exec", "memory"}
+RISK = {
+    "network": "medium",
+    "filesystem": "high",
+    "environment": "medium",
+    "exec": "high",
+    "memory": "low",
+}
+PERM_PATTERN = re.compile(r"^[a-z][a-z0-9:]{0,31}$")
+
+def parse(document: str) -> list:
+    """Parse a permissions bullet list."""
+    permissions = []
+    for line in document.splitlines():
+        line = line.strip()
+        if not line.startswith("- "):
+            continue
+        entry = line[2:].strip().strip("`")
+        name = entry.split(" - ")[0].strip()
+        permissions.append(name)
+    return permissions
+
+def validate(document: str) -> dict:
+    """Validate each permission name."""
+    perms = parse(document)
+    errors = []
+    seen = set()
+    for perm in perms:
+        if not PERM_PATTERN.match(perm):
+            errors.append(f"invalid name: {perm}")
+        base = perm.split(":", 1)[0]
+        if base not in VALID:
+            errors.append(f"unknown permission: {base}")
+        if perm in seen:
+            errors.append(f"duplicate permission: {perm}")
+        seen.add(perm)
+    return {"permissions": perms, "valid": not errors, "errors": errors}
+
+def assess(document: str) -> str:
+    """Report the highest risk level declared."""
+    perms = parse(document)
+    levels = [RISK.get(p.split(":", 1)[0], "unknown") for p in perms]
+    order = {"low": 1, "medium": 2, "high": 3}
+    if not levels:
+        return "none"
+    return max(levels, key=lambda level: order.get(level, 0))
+```
+
+## Tests
+
+### Input
+
+```yaml
+document: |
+  - network
+  - filesystem
+```
+
+### Expected
+
+```yaml
+valid: true
+risk: high
+```
+
+```python
+def test_parse():
+    doc = "- network\n- filesystem"
+    assert parse(doc) == ["network", "filesystem"]
+
+def test_validate_ok():
+    doc = "- network\n- filesystem"
+    assert validate(doc)["valid"] is True
+
+def test_validate_bad_name():
+    doc = "- File System"
+    assert validate(doc)["valid"] is False
+
+def test_validate_unknown():
+    doc = "- teleport"
+    assert validate(doc)["valid"] is False
+
+def test_validate_duplicate():
+    doc = "- network\n- network"
+    assert validate(doc)["valid"] is False
+
+def test_assess():
+    doc = "- network\n- filesystem"
+    assert assess(doc) == "high"
+```
+
+## Examples
+
+### Basic Usage
+
+```python
+doc = "- network\n- filesystem\n- memory"
+print(assess(doc))
+```
+
+### Expected Flow
+
+```text
+Document → Parse → Validate → Assess → Output
+```
+
+## References
+
+- MAM documentation
+- tokens.md
+- ast-specification.md
+- section-grammar.bnf

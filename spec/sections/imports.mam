@@ -1,0 +1,203 @@
+---
+id: section-imports
+name: Imports Section
+version: 1.0.0
+type: module
+author: MAM Team
+description: >
+  Specifies the Imports section of the MAM source format. The section declares
+  the modules, packages, and symbols that the code blocks of the module need
+  in order to run.
+license: MIT
+runtime:
+  language: python
+  version: ">=3.12"
+tags:
+  - spec
+  - section
+  - imports
+dependencies:
+  - name: mam-spec
+    version: "1.0.0"
+capabilities:
+  - validate
+  - extract
+  - document
+permissions:
+  filesystem:
+    - read
+---
+
+# Imports Section
+
+## Purpose
+
+Defines the Imports section of the MAM specification. The section lists the required imports and dependencies that module code blocks rely on before they can execute.
+
+## Inputs
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| content | string | Yes | Full MAM module text that contains the section |
+| code | string | No | Module code that is checked against the imports |
+
+## Outputs
+
+| Name | Type | Description |
+|------|------|-------------|
+| imports | list | Extracted import declarations |
+| valid | bool | Whether the section passes validation |
+| errors | list | Validation errors found in the imports |
+
+## Capabilities
+
+### validate
+
+Checks import syntax, duplicates, order, and wildcard usage.
+
+### extract
+
+Pulls the import declarations out of the section body.
+
+### document
+
+Renders the imports into a documentation fragment.
+
+## Rules
+
+- List only the imports that the code actually uses.
+- Include every import that the code blocks need.
+- Order imports as standard library, third party, then local.
+- Group related imports with blank lines.
+- Prefer specific imports over broad ones.
+- Avoid wildcard imports.
+- Use metadata for version requirements.
+
+## Workflow
+
+```mermaid
+flowchart TD
+    A[Content] --> B[Extract]
+    B --> C[Validate]
+    C --> D[Document]
+    D --> E[Output]
+```
+
+## Python
+
+```python
+import re
+
+def validate_import_syntax(code: str) -> bool:
+    for line in code.split("\n"):
+        stripped = line.strip()
+        if stripped.startswith("import ") or stripped.startswith("from "):
+            if "import" not in stripped:
+                return False
+    return True
+
+def check_duplicate_imports(code: str) -> list:
+    seen = set()
+    duplicates = []
+    for line in code.split("\n"):
+        stripped = line.strip()
+        if stripped.startswith("import "):
+            module = stripped.split()[1]
+            if module in seen:
+                duplicates.append(module)
+            seen.add(module)
+    return duplicates
+
+def check_wildcard_imports(code: str) -> list:
+    return [line.strip() for line in code.split("\n") if line.strip().endswith("import *")]
+
+def extract_imports(content: str) -> list:
+    imports = []
+    in_section = False
+    for line in content.split("\n"):
+        if line.strip().startswith("## Imports"):
+            in_section = True
+            continue
+        if in_section and line.startswith("##"):
+            break
+        if in_section and line.strip().startswith("import "):
+            imports.append(line.strip())
+    return imports
+
+def validate_imports(code: str) -> list:
+    errors = []
+    if not validate_import_syntax(code):
+        errors.append("Invalid import syntax")
+    for dup in check_duplicate_imports(code):
+        errors.append("Duplicate import: " + dup)
+    for wild in check_wildcard_imports(code):
+        errors.append("Wildcard import: " + wild)
+    return errors
+
+def document_imports(imports: list) -> str:
+    docs = "## Required Imports\n\n"
+    for imp in imports:
+        docs += "- " + imp + "\n"
+    return docs
+```
+
+## Tests
+
+### Input
+
+```yaml
+content: |
+  ## Imports
+
+  - import os
+  - import sys
+  - from typing import Optional
+```
+
+### Expected
+
+```yaml
+valid: true
+errors: []
+```
+
+```python
+def test_imports():
+    code = "import os\nimport sys\nfrom typing import Optional"
+    assert validate_import_syntax(code)
+    assert check_duplicate_imports(code) == []
+    assert check_wildcard_imports(code) == []
+    assert validate_imports(code) == []
+    assert "Required Imports" in document_imports(["import os"])
+```
+
+## Examples
+
+### Standard Library
+
+```python
+import os
+import sys
+import json
+from pathlib import Path
+```
+
+### Third Party
+
+```python
+import requests
+from flask import Flask, request
+from sqlalchemy import create_engine
+```
+
+### Local Modules
+
+```python
+from . import mymodule
+from .utils import helper_function
+```
+
+## References
+
+- MAM specification, the canonical source format
+- Imports section reference documentation

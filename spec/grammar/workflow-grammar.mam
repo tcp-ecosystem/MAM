@@ -1,0 +1,152 @@
+---
+id: grammar-workflow
+name: Workflow Grammar
+version: 1.0.0
+type: module
+author: MAM Team
+description: >
+  Specifies the MAM workflow grammar: ordered steps, conditional branches,
+  loops, and mermaid flowcharts, plus a parser and validator for workflow
+  definitions.
+license: MIT
+runtime:
+  language: python
+  version: ">=3.12"
+tags:
+  - grammar
+  - workflow
+  - specification
+capabilities:
+  - parse_workflow
+  - validate_workflow
+permissions:
+  memory:
+    - local
+---
+
+# Workflow Grammar Module
+
+## Purpose
+
+Defines the grammar used by the MAM Workflow section. The module describes how steps are declared in order, how branches and loops are expressed, and how a mermaid flowchart mirrors the textual steps. It also provides a small parser and validator that accept a workflow definition and report structural errors.
+
+## Inputs
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| steps | list | Yes | Ordered list of step names |
+| branches | list | No | Branch markers such as if and else |
+| loops | list | No | Loop markers such as while and for |
+
+## Outputs
+
+| Name | Type | Description |
+|------|------|-------------|
+| steps | list | Parsed step names |
+| errors | list | Structural validation errors |
+| valid | boolean | True when no errors exist |
+
+## Capabilities
+
+### parse_workflow
+
+Accept an ordered step list and split it into named steps.
+
+### validate_workflow
+
+Check steps for structural correctness and report errors.
+
+## Rules
+
+- Steps must appear in execution order.
+- Branch markers must match open and close pairs.
+- Loop markers must bound a repeated step.
+- A mermaid flowchart must agree with the step list.
+- An empty workflow is invalid.
+
+## Workflow
+
+```mermaid
+flowchart TD
+    A[Step List] --> B[Parse Steps]
+    B --> C[Validate Order]
+    C --> D{Errors?}
+    D -->|Yes| E[Report Errors]
+    D -->|No| F[Valid Workflow]
+```
+
+## Python
+
+```python
+def parse_workflow(steps):
+    return [{"name": step, "order": i + 1} for i, step in enumerate(steps)]
+
+def validate_workflow(steps):
+    errors = []
+    if not steps:
+        errors.append("Workflow is empty")
+    seen = set()
+    for step in steps:
+        if step in seen:
+            errors.append("Duplicate step: " + step)
+        seen.add(step)
+    return errors
+```
+
+## Tests
+
+### Input
+
+```yaml
+steps:
+  - receive
+  - validate
+  - process
+  - output
+```
+
+### Expected
+
+```yaml
+valid: true
+errors: []
+```
+
+```python
+def test_parse_workflow():
+    parsed = parse_workflow(["receive", "validate"])
+    assert parsed[0]["order"] == 1
+    assert parsed[1]["order"] == 2
+
+def test_validate_workflow_ok():
+    assert validate_workflow(["a", "b", "c"]) == []
+
+def test_validate_workflow_duplicate():
+    assert validate_workflow(["a", "a"]) == ["Duplicate step: a"]
+
+def test_validate_workflow_empty():
+    assert validate_workflow([]) == ["Workflow is empty"]
+```
+
+## Examples
+
+### Basic Usage
+
+```python
+steps = ["discover", "analyze", "report"]
+parsed = parse_workflow(steps)
+errors = validate_workflow(steps)
+print(parsed, errors)
+```
+
+### Expected Flow
+
+```text
+Steps -> Parse -> Validate -> Result
+```
+
+## References
+
+- MAM Workflow section specification
+- MAM section grammar specification
+- MAM AST specification

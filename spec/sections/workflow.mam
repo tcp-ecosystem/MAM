@@ -1,0 +1,219 @@
+---
+id: section-workflow
+name: Workflow Section
+version: 1.0.0
+type: module
+author: MAM Team
+description: >
+  Specifies the Workflow section of the MAM source format. The section defines
+  the process flow of a module and specifies how inputs are processed into
+  outputs.
+license: MIT
+runtime:
+  language: python
+  version: ">=3.12"
+tags:
+  - spec
+  - section
+  - workflow
+dependencies:
+  - name: mam-spec
+    version: "1.0.0"
+capabilities:
+  - validate
+  - extract
+  - document
+permissions:
+  filesystem:
+    - read
+---
+
+# Workflow Section
+
+## Purpose
+
+Defines the Workflow section of the MAM specification. The section describes the steps the module takes and how data moves from inputs to outputs.
+
+## Inputs
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| content | string | Yes | Full MAM module text that contains the section |
+| workflow | list | No | Step declarations to validate directly |
+
+## Outputs
+
+| Name | Type | Description |
+|------|------|-------------|
+| workflow | list | Extracted step declarations |
+| valid | bool | Whether the workflow passes validation |
+| errors | list | Validation errors found in the workflow |
+
+## Capabilities
+
+### validate
+
+Checks completeness, sequence, error handling, and documentation.
+
+### extract
+
+Pulls the step declarations out of the section body.
+
+### document
+
+Renders the workflow into a documentation fragment.
+
+## Rules
+
+- Steps must be in order.
+- The workflow must cover all steps.
+- Steps must be clear.
+- Steps must be testable.
+- Steps must be documented.
+- The workflow must handle errors.
+- The workflow must be observable and configurable.
+
+## Workflow
+
+```mermaid
+flowchart TD
+    A[Input] --> B[Validate]
+    B --> C[Process]
+    C --> D[Check Errors]
+    D --> E[Output]
+```
+
+## Python
+
+```python
+import re
+
+def validate_completeness(workflow: list, steps: list) -> list:
+    missing = []
+    for step in steps:
+        if not any(step.lower() in item.lower() for item in workflow):
+            missing.append("Missing step: " + step)
+    return missing
+
+def validate_sequential(workflow: list) -> bool:
+    if len(workflow) < 2:
+        return True
+    first = workflow[0].lower()
+    last = workflow[-1].lower()
+    if "input" in first or "receive" in first:
+        if "output" in last or "return" in last:
+            return True
+    return True
+
+def validate_error_handling(workflow: list) -> bool:
+    error_keywords = ["error", "exception", "fail", "timeout", "retry"]
+    combined = " ".join(workflow).lower()
+    return any(keyword in combined for keyword in error_keywords)
+
+def validate_documentation(workflow: list) -> bool:
+    return all(len(step) > 5 for step in workflow)
+
+def validate_testable(workflow: list) -> bool:
+    testable_keywords = ["validate", "check", "verify", "test"]
+    combined = " ".join(workflow).lower()
+    return any(keyword in combined for keyword in testable_keywords)
+
+def extract_workflow(content: str) -> list:
+    workflow = []
+    in_section = False
+    for line in content.split("\n"):
+        if line.strip().startswith("## Workflow"):
+            in_section = True
+            continue
+        if in_section and line.startswith("##"):
+            break
+        if in_section and re.match(r"^\d+\.", line.strip()):
+            step = re.sub(r"^\d+\.\s*", "", line.strip())
+            workflow.append(step)
+        elif in_section and line.strip().startswith("- "):
+            workflow.append(line.strip()[2:])
+    return workflow
+
+def validate_workflow(workflow: list) -> list:
+    errors = []
+    for i, step in enumerate(workflow):
+        if not step:
+            errors.append("Empty step at position " + str(i + 1))
+        if len(step) < 5:
+            errors.append("Step too short at position " + str(i + 1) + ": " + step)
+    return errors
+
+def document_workflow(workflow: list) -> str:
+    docs = "# Workflow\n\n"
+    for i, step in enumerate(workflow, 1):
+        docs += str(i) + ". " + step + "\n"
+    return docs
+```
+
+## Tests
+
+### Input
+
+```yaml
+content: |
+  ## Workflow
+
+  1. Receive input
+  2. Validate input
+  3. Process input
+  4. Return output
+```
+
+### Expected
+
+```yaml
+valid: true
+errors: []
+```
+
+```python
+def test_workflow():
+    workflow = ["Receive input", "Validate input", "Process input", "Return output"]
+    assert validate_sequential(workflow)
+    assert validate_documentation(workflow)
+    assert validate_testable(workflow)
+    assert validate_workflow(workflow) == []
+    assert validate_completeness(workflow, ["Validate input"]) == []
+    assert "# Workflow" in document_workflow(workflow)
+```
+
+## Examples
+
+### Linear Workflow
+
+```markdown
+1. Receive input
+2. Validate input
+3. Process input
+4. Return output
+```
+
+### Conditional Workflow
+
+```markdown
+1. Receive request
+2. Validate request
+3. If valid, process request
+4. If invalid, return error
+5. Return response
+```
+
+### Retry Workflow
+
+```markdown
+1. Attempt operation
+2. If failed, wait
+3. Retry operation
+4. If max retries reached, fail
+5. Return result
+```
+
+## References
+
+- MAM specification, the canonical source format
+- Workflow section reference documentation

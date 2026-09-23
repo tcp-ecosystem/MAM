@@ -1,0 +1,188 @@
+---
+id: section-mermaid
+name: Mermaid Section
+version: 1.0.0
+type: module
+author: MAM Team
+description: >
+  Specifies the Mermaid section of the MAM source format. The section holds
+  visual diagrams for architecture, workflows, data models, and reasoning.
+license: MIT
+runtime:
+  language: python
+  version: ">=3.12"
+tags:
+  - spec
+  - section
+  - mermaid
+dependencies:
+  - name: mam-spec
+    version: "1.0.0"
+capabilities:
+  - validate
+  - extract
+  - document
+permissions:
+  filesystem:
+    - read
+---
+
+# Mermaid Section
+
+## Purpose
+
+Defines the Mermaid section of the MAM specification. The section uses the Mermaid diagramming language to create visual representations that help humans understand systems, processes, and relationships.
+
+## Inputs
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| content | string | Yes | Full MAM module text that contains the section |
+| diagram | string | No | Mermaid diagram source to validate directly |
+
+## Outputs
+
+| Name | Type | Description |
+|------|------|-------------|
+| diagrams | list | Extracted Mermaid diagrams |
+| valid | bool | Whether the diagrams pass validation |
+| errors | list | Validation errors found in the diagrams |
+
+## Capabilities
+
+### validate
+
+Checks diagram type, completeness, labels, and secrets.
+
+### extract
+
+Pulls the Mermaid diagrams out of the section body.
+
+### document
+
+Renders the diagrams into a documentation fragment.
+
+## Rules
+
+- Code must be valid Mermaid.
+- Diagrams should be complete and understandable.
+- All nodes should have clear labels.
+- Use consistent styling throughout.
+- Never include secrets or sensitive data.
+- Document any assumptions in the diagrams.
+- Group related elements with subgraphs.
+
+## Workflow
+
+```mermaid
+flowchart TD
+    A[Content] --> B[Extract]
+    B --> C[Validate]
+    C --> D[Document]
+    D --> E[Output]
+```
+
+## Python
+
+```python
+def extract_mermaid(content: str) -> list:
+    diagrams = []
+    in_mermaid = False
+    current = []
+    for line in content.split("\n"):
+        if line.strip().startswith("```mermaid"):
+            in_mermaid = True
+            current = []
+        elif line.strip() == "```" and in_mermaid:
+            in_mermaid = False
+            diagrams.append("\n".join(current))
+        elif in_mermaid:
+            current.append(line)
+    return diagrams
+
+def validate_mermaid_diagram(code: str) -> dict:
+    errors = []
+    valid_types = ["flowchart", "sequenceDiagram", "classDiagram",
+                   "stateDiagram", "erDiagram", "gantt", "pie",
+                   "mindmap", "timeline"]
+    lines = code.strip().split("\n")
+    first_line = lines[0] if lines else ""
+    if not any(t in first_line for t in valid_types):
+        errors.append("Invalid diagram type")
+    if len(lines) < 3:
+        errors.append("Diagram too short")
+    if "password" in code.lower() or "secret" in code.lower():
+        errors.append("Diagram contains sensitive data")
+    return {"valid": len(errors) == 0, "errors": errors}
+
+def check_labels(code: str) -> bool:
+    lines = code.strip().split("\n")
+    return all("[" in line or "(" in line or "[" in line for line in lines[1:])
+
+def document_diagram(code: str) -> str:
+    first_line = code.strip().split("\n")[0]
+    diagram_type = first_line.split()[0]
+    return "## " + diagram_type.title() + " Diagram\n\n```mermaid\n" + code + "\n```"
+```
+
+## Tests
+
+### Input
+
+```yaml
+content: |
+  ## Mermaid
+
+  flowchart TD
+      A[Start] --> B[Process]
+      B --> C[End]
+```
+
+### Expected
+
+```yaml
+valid: true
+errors: []
+```
+
+```python
+def test_mermaid():
+    code = "flowchart TD\n    A[Start] --> B[Process]\n    B --> C[End]"
+    assert validate_mermaid_diagram(code)["valid"] is True
+    assert check_labels(code)
+    assert "Flowchart Diagram" in document_diagram(code)
+    assert len(extract_mermaid("```mermaid\n" + code + "\n```")) == 1
+```
+
+## Examples
+
+### Architecture Diagram
+
+```mermaid
+flowchart TB
+    subgraph Frontend
+        A[Web App] --> B[API Client]
+    end
+    subgraph Backend
+        C[API Gateway] --> D[Auth Service]
+    end
+    B --> C
+```
+
+### Sequence Diagram
+
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant C as Client
+    participant A as API
+    U->>C: Login Request
+    C->>A: POST /auth/login
+    A-->>C: Token
+    C-->>U: Login Success
+```
+
+## References
+
+- MAM specification, the canonical source format
+- Mermaid section reference documentation

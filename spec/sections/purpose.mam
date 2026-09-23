@@ -1,0 +1,169 @@
+---
+id: section-purpose
+name: Purpose Section
+version: 1.0.0
+type: module
+author: MAM Team
+description: >
+  Specifies the Purpose section of the MAM source format. The Purpose section
+  is the only required section and carries a concise description of what a
+  module does for its users.
+license: MIT
+runtime:
+  language: python
+  version: ">=3.12"
+tags:
+  - spec
+  - section
+  - purpose
+dependencies:
+  - name: mam-spec
+    version: "1.0.0"
+capabilities:
+  - validate
+  - extract
+  - document
+permissions:
+  filesystem:
+    - read
+---
+
+# Purpose Section
+
+## Purpose
+
+Defines the Purpose section of the MAM specification. The Purpose section is the only required section of every module and provides a short, clear, and action oriented description of what the module does for its users.
+
+## Inputs
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| content | string | Yes | Full MAM module text that contains the section |
+| module | string | No | Module name used in documentation output |
+
+## Outputs
+
+| Name | Type | Description |
+|------|------|-------------|
+| purpose | string | Extracted purpose text |
+| valid | bool | Whether the section passes validation |
+| errors | list | Validation errors found in the section |
+
+## Capabilities
+
+### validate
+
+Checks that the section is present, non empty, and free of code blocks and subsections.
+
+### extract
+
+Pulls the purpose text out of the module body between the heading and the next section.
+
+### document
+
+Renders the purpose text into a documentation fragment.
+
+## Rules
+
+- Every module must have a Purpose section.
+- Content must follow the Purpose heading exactly.
+- Keep the text clear and concise, ideally one to three sentences.
+- Do not place code blocks inside the section.
+- Do not use subsections inside the section.
+- Start with an action verb that describes the capability.
+
+## Workflow
+
+```mermaid
+flowchart TD
+    A[Content] --> B[Validate]
+    B --> C[Extract]
+    C --> D[Document]
+    D --> E[Output]
+```
+
+## Python
+
+```python
+def extract_purpose(content: str) -> str:
+    purpose = []
+    in_purpose = False
+    for line in content.split("\n"):
+        if line.strip().startswith("## Purpose"):
+            in_purpose = True
+            continue
+        if in_purpose and line.startswith("##"):
+            break
+        if in_purpose:
+            purpose.append(line)
+    return "\n".join(purpose).strip()
+
+def validate_purpose(content: str) -> list:
+    errors = []
+    text = extract_purpose(content)
+    if not text:
+        errors.append("Missing Purpose section")
+        return errors
+    if "```" in text:
+        errors.append("Purpose contains code blocks")
+    if "###" in text:
+        errors.append("Purpose contains subsections")
+    if text.count(".") < 1:
+        errors.append("Purpose is too short")
+    return errors
+
+def document_purpose(purpose: str) -> str:
+    return "## Module Purpose\n\n" + purpose
+```
+
+## Tests
+
+### Input
+
+```yaml
+content: |
+  ## Purpose
+
+  Validate email addresses using standard RFC checks.
+```
+
+### Expected
+
+```yaml
+valid: true
+errors: []
+```
+
+```python
+def test_purpose():
+    content = "## Purpose\n\nValidate email addresses using standard RFC checks."
+    assert extract_purpose(content).startswith("Validate")
+    assert validate_purpose(content) == []
+    assert "Module Purpose" in document_purpose("hello")
+    assert validate_purpose("") == ["Missing Purpose section"]
+```
+
+## Examples
+
+### Minimal Purpose
+
+```markdown
+## Purpose
+
+Convert XML to JSON format.
+```
+
+### Detailed Purpose
+
+```markdown
+## Purpose
+
+Manage user authentication and authorization.
+
+This module provides token based authentication with support for multiple providers. It handles registration, login, password reset, and role based access control.
+```
+
+## References
+
+- MAM specification, the canonical source format
+- Purpose section reference documentation

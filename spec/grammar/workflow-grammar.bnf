@@ -1,0 +1,74 @@
+# MAM Workflow Grammar (BNF)
+# Version: 1.0.0
+# Grammar rules for the MAM Workflow section and step declarations
+
+# ============================================================================
+# Workflow Section
+# ============================================================================
+
+<workflow_section> ::= <workflow_header> <workflow_content>
+<workflow_header> ::= "##" "Workflow" NEWLINE
+<workflow_content> ::= <workflow_element>*
+<workflow_element> ::= <categorized_workflow> | <step_list> | <mermaid_block>
+                     | <workflow_paragraph> | <workflow_group>
+
+# ============================================================================
+# Categorized Workflow
+# ============================================================================
+
+<categorized_workflow> ::= <group_header> <step_list>
+<group_header> ::= "###" <group_name> NEWLINE
+<group_name> ::= IDENTIFIER | CUSTOM_NAME
+
+# ============================================================================
+# Step List
+# ============================================================================
+
+<step_list> ::= <step_item>+
+<step_item> ::= <ordered_marker> <step_name> NEWLINE <step_branch>?
+<ordered_marker> ::= DIGIT+ "."
+<step_name> ::= TEXT
+<step_branch> ::= <branch_item>+
+<branch_item> ::= <bullet_marker> <branch_text> NEWLINE
+<bullet_marker> ::= "-" | "*"
+<branch_text> ::= TEXT
+
+# ============================================================================
+# Mermaid Block
+# ============================================================================
+
+<mermaid_block> ::= <mermaid_fence> <mermaid_content> <mermaid_fence>
+<mermaid_fence> ::= "```mermaid" NEWLINE
+<mermaid_content> ::= <mermaid_line>*
+<mermaid_line> ::= <flowchart_line> | <node_line> | <edge_line> | ANYTHING
+<flowchart_line> ::= "flowchart" ("TD" | "LR" | "BT" | "RL") NEWLINE
+<node_line> ::= <node_id> "[" <node_label> "]" NEWLINE
+<node_id> ::= IDENTIFIER
+<node_label> ::= TEXT
+<edge_line> ::= <edge_source> "->" <edge_target> <edge_condition>? NEWLINE
+<edge_source> ::= <node_id> | <node_ref>
+<edge_target> ::= <node_id> | <node_ref>
+<edge_condition> ::= "|" <condition_text> "|"
+<condition_text> ::= TEXT
+
+# ============================================================================
+# Workflow Text and Groups
+# ============================================================================
+
+<workflow_paragraph> ::= <text_line>+
+<text_line> ::= INLINE_CONTENT NEWLINE
+<workflow_group> ::= <group_header> <step_list> <workflow_group>*
+
+# ============================================================================
+# Tokens
+# ============================================================================
+
+IDENTIFIER ::= [a-zA-Z_][a-zA-Z0-9_]*
+CUSTOM_NAME ::= [a-zA-Z_][a-zA-Z0-9_ ]*
+TEXT ::= [^\n]+
+INLINE_CONTENT ::= [^\n]+
+ANYTHING ::= [^\n]*
+NEWLINE ::= "\n"
+DIGIT ::= [0-9]
+SPACE ::= " " | "\t"
+INDENT ::= ("  " | "\t")+

@@ -1,0 +1,202 @@
+---
+id: grammar-dependencies
+name: Dependencies Grammar
+version: 1.0.0
+type: module
+author: MAM Team
+description: >
+  Describes the grammar of the MAM dependencies section: the packages and
+  modules a module needs to function.
+license: MIT
+runtime:
+  language: python
+  version: ">=3.12"
+tags:
+  - grammar
+  - dependencies
+capabilities:
+  - parse
+  - validate
+  - resolve
+permissions:
+  filesystem:
+    - read
+---
+
+# Dependencies Grammar
+
+## Purpose
+
+Describes the grammar of the MAM dependencies section, a markdown bullet list
+that declares external packages and modules with optional version constraints.
+This module parses a dependencies block, validates each entry, and resolves
+the declared set into a compact map.
+
+## Inputs
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| document | string | Yes | Dependencies section text to parse |
+| strict | bool | No | Reject duplicate packages (default: true) |
+
+## Outputs
+
+| Name | Type | Description |
+|------|------|-------------|
+| dependencies | list | Parsed dependency strings |
+| valid | bool | Whether all dependencies are well formed |
+| errors | list | Validation errors |
+| resolved | object | Map of package name to constraint |
+
+## Capabilities
+
+### parse
+
+Parse a dependencies section into a list of dependency strings.
+
+### validate
+
+Check that each dependency follows the naming grammar.
+
+### resolve
+
+Produce a map of package name to version constraint.
+
+## Rules
+
+- Package names must match the pattern `^[a-zA-Z0-9][a-zA-Z0-9._-]*[a-zA-Z0-9]$`.
+- Version constraints must be valid semver ranges.
+- Each package should be listed only once.
+- Group markers are optional, dev, test, docs.
+- Circular dependencies between modules are rejected.
+- Validation must not raise; it returns the errors.
+
+## Workflow
+
+```mermaid
+flowchart TD
+    A[Document] --> B[Parse]
+    B --> C[Validate]
+    C --> D[Resolve]
+    D --> E[Output]
+```
+
+## Python
+
+```python
+import re
+
+NAME_PATTERN = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9._-]*[a-zA-Z0-9]$")
+VERSION_PATTERN = re.compile(r"^(>=|<=|==|!=|~=|>|<)?\s*\d+(\.\d+){0,2}(,\s*(>=|<=|==|!=|~=|>|<)\s*\d+(\.\d+){0,2})*$")
+
+def parse(document: str) -> list:
+    """Parse a dependencies bullet list."""
+    dependencies = []
+    for line in document.splitlines():
+        line = line.strip()
+        if not line.startswith("- "):
+            continue
+        entry = line[2:].strip()
+        name = entry.split()[0].strip("@")
+        if name.startswith("./"):
+            continue
+        dependencies.append(name)
+    return dependencies
+
+def validate(document: str) -> dict:
+    """Validate each dependency entry."""
+    deps = parse(document)
+    errors = []
+    seen = set()
+    for line in document.splitlines():
+        line = line.strip()
+        if not line.startswith("- "):
+            continue
+        entry = line[2:].strip()
+        name = entry.split()[0].strip("@")
+        if not NAME_PATTERN.match(name):
+            errors.append(f"invalid name: {name}")
+        if name in seen:
+            errors.append(f"duplicate dependency: {name}")
+        seen.add(name)
+        rest = entry[len(name):].strip()
+        if rest and "(" not in rest:
+            constraint = rest.rstrip(" ,")
+            if constraint and not VERSION_PATTERN.match(constraint):
+                errors.append(f"invalid constraint: {constraint}")
+    return {"dependencies": deps, "valid": not errors, "errors": errors}
+
+def resolve(document: str) -> dict:
+    """Map each package to its constraint."""
+    result = {}
+    for line in document.splitlines():
+        line = line.strip()
+        if not line.startswith("- "):
+            continue
+        entry = line[2:].strip()
+        parts = entry.split()
+        name = parts[0].strip("@")
+        constraint = " ".join(parts[1:]) if len(parts) > 1 else "*"
+        result[name] = constraint
+    return result
+```
+
+## Tests
+
+### Input
+
+```yaml
+document: |
+  - requests >= 2.28.0
+  - pydantic ~= 2.0
+```
+
+### Expected
+
+```yaml
+valid: true
+```
+
+```python
+def test_parse():
+    doc = "- requests >= 2.28.0\n- pydantic ~= 2.0"
+    assert parse(doc) == ["requests", "pydantic"]
+
+def test_validate_ok():
+    doc = "- requests >= 2.28.0\n- pydantic ~= 2.0"
+    assert validate(doc)["valid"] is True
+
+def test_validate_bad_name():
+    doc = "- My Package >= 1.0"
+    assert validate(doc)["valid"] is False
+
+def test_validate_duplicate():
+    doc = "- requests >= 2.28.0\n- requests >= 2.0"
+    assert validate(doc)["valid"] is False
+
+def test_resolve():
+    doc = "- requests >= 2.28.0"
+    assert resolve(doc)["requests"] == ">= 2.28.0"
+```
+
+## Examples
+
+### Basic Usage
+
+```python
+doc = "- fastapi >= 0.100.0\n- pydantic >= 2.0"
+print(resolve(doc))
+```
+
+### Expected Flow
+
+```text
+Document → Parse → Validate → Resolve → Output
+```
+
+## References
+
+- MAM documentation
+- tokens.md
+- ast-specification.md
+- section-grammar.bnf

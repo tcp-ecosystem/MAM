@@ -1,0 +1,101 @@
+# MAM System Grammar (BNF)
+# Version: 1.0.0
+# Grammar rules for MAM system declarations and composition
+
+# ============================================================================
+# System Declaration
+# ============================================================================
+
+<system_decl> ::= <system_keyword> <system_name> NEWLINE <system_body>
+<system_keyword> ::= "system" | "module"
+<system_name> ::= IDENTIFIER (<space> IDENTIFIER)*
+<system_body> ::= <system_section>*
+
+# ============================================================================
+# System Sections
+# ============================================================================
+
+<system_section> ::= <type_section> | <agents_section> | <modules_section>
+                   | <tools_section> | <memory_section> | <edges_section>
+                   | <policy_section> | <permissions_section>
+                   | <capabilities_section> | <dependencies_section>
+
+<type_section> ::= "type:" NEWLINE INDENT "system" NEWLINE
+
+<agents_section> ::= "agents:" NEWLINE <agents_list>
+<agents_list> ::= <agent_item>+
+<agent_item> ::= INDENT "-" <text> NEWLINE
+
+<modules_section> ::= "modules:" NEWLINE <modules_list>
+<modules_list> ::= <module_item>+
+<module_item> ::= INDENT "-" <text> NEWLINE
+
+<tools_section> ::= "tools:" NEWLINE <tools_list>
+<tools_list> ::= <tool_item>+
+<tool_item> ::= INDENT "-" <text> NEWLINE
+
+<memory_section> ::= "memory:" NEWLINE <memory_value>
+<memory_value> ::= INDENT "shared:" <memory_name> NEWLINE
+                 | INDENT "external:" <memory_name> NEWLINE
+                 | INDENT <memory_type> NEWLINE
+<memory_type> ::= "shared" | "local" | "external"
+<memory_name> ::= IDENTIFIER (<space> IDENTIFIER)*
+
+<edges_section> ::= "edges:" NEWLINE <edges_list>
+<edges_list> ::= <edge_item>+
+<edge_item> ::= INDENT <edge_decl> NEWLINE
+              | INDENT "-" <edge_decl> NEWLINE
+
+<edge_decl> ::= <source_name> "->" <target_name> <edge_condition>?
+<source_name> ::= TEXT
+<target_name> ::= TEXT
+<edge_condition> ::= "[" <condition_text> "]"
+<condition_text> ::= TEXT
+
+<policy_section> ::= "policy:" NEWLINE INDENT <text> NEWLINE
+
+<permissions_section> ::= "permissions:" NEWLINE <permissions_list>
+<permissions_list> ::= <permission_item>+
+<permission_item> ::= INDENT <permission_key> ":" <permission_value> NEWLINE
+<permission_key> ::= "filesystem" | "network" | "python" | "memory" | IDENTIFIER
+<permission_value> ::= "read" | "write" | "none" | "internet" | "internal"
+                     | "sandbox" | "full" | "local" | "shared" | TEXT
+
+<capabilities_section> ::= "capabilities:" NEWLINE <capabilities_list>
+<capabilities_list> ::= <capability_item>+
+<capability_item> ::= INDENT "-" <text> NEWLINE
+
+<dependencies_section> ::= "dependencies:" NEWLINE <dependencies_list>
+<dependencies_list> ::= <dependency_item>+
+<dependency_item> ::= INDENT "-" <dependency_name> NEWLINE <dependency_details>?
+<dependency_name> ::= TEXT
+<dependency_details> ::= INDENT INDENT "version:" <version_value> NEWLINE
+<version_value> ::= STRING | TEXT
+
+# ============================================================================
+# Policy Declaration
+# ============================================================================
+
+<policy_decl> ::= "module" <policy_name> NEWLINE <policy_body>
+<policy_name> ::= IDENTIFIER (<space> IDENTIFIER)*
+<policy_body> ::= <policy_type_section> | <allow_section> | <deny_section>
+                | <permissions_section>
+<policy_type_section> ::= "type:" NEWLINE INDENT "policy" NEWLINE
+<allow_section> ::= "allow:" NEWLINE <allow_list>
+<allow_list> ::= <allow_item>+
+<allow_item> ::= INDENT "-" <text> NEWLINE
+<deny_section> ::= "deny:" NEWLINE <deny_list>
+<deny_list> ::= <deny_item>+
+<deny_item> ::= INDENT "-" <text> NEWLINE
+
+# ============================================================================
+# Tokens
+# ============================================================================
+
+IDENTIFIER ::= [a-zA-Z_][a-zA-Z0-9_]*
+TEXT ::= [^\n]+
+STRING ::= "\"" [^"]* "\""
+NEWLINE ::= "\n"
+INDENT ::= ("  " | "\t")+
+SPACE ::= " " | "\t"
+ARROW ::= "->"

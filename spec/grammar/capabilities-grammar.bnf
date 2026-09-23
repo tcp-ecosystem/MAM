@@ -1,0 +1,96 @@
+# MAM Capabilities Grammar (BNF)
+# Version: 1.0.0
+# Complete capabilities section specification for MAM modules
+
+# ============================================================================
+# Capabilities Container
+# ============================================================================
+
+<capabilities_section> ::= <cap_header> <cap_body>
+<cap_header> ::= "##" "Capabilities" NEWLINE
+<cap_body> ::= <cap_entry>*
+
+# ============================================================================
+# Capability Entries
+# ============================================================================
+
+<cap_entry> ::= <cap_bullet> <cap_value> NEWLINE <cap_nested>*
+<cap_bullet> ::= "-" SPACE
+<cap_value> ::= <cap_name> <cap_optional>?
+<cap_name> ::= <cap_segment> (":" <cap_segment>)*
+<cap_segment> ::= [a-z0-9]+ ("-" [a-z0-9]+)*
+<cap_optional> ::= SPACE "(optional)" <cap_comment>?
+
+# ============================================================================
+# Capability Categories
+# ============================================================================
+
+<cap_category> ::= "runtime" | "network" | "storage" | "compute"
+                 | "security" | "integration" | "hardware" | "custom"
+
+# ============================================================================
+# Version Constraints
+# ============================================================================
+
+<cap_version_constraint> ::= ":" <cap_operator> <cap_version>
+<cap_operator> ::= ">=" | "<=" | "==" | "!=" | "~=" | ">" | "<" | "+"
+<cap_version> ::= NUMBER ("." NUMBER)* ("." NUMBER)? <cap_prerelease>?
+
+# ============================================================================
+# Nested Module Listings
+# ============================================================================
+
+<cap_nested> ::= INDENT "-" <cap_module_entry> NEWLINE
+<cap_module_entry> ::= <cap_module_name> <cap_module_desc>?
+<cap_module_name> ::= "`" [a-zA-Z0-9_\-]+ "`"
+<cap_module_desc> ::= SPACE "-" SPACE TEXT
+
+# ============================================================================
+# Comments
+# ============================================================================
+
+<cap_comment> ::= SPACE "#" [^\n]*
+
+# ============================================================================
+# Common Capability Patterns
+# ============================================================================
+
+<cap_runtime> ::= "runtime:python:" <cap_py_version>
+                | "runtime:javascript:" <cap_node_version>
+                | "runtime:python:venv" | "runtime:python:pip"
+<cap_py_version> ::= "3.12+" | "3.11+" | "3.10+"
+<cap_node_version> ::= "20+" | "18+"
+
+<cap_network> ::= "network:http" | "network:https" | "network:dns"
+                | "network:websocket" | "network:ipv4" | "network:ipv6"
+
+<cap_storage> ::= "storage:sqlite" | "storage:redis" | "storage:postgresql"
+                | "storage:mongodb" | "storage:filesystem:read"
+                | "storage:filesystem:write"
+
+<cap_compute> ::= "compute:cpu:1core" | "compute:cpu:2cores"
+                | "compute:memory:256MB" | "compute:memory:512MB"
+                | "compute:memory:1GB" | "compute:gpu:cuda"
+                | "compute:timeout:" <cap_duration>
+
+<cap_security> ::= "security:tls:1.2+" | "security:tls:1.3"
+                 | "security:certificate-validation" | "security:sandbox"
+
+<cap_integration> ::= "integration:rest-api" | "integration:graphql"
+                    | "integration:grpc" | "integration:mqtt"
+                    | "integration:kafka" | "integration:rabbitmq"
+
+<cap_hardware> ::= "hardware:arm64" | "hardware:x86_64"
+                 | "hardware:gpu:nvidia" | "hardware:gpu:amd"
+
+# ============================================================================
+# Token Definitions
+# ============================================================================
+
+IDENTIFIER ::= [a-zA-Z_][a-zA-Z0-9_]*
+NUMBER ::= [0-9]+ ("." [0-9]+)?
+TEXT ::= [^\n]+
+NEWLINE ::= "\n"
+INDENT ::= ("  " | "\t")+
+DIGIT ::= [0-9]
+SPACE ::= " " | "\t"

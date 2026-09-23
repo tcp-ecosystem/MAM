@@ -1,0 +1,84 @@
+# MAM Agent Grammar (BNF)
+# Version: 1.0.0
+# Grammar rules for MAM agent declarations and related sections
+
+# ============================================================================
+# Agent Declaration
+# ============================================================================
+
+<agent_decl> ::= <agent_keyword> <agent_name> NEWLINE <agent_body>
+<agent_keyword> ::= "agent" | "module"
+<agent_name> ::= IDENTIFIER (<space> IDENTIFIER)*
+<agent_body> ::= <agent_section>*
+
+# ============================================================================
+# Agent Sections
+# ============================================================================
+
+<agent_section> ::= <type_section> | <role_section> | <goal_section>
+                  | <memory_section> | <tools_section> | <handoff_section>
+                  | <permissions_section> | <capabilities_section>
+
+<type_section> ::= "type:" NEWLINE INDENT "agent" NEWLINE
+<role_section> ::= "role:" NEWLINE INDENT <text> NEWLINE
+<goal_section> ::= "goal:" NEWLINE INDENT <text> NEWLINE
+<memory_section> ::= "memory:" NEWLINE INDENT <memory_type> NEWLINE
+<memory_type> ::= "shared" | "local" | "external"
+
+<tools_section> ::= "tools:" NEWLINE <tools_list>
+<tools_list> ::= <tool_item>+
+<tool_item> ::= INDENT "-" <text> NEWLINE
+
+<handoff_section> ::= "handoff:" NEWLINE <handoff_list>
+<handoff_list> ::= <handoff_item>+
+<handoff_item> ::= INDENT "-" <text> NEWLINE
+
+<permissions_section> ::= "permissions:" NEWLINE <permissions_list>
+<permissions_list> ::= <permission_item>+
+<permission_item> ::= INDENT <permission_key> ":" <permission_value> NEWLINE
+<permission_key> ::= "filesystem" | "network" | "python" | "memory" | IDENTIFIER
+<permission_value> ::= "read" | "write" | "none" | "internet" | "internal"
+                     | "sandbox" | "full" | "local" | "shared" | TEXT
+
+<capabilities_section> ::= "capabilities:" NEWLINE <capabilities_list>
+<capabilities_list> ::= <capability_item>+
+<capability_item> ::= INDENT "-" <text> NEWLINE
+
+# ============================================================================
+# Tool Declaration
+# ============================================================================
+
+<tool_decl> ::= "module" <tool_name> NEWLINE <tool_body>
+<tool_name> ::= IDENTIFIER (<space> IDENTIFIER)*
+<tool_body> ::= <tool_type_section> | <provider_section> | <permissions_section>
+              | <capabilities_section>
+<tool_type_section> ::= "type:" NEWLINE INDENT "tool" NEWLINE
+<provider_section> ::= "provider:" NEWLINE INDENT <text> NEWLINE
+
+# ============================================================================
+# Memory Declaration
+# ============================================================================
+
+<memory_decl> ::= "module" <memory_name> NEWLINE <memory_body>
+<memory_name> ::= IDENTIFIER (<space> IDENTIFIER)*
+<memory_body> ::= <memory_type_section> | <format_section> | <backend_section>
+                | <scope_section> | <ttl_section>
+<memory_type_section> ::= "type:" NEWLINE INDENT "memory" NEWLINE
+<format_section> ::= "format:" NEWLINE INDENT <memory_format> NEWLINE
+<memory_format> ::= "vector" | "key-value" | "relational" | "graph" | "document"
+<backend_section> ::= "backend:" NEWLINE INDENT <text> NEWLINE
+<scope_section> ::= "scope:" NEWLINE INDENT <scope_type> NEWLINE
+<scope_type> ::= "module" | "workspace" | "global"
+<ttl_section> ::= "ttl:" NEWLINE INDENT <duration> NEWLINE
+<duration> ::= NUMBER ("h" | "m" | "s" | "d")
+
+# ============================================================================
+# Tokens
+# ============================================================================
+
+IDENTIFIER ::= [a-zA-Z_][a-zA-Z0-9_]*
+TEXT ::= [^\n]+
+NUMBER ::= [0-9]+ ("." [0-9]+)?
+NEWLINE ::= "\n"
+INDENT ::= ("  " | "\t")+
+SPACE ::= " " | "\t"

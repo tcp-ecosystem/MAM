@@ -1,0 +1,163 @@
+---
+id: grammar-agent
+name: Agent Grammar
+version: 1.0.0
+type: module
+author: MAM Team
+description: >
+  Specifies the MAM agent grammar: role, goal, tools, memory, and handoff
+  declarations, plus a parser and validator for agent definitions.
+license: MIT
+runtime:
+  language: python
+  version: ">=3.12"
+tags:
+  - grammar
+  - agent
+  - specification
+capabilities:
+  - parse_agent
+  - validate_agent
+permissions:
+  memory:
+    - local
+---
+
+# Agent Grammar Module
+
+## Purpose
+
+Defines the grammar used by MAM agent declarations. The module describes how an agent declares its role, goal, tools, memory, and handoff targets. It also provides a small parser and validator that accept an agent definition and report missing or malformed fields.
+
+## Inputs
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| role | string | Yes | The role the agent performs |
+| goal | string | Yes | The objective the agent pursues |
+| tools | list | No | Available tool names |
+| handoff | list | No | Target agent names |
+| memory | string | No | Memory mode such as shared or local |
+
+## Outputs
+
+| Name | Type | Description |
+|------|------|-------------|
+| agent | object | Parsed agent definition |
+| errors | list | Validation errors |
+| valid | boolean | True when no errors exist |
+
+## Capabilities
+
+### parse_agent
+
+Accept an agent definition and normalize its fields.
+
+### validate_agent
+
+Check required fields and report errors.
+
+## Rules
+
+- Role is mandatory for every agent.
+- Goal is mandatory for every agent.
+- Tools must reference declared tool modules.
+- Handoff targets must reference known agents.
+- Memory mode must be shared or local.
+- Permissions must bound resource access.
+
+## Workflow
+
+```mermaid
+flowchart TD
+    A[Agent Definition] --> B[Parse Fields]
+    B --> C[Check Role]
+    C --> D[Check Goal]
+    D --> E{Errors?}
+    E -->|Yes| F[Report Errors]
+    E -->|No| G[Valid Agent]
+```
+
+## Python
+
+```python
+def parse_agent(role, goal, tools=None, handoff=None, memory="local"):
+    return {
+        "role": role,
+        "goal": goal,
+        "tools": tools or [],
+        "handoff": handoff or [],
+        "memory": memory,
+    }
+
+def validate_agent(agent):
+    errors = []
+    if not agent.get("role"):
+        errors.append("Agent requires a role")
+    if not agent.get("goal"):
+        errors.append("Agent requires a goal")
+    memory = agent.get("memory", "local")
+    if memory not in ("shared", "local"):
+        errors.append("Memory must be shared or local")
+    return errors
+```
+
+## Tests
+
+### Input
+
+```yaml
+role: Research
+goal: Gather findings
+tools:
+  - Search
+memory: shared
+```
+
+### Expected
+
+```yaml
+valid: true
+errors: []
+```
+
+```python
+def test_parse_agent():
+    agent = parse_agent("Research", "Gather findings", tools=["Search"])
+    assert agent["role"] == "Research"
+    assert agent["tools"] == ["Search"]
+
+def test_validate_agent_ok():
+    agent = parse_agent("Research", "Gather findings", memory="shared")
+    assert validate_agent(agent) == []
+
+def test_validate_agent_missing_role():
+    agent = parse_agent("", "Gather findings")
+    assert validate_agent(agent) == ["Agent requires a role"]
+
+def test_validate_agent_bad_memory():
+    agent = parse_agent("Research", "Gather findings", memory="cloud")
+    assert validate_agent(agent) == ["Memory must be shared or local"]
+```
+
+## Examples
+
+### Basic Usage
+
+```python
+agent = parse_agent("Research", "Gather findings", tools=["Search"], memory="shared")
+errors = validate_agent(agent)
+print(agent, errors)
+```
+
+### Expected Flow
+
+```text
+Definition -> Parse -> Validate -> Result
+```
+
+## References
+
+- MAM Agent section specification
+- MAM system grammar
+- MAM AST specification

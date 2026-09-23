@@ -1,0 +1,78 @@
+# MAM Dependencies Grammar (BNF)
+# Version: 1.0.0
+# Complete dependencies section specification for MAM modules
+
+# ============================================================================
+# Dependencies Container
+# ============================================================================
+
+<dependencies_section> ::= <dep_header> <dep_body>
+<dep_header> ::= "##" "Dependencies" NEWLINE
+<dep_body> ::= <dep_entry>*
+
+# ============================================================================
+# Dependency Entries
+# ============================================================================
+
+<dep_entry> ::= <dep_bullet> <dep_spec> NEWLINE
+<dep_bullet> ::= "-" SPACE
+<dep_spec> ::= <dep_package> <dep_constraint>? <dep_marker>? <dep_comment>?
+
+# ============================================================================
+# Package Names
+# ============================================================================
+
+<dep_package> ::= <dep_scope>? <dep_name>
+<dep_scope> ::= "@" <dep_scope_name> "/"
+<dep_scope_name> ::= [a-zA-Z0-9]+ ("-" [a-zA-Z0-9]+)*
+<dep_name> ::= [a-zA-Z0-9] ([a-zA-Z0-9._-]* [a-zA-Z0-9])?
+<dep_local> ::= "./" <dep_path>
+
+# ============================================================================
+# Version Constraints
+# ============================================================================
+
+<dep_constraint> ::= <dep_single> | <dep_range>
+<dep_single> ::= SPACE <dep_operator> SPACE <dep_version>
+<dep_operator> ::= ">=" | "<=" | "==" | "!=" | "~=" | ">" | "<"
+<dep_version> ::= NUMBER "." NUMBER "." NUMBER <dep_prerelease>?
+                | NUMBER "." NUMBER
+                | NUMBER
+<dep_prerelease> ::= "-" [a-zA-Z0-9]+ ("." [a-zA-Z0-9]+)*
+<dep_range> ::= <dep_single> ("," SPACE <dep_single>)*
+
+# ============================================================================
+# Group Markers
+# ============================================================================
+
+<dep_marker> ::= SPACE "(optional)" | SPACE "(dev)"
+               | SPACE "(test)" | SPACE "(docs)"
+<dep_platform> ::= SPACE "(platform=" <dep_platform_name> ")"
+<dep_platform_name> ::= "win32" | "darwin" | "linux" | TEXT
+
+# ============================================================================
+# Comments
+# ============================================================================
+
+<dep_comment> ::= SPACE "#" [^\n]*
+
+# ============================================================================
+# Dependency Types
+# ============================================================================
+
+<dep_external> ::= <dep_package> <dep_constraint>? <dep_marker>?
+<dep_internal> ::= <dep_package> <dep_constraint>?
+<dep_system> ::= <dep_name>
+<dep_runtime> ::= <dep_name> <dep_constraint>?
+
+# ============================================================================
+# Token Definitions
+# ============================================================================
+
+IDENTIFIER ::= [a-zA-Z_][a-zA-Z0-9_]*
+NUMBER ::= [0-9]+ ("." [0-9]+)?
+TEXT ::= [^\n]+
+NEWLINE ::= "\n"
+INDENT ::= ("  " | "\t")+
+DIGIT ::= [0-9]
+SPACE ::= " " | "\t"

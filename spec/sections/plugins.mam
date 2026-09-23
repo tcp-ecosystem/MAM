@@ -1,0 +1,208 @@
+---
+id: section-plugins
+name: Plugins Section
+version: 1.0.0
+type: module
+author: MAM Team
+description: >
+  Specifies the Plugins section of the MAM source format. The section lists
+  the plugins that a module depends on for extensions and extra functionality.
+license: MIT
+runtime:
+  language: python
+  version: ">=3.12"
+tags:
+  - spec
+  - section
+  - plugins
+dependencies:
+  - name: mam-spec
+    version: "1.0.0"
+capabilities:
+  - validate
+  - extract
+  - document
+permissions:
+  filesystem:
+    - read
+---
+
+# Plugins Section
+
+## Purpose
+
+Defines the Plugins section of the MAM specification. The section lists required plugins and supports module extensibility, feature discovery, and dependency management.
+
+## Inputs
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| content | string | Yes | Full MAM module text that contains the section |
+| available | set | No | Plugins that are already available |
+
+## Outputs
+
+| Name | Type | Description |
+|------|------|-------------|
+| plugins | list | Extracted plugin declarations |
+| valid | bool | Whether the section passes validation |
+| missing | list | Required plugins that are not available |
+
+## Capabilities
+
+### validate
+
+Checks plugin names, version constraints, duplicates, and categories.
+
+### extract
+
+Pulls the plugin list out of the section body.
+
+### document
+
+Renders the plugins into a documentation fragment.
+
+## Rules
+
+- Use valid plugin naming conventions.
+- Include version constraints when possible.
+- List each plugin only once.
+- Document what each plugin provides.
+- Mark non essential plugins as optional.
+- Document compatibility requirements.
+- Document plugin configuration.
+
+## Workflow
+
+```mermaid
+flowchart TD
+    A[Content] --> B[Extract]
+    B --> C[Validate]
+    C --> D[Resolve]
+    D --> E[Output]
+```
+
+## Python
+
+```python
+import re
+
+def validate_plugin_name(name: str) -> bool:
+    return bool(re.match(r"^@?[a-z][a-z0-9/_-]*$", name))
+
+def validate_version_constraint(constraint: str) -> bool:
+    if constraint in ("", "*"):
+        return True
+    return bool(re.match(r"^(>=|<=|==|!=|~=)?\s*[0-9]+(\.[0-9]+)*$", constraint))
+
+def check_duplicates(plugins: list) -> list:
+    seen = set()
+    duplicates = []
+    for plugin in plugins:
+        if plugin in seen:
+            duplicates.append(plugin)
+        seen.add(plugin)
+    return duplicates
+
+def validate_category(plugin: str) -> bool:
+    return plugin.startswith("@mam/") or plugin.startswith("@community/")
+
+def check_required_plugins(plugins: list, available) -> list:
+    missing = []
+    for plugin in plugins:
+        base = plugin.split(" ")[0]
+        if base not in available:
+            missing.append(plugin)
+    return missing
+
+def extract_plugins(content: str) -> list:
+    plugins = []
+    in_section = False
+    for line in content.split("\n"):
+        if line.strip().startswith("## Plugins"):
+            in_section = True
+            continue
+        if in_section and line.startswith("##"):
+            break
+        if in_section and line.strip().startswith("- "):
+            plugins.append(line.strip()[2:])
+    return plugins
+
+def validate_plugins(plugins: list) -> list:
+    errors = []
+    for plugin in plugins:
+        name = plugin.split(" ")[0]
+        if not validate_plugin_name(name):
+            errors.append("Invalid plugin name: " + name)
+    for dup in check_duplicates(plugins):
+        errors.append("Duplicate plugin: " + dup)
+    return errors
+
+def document_plugins(plugins: list) -> str:
+    docs = "## Required Plugins\n\n"
+    for plugin in plugins:
+        docs += "- " + plugin + "\n"
+    return docs
+```
+
+## Tests
+
+### Input
+
+```yaml
+content: |
+  ## Plugins
+
+  - @mam/plugin-yaml
+  - @mam/plugin-mermaid
+available: [@mam/plugin-yaml, @mam/plugin-mermaid]
+```
+
+### Expected
+
+```yaml
+valid: true
+missing: []
+```
+
+```python
+def test_plugins():
+    plugins = ["@mam/plugin-yaml", "@mam/plugin-mermaid"]
+    assert validate_plugin_name("@mam/plugin-yaml")
+    assert validate_category("@mam/plugin-yaml")
+    assert validate_version_constraint("~= 2.0")
+    assert validate_plugins(plugins) == []
+    assert check_required_plugins(plugins, set(plugins)) == []
+    assert "Required Plugins" in document_plugins(plugins)
+```
+
+## Examples
+
+### Core Plugins
+
+```markdown
+- @mam/plugin-yaml  YAML parsing support
+- @mam/plugin-json  JSON processing
+- @mam/plugin-mermaid  Diagram rendering
+```
+
+### Version Constraints
+
+```markdown
+- @mam/plugin-yaml >= 1.0.0
+- @mam/plugin-mermaid ~= 2.0
+- @mam/plugin-python == 1.5.0
+```
+
+### Optional Plugins
+
+```markdown
+- @mam/plugin-yaml
+- @mam/plugin-redis (optional)
+- @mam/plugin-s3 (optional)
+```
+
+## References
+
+- MAM specification, the canonical source format
+- Plugins section reference documentation

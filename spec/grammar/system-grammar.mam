@@ -1,0 +1,173 @@
+---
+id: grammar-system
+name: System Grammar
+version: 1.0.0
+type: module
+author: MAM Team
+description: >
+  Specifies the MAM system grammar: modules, agents, edges, memory, and policy
+  declarations, plus a parser and validator for system definitions.
+license: MIT
+runtime:
+  language: python
+  version: ">=3.12"
+tags:
+  - grammar
+  - system
+  - specification
+capabilities:
+  - parse_system
+  - validate_system
+permissions:
+  memory:
+    - local
+---
+
+# System Grammar Module
+
+## Purpose
+
+Defines the grammar used by MAM system declarations. The module describes how a system lists its members, agents, and edges, and how policy bounds the whole. It also provides a small parser and validator that accept a system definition and report structural errors.
+
+## Inputs
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| modules | list | Yes | Member module names |
+| agents | list | No | Agent names in the system |
+| edges | list | No | Directed edges between members |
+| policy | string | No | Policy module name |
+
+## Outputs
+
+| Name | Type | Description |
+|------|------|-------------|
+| system | object | Parsed system definition |
+| errors | list | Validation errors |
+| valid | boolean | True when no errors exist |
+
+## Capabilities
+
+### parse_system
+
+Accept a system definition and normalize its fields.
+
+### validate_system
+
+Check members and edges and report errors.
+
+## Rules
+
+- Members must be declared in the modules list.
+- Edge targets must be known members.
+- Agents must appear in the agents list.
+- Policy must be a declared module.
+- Permissions must bound resource access.
+- An empty system is invalid.
+
+## Workflow
+
+```mermaid
+flowchart TD
+    A[System Definition] --> B[Parse Modules]
+    B --> C[Validate Edges]
+    C --> D{Errors?}
+    D -->|Yes| E[Report Errors]
+    D -->|No| F[Valid System]
+```
+
+## Python
+
+```python
+def parse_system(modules, agents=None, edges=None, policy=None):
+    return {
+        "modules": modules,
+        "agents": agents or [],
+        "edges": edges or [],
+        "policy": policy,
+    }
+
+def validate_system(system):
+    errors = []
+    if not system.get("modules"):
+        errors.append("System has no modules")
+        return errors
+    members = set(system["modules"])
+    for source, target in system.get("edges", []):
+        if source not in members:
+            errors.append("Unknown edge source: " + source)
+        if target not in members:
+            errors.append("Unknown edge target: " + target)
+    return errors
+```
+
+## Tests
+
+### Input
+
+```yaml
+modules:
+  - recon
+  - analyzer
+  - reporter
+agents:
+  - Planner
+edges:
+  - recon -> analyzer
+  - analyzer -> reporter
+```
+
+### Expected
+
+```yaml
+valid: true
+errors: []
+```
+
+```python
+def test_parse_system():
+    system = parse_system(["recon", "analyzer"], agents=["Planner"])
+    assert system["modules"] == ["recon", "analyzer"]
+    assert system["agents"] == ["Planner"]
+
+def test_validate_system_ok():
+    system = parse_system(
+        ["recon", "analyzer"],
+        edges=[("recon", "analyzer")],
+    )
+    assert validate_system(system) == []
+
+def test_validate_system_unknown_edge():
+    system = parse_system(["recon"], edges=[("recon", "ghost")])
+    assert validate_system(system) == ["Unknown edge target: ghost"]
+
+def test_validate_system_empty():
+    assert validate_system(parse_system([])) == ["System has no modules"]
+```
+
+## Examples
+
+### Basic Usage
+
+```python
+system = parse_system(
+    ["recon", "analyzer", "reporter"],
+    agents=["Planner", "Researcher", "Writer"],
+    edges=[("recon", "analyzer"), ("analyzer", "reporter")],
+)
+errors = validate_system(system)
+print(system, errors)
+```
+
+### Expected Flow
+
+```text
+Modules -> Edges -> Validate -> Result
+```
+
+## References
+
+- MAM System section specification
+- MAM agent grammar
+- MAM workflow grammar
+- MAM AST specification

@@ -1,0 +1,212 @@
+---
+id: section-javascript
+name: JavaScript Section
+version: 1.0.0
+type: module
+author: MAM Team
+description: >
+  Specifies the JavaScript section of the MAM source format. The section holds
+  executable JavaScript and TypeScript code blocks that run in a JavaScript
+  runtime environment.
+license: MIT
+runtime:
+  language: python
+  version: ">=3.12"
+tags:
+  - spec
+  - section
+  - javascript
+dependencies:
+  - name: mam-spec
+    version: "1.0.0"
+capabilities:
+  - validate
+  - extract
+  - document
+permissions:
+  filesystem:
+    - read
+---
+
+# JavaScript Section
+
+## Purpose
+
+Defines the JavaScript section of the MAM specification. The section carries executable JavaScript and TypeScript code blocks for modules that interact with web technologies or the JavaScript ecosystem.
+
+## Inputs
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| content | string | Yes | Full MAM module text that contains the section |
+| code | string | No | JavaScript code block to validate directly |
+
+## Outputs
+
+| Name | Type | Description |
+|------|------|-------------|
+| blocks | list | Extracted JavaScript code blocks |
+| valid | bool | Whether the code passes validation |
+| errors | list | Validation errors found in the code |
+
+## Capabilities
+
+### validate
+
+Checks syntax balance, secrets, and runtime metadata comments.
+
+### extract
+
+Pulls the JavaScript code blocks out of the section body.
+
+### document
+
+Renders the JavaScript code into a documentation fragment.
+
+## Rules
+
+- Specify the language identifier for every block.
+- Code must be syntactically valid.
+- Target the declared runtime.
+- Avoid unintended side effects.
+- Include proper error handling.
+- Never include secrets or API keys.
+- Use metadata comments for execution hints.
+
+## Workflow
+
+```mermaid
+flowchart TD
+    A[Content] --> B[Extract]
+    B --> C[Validate]
+    C --> D[Document]
+    D --> E[Output]
+```
+
+## Python
+
+```python
+import re
+
+def validate_js_syntax(code: str) -> bool:
+    pairs = {"(": ")", "[": "]", "{": "}"}
+    stack = []
+    in_string = None
+    i = 0
+    while i < len(code):
+        ch = code[i]
+        if in_string:
+            if ch == "\\":
+                i += 2
+                continue
+            if ch == in_string:
+                in_string = None
+        elif ch in "\"'`":
+            in_string = ch
+        elif ch in pairs:
+            stack.append(ch)
+        elif ch in ")]}":
+            if not stack or pairs[stack.pop()] != ch:
+                return False
+        i += 1
+    return not stack and in_string is None
+
+def check_secrets(code: str) -> bool:
+    patterns = [r"api[_-]?key\s*=\s*[\"'][^\"']+[\"']",
+                r"password\s*=\s*[\"'][^\"']+[\"']",
+                r"secret\s*=\s*[\"'][^\"']+[\"']"]
+    return not any(re.search(p, code, re.IGNORECASE) for p in patterns)
+
+def extract_js_blocks(content: str) -> list:
+    blocks = []
+    in_section = False
+    in_block = False
+    current = []
+    for line in content.split("\n"):
+        if line.strip().startswith("## JavaScript"):
+            in_section = True
+            continue
+        if in_section and line.startswith("##"):
+            break
+        if in_section:
+            if line.strip().startswith("```"):
+                if not in_block:
+                    in_block = True
+                    current = []
+                else:
+                    blocks.append("\n".join(current))
+                    in_block = False
+            elif in_block:
+                current.append(line)
+    return blocks
+
+def validate_js(code: str) -> dict:
+    errors = []
+    if not validate_js_syntax(code):
+        errors.append("Unbalanced syntax in JavaScript block")
+    if not check_secrets(code):
+        errors.append("Possible hardcoded secret in JavaScript block")
+    return {"valid": len(errors) == 0, "errors": errors}
+
+def document_js(code: str) -> str:
+    return "## JavaScript\n\n```javascript\n" + code + "\n```"
+```
+
+## Tests
+
+### Input
+
+```yaml
+content: |
+  ## JavaScript
+
+  function greet(name) {
+      return `Hello, ${name}!`;
+  }
+```
+
+### Expected
+
+```yaml
+valid: true
+errors: []
+```
+
+```python
+def test_javascript():
+    code = "function greet(name) {\n  return `Hello, ' + name + '!`;\n}"
+    assert validate_js_syntax(code)
+    assert check_secrets(code)
+    assert validate_js(code)["valid"] is True
+    assert "JavaScript" in document_js(code)
+    assert len(extract_js_blocks("## JavaScript\n```javascript\na\n```")) == 1
+```
+
+## Examples
+
+### Basic Function
+
+```javascript
+function greet(name) {
+    return `Hello, ${name}!`;
+}
+
+module.exports = { greet };
+```
+
+### ES6 Module
+
+```javascript
+import { createServer } from 'http';
+
+export function serve(port) {
+    return createServer((req, res) => {
+        res.end('ok');
+    }).listen(port);
+}
+```
+
+## References
+
+- MAM specification, the canonical source format
+- JavaScript section reference documentation

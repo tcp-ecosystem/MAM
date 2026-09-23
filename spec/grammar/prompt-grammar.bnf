@@ -1,0 +1,64 @@
+# MAM Prompt Grammar (BNF)
+# Version: 1.0.0
+# Grammar rules for the MAM Prompt section and prompt templates
+
+# ============================================================================
+# Prompt Section
+# ============================================================================
+
+<prompt_section> ::= <prompt_header> <prompt_content>
+<prompt_header> ::= "##" "Prompt" NEWLINE
+<prompt_content> ::= <prompt_element>*
+<prompt_element> ::= <structured_prompt> | <instruction_block>
+                   | <template_variable> | <prompt_code_block>
+
+# ============================================================================
+# Structured Prompt
+# ============================================================================
+
+<structured_prompt> ::= <prompt_block>+
+<prompt_block> ::= <block_header> <block_content>
+<block_header> ::= "###" <block_name> NEWLINE
+<block_name> ::= IDENTIFIER | CUSTOM_NAME
+<block_content> ::= <instruction_line> | <constraint_list>
+<instruction_line> ::= <text_line>+
+<text_line> ::= INLINE_CONTENT NEWLINE
+
+<constraint_list> ::= <constraint_item>+
+<constraint_item> ::= ("-" | "*") <constraint_text> NEWLINE
+<constraint_text> ::= TEXT
+
+# ============================================================================
+# Plain Instructions
+# ============================================================================
+
+<instruction_block> ::= <text_line>+
+
+# ============================================================================
+# Template Variables
+# ============================================================================
+
+<template_variable> ::= "{{" <variable_name> "}}"
+<variable_name> ::= IDENTIFIER
+<variable_text> ::= <template_segment> <template_variable>? <template_segment>*
+<template_segment> ::= INLINE_CONTENT
+
+# ============================================================================
+# Prompt Code Block
+# ============================================================================
+
+<prompt_code_block> ::= <code_fence> <code_language>? NEWLINE <code_content> <code_fence>
+<code_fence> ::= "```" | "~~~"
+<code_language> ::= IDENTIFIER
+<code_content> ::= ANYTHING*
+
+# ============================================================================
+# Tokens
+# ============================================================================
+
+IDENTIFIER ::= [a-zA-Z_][a-zA-Z0-9_]*
+CUSTOM_NAME ::= [a-zA-Z_][a-zA-Z0-9_ ]*
+TEXT ::= [^\n]+
+INLINE_CONTENT ::= [^\n]+
+ANYTHING ::= [^\n]*
+NEWLINE ::= "\n"

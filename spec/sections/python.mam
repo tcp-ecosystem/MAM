@@ -1,0 +1,225 @@
+---
+id: section-python
+name: Python Section
+version: 1.0.0
+type: module
+author: MAM Team
+description: >
+  Specifies the Python section of the MAM source format. The section holds
+  executable Python code blocks that run in a Python runtime environment.
+license: MIT
+runtime:
+  language: python
+  version: ">=3.12"
+tags:
+  - spec
+  - section
+  - python
+dependencies:
+  - name: mam-spec
+    version: "1.0.0"
+capabilities:
+  - validate
+  - extract
+  - document
+permissions:
+  filesystem:
+    - read
+---
+
+# Python Section
+
+## Purpose
+
+Defines the Python section of the MAM specification. The section carries executable Python code that implements the behavior described by the module.
+
+## Inputs
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| content | string | Yes | Full MAM module text that contains the section |
+| code | string | No | Python code block to validate directly |
+
+## Outputs
+
+| Name | Type | Description |
+|------|------|-------------|
+| blocks | list | Extracted Python code blocks |
+| valid | bool | Whether the code passes validation |
+| errors | list | Validation errors found in the code |
+
+## Capabilities
+
+### validate
+
+Checks syntax, secrets, imports, type hints, and docstrings.
+
+### extract
+
+Pulls the Python code blocks out of the section body.
+
+### document
+
+Renders the Python code into a documentation fragment.
+
+## Rules
+
+- Specify the language identifier for every block.
+- Code must be syntactically valid Python.
+- Use type hints for better documentation.
+- Include proper error handling.
+- Never include secrets or API keys.
+- Use metadata comments for execution hints.
+- Follow PEP 8 style guidelines.
+
+## Workflow
+
+```mermaid
+flowchart TD
+    A[Content] --> B[Extract]
+    B --> C[Validate]
+    C --> D[Document]
+    D --> E[Output]
+```
+
+## Python
+
+```python
+import ast
+import re
+
+def validate_syntax(code: str) -> bool:
+    try:
+        ast.parse(code)
+        return True
+    except SyntaxError:
+        return False
+
+def check_secrets(code: str) -> bool:
+    patterns = [r"api[_-]?key\s*=\s*[\"'][^\"']+[\"']",
+                r"password\s*=\s*[\"'][^\"']+[\"']"]
+    return not any(re.search(p, code, re.IGNORECASE) for p in patterns)
+
+def check_type_hints(code: str) -> bool:
+    return bool(re.search(r"def\s+\w+\([^)]*:\s*[^)]*\)\s*->", code))
+
+def check_docstrings(code: str) -> bool:
+    return '"""' in code or "'''" in code
+
+def extract_python_blocks(content: str) -> list:
+    blocks = []
+    in_section = False
+    in_block = False
+    current = []
+    for line in content.split("\n"):
+        if line.strip().startswith("## Python"):
+            in_section = True
+            continue
+        if in_section and line.startswith("##"):
+            break
+        if in_section:
+            if line.strip().startswith("```"):
+                if not in_block:
+                    in_block = True
+                    current = []
+                else:
+                    blocks.append("\n".join(current))
+                    in_block = False
+            elif in_block:
+                current.append(line)
+    return blocks
+
+def validate_python(code: str) -> dict:
+    errors = []
+    if not validate_syntax(code):
+        errors.append("Invalid Python syntax")
+    if not check_secrets(code):
+        errors.append("Possible hardcoded secret in code")
+    return {"valid": len(errors) == 0, "errors": errors}
+
+def check_types(code: str) -> list:
+    errors = []
+    tree = ast.parse(code)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.FunctionDef) and node.returns is None:
+            if node.name not in ("__init__",):
+                errors.append("Missing return annotation: " + node.name)
+    return errors
+```
+
+## Tests
+
+### Input
+
+```yaml
+content: |
+  ## Python
+
+  def greet(name: str) -> str:
+      return "Hello, " + name
+```
+
+### Expected
+
+```yaml
+valid: true
+errors: []
+```
+
+```python
+def test_python():
+    code = "def greet(name: str) -> str:\n    return 'Hello, ' + name"
+    assert validate_syntax(code)
+    assert check_secrets(code)
+    assert check_type_hints(code)
+    assert validate_python(code)["valid"] is True
+    assert len(extract_python_blocks("## Python\n```python\na\n```")) == 1
+```
+
+## Examples
+
+### Basic Function
+
+```python
+def greet(name: str) -> str:
+    """Greet a user by name."""
+    return f"Hello, {name}!"
+```
+
+### Data Class
+
+```python
+from dataclasses import dataclass
+
+@dataclass
+class User:
+    id: str
+    name: str
+    email: str
+    is_active: bool = True
+
+    def to_dict(self) -> dict:
+        return {
+            'id': self.id,
+            'name': self.name,
+            'email': self.email,
+        }
+```
+
+### Async Code
+
+```python
+import asyncio
+
+async def fetch_all(urls: list) -> list:
+    async def fetch_one(url: str) -> dict:
+        return {'url': url}
+
+    tasks = [fetch_one(url) for url in urls]
+    return await asyncio.gather(*tasks)
+```
+
+## References
+
+- MAM specification, the canonical source format
+- Python section reference documentation

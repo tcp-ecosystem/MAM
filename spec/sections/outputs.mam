@@ -1,0 +1,198 @@
+---
+id: section-outputs
+name: Outputs Section
+version: 1.0.0
+type: module
+author: MAM Team
+description: >
+  Specifies the Outputs section of the MAM source format. The section defines
+  the expected output values of a module using a table format.
+license: MIT
+runtime:
+  language: python
+  version: ">=3.12"
+tags:
+  - spec
+  - section
+  - outputs
+dependencies:
+  - name: mam-spec
+    version: "1.0.0"
+capabilities:
+  - validate
+  - extract
+  - document
+permissions:
+  filesystem:
+    - read
+---
+
+# Outputs Section
+
+## Purpose
+
+Defines the Outputs section of the MAM specification. The section acts as a contract between the module and its consumers and specifies what data the module produces.
+
+## Inputs
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| content | string | Yes | Full MAM module text that contains the section |
+| outputs | list | No | Output definitions to validate directly |
+
+## Outputs
+
+| Name | Type | Description |
+|------|------|-------------|
+| outputs | list | Extracted output definitions |
+| valid | bool | Whether the section passes validation |
+| errors | list | Validation errors found in the outputs |
+
+## Capabilities
+
+### validate
+
+Checks table format, columns, types, and unique names.
+
+### extract
+
+Pulls the output definitions out of the section table.
+
+### document
+
+Renders the outputs into a documentation fragment.
+
+## Rules
+
+- Use a Markdown table format.
+- Include the Name, Type, and Description columns.
+- Use valid type names from the type reference.
+- Give each output a unique name.
+- Use snake case for output names.
+- Document every output with a description.
+- Document any side effects.
+
+## Workflow
+
+```mermaid
+flowchart TD
+    A[Content] --> B[Validate Table]
+    B --> C[Extract]
+    C --> D[Document]
+    D --> E[Output]
+```
+
+## Python
+
+```python
+import re
+
+VALID_TYPES = {"string", "int", "float", "bool", "dict", "list",
+               "object", "any", "null", "file", "datetime", "json", "bytes"}
+
+def validate_type(type_name: str) -> bool:
+    return type_name in VALID_TYPES
+
+def validate_name(name: str) -> bool:
+    return bool(re.match(r"^[a-z][a-z0-9_]*$", name))
+
+def extract_outputs(content: str) -> list:
+    outputs = []
+    in_table = False
+    for line in content.split("\n"):
+        if line.strip().startswith("| Name"):
+            in_table = True
+            continue
+        if in_table and line.strip().startswith("|"):
+            if "---" in line:
+                continue
+            parts = [p.strip() for p in line.split("|")[1:-1]]
+            if len(parts) >= 3:
+                outputs.append({
+                    "name": parts[0],
+                    "type": parts[1],
+                    "description": parts[2],
+                })
+        elif in_table:
+            in_table = False
+    return outputs
+
+def validate_outputs(outputs: list) -> list:
+    errors = []
+    seen = set()
+    for item in outputs:
+        if not validate_name(item["name"]):
+            errors.append("Invalid name: " + item["name"])
+        if not validate_type(item["type"]):
+            errors.append("Invalid type: " + item["type"])
+        if item["name"] in seen:
+            errors.append("Duplicate output: " + item["name"])
+        seen.add(item["name"])
+    return errors
+
+def document_outputs(outputs: list) -> str:
+    docs = "## Output Values\n\n"
+    for item in outputs:
+        docs += "- " + item["name"] + " (" + item["type"] + "): " + item["description"] + "\n"
+    return docs
+```
+
+## Tests
+
+### Input
+
+```yaml
+content: |
+  ## Outputs
+
+  | Name | Type | Description |
+  |------|------|-------------|
+  | result | string | Processing result |
+  | success | bool | Whether the operation succeeded |
+```
+
+### Expected
+
+```yaml
+valid: true
+errors: []
+```
+
+```python
+def test_outputs():
+    content = ("| Name | Type | Description |\n"
+               "|------|------|-------------|\n"
+               "| result | string | Processing result |")
+    parsed = extract_outputs(content)
+    assert parsed[0]["name"] == "result"
+    assert validate_type("string")
+    assert validate_name("result")
+    assert validate_outputs(parsed) == []
+    assert "Output Values" in document_outputs(parsed)
+```
+
+## Examples
+
+### Simple Outputs
+
+```markdown
+| Name | Type | Description |
+|------|------|-------------|
+| result | string | Processing result |
+| success | bool | Whether the operation succeeded |
+```
+
+### Error Outputs
+
+```markdown
+| Name | Type | Description |
+|------|------|-------------|
+| success | bool | Whether the operation succeeded |
+| error | string | Error message if failed |
+| error_code | string | Error code if failed |
+```
+
+## References
+
+- MAM specification, the canonical source format
+- Outputs section reference documentation

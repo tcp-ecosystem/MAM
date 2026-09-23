@@ -1,0 +1,219 @@
+---
+id: section-permissions
+name: Permissions Section
+version: 1.0.0
+type: module
+author: MAM Team
+description: >
+  Specifies the Permissions section of the MAM source format. The section
+  declares the security permissions that a module needs and supports
+  capability based security and resource management.
+license: MIT
+runtime:
+  language: python
+  version: ">=3.12"
+tags:
+  - spec
+  - section
+  - permissions
+dependencies:
+  - name: mam-spec
+    version: "1.0.0"
+capabilities:
+  - validate
+  - extract
+  - document
+permissions:
+  filesystem:
+    - read
+---
+
+# Permissions Section
+
+## Purpose
+
+Defines the Permissions section of the MAM specification. The section declares what system resources the module is allowed to use so that runtimes can sandbox and audit execution.
+
+## Inputs
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| content | string | Yes | Full MAM module text that contains the section |
+| granted | set | No | Permissions already granted to the module |
+
+## Outputs
+
+| Name | Type | Description |
+|------|------|-------------|
+| permissions | list | Extracted permission declarations |
+| valid | bool | Whether the section passes validation |
+| denied | list | Required permissions that are not granted |
+
+## Capabilities
+
+### validate
+
+Checks permission names, format, duplicates, and conflicts.
+
+### extract
+
+Pulls the permission list out of the section body.
+
+### document
+
+Renders the permissions with risk levels into documentation.
+
+## Rules
+
+- Declare only the permissions the module actually needs.
+- Use the standard permission names.
+- Keep the principle of least privilege.
+- List each permission only once.
+- Justify higher risk permissions.
+- Never request broad or unused access.
+
+## Workflow
+
+```mermaid
+flowchart TD
+    A[Content] --> B[Extract]
+    B --> C[Validate]
+    C --> D[Check Access]
+    D --> E[Output]
+```
+
+## Python
+
+```python
+import re
+
+VALID_PERMISSIONS = {"network", "filesystem", "environment", "exec", "memory"}
+
+RISK_LEVELS = {"network": "medium", "filesystem": "high",
+               "environment": "medium", "exec": "high", "memory": "low"}
+
+def validate_permission(permission: str) -> bool:
+    base = permission.split(":")[0]
+    return base in VALID_PERMISSIONS
+
+def get_risk_level(permission: str) -> str:
+    base = permission.split(":")[0]
+    return RISK_LEVELS.get(base, "unknown")
+
+def check_duplicates(permissions: list) -> list:
+    seen = set()
+    duplicates = []
+    for permission in permissions:
+        if permission in seen:
+            duplicates.append(permission)
+        seen.add(permission)
+    return duplicates
+
+def extract_permissions(content: str) -> list:
+    permissions = []
+    in_section = False
+    for line in content.split("\n"):
+        if line.strip().startswith("## Permissions"):
+            in_section = True
+            continue
+        if in_section and line.strip().startswith("- "):
+            permission = line.strip()[2:].split(" - ")[0].strip("`")
+            permissions.append(permission)
+        elif in_section and line.startswith("##"):
+            break
+    return permissions
+
+def validate_permissions(permissions: list) -> list:
+    errors = []
+    for permission in permissions:
+        if not validate_permission(permission):
+            errors.append("Invalid permission: " + permission)
+    for dup in check_duplicates(permissions):
+        errors.append("Duplicate permission: " + dup)
+    return errors
+
+def document_permissions(permissions: list) -> str:
+    docs = "# Required Permissions\n\n"
+    for permission in permissions:
+        risk = get_risk_level(permission)
+        docs += "- " + permission + " (" + risk + " risk)\n"
+    return docs
+
+class PermissionChecker:
+    def __init__(self, granted):
+        self.granted = set(granted)
+
+    def check(self, required):
+        denied = []
+        for permission in required:
+            base = permission.split(":")[0]
+            if base not in self.granted:
+                denied.append(permission)
+        return denied
+```
+
+## Tests
+
+### Input
+
+```yaml
+content: |
+  ## Permissions
+
+  - network
+  - filesystem:read
+granted: [network, filesystem]
+```
+
+### Expected
+
+```yaml
+valid: true
+denied: []
+```
+
+```python
+def test_permissions():
+    permissions = ["network", "filesystem:read"]
+    assert validate_permission("network")
+    assert get_risk_level("exec") == "high"
+    assert validate_permissions(permissions) == []
+    assert "Required Permissions" in document_permissions(permissions)
+    checker = PermissionChecker(["network", "filesystem"])
+    assert checker.check(permissions) == []
+    assert check_duplicates(["a", "a"]) == ["a"]
+```
+
+## Examples
+
+### Network Access
+
+```markdown
+## Permissions
+
+- network
+```
+
+### Filesystem Access
+
+```markdown
+## Permissions
+
+- filesystem:read
+- filesystem:write
+```
+
+### Combined
+
+```markdown
+## Permissions
+
+- network:https
+- filesystem:read
+- memory
+```
+
+## References
+
+- MAM specification, the canonical source format
+- Permissions section reference documentation

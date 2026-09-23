@@ -1,0 +1,205 @@
+---
+id: section-examples
+name: Examples Section
+version: 1.0.0
+type: module
+author: MAM Team
+description: >
+  Specifies the Examples section of the MAM source format. The section carries
+  usage demonstrations, sample code, and practical illustrations of how a
+  module works.
+license: MIT
+runtime:
+  language: python
+  version: ">=3.12"
+tags:
+  - spec
+  - section
+  - examples
+dependencies:
+  - name: mam-spec
+    version: "1.0.0"
+capabilities:
+  - validate
+  - extract
+  - document
+permissions:
+  filesystem:
+    - read
+---
+
+# Examples Section
+
+## Purpose
+
+Defines the Examples section of the MAM specification. The section provides usage demonstrations and sample code that help developers understand the module API, behavior, and expected outputs.
+
+## Inputs
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| content | string | Yes | Full MAM module text that contains the section |
+| examples | list | No | Example code blocks to validate directly |
+
+## Outputs
+
+| Name | Type | Description |
+|------|------|-------------|
+| examples | list | Extracted example code blocks |
+| valid | bool | Whether the examples pass validation |
+| errors | list | Validation errors found in the examples |
+
+## Capabilities
+
+### validate
+
+Checks example syntax, imports, output blocks, and error handling.
+
+### extract
+
+Pulls the example code blocks out of the section body.
+
+### document
+
+Renders the examples into a documentation fragment.
+
+## Rules
+
+- Examples must be syntactically correct.
+- Show expected output when applicable.
+- Start simple, then show advanced usage.
+- Include all necessary imports.
+- Use realistic data rather than placeholders.
+- Show how to handle errors and edge cases.
+- Explain what each example demonstrates.
+
+## Workflow
+
+```mermaid
+flowchart TD
+    A[Content] --> B[Extract]
+    B --> C[Validate]
+    C --> D[Document]
+    D --> E[Output]
+```
+
+## Python
+
+```python
+import ast
+
+def validate_syntax(code: str) -> bool:
+    try:
+        ast.parse(code)
+        return True
+    except SyntaxError:
+        return False
+
+def check_imports(code: str) -> list:
+    missing = []
+    tree = ast.parse(code)
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Import):
+            for alias in node.names:
+                if alias.name not in ("os", "sys", "json", "re"):
+                    missing.append(alias.name)
+    return missing
+
+def has_error_handling(code: str) -> bool:
+    return "try:" in code and "except" in code
+
+def extract_examples(content: str) -> list:
+    examples = []
+    in_section = False
+    for line in content.split("\n"):
+        if line.strip().startswith("## Examples"):
+            in_section = True
+            continue
+        if in_section and line.startswith("##"):
+            break
+        if in_section and line.strip().startswith("```python"):
+            examples.append(line.strip())
+    return examples
+
+def validate_examples(examples: list) -> list:
+    errors = []
+    for code in examples:
+        if not validate_syntax(code):
+            errors.append("Invalid syntax in example")
+        for missing in check_imports(code):
+            errors.append("Missing import: " + missing)
+    return errors
+
+def document_examples(examples: list) -> str:
+    docs = "## Usage Examples\n\n"
+    for code in examples:
+        docs += "```python\n" + code + "\n```\n\n"
+    return docs
+```
+
+## Tests
+
+### Input
+
+```yaml
+content: |
+  ## Examples
+
+  A simple greeting example that returns a message.
+examples:
+  - def greet(name): return "Hello, " + name
+```
+
+### Expected
+
+```yaml
+valid: true
+errors: []
+```
+
+```python
+def test_examples():
+    code = "def greet(name):\n    return 'Hello, ' + name\n"
+    assert validate_syntax(code)
+    assert check_imports(code) == []
+    assert not has_error_handling(code)
+    assert "Usage Examples" in document_examples([code])
+    assert validate_examples([code]) == []
+```
+
+## Examples
+
+### Basic Usage
+
+```python
+def greet(name):
+    return "Hello, " + name
+
+print(greet("World"))
+```
+
+### Data Processing
+
+```python
+def process(items):
+    return [item * 2 for item in items]
+
+print(process([1, 2, 3]))
+```
+
+### Error Handling
+
+```python
+def safe_divide(a, b):
+    try:
+        return a / b
+    except ZeroDivisionError:
+        return None
+
+print(safe_divide(1, 0))
+```
+
+## References
+
+- MAM specification, the canonical source format
+- Examples section reference documentation

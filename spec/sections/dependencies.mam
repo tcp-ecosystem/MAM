@@ -1,0 +1,216 @@
+---
+id: section-dependencies
+name: Dependencies Section
+version: 1.0.0
+type: module
+author: MAM Team
+description: >
+  Specifies the Dependencies section of the MAM source format. The section
+  lists the modules and packages that the current module depends on together
+  with their version constraints.
+license: MIT
+runtime:
+  language: python
+  version: ">=3.12"
+tags:
+  - spec
+  - section
+  - dependencies
+dependencies:
+  - name: mam-spec
+    version: "1.0.0"
+capabilities:
+  - validate
+  - extract
+  - document
+permissions:
+  filesystem:
+    - read
+---
+
+# Dependencies Section
+
+## Purpose
+
+Defines the Dependencies section of the MAM specification. The section lists required modules and packages so that the runtime can install, resolve, and manage them automatically.
+
+## Inputs
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| content | string | Yes | Full MAM module text that contains the section |
+| installed | list | No | Names of packages that are already installed |
+
+## Outputs
+
+| Name | Type | Description |
+|------|------|-------------|
+| dependencies | list | Declared dependencies with constraints |
+| valid | bool | Whether the section passes validation |
+| missing | list | Dependencies that are not installed |
+
+## Capabilities
+
+### validate
+
+Checks package names, version constraints, duplicates, and group markers.
+
+### extract
+
+Pulls the dependency list out of the section body.
+
+### document
+
+Renders the dependencies into a documentation fragment.
+
+## Rules
+
+- Package names must be lowercase and may contain hyphens and underscores.
+- Version constraints must follow semver compatible syntax.
+- List each package only once.
+- Use comments to group related dependencies.
+- Pin critical dependencies with exact versions.
+- Mark optional and development dependencies clearly.
+
+## Workflow
+
+```mermaid
+flowchart TD
+    A[Content] --> B[Validate]
+    B --> C[Extract]
+    C --> D[Resolve]
+    D --> E[Output]
+```
+
+## Python
+
+```python
+import re
+
+def validate_package_name(name: str) -> bool:
+    return bool(re.match(r"^[a-z0-9_\-]+$", name))
+
+def validate_version_constraint(constraint: str) -> bool:
+    if constraint in ("", "*"):
+        return True
+    return bool(re.match(r"^(>=|<=|==|!=|~=|>|<)?\s*[0-9]+(\.[0-9]+)*$", constraint))
+
+def parse_dependency(dep: str) -> tuple:
+    parts = dep.split(">=", 1)
+    if len(parts) == 2:
+        return (parts[0].strip(), parts[1].strip())
+    parts = dep.split("==", 1)
+    if len(parts) == 2:
+        return (parts[0].strip(), parts[1].strip())
+    parts = dep.split("~=", 1)
+    if len(parts) == 2:
+        return (parts[0].strip(), parts[1].strip())
+    return (dep.strip(), "")
+
+def check_duplicates(dependencies: list) -> list:
+    seen = set()
+    duplicates = []
+    for dep in dependencies:
+        name, _ = parse_dependency(dep)
+        if name in seen:
+            duplicates.append(name)
+        seen.add(name)
+    return duplicates
+
+def extract_dependencies(content: str) -> list:
+    dependencies = []
+    in_section = False
+    for line in content.split("\n"):
+        if line.strip().startswith("## Dependencies"):
+            in_section = True
+            continue
+        if in_section and line.startswith("##"):
+            break
+        if in_section and line.strip().startswith("- "):
+            dependencies.append(line.strip()[2:])
+    return dependencies
+
+def validate_dependencies(dependencies: list) -> list:
+    errors = []
+    for dep in dependencies:
+        name, version = parse_dependency(dep)
+        if not validate_package_name(name):
+            errors.append("Invalid package name: " + name)
+        if not validate_version_constraint(version):
+            errors.append("Invalid version constraint: " + version)
+    for dup in check_duplicates(dependencies):
+        errors.append("Duplicate dependency: " + dup)
+    return errors
+
+def resolve(dependencies: list, installed: list) -> list:
+    missing = []
+    for dep in dependencies:
+        name, _ = parse_dependency(dep)
+        if name not in installed:
+            missing.append(dep)
+    return missing
+
+def document_dependencies(dependencies: list) -> str:
+    docs = "## Required Dependencies\n\n"
+    for dep in dependencies:
+        docs += "- " + dep + "\n"
+    return docs
+```
+
+## Tests
+
+### Input
+
+```yaml
+content: |
+  ## Dependencies
+
+  - requests >= 2.28.0
+  - pydantic ~= 2.0
+installed: [requests, pydantic]
+```
+
+### Expected
+
+```yaml
+valid: true
+missing: []
+```
+
+```python
+def test_dependencies():
+    deps = ["requests >= 2.28.0", "pydantic ~= 2.0"]
+    assert validate_package_name("requests")
+    assert validate_version_constraint(">= 2.28.0")
+    assert validate_dependencies(deps) == []
+    assert resolve(deps, ["requests", "pydantic"]) == []
+    assert parse_dependency("requests >= 2.28.0") == ("requests", "2.28.0")
+    assert "Required Dependencies" in document_dependencies(deps)
+```
+
+## Examples
+
+### External Packages
+
+```markdown
+## Dependencies
+
+- requests >= 2.28.0
+- flask >= 2.3.0
+- sqlalchemy >= 1.4.0
+```
+
+### Dependency Groups
+
+```markdown
+## Dependencies
+
+- requests >= 2.28.0
+- redis >= 4.0 (optional)
+- pytest >= 7.0 (dev)
+```
+
+## References
+
+- MAM specification, the canonical source format
+- Dependencies section reference documentation

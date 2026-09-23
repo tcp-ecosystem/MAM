@@ -1,0 +1,204 @@
+---
+id: section-inputs
+name: Inputs Section
+version: 1.0.0
+type: module
+author: MAM Team
+description: >
+  Specifies the Inputs section of the MAM source format. The section defines
+  the expected input parameters of a module using a table format that names
+  each parameter, its type, whether it is required, and its purpose.
+license: MIT
+runtime:
+  language: python
+  version: ">=3.12"
+tags:
+  - spec
+  - section
+  - inputs
+dependencies:
+  - name: mam-spec
+    version: "1.0.0"
+capabilities:
+  - validate
+  - extract
+  - document
+permissions:
+  filesystem:
+    - read
+---
+
+# Inputs Section
+
+## Purpose
+
+Defines the Inputs section of the MAM specification. The section acts as a contract between the module and its consumers and specifies what data the module expects to receive.
+
+## Inputs
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| content | string | Yes | Full MAM module text that contains the section |
+| inputs | list | No | Input definitions to validate directly |
+
+## Outputs
+
+| Name | Type | Description |
+|------|------|-------------|
+| inputs | list | Extracted input parameter definitions |
+| valid | bool | Whether the section passes validation |
+| errors | list | Validation errors found in the inputs |
+
+## Capabilities
+
+### validate
+
+Checks table format, columns, types, names, and required values.
+
+### extract
+
+Pulls the input definitions out of the section table.
+
+### document
+
+Renders the inputs into a documentation fragment.
+
+## Rules
+
+- Use a Markdown table format.
+- Include the Name, Type, Required, and Description columns.
+- Use valid type names from the type reference.
+- Mark required values as Yes or No.
+- Give each parameter a unique name.
+- Use snake case for parameter names.
+- Document every parameter with a description.
+
+## Workflow
+
+```mermaid
+flowchart TD
+    A[Content] --> B[Validate Table]
+    B --> C[Extract]
+    C --> D[Document]
+    D --> E[Output]
+```
+
+## Python
+
+```python
+import re
+
+VALID_TYPES = {"string", "int", "float", "bool", "dict", "list",
+               "object", "any", "null", "file", "datetime", "json", "bytes"}
+
+def validate_type(type_name: str) -> bool:
+    return type_name in VALID_TYPES
+
+def validate_name(name: str) -> bool:
+    return bool(re.match(r"^[a-z][a-z0-9_]*$", name))
+
+def validate_required(value: str) -> bool:
+    return value in ("Yes", "No")
+
+def extract_inputs(content: str) -> list:
+    inputs = []
+    in_table = False
+    for line in content.split("\n"):
+        if line.strip().startswith("| Name"):
+            in_table = True
+            continue
+        if in_table and line.strip().startswith("|"):
+            if "---" in line:
+                continue
+            parts = [p.strip() for p in line.split("|")[1:-1]]
+            if len(parts) >= 4:
+                inputs.append({
+                    "name": parts[0],
+                    "type": parts[1],
+                    "required": parts[2] == "Yes",
+                    "description": parts[3],
+                })
+        elif in_table:
+            in_table = False
+    return inputs
+
+def validate_inputs(inputs: list) -> list:
+    errors = []
+    for item in inputs:
+        if not validate_name(item["name"]):
+            errors.append("Invalid name: " + item["name"])
+        if not validate_type(item["type"]):
+            errors.append("Invalid type: " + item["type"])
+        if not isinstance(item["required"], bool):
+            errors.append("Invalid required value")
+    return errors
+
+def document_inputs(inputs: list) -> str:
+    docs = "## Input Parameters\n\n"
+    for item in inputs:
+        docs += "- " + item["name"] + " (" + item["type"] + "): " + item["description"] + "\n"
+    return docs
+```
+
+## Tests
+
+### Input
+
+```yaml
+content: |
+  ## Inputs
+
+  | Name | Type | Required | Description |
+  |------|------|----------|-------------|
+  | name | string | Yes | User full name |
+  | email | string | Yes | User email address |
+  | age | int | No | User age |
+```
+
+### Expected
+
+```yaml
+valid: true
+errors: []
+```
+
+```python
+def test_inputs():
+    content = ("| Name | Type | Required | Description |\n"
+               "|------|------|----------|-------------|\n"
+               "| name | string | Yes | User full name |")
+    parsed = extract_inputs(content)
+    assert parsed[0]["name"] == "name"
+    assert parsed[0]["required"] is True
+    assert validate_name("user_name")
+    assert validate_type("string")
+    assert validate_inputs(parsed) == []
+    assert "Input Parameters" in document_inputs(parsed)
+```
+
+## Examples
+
+### Simple Parameters
+
+```markdown
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| name | string | Yes | User full name |
+| email | string | Yes | User email address |
+| age | int | No | User age |
+```
+
+### File Parameters
+
+```markdown
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| input_file | file | Yes | Path to input file |
+| output_file | file | No | Path to output file |
+| config_file | file | No | Path to configuration file |
+```
+
+## References
+
+- MAM specification, the canonical source format
+- Inputs section reference documentation

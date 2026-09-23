@@ -1,0 +1,198 @@
+---
+id: section-metadata
+name: Metadata Section
+version: 1.0.0
+type: module
+author: MAM Team
+description: >
+  Specifies the Metadata section of the MAM source format. Metadata lives in
+  the YAML front matter and provides identity, versioning, authorship, and
+  configuration for the module.
+license: MIT
+runtime:
+  language: python
+  version: ">=3.12"
+tags:
+  - spec
+  - section
+  - metadata
+dependencies:
+  - name: mam-spec
+    version: "1.0.0"
+capabilities:
+  - validate
+  - extract
+  - document
+permissions:
+  filesystem:
+    - read
+---
+
+# Metadata Section
+
+## Purpose
+
+Defines the Metadata section of the MAM specification. The YAML front matter carries machine readable identity for the module including id, version, name, author, runtime, tags, and license.
+
+## Inputs
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| content | string | Yes | Full MAM module text with front matter |
+| metadata | object | No | Metadata object to validate directly |
+
+## Outputs
+
+| Name | Type | Description |
+|------|------|-------------|
+| metadata | object | Parsed front matter data |
+| valid | bool | Whether the metadata passes validation |
+| errors | list | Validation errors found in the metadata |
+
+## Capabilities
+
+### validate
+
+Checks required fields, id format, version format, and runtime values.
+
+### extract
+
+Pulls the front matter out of the module text.
+
+### document
+
+Renders the metadata into a documentation fragment.
+
+## Rules
+
+- Every module must declare id, version, name, author, and runtime.
+- The id must be lowercase with letters, digits, and single hyphens.
+- The version must follow semantic versioning.
+- The name is the human readable module name.
+- The runtime must be one of the supported languages.
+- Optional fields enrich discovery and tooling.
+
+## Workflow
+
+```mermaid
+flowchart TD
+    A[Content] --> B[Extract]
+    B --> C[Validate]
+    C --> D[Document]
+    D --> E[Output]
+```
+
+## Python
+
+```python
+import re
+
+def validate_id(id_value: str) -> bool:
+    return bool(re.match(r"^[a-z][a-z0-9-]{0,63}$", id_value))
+
+def validate_version(version: str) -> bool:
+    return bool(re.match(r"^[0-9]+\.[0-9]+\.[0-9]+", version))
+
+def validate_runtime(runtime: str) -> bool:
+    return runtime in ("python", "javascript", "typescript", "rust", "go", "shell", "mixed")
+
+def validate_required(metadata: dict) -> list:
+    required = ["id", "version", "name", "author", "runtime"]
+    missing = []
+    for field in required:
+        if field not in metadata:
+            missing.append(field)
+    return missing
+
+def extract_metadata(content: str) -> dict:
+    if not content.startswith("---"):
+        return {}
+    end = content.find("---", 3)
+    if end == -1:
+        return {}
+    metadata = {}
+    for line in content[3:end].split("\n"):
+        if ":" in line and not line.strip().startswith("-"):
+            key, value = line.split(":", 1)
+            metadata[key.strip()] = value.strip().strip("\"'")
+    return metadata
+
+def validate_metadata(metadata: dict) -> list:
+    errors = []
+    for field in validate_required(metadata):
+        errors.append("Missing required field: " + field)
+    if "id" in metadata and not validate_id(metadata["id"]):
+        errors.append("Invalid id: " + str(metadata["id"]))
+    if "version" in metadata and not validate_version(str(metadata["version"])):
+        errors.append("Invalid version: " + str(metadata["version"]))
+    return errors
+
+def document_metadata(metadata: dict) -> str:
+    docs = "# Module Metadata\n\n"
+    for key, value in metadata.items():
+        docs += "- " + key + ": " + str(value) + "\n"
+    return docs
+```
+
+## Tests
+
+### Input
+
+```yaml
+content: |
+  ---
+  id: user-auth
+  name: User Auth
+  version: 1.0.0
+  author: MAM Team
+  runtime: python
+  ---
+```
+
+### Expected
+
+```yaml
+valid: true
+errors: []
+```
+
+```python
+def test_metadata():
+    content = ("---\nid: user-auth\nname: User Auth\n"
+               "version: 1.0.0\nauthor: MAM Team\nruntime: python\n---")
+    data = extract_metadata(content)
+    assert data["id"] == "user-auth"
+    assert validate_id("user-auth")
+    assert validate_version("1.0.0")
+    assert validate_runtime("python")
+    assert validate_metadata(data) == []
+    assert "Module Metadata" in document_metadata(data)
+```
+
+## Examples
+
+### Valid Front Matter
+
+```yaml
+id: api-client
+name: API Client
+version: 1.1.0
+author: MAM Team
+runtime: python
+tags:
+  - client
+  - http
+```
+
+### Invalid Ids
+
+```text
+User-Auth  invalid due to uppercase
+123-starts  invalid because it starts with a digit
+has--double  invalid because of consecutive hyphens
+```
+
+## References
+
+- MAM specification, the canonical source format
+- Metadata section reference documentation

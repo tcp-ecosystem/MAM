@@ -1,0 +1,173 @@
+---
+id: grammar-prompt
+name: Prompt Grammar
+version: 1.0.0
+type: module
+author: MAM Team
+description: >
+  Specifies the MAM prompt grammar: role, task, constraints, and template
+  variables, plus a parser and validator for prompt templates.
+license: MIT
+runtime:
+  language: python
+  version: ">=3.12"
+tags:
+  - grammar
+  - prompt
+  - specification
+capabilities:
+  - parse_prompt
+  - render_prompt
+  - validate_prompt
+permissions:
+  memory:
+    - local
+---
+
+# Prompt Grammar Module
+
+## Purpose
+
+Defines the grammar used by the MAM Prompt section. The module describes how a prompt declares its role, task, and constraints, and how template variables are interpolated. It also provides a small parser, renderer, and validator that accept a prompt template and report structural errors.
+
+## Inputs
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| template | string | Yes | Prompt template text |
+| variables | object | No | Values for template interpolation |
+| role | string | No | Role definition line |
+| task | string | No | Task definition line |
+
+## Outputs
+
+| Name | Type | Description |
+|------|------|-------------|
+| parsed | object | Parsed prompt structure |
+| rendered | string | Rendered prompt text |
+| errors | list | Validation errors |
+| valid | boolean | True when no errors exist |
+
+## Capabilities
+
+### parse_prompt
+
+Accept a prompt template and extract its structure.
+
+### render_prompt
+
+Interpolate template variables into the prompt text.
+
+### validate_prompt
+
+Check required elements and report errors.
+
+## Rules
+
+- Template variables use double brace syntax.
+- Role and task are recommended for every prompt.
+- Constraints use bullet lists.
+- Safety guidelines should always be present.
+- Variables must balance open and close braces.
+- Output format should be specified.
+
+## Workflow
+
+```mermaid
+flowchart TD
+    A[Prompt Template] --> B[Parse Structure]
+    B --> C[Render Variables]
+    C --> D[Validate]
+    D --> E{Errors?}
+    E -->|Yes| F[Report Errors]
+    E -->|No| G[Valid Prompt]
+```
+
+## Python
+
+```python
+import re
+
+VARIABLE = re.compile(r"\{\{\s*([a-zA-Z_][a-zA-Z0-9_]*)\s*\}\}")
+
+def parse_prompt(template):
+    return {
+        "variables": VARIABLE.findall(template),
+        "has_role": "you are" in template.lower(),
+        "has_task": "when" in template.lower() or "task" in template.lower(),
+    }
+
+def render_prompt(template, variables=None):
+    variables = variables or {}
+    def replace(match):
+        key = match.group(1)
+        return str(variables.get(key, match.group(0)))
+    return VARIABLE.sub(replace, template)
+
+def validate_prompt(template):
+    errors = []
+    opens = template.count("{{")
+    closes = template.count("}}")
+    if opens != closes:
+        errors.append("Unbalanced template braces")
+    if not template.strip():
+        errors.append("Prompt is empty")
+    return errors
+```
+
+## Tests
+
+### Input
+
+```yaml
+template: "Hello {{name}}, summarize {{text}}."
+variables:
+  name: Alice
+  text: the report
+```
+
+### Expected
+
+```yaml
+valid: true
+rendered: "Hello Alice, summarize the report."
+```
+
+```python
+def test_parse_prompt():
+    parsed = parse_prompt("You are an assistant.")
+    assert parsed["has_role"] is True
+
+def test_render_prompt():
+    rendered = render_prompt("Hi {{name}}", {"name": "Alice"})
+    assert rendered == "Hi Alice"
+
+def test_validate_prompt_ok():
+    assert validate_prompt("Hello {{name}}") == []
+
+def test_validate_prompt_unbalanced():
+    assert validate_prompt("Hello {{name") == ["Unbalanced template braces"]
+```
+
+## Examples
+
+### Basic Usage
+
+```python
+template = "You are helping with {{module}}. Answer about {{topic}}."
+rendered = render_prompt(template, {"module": "MAM", "topic": "grammar"})
+errors = validate_prompt(template)
+print(rendered, errors)
+```
+
+### Expected Flow
+
+```text
+Template -> Parse -> Render -> Validate -> Result
+```
+
+## References
+
+- MAM Prompt section specification
+- MAM section grammar specification
+- MAM AST specification

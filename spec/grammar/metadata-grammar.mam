@@ -1,0 +1,191 @@
+---
+id: grammar-metadata
+name: Metadata Grammar
+version: 1.0.0
+type: module
+author: MAM Team
+description: >
+  Describes the grammar of the MAM metadata layer: the YAML front matter
+  block that carries identity, versioning, authorship, and configuration.
+license: MIT
+runtime:
+  language: python
+  version: ">=3.12"
+tags:
+  - grammar
+  - metadata
+capabilities:
+  - parse
+  - validate
+  - describe
+permissions:
+  filesystem:
+    - read
+---
+
+# Metadata Grammar
+
+## Purpose
+
+Describes the grammar of the MAM metadata layer, the YAML front matter block
+at the top of every module. This module parses a metadata document, validates
+the required identity fields, and produces a human readable summary.
+
+## Inputs
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| document | string | Yes | YAML front matter text to parse |
+| strict | bool | No | Require all mandatory fields (default: true) |
+
+## Outputs
+
+| Name | Type | Description |
+|------|------|-------------|
+| parsed | object | Parsed metadata document |
+| valid | bool | Whether mandatory fields are present |
+| missing | list | Missing mandatory fields |
+| summary | string | Human readable description of the metadata |
+
+## Capabilities
+
+### parse
+
+Parse a YAML front matter document into a structured object.
+
+### validate
+
+Check that mandatory identity fields are present and well formed.
+
+### describe
+
+Produce a human readable summary of the metadata.
+
+## Rules
+
+- Every module must declare an id, name, version, author, and runtime.
+- Unknown fields are preserved, not dropped.
+- Validation must not raise; it returns the missing fields.
+- The id must be lowercase alphanumeric with optional hyphens.
+- The version must follow semantic versioning.
+- The metadata block must be the first content in the file.
+
+## Workflow
+
+```mermaid
+flowchart TD
+    A[Document] --> B[Parse]
+    B --> C[Validate]
+    C --> D[Describe]
+    D --> E[Output]
+```
+
+## Python
+
+```python
+import re
+
+MANDATORY = ["id", "name", "version", "author", "runtime"]
+ID_PATTERN = re.compile(r"^[a-z][a-z0-9-]{0,63}$")
+VERSION_PATTERN = re.compile(r"^\d+\.\d+\.\d+$")
+
+def parse(document: str) -> dict:
+    """Parse a simple YAML front matter block."""
+    data = {}
+    for line in document.splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if ":" not in line:
+            continue
+        key, value = line.split(":", 1)
+        key = key.strip()
+        value = value.strip().strip("\"'")
+        if value.startswith("["):
+            value = [item.strip() for item in value.strip("[]").split(",") if item.strip()]
+        data[key] = value
+    return data
+
+def validate(document: str) -> dict:
+    """Check mandatory fields and basic grammar rules."""
+    data = parse(document)
+    missing = [f for f in MANDATORY if f not in data]
+    errors = []
+    if "id" in data and not ID_PATTERN.match(str(data["id"])):
+        errors.append("invalid id")
+    if "version" in data and not VERSION_PATTERN.match(str(data["version"])):
+        errors.append("invalid version")
+    return {"parsed": data, "valid": not missing and not errors, "missing": missing, "errors": errors}
+
+def describe(document: str) -> str:
+    """Produce a short human readable summary."""
+    data = parse(document)
+    return f"{data.get('name', 'unnamed')} v{data.get('version', '?')} by {data.get('author', 'unknown')}"
+```
+
+## Tests
+
+### Input
+
+```yaml
+document: |
+  id: hello
+  name: Hello
+  version: 1.0.0
+  author: MAM Team
+  runtime: python
+```
+
+### Expected
+
+```yaml
+valid: true
+```
+
+```python
+def test_parse():
+    doc = "id: a\nname: A\nversion: 1.0.0\nauthor: x\nruntime: python"
+    data = parse(doc)
+    assert data["id"] == "a"
+
+def test_validate_ok():
+    doc = "id: a\nname: A\nversion: 1.0.0\nauthor: x\nruntime: python"
+    assert validate(doc)["valid"] is True
+
+def test_validate_missing():
+    assert validate("name: A")["missing"] == ["id", "version", "author", "runtime"]
+
+def test_validate_bad_id():
+    doc = "id: Bad ID\nname: A\nversion: 1.0.0\nauthor: x\nruntime: python"
+    assert validate(doc)["valid"] is False
+
+def test_validate_bad_version():
+    doc = "id: a\nname: A\nversion: v1\n author: x\nruntime: python"
+    assert validate(doc)["valid"] is False
+
+def test_describe():
+    doc = "id: a\nname: A\nversion: 1.0.0\nauthor: x\nruntime: python"
+    assert describe(doc) == "A v1.0.0 by x"
+```
+
+## Examples
+
+### Basic Usage
+
+```python
+doc = "id: hello\nname: Hello\nversion: 1.0.0\nauthor: MAM Team\nruntime: python"
+print(describe(doc))
+```
+
+### Expected Flow
+
+```text
+Document → Parse → Validate → Describe → Output
+```
+
+## References
+
+- MAM documentation
+- tokens.md
+- ast-specification.md
+- frontmatter-grammar.bnf

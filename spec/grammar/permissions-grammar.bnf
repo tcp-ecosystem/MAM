@@ -1,0 +1,79 @@
+# MAM Permissions Grammar (BNF)
+# Version: 1.0.0
+# Complete permissions section specification for MAM modules
+
+# ============================================================================
+# Permissions Container
+# ============================================================================
+
+<permissions_section> ::= <perm_header> <perm_body>
+<perm_header> ::= "##" "Permissions" NEWLINE
+<perm_body> ::= <perm_entry>*
+
+# ============================================================================
+# Permission Entries
+# ============================================================================
+
+<perm_entry> ::= <perm_bullet> <perm_item> NEWLINE
+<perm_bullet> ::= "-" SPACE
+<perm_item> ::= <perm_name> | <perm_justified>
+<perm_name> ::= <perm_base> <perm_scope>*
+<perm_base> ::= "network" | "filesystem" | "environment" | "exec" | "memory"
+             | IDENTIFIER
+<perm_scope> ::= ":" <perm_scope_value>
+<perm_scope_value> ::= [a-z0-9_./\*]+ ("-" [a-z0-9_./\*]+)*
+
+# ============================================================================
+# Justified Permissions
+# ============================================================================
+
+<perm_justified> ::= "`" <perm_name> "`" SPACE "-" SPACE <perm_reason>
+<perm_reason> ::= TEXT
+
+# ============================================================================
+# Permission Groups
+# ============================================================================
+
+<perm_group> ::= <perm_entry>+
+<perm_comment> ::= SPACE "#" [^\n]*
+
+# ============================================================================
+# Standard Permission Set
+# ============================================================================
+
+<perm_network> ::= "network" <perm_network_scope>*
+<perm_network_scope> ::= ":https" | ":http" | ":dns" | ":websocket"
+                        | ":" <perm_domain>
+<perm_domain> ::= [a-zA-Z0-9\-]+ ("." [a-zA-Z0-9\-]+)*
+
+<perm_filesystem> ::= "filesystem" <perm_fs_scope>*
+<perm_fs_scope> ::= ":read" | ":write" | ":read:" <perm_path> | ":write:" <perm_path>
+<perm_path> ::= "/" [a-zA-Z0-9_\-\/]+
+
+<perm_environment> ::= "environment" <perm_env_scope>*
+<perm_env_scope> ::= ":read" | ":write" | ":" <perm_env_pattern>
+<perm_env_pattern> ::= [A-Za-z_][A-Za-z0-9_]* "\*"?
+
+<perm_exec> ::= "exec" <perm_exec_scope>*
+<perm_exec_scope> ::= ":" <perm_command>
+<perm_command> ::= "python" | "node" | "git" | "npm" | "sh" | "bash"
+
+<perm_memory> ::= "memory"
+
+# ============================================================================
+# Risk Assessment Markers
+# ============================================================================
+
+<perm_risk_marker> ::= "MEDIUM" | "HIGH" | "LOW" | "medium" | "high" | "low"
+<perm_risk_note> ::= SPACE "-" SPACE <perm_risk_marker> SPACE "RISK:" SPACE TEXT
+
+# ============================================================================
+# Token Definitions
+# ============================================================================
+
+IDENTIFIER ::= [a-zA-Z_][a-zA-Z0-9_]*
+TEXT ::= [^\n]+
+NEWLINE ::= "\n"
+INDENT ::= ("  " | "\t")+
+DIGIT ::= [0-9]
+SPACE ::= " " | "\t"

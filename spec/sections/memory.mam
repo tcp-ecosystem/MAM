@@ -1,0 +1,197 @@
+---
+id: section-memory
+name: Memory Section
+version: 1.0.0
+type: module
+author: MAM Team
+description: >
+  Specifies the Memory section of the MAM source format. The section defines
+  the persistent state and knowledge that a module keeps across executions.
+license: MIT
+runtime:
+  language: python
+  version: ">=3.12"
+tags:
+  - spec
+  - section
+  - memory
+dependencies:
+  - name: mam-spec
+    version: "1.0.0"
+capabilities:
+  - validate
+  - extract
+  - document
+permissions:
+  filesystem:
+    - read
+---
+
+# Memory Section
+
+## Purpose
+
+Defines the Memory section of the MAM specification. The section declares what data the module remembers across executions and how that state is structured and persisted.
+
+## Inputs
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| content | string | Yes | Full MAM module text that contains the section |
+| data | object | No | Memory state object to validate directly |
+
+## Outputs
+
+| Name | Type | Description |
+|------|------|-------------|
+| memory | object | Extracted memory entries |
+| valid | bool | Whether the section passes validation |
+| errors | list | Validation errors found in the memory |
+
+## Capabilities
+
+### validate
+
+Checks keys, secrets, JSON values, and type consistency.
+
+### extract
+
+Pulls the memory entries out of the section body.
+
+### document
+
+Renders the memory entries into a documentation fragment.
+
+## Rules
+
+- Use the bold key format for entries.
+- Give every entry a description.
+- Keep values type consistent.
+- Never store secrets in memory.
+- Document size limits for collections.
+- Document expiration for temporary data.
+- Document concurrent access patterns.
+
+## Workflow
+
+```mermaid
+flowchart TD
+    A[Content] --> B[Extract]
+    B --> C[Validate]
+    C --> D[Document]
+    D --> E[Output]
+```
+
+## Python
+
+```python
+import json
+import re
+
+def validate_key(key: str) -> bool:
+    return bool(re.match(r"^[a-z][a-z0-9_]*$", key))
+
+def validate_json(data: str) -> bool:
+    try:
+        json.loads(data)
+        return True
+    except (ValueError, TypeError):
+        return False
+
+def check_secrets(data: dict) -> list:
+    secrets = []
+    for key in data:
+        if any(term in key.lower() for term in ("password", "secret", "token", "api_key")):
+            secrets.append(key)
+    return secrets
+
+def validate_type_consistency(values: list) -> bool:
+    if not values:
+        return True
+    first_type = type(values[0])
+    return all(type(value) is first_type for value in values)
+
+def extract_memory(content: str) -> dict:
+    memory = {}
+    in_section = False
+    for line in content.split("\n"):
+        if line.strip().startswith("## Memory"):
+            in_section = True
+            continue
+        if in_section and line.startswith("##"):
+            break
+        if in_section and line.strip().startswith("- **"):
+            match = re.match(r"-\s+\*\*([^*]+)\*\*:\s*(\S+)", line.strip())
+            if match:
+                memory[match.group(1)] = match.group(2)
+    return memory
+
+def validate_memory(memory: dict) -> list:
+    errors = []
+    for key in memory:
+        if not validate_key(key):
+            errors.append("Invalid key: " + key)
+    for key in check_secrets(memory):
+        errors.append("Sensitive key in memory: " + key)
+    return errors
+
+def document_memory(memory: dict) -> str:
+    docs = "## Persistent Memory\n\n"
+    for key, value in memory.items():
+        docs += "- " + key + ": " + value + "\n"
+    return docs
+```
+
+## Tests
+
+### Input
+
+```yaml
+content: |
+  ## Memory
+
+  - **state**: idle
+  - **count**: 0
+  - **last_run**: null
+```
+
+### Expected
+
+```yaml
+valid: true
+errors: []
+```
+
+```python
+def test_memory():
+    memory = {"state": "idle", "count": "0", "last_run": "null"}
+    assert validate_key("user_count")
+    assert validate_memory(memory) == []
+    assert check_secrets(memory) == []
+    assert validate_json("{\"a\": 1}")
+    assert validate_type_consistency([1, 2, 3])
+    assert "Persistent Memory" in document_memory(memory)
+```
+
+## Examples
+
+### Simple State
+
+```markdown
+- **state**: idle  Current module state
+- **count**: 0  Operation counter
+- **last_run**: null  Last execution timestamp
+```
+
+### Cache Data
+
+```markdown
+- **cache**: {}  Response cache
+- **cache_ttl**: 300  Cache TTL in seconds
+- **cache_hits**: 0  Cache hit counter
+```
+
+## References
+
+- MAM specification, the canonical source format
+- Memory section reference documentation

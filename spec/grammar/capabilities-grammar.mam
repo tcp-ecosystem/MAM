@@ -1,0 +1,186 @@
+---
+id: grammar-capabilities
+name: Capabilities Grammar
+version: 1.0.0
+type: module
+author: MAM Team
+description: >
+  Describes the grammar of the MAM capabilities section: functional
+  prerequisites a module needs from its execution environment.
+license: MIT
+runtime:
+  language: python
+  version: ">=3.12"
+tags:
+  - grammar
+  - capabilities
+capabilities:
+  - parse
+  - validate
+  - summarize
+permissions:
+  filesystem:
+    - read
+---
+
+# Capabilities Grammar
+
+## Purpose
+
+Describes the grammar of the MAM capabilities section, a markdown bullet list
+that declares the functional prerequisites a module needs from its execution
+environment. This module parses a capabilities block, validates each entry
+against the naming rules, and summarizes the result.
+
+## Inputs
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| document | string | Yes | Capabilities section text to parse |
+| strict | bool | No | Enforce known categories (default: false) |
+
+## Outputs
+
+| Name | Type | Description |
+|------|------|-------------|
+| capabilities | list | Parsed capability names |
+| valid | bool | Whether all capabilities are well formed |
+| errors | list | Validation errors |
+| summary | string | Human readable summary of the capabilities |
+
+## Capabilities
+
+### parse
+
+Parse a capabilities section into a list of capability names.
+
+### validate
+
+Check that each capability follows the naming grammar.
+
+### summarize
+
+Produce a human readable summary of the declared capabilities.
+
+## Rules
+
+- Capability names must match the pattern `^[a-z][a-z0-9:-]{0,127}$`.
+- Capabilities are case insensitive.
+- Each capability should be listed only once.
+- Known categories are runtime, network, storage, compute, security, integration, hardware.
+- The (optional) marker is preserved and noted.
+- Validation must not raise; it returns the errors.
+
+## Workflow
+
+```mermaid
+flowchart TD
+    A[Document] --> B[Parse]
+    B --> C[Validate]
+    C --> D[Summarize]
+    D --> E[Output]
+```
+
+## Python
+
+```python
+import re
+
+CATEGORIES = {
+    "runtime", "network", "storage", "compute",
+    "security", "integration", "hardware",
+}
+CAP_PATTERN = re.compile(r"^[a-z][a-z0-9:-]{0,127}$")
+
+def parse(document: str) -> list:
+    """Parse a capabilities bullet list."""
+    capabilities = []
+    for line in document.splitlines():
+        line = line.strip()
+        if not line.startswith("- "):
+            continue
+        entry = line[2:].strip()
+        name = entry.split(" (")[0].strip()
+        capabilities.append(name)
+    return capabilities
+
+def validate(document: str) -> dict:
+    """Validate each capability name."""
+    caps = parse(document)
+    errors = []
+    for cap in caps:
+        if not CAP_PATTERN.match(cap):
+            errors.append(f"invalid name: {cap}")
+        category = cap.split(":", 1)[0]
+        if category not in CATEGORIES:
+            errors.append(f"unknown category: {category}")
+    return {"capabilities": caps, "valid": not errors, "errors": errors}
+
+def summarize(document: str) -> str:
+    """Summarize the declared capabilities."""
+    caps = parse(document)
+    if not caps:
+        return "no capabilities declared"
+    return f"{len(caps)} capability (or capabilities): " + ", ".join(caps)
+```
+
+## Tests
+
+### Input
+
+```yaml
+document: |
+  - runtime:python:3.12+
+  - network:https
+  - storage:sqlite
+```
+
+### Expected
+
+```yaml
+valid: true
+```
+
+```python
+def test_parse():
+    doc = "- runtime:python:3.12+\n- network:https"
+    assert parse(doc) == ["runtime:python:3.12+", "network:https"]
+
+def test_validate_ok():
+    doc = "- runtime:python:3.12+\n- network:https"
+    assert validate(doc)["valid"] is True
+
+def test_validate_bad_name():
+    doc = "- Python 3.12+"
+    assert validate(doc)["valid"] is False
+
+def test_validate_unknown_category():
+    doc = "- weird:thing"
+    assert validate(doc)["valid"] is False
+
+def test_summarize():
+    doc = "- network:https"
+    assert summarize(doc) == "1 capability (or capabilities): network:https"
+```
+
+## Examples
+
+### Basic Usage
+
+```python
+doc = "- runtime:python:3.12+\n- network:https\n- storage:sqlite"
+print(summarize(doc))
+```
+
+### Expected Flow
+
+```text
+Document → Parse → Validate → Summarize → Output
+```
+
+## References
+
+- MAM documentation
+- tokens.md
+- ast-specification.md
+- section-grammar.bnf
