@@ -334,4 +334,4 @@ print(result)
 ## References
 
 - [Workflow Section Spec](../../spec/sections/workflow.md)
-- [Content Pipeline Example](../examples/data-pipeline.mam.md)
+- [Content Pipeline Example](../examples/data_pipeline.mam.md)

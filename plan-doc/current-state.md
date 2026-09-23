@@ -128,7 +128,7 @@ targets = ["python"]
 | `mam new <type> <name>` | — | Scaffolds a module from a template (`.mam` + `.mam.md`) |
 
 Supporting library: `cli/src/project/` (TOML parser, manifest, loader, graph).
-Sample project: `examples/security-system/`.
+Sample project: `modules/examples/security-system/`.
 
 
 

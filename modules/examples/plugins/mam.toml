@@ -1,0 +1,20 @@
+# MAM Project Manifest
+# A multi-file MAM system composed from modules/ (see plan-doc/full-mam.md §19).
+
+[project]
+name = "plugins"
+version = "1.0.0"
+description = "MAM plugin extension examples composed from modules"
+license = "MIT"
+authors = ["MAM Examples"]
+
+[build]
+entry = "system.mam"
+modules = [
+  "modules/**/*.mam",
+  "modules/**/*.mam.md",
+]
+outDir = "dist"
+targets = ["python"]
+
+[dependencies]

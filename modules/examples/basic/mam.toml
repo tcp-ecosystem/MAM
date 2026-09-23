@@ -1,0 +1,20 @@
+# MAM Project Manifest
+# A multi-file MAM system composed from modules/ (see plan-doc/full-mam.md §19).
+
+[project]
+name = "basic"
+version = "1.0.0"
+description = "Introductory MAM utility modules composed into a basic system"
+license = "MIT"
+authors = ["MAM Team"]
+
+[build]
+entry = "system.mam"
+modules = [
+  "modules/**/*.mam",
+  "modules/**/*.mam.md",
+]
+outDir = "dist"
+targets = ["python"]
+
+[dependencies]
