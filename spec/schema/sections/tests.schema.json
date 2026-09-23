@@ -16,13 +16,24 @@
           { "$ref": "#/definitions/List" },
           { "$ref": "#/definitions/Paragraph" },
           { "$ref": "#/definitions/Table" },
-          { "$ref": "#/definitions/TestSuite" }
+          { "$ref": "#/definitions/TestSuite" },
+          { "$ref": "#/definitions/Heading" }
         ]
       },
       "minItems": 1
     }
   },
   "definitions": {
+    "Heading": {
+      "type": "object",
+      "required": ["type", "value"],
+      "properties": {
+        "type": { "type": "string", "const": "heading" },
+        "level": { "type": "integer", "minimum": 1, "maximum": 6 },
+        "value": { "type": "string" },
+        "location": { "type": "object" }
+      }
+    },
     "CodeBlock": {
       "type": "object",
       "required": ["type", "language", "value"],

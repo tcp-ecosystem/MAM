@@ -12,17 +12,38 @@
       "type": "array",
       "items": {
         "oneOf": [
+          { "$ref": "#/definitions/Mermaid" },
           { "$ref": "#/definitions/CodeBlock" },
           { "$ref": "#/definitions/Paragraph" },
           { "$ref": "#/definitions/List" },
           { "$ref": "#/definitions/Table" },
-          { "$ref": "#/definitions/WorkflowDefinition" }
+          { "$ref": "#/definitions/WorkflowDefinition" },
+          { "$ref": "#/definitions/Heading" }
         ]
       },
       "minItems": 1
     }
   },
   "definitions": {
+    "Mermaid": {
+      "type": "object",
+      "required": ["type", "value"],
+      "properties": {
+        "type": { "type": "string", "const": "mermaid" },
+        "value": { "type": "string" },
+        "location": { "type": "object" }
+      }
+    },
+    "Heading": {
+      "type": "object",
+      "required": ["type", "value"],
+      "properties": {
+        "type": { "type": "string", "const": "heading" },
+        "level": { "type": "integer", "minimum": 1, "maximum": 6 },
+        "value": { "type": "string" },
+        "location": { "type": "object" }
+      }
+    },
     "CodeBlock": {
       "type": "object",
       "required": ["type", "language", "value"],

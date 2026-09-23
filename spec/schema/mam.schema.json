@@ -70,9 +70,65 @@
           "description": "Module author"
         },
         "runtime": {
+          "oneOf": [
+            {
+              "type": "string",
+              "enum": ["python", "javascript", "typescript", "rust", "go", "shell"],
+              "description": "Primary runtime environment (shorthand)"
+            },
+            {
+              "type": "object",
+              "required": ["language"],
+              "description": "Structured runtime with language and version",
+              "properties": {
+                "language": {
+                  "type": "string",
+                  "enum": ["python", "javascript", "typescript", "rust", "go", "shell"]
+                },
+                "version": { "type": "string" }
+              },
+              "additionalProperties": false
+            }
+          ]
+        },
+        "type": {
           "type": "string",
-          "enum": ["python", "javascript", "typescript", "rust", "go", "shell"],
-          "description": "Primary runtime environment"
+          "enum": [
+            "module", "agent", "tool", "memory", "workflow", "team", "policy",
+            "system", "service", "component", "resource", "interface", "contract",
+            "plugin", "extension", "runtime", "package", "repository", "documentation"
+          ],
+          "default": "module",
+          "description": "Module type"
+        },
+        "capabilities": {
+          "type": "array",
+          "items": { "type": "string", "minLength": 1 },
+          "uniqueItems": true,
+          "description": "Exposed capabilities"
+        },
+        "inputs": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/Port" },
+          "description": "Declared input parameters"
+        },
+        "outputs": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/Port" },
+          "description": "Declared output parameters"
+        },
+        "exports": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["name", "type"],
+            "properties": {
+              "name": { "type": "string" },
+              "type": { "type": "string" },
+              "alias": { "type": "string" },
+              "selective": { "type": "boolean", "default": false }
+            }
+          }
         },
         "tags": {
           "type": "array",
@@ -91,17 +147,50 @@
         "dependencies": {
           "type": "array",
           "items": {
-            "type": "string",
-            "pattern": "^[a-z][a-z0-9-]{0,63}$"
+            "oneOf": [
+              { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,63}$" },
+              {
+                "type": "object",
+                "required": ["name"],
+                "description": "Structured dependency with version constraint",
+                "properties": {
+                  "name": { "type": "string" },
+                  "version": { "type": "string" },
+                  "source": { "type": "string" },
+                  "optional": { "type": "boolean", "default": false },
+                  "capabilities": { "type": "array", "items": { "type": "string" } }
+                },
+                "additionalProperties": false
+              }
+            ]
           },
-          "description": "Module dependencies"
+          "description": "Module dependencies — IDs or structured {name, version} entries"
         },
         "permissions": {
-          "type": "array",
-          "items": {
-            "type": "string",
-            "enum": ["network", "filesystem", "environment", "exec", "memory", "database", "secrets"]
-          },
+          "oneOf": [
+            {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": ["network", "filesystem", "environment", "exec", "memory", "database", "secrets"]
+              },
+              "description": "Required permissions (shorthand list)"
+            },
+            {
+              "type": "object",
+              "description": "Structured permissions mapping",
+              "properties": {
+                "filesystem": { "oneOf": [ { "type": "string" }, { "type": "array", "items": { "type": "string" } } ] },
+                "network": { "oneOf": [ { "type": "string" }, { "type": "array", "items": { "type": "string" } } ] },
+                "python": { "oneOf": [ { "type": "string" }, { "type": "array", "items": { "type": "string" } } ] },
+                "memory": { "oneOf": [ { "type": "string" }, { "type": "array", "items": { "type": "string" } } ] },
+                "exec": { "type": "string" },
+                "environment": { "oneOf": [ { "type": "string" }, { "type": "array", "items": { "type": "string" } } ] },
+                "database": { "oneOf": [ { "type": "string" }, { "type": "array", "items": { "type": "string" } } ] }
+              },
+              "additionalProperties": false
+            }
+          ],
           "description": "Required permissions"
         },
         "license": {
@@ -174,6 +263,20 @@
       },
       "additionalProperties": false
     },
+    "Port": {
+      "type": "object",
+      "required": ["name", "type"],
+      "description": "A declared input or output parameter",
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "type": { "type": "string" },
+        "required": { "type": "boolean", "default": false },
+        "description": { "type": "string" },
+        "default": {},
+        "sensitive": { "type": "boolean", "default": false }
+      },
+      "additionalProperties": false
+    },
     "Section": {
       "type": "object",
       "required": ["name", "content"],
@@ -216,7 +319,10 @@
         { "$ref": "#/definitions/List" },
         { "$ref": "#/definitions/CodeBlock" },
         { "$ref": "#/definitions/Table" },
-        { "$ref": "#/definitions/Mermaid" }
+        { "$ref": "#/definitions/Mermaid" },
+        { "$ref": "#/definitions/Heading" },
+        { "$ref": "#/definitions/Blockquote" },
+        { "$ref": "#/definitions/HorizontalRule" }
       ]
     },
     "Paragraph": {
@@ -290,6 +396,38 @@
       "required": ["type", "value"],
       "properties": {
         "type": { "type": "string", "const": "mermaid" },
+        "value": { "type": "string" },
+        "location": { "$ref": "#/definitions/SourceLocation" }
+      }
+    },
+    "Heading": {
+      "type": "object",
+      "required": ["type", "value"],
+      "properties": {
+        "type": { "type": "string", "const": "heading" },
+        "level": { "type": "integer", "minimum": 1, "maximum": 6 },
+        "value": { "type": "string" },
+        "location": { "$ref": "#/definitions/SourceLocation" }
+      }
+    },
+    "Blockquote": {
+      "type": "object",
+      "required": ["type", "value"],
+      "properties": {
+        "type": { "type": "string", "const": "blockquote" },
+        "value": { "type": "string" },
+        "children": {
+          "type": "array",
+          "items": { "$ref": "#/definitions/ContentNode" }
+        },
+        "location": { "$ref": "#/definitions/SourceLocation" }
+      }
+    },
+    "HorizontalRule": {
+      "type": "object",
+      "required": ["type", "value"],
+      "properties": {
+        "type": { "type": "string", "const": "horizontalrule" },
         "value": { "type": "string" },
         "location": { "$ref": "#/definitions/SourceLocation" }
       }

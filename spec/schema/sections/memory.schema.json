@@ -16,13 +16,24 @@
           { "$ref": "#/definitions/List" },
           { "$ref": "#/definitions/CodeBlock" },
           { "$ref": "#/definitions/Table" },
-          { "$ref": "#/definitions/MemoryConfig" }
+          { "$ref": "#/definitions/MemoryConfig" },
+          { "$ref": "#/definitions/Heading" }
         ]
       },
       "minItems": 1
     }
   },
   "definitions": {
+    "Heading": {
+      "type": "object",
+      "required": ["type", "value"],
+      "properties": {
+        "type": { "type": "string", "const": "heading" },
+        "level": { "type": "integer", "minimum": 1, "maximum": 6 },
+        "value": { "type": "string" },
+        "location": { "type": "object" }
+      }
+    },
     "Paragraph": {
       "type": "object",
       "required": ["type", "value"],

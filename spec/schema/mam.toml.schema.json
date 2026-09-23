@@ -1,0 +1,118 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://mam.dev/schema/v2.0.0/mam.toml.schema.json",
+  "title": "MAM Project Manifest Schema (mam.toml)",
+  "description": "JSON Schema for the MAM project manifest (mam.toml). Composes modules into a system: project identity, entry system, module discovery globs, build targets, and cross-project dependencies.",
+  "type": "object",
+  "required": ["project"],
+  "properties": {
+    "project": {
+      "type": "object",
+      "required": ["name", "version"],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z][a-z0-9-]{0,63}$",
+          "minLength": 1,
+          "maxLength": 64,
+          "description": "Project identifier — lowercase kebab-case"
+        },
+        "version": {
+          "type": "string",
+          "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(-[a-zA-Z0-9.]+)?(\\+[a-zA-Z0-9.]+)?$",
+          "description": "Project semantic version"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 1024,
+          "description": "Project description"
+        },
+        "license": {
+          "type": "string",
+          "pattern": "^[A-Za-z0-9._-]+$",
+          "description": "SPDX license identifier"
+        },
+        "authors": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Project authors"
+        }
+      },
+      "additionalProperties": false
+    },
+    "build": {
+      "type": "object",
+      "description": "Build configuration",
+      "properties": {
+        "entry": {
+          "type": "string",
+          "description": "Entry system module, relative to the project root (e.g. system.mam)"
+        },
+        "modules": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Glob patterns (relative to root) used to discover modules"
+        },
+        "outDir": {
+          "type": "string",
+          "default": "dist",
+          "description": "Output directory for compiled artifacts"
+        },
+        "targets": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": [
+              "python", "javascript", "typescript", "go", "rust", "csharp",
+              "java", "wasm", "json", "yaml", "openai", "langgraph", "crewai",
+              "gemini", "autogen", "claude", "kubernetes", "terraform", "docker"
+            ]
+          },
+          "minItems": 1,
+          "default": ["python"],
+          "description": "Compiler targets to emit"
+        },
+        "include": {
+          "type": "array",
+          "items": { "type": "string" },
+          "default": [],
+          "description": "Extra include globs"
+        },
+        "exclude": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Glob patterns to exclude from discovery"
+        }
+      },
+      "additionalProperties": false
+    },
+    "dependencies": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "description": "Dependency version constraint (e.g. ^1.2, >=1.0.0)"
+      },
+      "description": "Cross-project dependencies mapped to version constraints"
+    }
+  },
+  "additionalProperties": false,
+  "examples": [
+    {
+      "project": {
+        "name": "security-system",
+        "version": "1.0.0",
+        "description": "Authorized security reconnaissance system",
+        "license": "MIT"
+      },
+      "build": {
+        "entry": "system.mam",
+        "modules": ["modules/**/*.mam", "modules/**/*.mam.md"],
+        "outDir": "dist",
+        "targets": ["python"]
+      },
+      "dependencies": {
+        "http-client": "^1.2"
+      }
+    }
+  ]
+}

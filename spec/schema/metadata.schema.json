@@ -30,10 +30,81 @@
       "maxLength": 256,
       "description": "Module author — name or organization"
     },
-    "runtime": {
+    "type": {
       "type": "string",
-      "enum": ["python", "javascript", "typescript", "rust", "go", "shell"],
-      "description": "Primary runtime environment"
+      "enum": [
+        "module", "agent", "tool", "memory", "workflow", "team", "policy",
+        "system", "service", "component", "resource", "interface", "contract",
+        "plugin", "extension", "runtime", "package", "repository", "documentation"
+      ],
+      "default": "module",
+      "description": "Module type — what kind of system element this module describes"
+    },
+    "capabilities": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "uniqueItems": true,
+      "description": "Exposed capabilities — what the module can do"
+    },
+    "inputs": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/Port" },
+      "description": "Declared input parameters (structured front matter)"
+    },
+    "outputs": {
+      "type": "array",
+      "items": { "$ref": "#/definitions/Port" },
+      "description": "Declared output parameters (structured front matter)"
+    },
+    "exports": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "type"],
+        "properties": {
+          "name": { "type": "string" },
+          "type": { "type": "string" },
+          "alias": { "type": "string" },
+          "selective": { "type": "boolean", "default": false }
+        }
+      },
+      "description": "Public interface exports"
+    },
+    "imports": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "source"],
+        "properties": {
+          "name": { "type": "string" },
+          "source": { "type": "string" },
+          "alias": { "type": "string" },
+          "selective": { "type": "boolean", "default": false }
+        }
+      },
+      "description": "Imported modules or symbols"
+    },
+    "runtime": {
+      "oneOf": [
+        {
+          "type": "string",
+          "enum": ["python", "javascript", "typescript", "rust", "go", "shell"],
+          "description": "Primary runtime environment (shorthand)"
+        },
+        {
+          "type": "object",
+          "required": ["language"],
+          "description": "Structured runtime with language and version",
+          "properties": {
+            "language": {
+              "type": "string",
+              "enum": ["python", "javascript", "typescript", "rust", "go", "shell"]
+            },
+            "version": { "type": "string" }
+          },
+          "additionalProperties": false
+        }
+      ]
     },
     "tags": {
       "type": "array",
@@ -50,18 +121,86 @@
     },
     "dependencies": {
       "type": "array",
-      "items": { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,63}$" },
-      "uniqueItems": true,
-      "description": "Module dependencies — other MAM module IDs"
-    },
-    "permissions": {
-      "type": "array",
       "items": {
-        "type": "string",
-        "enum": ["network", "filesystem", "environment", "exec", "memory", "database", "secrets"]
+        "oneOf": [
+          { "type": "string", "pattern": "^[a-z][a-z0-9-]{0,63}$" },
+          {
+            "type": "object",
+            "required": ["name"],
+            "description": "Structured dependency with version constraint",
+            "properties": {
+              "name": { "type": "string" },
+              "version": { "type": "string" },
+              "source": { "type": "string" },
+              "optional": { "type": "boolean", "default": false },
+              "capabilities": {
+                "type": "array",
+                "items": { "type": "string" }
+              }
+            },
+            "additionalProperties": false
+          }
+        ]
       },
       "uniqueItems": true,
-      "description": "Required runtime permissions"
+      "description": "Module dependencies — other MAM module IDs or structured {name, version} entries"
+    },
+    "permissions": {
+      "oneOf": [
+        {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "enum": ["network", "filesystem", "environment", "exec", "memory", "database", "secrets"]
+          },
+          "uniqueItems": true,
+          "description": "Required runtime permissions (shorthand list)"
+        },
+        {
+          "type": "object",
+          "description": "Structured permissions mapping",
+          "properties": {
+            "filesystem": {
+              "oneOf": [
+                { "type": "string" },
+                { "type": "array", "items": { "type": "string" } }
+              ]
+            },
+            "network": {
+              "oneOf": [
+                { "type": "string" },
+                { "type": "array", "items": { "type": "string" } }
+              ]
+            },
+            "python": {
+              "oneOf": [
+                { "type": "string" },
+                { "type": "array", "items": { "type": "string" } }
+              ]
+            },
+            "memory": {
+              "oneOf": [
+                { "type": "string" },
+                { "type": "array", "items": { "type": "string" } }
+              ]
+            },
+            "exec": { "type": "string" },
+            "environment": {
+              "oneOf": [
+                { "type": "string" },
+                { "type": "array", "items": { "type": "string" } }
+              ]
+            },
+            "database": {
+              "oneOf": [
+                { "type": "string" },
+                { "type": "array", "items": { "type": "string" } }
+              ]
+            }
+          },
+          "additionalProperties": false
+        }
+      ]
     },
     "license": {
       "type": "string",
@@ -195,18 +334,57 @@
       "description": "Funding information"
     }
   },
+  "definitions": {
+    "Port": {
+      "type": "object",
+      "required": ["name", "type"],
+      "description": "A declared input or output parameter",
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "type": {
+          "type": "string",
+          "description": "Parameter type — string, number, boolean, object, array, or a custom type"
+        },
+        "required": { "type": "boolean", "default": false },
+        "description": { "type": "string" },
+        "default": {},
+        "sensitive": { "type": "boolean", "default": false }
+      },
+      "additionalProperties": false
+    }
+  },
   "additionalProperties": false,
   "examples": [
     {
       "id": "data-pipeline-v2",
       "version": "2.1.0",
       "name": "Data Pipeline V2",
+      "type": "workflow",
       "author": "MAM Team",
-      "runtime": "python",
+      "runtime": {
+        "language": "python",
+        "version": ">=3.12"
+      },
       "tags": ["etl", "pipeline", "data", "async"],
       "description": "High-performance async data pipeline with built-in retry and circuit breaker patterns",
-      "dependencies": ["mam-logging", "mam-metrics"],
-      "permissions": ["network", "filesystem", "database"],
+      "dependencies": [
+        { "name": "mam-logging", "version": "^2.0" },
+        { "name": "mam-metrics", "version": "^1.5" }
+      ],
+      "capabilities": ["extract", "transform", "load", "validate"],
+      "inputs": [
+        { "name": "source", "type": "string", "required": true },
+        { "name": "batch_size", "type": "number", "default": 1000 }
+      ],
+      "outputs": [
+        { "name": "records", "type": "array" },
+        { "name": "summary", "type": "object" }
+      ],
+      "permissions": {
+        "network": ["internet"],
+        "filesystem": ["read", "write"],
+        "database": ["read"]
+      },
       "license": "MIT",
       "repository": "https://github.com/mam-modules/data-pipeline-v2",
       "mam_version": "2.0.0",

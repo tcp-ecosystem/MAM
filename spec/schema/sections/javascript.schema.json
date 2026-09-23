@@ -1,0 +1,116 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://mam.dev/schema/v1.0.0/sections/javascript.schema.json",
+  "title": "JavaScript Section Schema",
+  "description": "JavaScript code implementations — function definitions, class implementations, type annotations, async support, module systems, and runnable code blocks. Code should follow standard JavaScript style guides.",
+  "type": "object",
+  "required": ["type", "name", "content"],
+  "properties": {
+    "type": { "type": "string", "const": "section" },
+    "name": { "type": "string", "const": "JavaScript" },
+    "content": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          { "$ref": "#/definitions/CodeBlock" },
+          { "$ref": "#/definitions/List" },
+          { "$ref": "#/definitions/Heading" },
+          { "$ref": "#/definitions/Paragraph" }
+        ]
+      },
+      "minItems": 1
+    }
+  },
+  "definitions": {
+    "CodeBlock": {
+      "type": "object",
+      "required": ["type", "language", "value"],
+      "properties": {
+        "type": { "const": "codeblock" },
+        "language": {
+          "type": "string",
+          "enum": ["javascript", "js", "jsx", "node", "nodejs", "typescript", "ts", "tsx"],
+          "description": "JavaScript language variant"
+        },
+        "value": {
+          "type": "string",
+          "minLength": 1,
+          "description": "JavaScript source code"
+        },
+        "title": {
+          "type": "string",
+          "description": "Code block title or function name"
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 512,
+          "description": "What this code does"
+        },
+        "runnable": {
+          "type": "boolean",
+          "default": true
+        },
+        "node_version": {
+          "type": "string",
+          "default": ">=18",
+          "description": "Minimum Node.js version required"
+        },
+        "dependencies": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "npm packages this code block requires"
+        },
+        "expected_output": {
+          "type": "string",
+          "description": "Expected stdout when executed"
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Tags for filtering (e.g., 'async', 'esm', 'typed')"
+        },
+        "async": {
+          "type": "boolean",
+          "default": false,
+          "description": "Whether this code uses async/await"
+        },
+        "module_system": {
+          "type": "string",
+          "enum": ["esm", "commonjs", "cjs", "umd"],
+          "default": "esm",
+          "description": "JavaScript module system"
+        }
+      }
+    },
+    "List": {
+      "type": "object",
+      "required": ["type", "items"],
+      "properties": {
+        "type": { "const": "list" },
+        "items": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        }
+      }
+    },
+    "Heading": {
+      "type": "object",
+      "required": ["type", "value"],
+      "properties": {
+        "type": { "type": "string", "const": "heading" },
+        "level": { "type": "integer", "minimum": 1, "maximum": 6 },
+        "value": { "type": "string" },
+        "location": { "type": "object" }
+      }
+    },
+    "Paragraph": {
+      "type": "object",
+      "required": ["type", "value"],
+      "properties": {
+        "type": { "const": "paragraph" },
+        "value": { "type": "string", "minLength": 1 }
+      }
+    }
+  }
+}

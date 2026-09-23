@@ -15,13 +15,24 @@
           { "$ref": "#/definitions/List" },
           { "$ref": "#/definitions/Paragraph" },
           { "$ref": "#/definitions/Table" },
-          { "$ref": "#/definitions/CodeBlock" }
+          { "$ref": "#/definitions/CodeBlock" },
+          { "$ref": "#/definitions/Heading" }
         ]
       },
       "minItems": 1
     }
   },
   "definitions": {
+    "Heading": {
+      "type": "object",
+      "required": ["type", "value"],
+      "properties": {
+        "type": { "type": "string", "const": "heading" },
+        "level": { "type": "integer", "minimum": 1, "maximum": 6 },
+        "value": { "type": "string" },
+        "location": { "type": "object" }
+      }
+    },
     "List": {
       "type": "object",
       "required": ["type", "items"],
