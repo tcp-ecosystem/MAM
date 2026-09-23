@@ -34,6 +34,12 @@ export interface JSONReporterOptions {
   jsonl?: boolean;
   /** Indentation spaces (default: 2) */
   indent?: number;
+  /** Only include error-severity issues (default: false) */
+  errorOnly?: boolean;
+  /** Include trimmed source line text for each issue (default: false) */
+  includeSource?: boolean;
+  /** Callback to fetch source line text when includeSource is enabled */
+  getLine?: (line: number) => string | undefined;
 }
 
 export interface JSONIssueOutput {
@@ -46,6 +52,9 @@ export interface JSONIssueOutput {
     column: number;
   };
   path?: string;
+  source?: {
+    line: string;
+  };
 }
 
 export interface JSONReportOutput {
@@ -111,6 +120,8 @@ export class JSONReporter {
       includeStats: true,
       jsonl: false,
       indent: 2,
+      errorOnly: false,
+      includeSource: false,
       ...options,
     };
   }
@@ -123,7 +134,11 @@ export class JSONReporter {
   }
 
   private reportJSON(result: ValidationReport): string {
-    const sorted = sortIssues(result.issues);
+    const sorted = sortIssues(
+      this.options.errorOnly
+        ? result.issues.filter(i => i.severity === 'error')
+        : result.issues
+    );
     const stats = computeStats(sorted);
 
     const issues: JSONIssueOutput[] = sorted.map(issue => {
@@ -143,6 +158,13 @@ export class JSONReporter {
 
       if (issue.path) {
         out.path = issue.path;
+      }
+
+      if (this.options.includeSource && issue.line != null) {
+        const text = this.options.getLine?.(issue.line);
+        if (text !== undefined) {
+          out.source = { line: text.trim() };
+        }
       }
 
       return out;
@@ -165,7 +187,11 @@ export class JSONReporter {
   }
 
   private reportJSONL(result: ValidationReport): string {
-    const sorted = sortIssues(result.issues);
+    const sorted = sortIssues(
+      this.options.errorOnly
+        ? result.issues.filter(i => i.severity === 'error')
+        : result.issues
+    );
     const stats = computeStats(sorted);
     const lines: string[] = [];
 
@@ -190,6 +216,12 @@ export class JSONReporter {
       }
       if (issue.path) {
         issueOut.path = issue.path;
+      }
+      if (this.options.includeSource && issue.line != null) {
+        const text = this.options.getLine?.(issue.line);
+        if (text !== undefined) {
+          issueOut.source = { line: text.trim() };
+        }
       }
 
       const record: JSONLRecord = {

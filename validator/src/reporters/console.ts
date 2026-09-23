@@ -32,6 +32,12 @@ export interface ConsoleReporterOptions {
   sort?: boolean;
   /** Verbose mode shows all details (default: false) */
   verbose?: boolean;
+  /** Limit the number of issues printed (default: unlimited) */
+  maxIssues?: number;
+  /** Print only the PASS/FAIL line and summary, no issues (default: false) */
+  summaryOnly?: boolean;
+  /** Show the rule name column (default: true) */
+  showRuleColumn?: boolean;
 }
 
 const SEVERITY_ORDER: Record<string, number> = {
@@ -105,7 +111,8 @@ function sortIssues(issues: ValidationIssue[]): ValidationIssue[] {
 function formatIssue(
   issue: ValidationIssue,
   useColor: boolean,
-  verbose: boolean
+  verbose: boolean,
+  showRuleColumn: boolean
 ): string {
   const color = severityColor(issue.severity, useColor);
   const reset = resetColor(useColor);
@@ -119,10 +126,10 @@ function formatIssue(
       : '';
 
   const codeStr = issue.code ? ` [${issue.code}]` : '';
-  const ruleStr = `${bold}${issue.rule}${reset}`;
+  const ruleStr = showRuleColumn ? `${bold}${issue.rule}${reset} ` : '';
   const pathStr = issue.path ? ` ${dim}(${issue.path})${reset}` : '';
 
-  let line = `  ${color}${label}${reset} ${ruleStr}${codeStr} ${issue.message}${loc}${pathStr}`;
+  let line = `  ${color}${label}${reset} ${ruleStr}${issue.message}${loc}${pathStr}`;
 
   if (verbose && issue.path) {
     line += `\n       ${dim}path: ${issue.path}${reset}`;
@@ -140,6 +147,8 @@ export class ConsoleReporter {
       showSummary: true,
       sort: true,
       verbose: false,
+      summaryOnly: false,
+      showRuleColumn: true,
       ...options,
     };
   }
@@ -161,11 +170,24 @@ export class ConsoleReporter {
 
     if (result.issues.length === 0) {
       lines.push(`  ${dim}No issues found${reset}`);
+    } else if (this.options.summaryOnly) {
+      // summaryOnly: no issue details, only the PASS/FAIL line and summary
     } else {
       let issues = result.issues;
       if (this.options.sort) {
         issues = sortIssues(issues);
       }
+
+      const maxIssues = this.options.maxIssues;
+      const verbose = this.options.verbose ?? false;
+      const showRuleColumn = this.options.showRuleColumn !== false;
+      let printed = 0;
+      const emit = (issue: ValidationIssue) => {
+        if (maxIssues != null && printed >= maxIssues) return;
+        lines.push(formatIssue(issue, useColor, verbose, showRuleColumn));
+        printed++;
+      };
+      const atLimit = () => maxIssues != null && printed >= maxIssues;
 
       if (this.options.groupBy === 'rule') {
         const groups = new Map<string, ValidationIssue[]>();
@@ -175,11 +197,12 @@ export class ConsoleReporter {
           groups.get(key)!.push(issue);
         }
         for (const [rule, groupIssues] of groups) {
+          if (atLimit()) break;
           lines.push(
             `\n  ${bold}${useColor ? COLORS.cyan : ''}[${rule}]${reset} (${groupIssues.length} issue${groupIssues.length > 1 ? 's' : ''})`
           );
           for (const issue of groupIssues) {
-            lines.push(formatIssue(issue, useColor, this.options.verbose ?? false));
+            emit(issue);
           }
         }
       } else if (this.options.groupBy === 'severity') {
@@ -192,18 +215,23 @@ export class ConsoleReporter {
         for (const severity of ['error', 'warning', 'info']) {
           const groupIssues = groups.get(severity);
           if (!groupIssues || groupIssues.length === 0) continue;
+          if (atLimit()) break;
           const color = severityColor(severity, useColor);
           lines.push(
             `\n  ${color}${bold}${severity.toUpperCase()}S${reset} (${groupIssues.length})`
           );
           for (const issue of groupIssues) {
-            lines.push(formatIssue(issue, useColor, this.options.verbose ?? false));
+            emit(issue);
           }
         }
       } else {
         for (const issue of issues) {
-          lines.push(formatIssue(issue, useColor, this.options.verbose ?? false));
+          emit(issue);
         }
+      }
+
+      if (maxIssues != null && printed < issues.length) {
+        lines.push(`  ${dim}+${issues.length - printed} more...${reset}`);
       }
     }
 

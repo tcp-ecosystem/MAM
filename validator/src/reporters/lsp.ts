@@ -74,6 +74,28 @@ export interface LSPResult {
   codeActions?: LSPCodeAction[];
 }
 
+export interface LSPWorkspaceDiagnosticItem {
+  uri: string;
+  version: number | null;
+  kind: 'full';
+  items: LSPDiagnostic[];
+}
+
+export interface LSPWorkspaceDiagnosticReport {
+  kind: 'workspace/diagnostic';
+  items: LSPWorkspaceDiagnosticItem[];
+}
+
+export interface LSPPublishDiagnosticsParams {
+  uri: string;
+  diagnostics: LSPDiagnostic[];
+}
+
+export interface LSPPublishDiagnosticsNotification {
+  method: 'textDocument/publishDiagnostics';
+  params: LSPPublishDiagnosticsParams;
+}
+
 export interface LSPReporterOptions {
   /** Source name reported in diagnostics (default: 'mam-validator') */
   source?: string;
@@ -83,6 +105,10 @@ export interface LSPReporterOptions {
   includeCodeActions?: boolean;
   /** Custom code action map (rule -> action factory) */
   codeActionMap?: Record<string, (issue: ValidationIssue) => LSPCodeAction>;
+  /** Custom URI used in diagnostics (default: derived from file) */
+  uri?: string;
+  /** Return a workspace/diagnostic-style report grouped per file (default: false) */
+  workspace?: boolean;
 }
 
 function severityToLSP(severity: string): LSPSeverity {
@@ -212,13 +238,15 @@ export class LSPReporter {
       source: 'mam-validator',
       includeRelatedInformation: true,
       includeCodeActions: true,
+      workspace: false,
       ...options,
     };
   }
 
-  report(result: ValidationReport): LSPResult {
-    const sorted = sortIssues(result.issues);
-    const fileUri = `file:///${result.file.replace(/\\/g, '/')}`;
+  private buildDiagnostics(
+    sorted: ValidationIssue[],
+    fileUri: string
+  ): { diagnostics: LSPDiagnostic[]; codeActions: LSPCodeAction[] } {
     const diagnostics: LSPDiagnostic[] = [];
     const codeActions: LSPCodeAction[] = [];
 
@@ -261,10 +289,50 @@ export class LSPReporter {
       }
     }
 
+    return { diagnostics, codeActions };
+  }
+
+  report(result: ValidationReport): LSPResult | LSPWorkspaceDiagnosticReport {
+    const sorted = sortIssues(result.issues);
+    const fileUri =
+      this.options.uri ?? `file:///${result.file.replace(/\\/g, '/')}`;
+    const { diagnostics, codeActions } = this.buildDiagnostics(sorted, fileUri);
+
+    if (this.options.workspace) {
+      return {
+        kind: 'workspace/diagnostic',
+        items: [
+          {
+            uri: fileUri,
+            version: null,
+            kind: 'full',
+            items: diagnostics,
+          },
+        ],
+      };
+    }
+
     return {
       uri: fileUri,
       diagnostics,
       codeActions: codeActions.length > 0 ? codeActions : undefined,
+    };
+  }
+
+  publishDiagnostics(
+    result: ValidationReport
+  ): LSPPublishDiagnosticsNotification {
+    const sorted = sortIssues(result.issues);
+    const fileUri =
+      this.options.uri ?? `file:///${result.file.replace(/\\/g, '/')}`;
+    const { diagnostics } = this.buildDiagnostics(sorted, fileUri);
+
+    return {
+      method: 'textDocument/publishDiagnostics',
+      params: {
+        uri: fileUri,
+        diagnostics,
+      },
     };
   }
 }
