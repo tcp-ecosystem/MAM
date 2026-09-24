@@ -5,6 +5,7 @@
  */
 
 import { PackageDependency } from './package.js';
+import { compareVersions, isValidVersion } from './semver.js';
 
 // ============================================================================
 // Types
@@ -215,4 +216,37 @@ export class DependencyResolver {
     }
     return Math.abs(hash).toString(16).padStart(16, '0');
   }
+}
+
+// ============================================================================
+// Version Sorting Helpers
+// ============================================================================
+
+/**
+ * Sort a list of semver versions highest-first (descending order).
+ *
+ * Invalid versions sort to the end of the list. The input array is not
+ * mutated.
+ *
+ * @param versions - The version strings to sort.
+ * @returns A new array sorted from highest to lowest version.
+ */
+export function sortVersions(versions: string[]): string[] {
+  return [...versions].sort((a, b) => compareVersions(b, a));
+}
+
+/**
+ * Find the highest valid semver version in a list.
+ *
+ * @param versions - The version strings to inspect.
+ * @returns The highest valid version, or `undefined` when none are valid.
+ */
+export function findHighestVersion(versions: string[]): string | undefined {
+  const valid = versions.filter(v => isValidVersion(v));
+
+  if (valid.length === 0) {
+    return undefined;
+  }
+
+  return sortVersions(valid)[0];
 }

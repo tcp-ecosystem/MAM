@@ -260,7 +260,7 @@ export class MAMPackage {
   private generateDefaultModule(name: string): string {
     return `---
 id: ${name}
-version: 1.0.0
+version: 2.0.0
 name: ${name}
 author: Unknown
 runtime: python
@@ -289,4 +289,52 @@ export interface ValidationResult {
   valid: boolean;
   errors: string[];
   warnings: string[];
+}
+
+// ============================================================================
+// Manifest Helpers
+// ============================================================================
+
+/**
+ * Build a package manifest from a partial definition, filling in sensible
+ * defaults for every unspecified field.
+ *
+ * Defaults: version `'1.0.0'`, description `''`, author `''`, license
+ * `'MIT'`, tags `[]`, dependencies `[]`, main `'index.mam.md'`, files `[]`.
+ *
+ * @param partial - Partial manifest fields to merge over the defaults.
+ * @returns A complete {@link PackageManifest}.
+ */
+export function createPackageManifest(partial: Partial<PackageManifest> = {}): PackageManifest {
+  return {
+    name: partial.name ?? '',
+    version: partial.version ?? '1.0.0',
+    description: partial.description ?? '',
+    author: partial.author ?? '',
+    license: partial.license ?? 'MIT',
+    tags: partial.tags ?? [],
+    dependencies: partial.dependencies ?? [],
+    main: partial.main ?? 'index.mam.md',
+    files: partial.files ?? [],
+    repository: partial.repository,
+    homepage: partial.homepage,
+    keywords: partial.keywords,
+    mamVersion: partial.mamVersion,
+  };
+}
+
+/**
+ * Build a `name -> version` map from a manifest's dependencies.
+ *
+ * @param manifest - The manifest whose dependencies are read.
+ * @returns A record mapping each dependency name to its version string.
+ */
+export function getManifestDependenciesMap(manifest: PackageManifest): Record<string, string> {
+  const map: Record<string, string> = {};
+
+  for (const dep of manifest.dependencies) {
+    map[dep.name] = dep.version;
+  }
+
+  return map;
 }

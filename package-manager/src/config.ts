@@ -364,3 +364,71 @@ export class MAMPConfig {
     return true;
   }
 }
+
+// ============================================================================
+// Config Helpers
+// ============================================================================
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+/**
+ * Merge multiple config data objects into a single object.
+ *
+ * Later configs override earlier ones for scalar and object fields. Object
+ * fields (such as `registries` and `scopeRegistries`) are shallow-merged, and
+ * array values are concatenated and deduplicated.
+ *
+ * @param configs - The config objects to merge, in priority order.
+ * @returns The merged config data.
+ */
+export function mergeConfigs(...configs: MAMPConfigData[]): MAMPConfigData {
+  const merged: MAMPConfigData = {};
+
+  for (const config of configs) {
+    if (!config) {
+      continue;
+    }
+
+    for (const [key, value] of Object.entries(config)) {
+      if (value === undefined) {
+        continue;
+      }
+
+      const existing = merged[key as keyof MAMPConfigData];
+
+      if (Array.isArray(value)) {
+        const combined = Array.isArray(existing) ? [...existing, ...value] : [...value];
+        (merged as Record<string, unknown>)[key] = Array.from(new Set(combined));
+      } else if (isRecord(value) && isRecord(existing)) {
+        (merged as Record<string, unknown>)[key] = { ...existing, ...value };
+      } else {
+        (merged as Record<string, unknown>)[key] = value;
+      }
+    }
+  }
+
+  return merged;
+}
+
+/**
+ * Get the default configuration data with no root-dir-dependent paths.
+ *
+ * @returns The default {@link MAMPConfigData}.
+ */
+export function getDefaultConfigData(): MAMPConfigData {
+  return {
+    registry: 'https://registry.mam.dev',
+    cacheDir: '.mam-cache',
+    packagesDir: 'node_modules',
+    lockfile: true,
+    strict: false,
+    logLevel: 'info',
+    installStrategy: 'hoist',
+    telemetry: false,
+    maxConcurrency: 8,
+    registries: {},
+    scopeRegistries: {},
+  };
+}

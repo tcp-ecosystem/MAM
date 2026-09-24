@@ -220,3 +220,50 @@ export class PackageRegistry {
     this.cache.clear();
   }
 }
+
+// ============================================================================
+// Registry URL Helpers
+// ============================================================================
+
+/**
+ * Normalize a registry URL to a canonical form.
+ *
+ * Trims whitespace, strips trailing slashes, prepends `https://` when no
+ * scheme is present, and upgrades `http://` to `https://`.
+ *
+ * @param url - The registry URL to normalize.
+ * @returns The normalized registry URL.
+ */
+export function normalizeRegistryUrl(url: string): string {
+  let normalized = (url ?? '').trim().replace(/\/+$/, '');
+
+  if (!/^[a-zA-Z][a-zA-Z0-9+.-]*:\/\//.test(normalized)) {
+    normalized = `https://${normalized}`;
+  } else if (normalized.startsWith('http://')) {
+    normalized = `https://${normalized.slice('http://'.length)}`;
+  }
+
+  return normalized;
+}
+
+/**
+ * Build a package URL for a registry, name, and optional version.
+ *
+ * Scoped names are encoded with `%2f` between scope and name. The registry is
+ * normalized first via {@link normalizeRegistryUrl}.
+ *
+ * @param registry - The registry base URL.
+ * @param name - The package name.
+ * @param version - Optional package version.
+ * @returns The full package URL.
+ */
+export function buildPackageUrl(registry: string, name: string, version?: string): string {
+  const base = normalizeRegistryUrl(registry);
+  const encodedName = name.startsWith('@') ? name.replace('/', '%2f') : name;
+
+  if (version) {
+    return `${base}/${encodedName}/${version}`;
+  }
+
+  return `${base}/${encodedName}`;
+}

@@ -195,3 +195,72 @@ export class LockFileManager {
     this.data = null;
   }
 }
+
+// ============================================================================
+// Lock File Summary
+// ============================================================================
+
+export interface LockFileSummary {
+  /** Total number of package entries */
+  packageCount: number;
+  /** Number of top-level (direct) packages */
+  directCount: number;
+  /** Number of nested (transitive) packages */
+  transitiveCount: number;
+  /** Number of packages marked optional */
+  optionalCount: number;
+  /** Number of packages that include an integrity hash */
+  hasIntegrity: number;
+  /** Number of packages missing an integrity hash */
+  missingIntegrity: number;
+}
+
+/**
+ * Summarize a lock file's package entries.
+ *
+ * Keys are classified as direct (a single segment such as `foo` or
+ * `node_modules/foo`) or transitive (nested paths such as
+ * `node_modules/foo/node_modules/bar`). The root entry key `''` is counted in
+ * `packageCount` but not classified as direct or transitive.
+ *
+ * @param lock - The lock file to summarize.
+ * @returns Statistics over the lock file's packages.
+ */
+export function summarizeLockfile(lock: LockFile): LockFileSummary {
+  const summary: LockFileSummary = {
+    packageCount: 0,
+    directCount: 0,
+    transitiveCount: 0,
+    optionalCount: 0,
+    hasIntegrity: 0,
+    missingIntegrity: 0,
+  };
+
+  for (const [key, pkg] of Object.entries(lock.packages)) {
+    summary.packageCount++;
+
+    if (key === '') {
+      continue;
+    }
+
+    const cleanKey = key.startsWith('node_modules/') ? key.slice('node_modules/'.length) : key;
+
+    if (cleanKey.includes('/')) {
+      summary.transitiveCount++;
+    } else {
+      summary.directCount++;
+    }
+
+    if (pkg.optional) {
+      summary.optionalCount++;
+    }
+
+    if (pkg.integrity) {
+      summary.hasIntegrity++;
+    } else {
+      summary.missingIntegrity++;
+    }
+  }
+
+  return summary;
+}
