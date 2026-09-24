@@ -34,6 +34,39 @@ export interface DependencyEntry {
   column?: number;
 }
 
+/**
+ * A structured dependency entry as expected by
+ * {@link validateStructuredDependencies}.
+ */
+export interface StructuredDependency {
+  /** Required dependency name (non-empty string). */
+  name: string;
+  /** Version constraint string (optional). */
+  version?: string;
+  /** Source URL / provenance (optional). */
+  source?: string;
+  /** Whether the dependency is optional. */
+  optional?: boolean;
+  /** Capabilities required from the dependency. */
+  capabilities?: string[];
+}
+
+/**
+ * Type guard that reports whether `value` is a structured dependency entry.
+ *
+ * @param value - The value to inspect.
+ * @returns `true` when `value` is a non-null object with a non-empty string
+ * `name` property.
+ */
+export function isStructuredDependency(value: unknown): value is StructuredDependency {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    typeof (value as Record<string, unknown>).name === 'string' &&
+    ((value as Record<string, unknown>).name as string).trim() !== ''
+  );
+}
+
 export function parseDependencies(ast: unknown): DependencyEntry[] {
   const doc = ast as Record<string, unknown>;
   const fm = doc.frontmatter as Record<string, unknown> | undefined;
@@ -228,6 +261,98 @@ export function validateDependencies(
           path: `frontmatter.dependencies.${name}`,
         });
       }
+    }
+  }
+
+  return issues;
+}
+
+/**
+ * Validate structured dependency entries.
+ *
+ * Validates `frontmatter.dependencies` when it is an array of structured
+ * entries of the shape `{ name, version, source?, optional?, capabilities? }`
+ * (see {@link StructuredDependency}). String and map-style entries are not
+ * validated by this function; use {@link validateDependencies} for those.
+ *
+ * @param ast - The MAM AST (expects `ast.frontmatter.dependencies`).
+ * @returns A list of {@link DependencyIssue} objects; empty when valid.
+ * @remarks Emits `INVALID_DEPENDENCY_FORMAT` issues when the field is not an
+ * array, when an entry is not a structured dependency, or when `version` is
+ * not a string, `optional` is not a boolean, or `capabilities` is not an array
+ * of strings.
+ */
+export function validateStructuredDependencies(ast: unknown): DependencyIssue[] {
+  const issues: DependencyIssue[] = [];
+  const doc = ast as Record<string, unknown>;
+  const fm = doc.frontmatter as Record<string, unknown> | undefined;
+  const raw = fm?.dependencies;
+
+  if (raw === undefined || raw === null) return issues;
+
+  if (!Array.isArray(raw)) {
+    addIssue(issues, {
+      code: 'INVALID_DEPENDENCY_FORMAT',
+      message:
+        'Field "dependencies" must be an array of structured dependency entries',
+      severity: 'error',
+      path: 'frontmatter.dependencies',
+    });
+    return issues;
+  }
+
+  for (let i = 0; i < raw.length; i++) {
+    const entry = raw[i] as Record<string, unknown> | undefined;
+    const path = `frontmatter.dependencies[${i}]`;
+
+    if (!isStructuredDependency(entry)) {
+      addIssue(issues, {
+        code: 'INVALID_DEPENDENCY_FORMAT',
+        message: `Dependency at index ${i} must be an object with a non-empty string "name"`,
+        severity: 'error',
+        path,
+      });
+      continue;
+    }
+
+    if (entry.version !== undefined && typeof entry.version !== 'string') {
+      addIssue(issues, {
+        code: 'INVALID_DEPENDENCY_FORMAT',
+        message: `Dependency "${entry.name}" version must be a string`,
+        severity: 'error',
+        path: `${path}.version`,
+      });
+    }
+
+    if (entry.source !== undefined && typeof entry.source !== 'string') {
+      addIssue(issues, {
+        code: 'INVALID_DEPENDENCY_FORMAT',
+        message: `Dependency "${entry.name}" source must be a string`,
+        severity: 'error',
+        path: `${path}.source`,
+      });
+    }
+
+    if (entry.optional !== undefined && typeof entry.optional !== 'boolean') {
+      addIssue(issues, {
+        code: 'INVALID_DEPENDENCY_FORMAT',
+        message: `Dependency "${entry.name}" optional must be a boolean`,
+        severity: 'error',
+        path: `${path}.optional`,
+      });
+    }
+
+    if (
+      entry.capabilities !== undefined &&
+      (!Array.isArray(entry.capabilities) ||
+        !entry.capabilities.every(c => typeof c === 'string'))
+    ) {
+      addIssue(issues, {
+        code: 'INVALID_DEPENDENCY_FORMAT',
+        message: `Dependency "${entry.name}" capabilities must be an array of strings`,
+        severity: 'error',
+        path: `${path}.capabilities`,
+      });
     }
   }
 

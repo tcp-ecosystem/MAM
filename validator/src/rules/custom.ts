@@ -223,3 +223,49 @@ export function createCustomRule(
     validate,
   };
 }
+
+/**
+ * Combine multiple custom-rule configs into a single config.
+ *
+ * Rules from every config are concatenated; when two rules share the same
+ * `name`, the rule from the later config takes precedence. All non-`rules`
+ * keys are shallow-merged with later configs overriding earlier ones.
+ *
+ * @param configs - The custom rule configs to merge. Each config may carry a
+ * `rules` array (see {@link CustomRule}) plus arbitrary options.
+ * @returns A single-element array containing the merged config, whose `rules`
+ * key holds the concatenated, de-duplicated rule set.
+ * @remarks Rules are kept in first-seen order; a later rule with the same
+ * `name` replaces the earlier one in place.
+ */
+export function combineCustomRules(
+  ...configs: CustomRuleConfig[]
+): CustomRuleConfig[] {
+  const merged: Record<string, unknown> = {};
+  const ruleMap = new Map<string, CustomRule>();
+
+  for (const config of configs) {
+    const cfg = config as Record<string, unknown>;
+
+    for (const [key, value] of Object.entries(cfg)) {
+      if (key === 'rules') continue;
+      merged[key] = value;
+    }
+
+    const rules = cfg['rules'];
+    if (!Array.isArray(rules)) continue;
+
+    for (const rule of rules) {
+      if (
+        rule &&
+        typeof rule === 'object' &&
+        typeof (rule as CustomRule).name === 'string'
+      ) {
+        ruleMap.set((rule as CustomRule).name, rule as CustomRule);
+      }
+    }
+  }
+
+  merged['rules'] = Array.from(ruleMap.values());
+  return [merged as CustomRuleConfig];
+}

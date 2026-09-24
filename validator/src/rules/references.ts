@@ -267,3 +267,93 @@ export function validateReferences(
 
   return issues;
 }
+
+const MARKDOWN_LINK_RE = /\[([^\]]*)\]\(([^)\s]+)(?:\s+["'][^"']*["'])?\)/g;
+const URL_SCAN_RE = /[a-zA-Z][a-zA-Z0-9+.-]*:\/\/[^\s)>]+/g;
+
+function asNumber(value: unknown): number | undefined {
+  return typeof value === 'number' ? value : undefined;
+}
+
+/**
+ * Extract reference URLs from the `References` section.
+ *
+ * Scans the section named "References" and returns parsed references for
+ * every URL found, including URLs pulled out of markdown `[text](url)` links.
+ * The {@link ParsedReference} shape is preserved, with `url` populated
+ * whenever a URL is located.
+ *
+ * @param ast - The MAM AST (expects `ast.sections`).
+ * @returns A list of {@link ParsedReference} objects; empty when the section
+ * is absent or contains no URLs.
+ * @remarks Parses `Link`-typed content nodes, inline `url` fields, markdown
+ * link syntax inside paragraph text, and bare URLs appearing in text.
+ */
+export function extractReferenceUrls(ast: unknown): ParsedReference[] {
+  const doc = ast as Record<string, unknown>;
+  const sections = (doc.sections as Array<{
+    name?: string;
+    content?: Array<Record<string, unknown>>;
+  }>) || [];
+
+  const refs: ParsedReference[] = [];
+
+  for (const section of sections) {
+    if (section.name !== 'References') continue;
+
+    for (const item of section.content ?? []) {
+      const type = item.type;
+      const url = typeof item.url === 'string' ? item.url : undefined;
+      const title = typeof item.title === 'string' ? item.title : undefined;
+      const line = asNumber(item.line);
+      const column = asNumber(item.column);
+
+      if (url && ANY_URL_RE_TEST.test(url)) {
+        refs.push({ url, title, isInternal: isInternalUrl(url), line, column });
+        continue;
+      }
+
+      const value = typeof item.value === 'string' ? item.value : undefined;
+      if (value) {
+        MARKDOWN_LINK_RE.lastIndex = 0;
+        let match: RegExpExecArray | null;
+        while ((match = MARKDOWN_LINK_RE.exec(value)) !== null) {
+          const linkUrl = match[2]!;
+          if (ANY_URL_RE_TEST.test(linkUrl)) {
+            refs.push({
+              url: linkUrl,
+              title: match[1] ? match[1] : title,
+              isInternal: isInternalUrl(linkUrl),
+              line,
+              column,
+            });
+          }
+        }
+
+        URL_SCAN_RE.lastIndex = 0;
+        while ((match = URL_SCAN_RE.exec(value)) !== null) {
+          const found = match[0];
+          if (ANY_URL_RE_TEST.test(found) && !refs.some(r => r.url === found)) {
+            refs.push({
+              url: found,
+              title,
+              isInternal: isInternalUrl(found),
+              line,
+              column,
+            });
+          }
+        }
+      }
+
+      if (
+        (type === 'link' || type === 'Link') &&
+        url &&
+        ANY_URL_RE_TEST.test(url)
+      ) {
+        refs.push({ url, title, isInternal: isInternalUrl(url), line, column });
+      }
+    }
+  }
+
+  return refs;
+}

@@ -17,6 +17,21 @@ export interface OrderingIssue {
   path?: string;
 }
 
+/**
+ * A detailed section-ordering issue.
+ *
+ * Extends {@link OrderingIssue} with the two section names that were found
+ * out of order and the array position of the misplaced section.
+ */
+export interface OrderingIssueDetail extends OrderingIssue {
+  /** The section that was expected to appear before the misplaced section. */
+  expected: string;
+  /** The section that was found out of order. */
+  found: string;
+  /** The index of the misplaced section within the sections array. */
+  position: number;
+}
+
 export const STANDARD_SECTION_ORDER: string[] = [
   'Purpose',
   'Inputs',
@@ -164,6 +179,58 @@ export function validateOrdering(
       });
     }
     seen.add(name);
+  }
+
+  return issues;
+}
+
+/**
+ * Detailed section-ordering validation.
+ *
+ * Like {@link validateOrdering} but restricted to out-of-order standard
+ * sections, with each result carrying `expected`, `found`, and `position`
+ * fields via the {@link OrderingIssueDetail} interface.
+ *
+ * @param ast - The MAM AST (expects `ast.sections`).
+ * @returns A list of {@link OrderingIssueDetail} objects (assignable to
+ * {@link OrderingIssue}[]); empty when all standard sections are ordered.
+ * @remarks Emits `SECTION_OUT_OF_ORDER` warnings. The `expected` field names
+ * the section that should have appeared before `found`, and `position` is the
+ * array index of the misplaced section.
+ */
+export function validateSectionOrderingDetailed(ast: unknown): OrderingIssue[] {
+  const issues: OrderingIssueDetail[] = [];
+  const doc = ast as Record<string, unknown>;
+  const sections = (doc.sections as Array<{
+    name: string;
+    location?: { start?: { line?: number; column?: number } };
+  }>) || [];
+
+  let lastStandardIndex = -1;
+
+  for (let i = 0; i < sections.length; i++) {
+    const sec = sections[i]!;
+    const stdIdx = sectionIndex(sec.name);
+
+    if (stdIdx === -1) continue;
+
+    if (lastStandardIndex !== -1 && stdIdx < lastStandardIndex) {
+      const expected = STANDARD_SECTION_ORDER[lastStandardIndex]!;
+      const loc = locParts(sections, sec.name);
+      issues.push({
+        rule: 'ordering',
+        code: 'SECTION_OUT_OF_ORDER',
+        message: `Section "${sec.name}" is out of order; expected it before "${expected}"`,
+        severity: 'warning',
+        expected,
+        found: sec.name,
+        position: i,
+        ...loc,
+        path: `sections[${i}].${sec.name}`,
+      });
+    }
+
+    lastStandardIndex = Math.max(lastStandardIndex, stdIdx);
   }
 
   return issues;
