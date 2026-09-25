@@ -1,0 +1,42 @@
+{
+  "name": "mam-jupyterlab",
+  "version": "0.1.0",
+  "description": "Syntax highlighting and file-type support for MAM (Markdown as Module) in JupyterLab",
+  "author": "tcp-ecosystems",
+  "license": "MIT",
+  "keywords": [
+    "jupyter",
+    "jupyterlab",
+    "jupyterlab-extension",
+    "mam",
+    "markdown-as-module"
+  ],
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "files": [
+    "lib/**/*.{d.ts,js,js.map,json,ts}",
+    "schema/*.json"
+  ],
+  "dependencies": {
+    "@jupyterlab/application": "^4.0.0",
+    "@jupyterlab/codemirror": "^4.0.0",
+    "@jupyterlab/rendermime": "^4.0.0",
+    "@lumino/coreutils": "^2.0.0"
+  },
+  "devDependencies": {
+    "@jupyterlab/builder": "^4.0.0",
+    "typescript": "^5.3.0"
+  },
+  "scripts": {
+    "build": "jlpm build",
+    "build:all": "jlpm build",
+    "build:labextension": "jupyter labextension build .",
+    "clean": "rimraf lib mam_jupyterlab/labextension tsconfig.tsbuildinfo",
+    "watch": "jupyter labextension watch ."
+  },
+  "jupyterlab": {
+    "extension": true,
+    "outputDir": "mam_jupyterlab/labextension",
+    "schemaDir": "schema"
+  }
+}

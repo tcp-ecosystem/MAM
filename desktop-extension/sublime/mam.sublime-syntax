@@ -1,0 +1,203 @@
+# MAM syntax definition for Sublime Text.
+#
+# MAM (Markdown as Module) files are markdown-based documents that carry
+# YAML front matter, `##` sections, mermaid diagrams, and fenced code blocks.
+# This grammar mirrors the canonical TextMate grammar shipped with the VS Code
+# extension (`desktop-extension/vscode/syntaxes/mam.tmLanguage.json`) and
+# keeps the same scope names so themes keep working across editors.
+#
+# Install:
+#   Copy this file (and mam.sublime-settings) into
+#   `%APPDATA%\Sublime Text\Packages\User\` on Windows or
+#   `~/Library/Application Support/Sublime Text/Packages/User/` on macOS.
+
+%YAML 1.2
+---
+# The scope name is the root scope applied to every token in a MAM buffer.
+name: MAM
+scope: source.mam
+# Sublime Text matches these file extensions (dot-less) against `.mam` and
+# `.mam.md`. Note: Sublime matches the *longest* extension first, so both
+# variants are listed explicitly to give `.mam.md` priority.
+file_extensions:
+  - mam.md
+  - mam
+
+# A single context drives the whole document. `main` is entered first and
+# delegates to the specialized contexts declared below.
+contexts:
+  main:
+    # Everything below runs at the top level of a MAM document.
+    - include: frontmatter
+    - include: heading
+    - include: code-fence
+    - include: mermaid
+    - include: table
+    - include: list
+    - include: comment
+    - include: inline
+
+  # The prototype context runs inside *every* context (including inside
+  # fenced blocks). We only use it for patterns that must never be shadowed
+  # by a more specific rule — here, the section keywords that name MAM
+  # concepts. Because we want them recognized even inside headings/lists.
+  prototype:
+    - match: \b(Purpose|Inputs|Outputs|Capabilities|Rules|Workflow|Dependencies|Permissions|Tests|Examples|References)\b
+      scope: keyword.control.section.mam
+    - match: \b(required|optional|yes|no|true|false)\b
+      scope: keyword.other.mam
+
+  # --- YAML front matter -------------------------------------------------
+  # A MAM file starts with a `---` line, holds YAML key/value pairs, and is
+  # terminated by another `---` line. The closing marker is a *lookahead*
+  # (see the `while` + `match` combo below) so the embedded YAML context is
+  # re-entered on every line until the end marker is hit.
+  frontmatter:
+    - match: '^---\s*$'
+      scope: punctuation.definition.frontmatter.begin.mam
+      # Everything until the matching `^---$` is embedded YAML.
+      push: frontmatter-body
+
+  frontmatter-body:
+    # End the front matter as soon as a closing `---` line is seen.
+    - match: '^---\s*$'
+      scope: punctuation.definition.frontmatter.end.mam
+      pop: true
+    # A top-level YAML key, e.g. `name: my-module` or `version: "1.0"`.
+    # The key becomes a tag name; its value becomes an unquoted string.
+    - match: '^(\w+)\s*:\s*(.*)$'
+      captures:
+        1: entity.name.tag.frontmatter.mam
+        2: string.unquoted.frontmatter.mam
+    # Scalar/flow YAML values that appear under keys, e.g. nested arrays
+    # `  - item` or `tags: [a, b]`. Kept deliberately simple — this is a
+    # syntax highlighter, not a YAML parser.
+    - match: '^\s*[-*]\s+'
+      scope: punctuation.definition.list.frontmatter.mam
+    - match: '\b(true|false|null|yes|no)\b'
+      scope: keyword.other.boolean.mam
+    - match: '"[^"]*"|''[^'']*'''
+      scope: string.quoted.frontmatter.mam
+    - match: ':\s*'
+      scope: punctuation.separator.key-value.frontmatter.mam
+
+  # --- Headings ----------------------------------------------------------
+  # Markdown ATX headings `#` .. `######`. The hash markers get a markup
+  # scope; the title text gets the section entity scope.
+  heading:
+    - match: '^(#{1,6})\s+(.*)$'
+      captures:
+        1: punctuation.definition.heading.begin.mam markup.heading.mam
+        2: entity.name.section.mam markup.heading.mam
+      # Reuse the inline context for emphasis/code inside the title.
+      push:
+        - meta_scope: markup.heading.mam
+        - match: $
+          pop: true
+        - include: inline
+
+  # --- Fenced code blocks -------------------------------------------------
+  # ```lang blocks. The language tag after the opening fence is captured so
+  # it can drive future embedding; the body is `markup.raw`. Mermaid is
+  # special-cased separately (below), so generic fences are just raw text.
+  code-fence:
+    - match: '^(```|~~~)\s*([\w+-]*)\s*$'
+      captures:
+        1: punctuation.definition.code-block.begin.mam
+        2: entity.name.tag.code-block.mam
+      push:
+        - meta_scope: markup.raw.code-block.mam
+        - match: '^(```|~~~)\s*$'
+          scope: punctuation.definition.code-block.end.mam
+          pop: true
+
+  # --- Mermaid ------------------------------------------------------------
+  # Mermaid diagrams live in ```mermaid fences. We give the fence its own
+  # scope and highlight the common node/edge vocabulary (graph/flowchart
+  # keywords, arrows, and the section keywords) inside the diagram body.
+  mermaid:
+    - match: '^```\s*(mermaid)\s*$'
+      captures:
+        1: entity.name.tag.code-block.mermaid.mam
+      scope: punctuation.definition.code-block.begin.mermaid.mam
+      push:
+        - meta_scope: source.mermaid.embedded.mam
+        - match: '^```\s*$'
+          scope: punctuation.definition.code-block.end.mermaid.mam
+          pop: true
+        - match: \b(graph|flowchart|sequenceDiagram|classDiagram|stateDiagram-v2|erDiagram|gantt|pie|mindmap|timeline)\b
+          scope: keyword.control.mermaid.mam
+        - match: '->|-->|--\||==>|\.\.>|-\->'
+          scope: keyword.operator.edge.mam
+        - match: '\[|\]|\(|\)|\{|\}'
+          scope: punctuation.definition.mermaid.mam
+        - include: inline
+
+  # --- Tables -------------------------------------------------------------
+  # GFM pipe tables. The delimiter row (`|---|---|`) and the pipe separators
+  # get punctuation scopes so the grid is legible; cell text falls back to
+  # the inline context.
+  table:
+    - match: '^\|.*\|\s*$'
+      scope: markup.table.mam
+      push:
+        - meta_scope: markup.table.mam
+        - match: $
+          pop: true
+        - match: '\|'
+          scope: punctuation.separator.table.mam
+        - match: '^[-:|-]+\s*$'
+          scope: punctuation.definition.table.delimiter.mam
+        - include: inline
+
+  # --- Lists --------------------------------------------------------------
+  # Unordered (`-`, `*`, `+`) and ordered (`1.`) list markers. Sublime
+  # matches list markers as a single token, so the whole marker is scoped.
+  list:
+    - match: '^\s*[-*+]\s+'
+      scope: punctuation.definition.list.mam
+    - match: '^\s*\d+\.\s+'
+      scope: punctuation.definition.list.ordered.mam
+
+  # --- Comments -----------------------------------------------------------
+  # HTML-style comments are the MAM comment convention (mirrors the VS Code
+  # language configuration's block comment `<!-- -->`).
+  comment:
+    - match: '<!--'
+      scope: comment.block.mam punctuation.definition.comment.begin.mam
+      push:
+        - meta_scope: comment.block.mam
+        - match: '-->'
+          scope: comment.block.mam punctuation.definition.comment.end.mam
+          pop: true
+
+  # --- Inline elements ----------------------------------------------------
+  # Emphasis, code, and links — used inside headings, list items, and table
+  # cells via `- include: inline`. Order matters: bold is checked before
+  # italic so `**x**` never gets split by the single-asterisk rule.
+  inline:
+    - match: '\*\*(.+?)\*\*'
+      scope: markup.bold.mam
+      captures:
+        1: markup.bold.mam
+    - match: '\*(.+?)\*'
+      scope: markup.italic.mam
+      captures:
+        1: markup.italic.mam
+    # Inline code `` `code` `` — single backticks.
+    - match: '`([^`]+)`'
+      scope: string.quoted.code.mam
+      captures:
+        1: string.quoted.code.mam
+    # Markdown links `[text](url)`.
+    - match: '\[([^\]]+)\]\(([^)]+)\)'
+      scope: markup.link.mam
+      captures:
+        1: string.unquoted.link.text.mam
+        2: string.unquoted.link.url.mam
+    # Bare URLs.
+    - match: 'https?://\S+'
+      scope: markup.underline.link.mam
+    # MAM edge operators that may appear inline in prose.
+    - match: '->|=>|\|'
+      scope: keyword.operator.mam

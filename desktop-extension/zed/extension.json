@@ -1,0 +1,22 @@
+{
+  "id": "mam",
+  "name": "MAM",
+  "version": "0.1.0",
+  "authors": ["MAM Contributors"],
+  "description": "Language support for MAM (Markdown as Module) — syntax highlighting for .mam and .mam.md files, including YAML front matter, ## sections, mermaid diagrams, and fenced code blocks.",
+  "repository": "https://github.com/anomalyco/opencode",
+  "grammars": [
+    {
+      "name": "mam",
+      "scope": "source.mam",
+      "path": "grammars/mam.tmLanguage.json"
+    }
+  ],
+  "languages": [
+    {
+      "name": "mam",
+      "grammar": "mam",
+      "path": "languages/mam"
+    }
+  ]
+}

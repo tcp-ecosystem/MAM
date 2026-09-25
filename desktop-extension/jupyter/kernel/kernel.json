@@ -1,0 +1,21 @@
+{
+  "argv": [
+    "python",
+    "kernel.py",
+    "-f",
+    "{connection_file}"
+  ],
+  "display_name": "MAM",
+  "language": "mam",
+  "interrupt_mode": "message",
+  "metadata": {
+    "debugger": true
+  },
+  "env": {
+    "MAM_KERNEL_CLI": "mam"
+  },
+  "codemirror_mode": {
+    "name": "mam",
+    "mime": "text/x-mam"
+  }
+}

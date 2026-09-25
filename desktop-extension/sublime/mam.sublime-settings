@@ -1,0 +1,37 @@
+// MAM settings for Sublime Text.
+//
+// These settings pair with `mam.sublime-syntax` and teach Sublime Text to
+// treat `.mam` and `.mam.md` files as MAM (Markdown as Module) documents.
+//
+// Install:
+//   Copy this file next to `mam.sublime-syntax` into
+//   `%APPDATA%\Sublime Text\Packages\User\` (Windows) or
+//   `~/Library/Application Support/Sublime Text/Packages/User/` (macOS),
+//   then restart Sublime Text (or use "Package Control: Satisfy Dependencies").
+
+{
+  // File extension mapping. Sublime matches the longest extension first, so
+  // `.mam.md` is listed before `.mam` to guarantee the right grammar wins
+  // for both `.mam` and `.mam.md` files.
+  "extensions": ["mam", "mam.md"],
+
+  // Color scheme hints.
+  //
+  // `color_scheme` pins a scheme that understands the `markup.heading`,
+  // `markup.raw`, `source.mermaid`, and `keyword.control.section` scopes
+  // produced by the MAM grammar. If you prefer your own theme, delete this
+  // key — the scopes still work with any scheme that handles TextMate-style
+  // markup scopes (almost all of them do).
+  "color_scheme": "Monokai.sublime-color-scheme",
+
+  // Tab width — front matter and fenced code often rely on indentation.
+  "tab_size": 2,
+
+  // Strip trailing whitespace on save, which keeps MAM front matter and
+  // markdown tables tidy. Set to false if you prefer to keep alignment.
+  "trim_trailing_white_space_on_save": true,
+
+  // Soft-wrap long prose lines. MAM sections and mermaid graphs read better
+  // wrapped. Toggle with Alt+W if you want hard line breaks instead.
+  "word_wrap": true
+}

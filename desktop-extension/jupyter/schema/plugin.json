@@ -1,0 +1,15 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "MAM JupyterLab",
+  "description": "Settings for the MAM JupyterLab extension.",
+  "type": "object",
+  "properties": {
+    "highlightFrontmatter": {
+      "type": "boolean",
+      "title": "Highlight frontmatter",
+      "description": "Apply frontmatter token styles in MAM modules.",
+      "default": true
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,34 @@
+<idea-plugin>
+  <id>com.mam.ide</id>
+  <name>MAM Language Support</name>
+  <vendor url="https://github.com/tcp-ecosystems">MAM Contributors</vendor>
+  <description><![CDATA[
+    <p>Syntax highlighting, color settings and inline validation for MAM modules
+    (<i>Markdown as Module</i>).</p>
+    <p>Supports <code>*.mam</code> and <code>*.mam.md</code> files with YAML front
+    matter, <code>##</code> sections, mermaid diagrams and fenced code blocks.
+    Errors reported by <code>mam validate</code> are highlighted in the editor.</p>
+  ]]></description>
+  <version>0.1.0</version>
+  <change-notes><![CDATA[
+    Initial scaffold release.
+  ]]></change-notes>
+
+  <depends>com.intellij.modules.platform</depends>
+
+  <extensions defaultExtensionNs="com.intellij">
+    <fileType
+        name="MAM File"
+        language="MAM"
+        extensions="mam;mam.md"
+        implementationClass="com.mam.ide.MamFileType"
+        fieldName="INSTANCE"/>
+    <lang.syntaxHighlighterFactory
+        language="MAM"
+        implementationClass="com.mam.ide.MamSyntaxHighlighterFactory"/>
+    <colorSettingsPage implementation="com.mam.ide.MamColorSettingsPage"/>
+    <annotator
+        language="MAM"
+        implementationClass="com.mam.ide.MamAnnotator"/>
+  </extensions>
+</idea-plugin>

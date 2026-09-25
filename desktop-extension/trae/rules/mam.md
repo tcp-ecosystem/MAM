@@ -1,0 +1,126 @@
+# MAM — Markdown as Module
+
+This repository uses **MAM** ("Markdown as Module"): AI-native modules written
+as Markdown files with YAML frontmatter and structured sections. When you
+create, edit, or reason about `.mam` / `.mam.md` files, follow this spec.
+
+## What MAM files are
+
+- Extensions: `.mam` and `.mam.md`.
+- A MAM file is a self-contained module: metadata in YAML frontmatter, behavior
+  in named Markdown sections.
+- Modules can describe agents, tools, workflows, memory stores, services, etc.
+- The canonical grammar lives in `desktop-extension/vscode/syntaxes/mam.tmLanguage.json`.
+
+## Frontmatter (YAML)
+
+Required: `id`, `version`, `name`, `author`, `runtime`.
+
+Structured fields to use when relevant:
+
+| Field | Notes |
+|-------|-------|
+| `id` | lowercase kebab-case, `^[a-z][a-z0-9-]{0,63}$` |
+| `version` | semver `MAJOR.MINOR.PATCH` |
+| `type` | `module`, `agent`, `tool`, `memory`, `workflow`, `team`, `system`, `service`, ... |
+| `runtime` | shorthand string (`python`) **or** structured `{language, version}` |
+| `capabilities` | array of what the module can do |
+| `permissions` | shorthand list (`network`, `filesystem`, `exec`, ...) **or** structured mapping `{filesystem: [...], network: [...]}` |
+| `dependencies` | MAM module IDs or structured `{name, version}` entries |
+| `inputs` / `outputs` | structured `{name, type, required, default}` ports |
+| `tags`, `description`, `license`, `mam_version` | discovery metadata |
+
+Example frontmatter:
+
+```yaml
+---
+id: data-pipeline
+version: 2.1.0
+name: Data Pipeline
+type: workflow
+author: MAM Team
+runtime:
+  language: python
+  version: ">=3.12"
+capabilities: [extract, transform, load, validate]
+permissions:
+  filesystem: [read, write]
+  network: [internet]
+dependencies:
+  - { name: mam-logging, version: "^2.0" }
+---
+```
+
+## Sections
+
+A MAM module is composed of `##` sections. Use the canonical names:
+
+- `## Purpose` — required; what the module does
+- `## Inputs` — table of `{Name | Type | Required | Description}`
+- `## Outputs` — table of `{Name | Type | Description}`
+- `## Rules` — behavioral constraints
+- `## Workflow` — mermaid flowchart or step list
+- `## Python` (or `## JavaScript`) — executable code block
+- `## Prompt` — LLM prompt for agent modules
+- `## Memory` — vector/memory config
+- `## Examples` — `###` sub-headings with usage
+- `## Tests` — `###` sub-headings with Input/Expected
+- `## References`
+- `## Dependencies`
+- `## Capabilities` — **use `###` sub-headings**, one per capability, each
+  declaring name, category, level, status, description, requires, examples
+
+### Capabilities section format
+
+`## Capabilities` uses a `###` sub-heading per capability:
+
+```markdown
+## Capabilities
+
+### code-generation
+
+- **Category**: ai
+- **Level**: standard
+- **Status**: stable
+- **Description**: Generate code from natural-language prompts
+- **Requires**: []
+- **Examples**:
+  - `mam run planner.mam` with a task description
+
+### network-request
+
+- **Category**: network
+- **Level**: advanced
+- **Status**: beta
+- **Description**: Make outbound HTTP requests
+```
+
+Or a table with columns `Capability | Category | Level | Status`.
+
+## CLI workflow
+
+Use the `mam` CLI instead of manual file edits where possible:
+
+| Command | Use |
+|---------|-----|
+| `mam init <name>` | Initialize a project or new module |
+| `mam new <type> <name>` | Scaffold a module (`.mam` + `.mam.md`) |
+| `mam validate [file]` | Validate a module, or the whole project |
+| `mam build [file]` | Compile a module / project to targets |
+| `mam run [file]` | Run a module natively (no compiler) |
+| `mam test [file]` | Run module tests |
+
+### Workflow rules for the assistant
+
+1. Before finishing a MAM file, run `mam validate <file>` (or `mam validate`
+   for the whole project) and fix any reported errors.
+2. Prefer `mam new` over hand-writing a module skeleton.
+3. Use `mam build` when a compiled target is needed, `mam run` to execute.
+4. Keep section names exactly as listed above so the validator and parser
+   recognize them.
+
+## Do not
+
+- Do not invent new frontmatter fields — check `spec/schema/metadata.schema.json`.
+- Do not rename the standard sections.
+- Do not claim a module is valid until `mam validate` passes.

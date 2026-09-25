@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+   <extension point="org.eclipse.core.contenttype.contentTypes">
+      <content-type
+            id="com.mam.ide.eclipse.contentType"
+            name="MAM Module"
+            base-type="org.eclipse.core.runtime.text"
+            file-extensions="mam,mam.md"
+            priority="high"/>
+   </extension>
+
+   <extension point="org.eclipse.ui.editors">
+      <editor
+            id="com.mam.ide.eclipse.editor"
+            name="MAM Editor"
+            default="true"
+            class="com.mam.ide.eclipse.MamEditor"
+            contributorClass="org.eclipse.ui.texteditor.BasicTextEditorActionContributor">
+         <contentTypeBinding contentTypeId="com.mam.ide.eclipse.contentType"/>
+      </editor>
+   </extension>
+
+   <extension point="org.eclipse.core.resources.builders">
+      <builder
+            hasNature="true"
+            id="com.mam.ide.eclipse.builder">
+         <run class="com.mam.ide.eclipse.MamBuilder"/>
+      </builder>
+   </extension>
+
+   <extension point="org.eclipse.core.resources.natures">
+      <nature
+            id="com.mam.ide.eclipse.nature"
+            builder="com.mam.ide.eclipse.builder"/>
+   </extension>
+
+   <extension point="org.eclipse.core.resources.markers">
+      <marker
+            id="com.mam.ide.eclipse.marker"
+            name="MAM Validation Problem"
+            super="org.eclipse.core.resources.problemmarker"/>
+   </extension>
+</plugin>
