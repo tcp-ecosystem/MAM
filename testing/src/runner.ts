@@ -23,6 +23,16 @@ export interface TestConfig {
   timeout?: number;
   /** Parallel execution */
   parallel?: boolean;
+  /** Maximum number of suites run concurrently (0 = unlimited) */
+  concurrency?: number;
+  /** Only run suites/tests whose name matches this pattern */
+  filter?: string | RegExp;
+  /** Reporter hooks for observing the run lifecycle */
+  reporter?: TestRunnerReporter;
+  /** Number of retries for failing suites */
+  retry?: number;
+  /** Suite execution order */
+  order?: TestOrder;
 }
 
 export interface TestResult {
@@ -91,38 +101,69 @@ export class TestRunner {
       verbose: false,
       timeout: 30000,
       parallel: false,
+      concurrency: 1,
+      retry: 0,
+      order: 'declared',
       ...config,
     };
   }
 
   /**
-   * Run all tests
+   * Run all tests honoring the configured order, filter, concurrency and
+   * retry settings. Defaults preserve the historical sequential behavior.
    */
   async run(): Promise<TestResult> {
     this.startTime = performance.now();
     const suites: TestSuite[] = [];
 
     try {
-      // Find test files
-      const testFiles = await this.findTestFiles();
-
-      // Run each test file
-      for (const file of testFiles) {
-        const suite = await this.runTestFile(file);
-        suites.push(suite);
-      }
+      const testFiles = await this.prepareFiles();
+      const executed = await this.runFilesWithConcurrency(testFiles, this.config.concurrency ?? 1);
+      suites.push(...executed);
     } catch (error) {
       console.error('Test runner error:', error);
     }
 
     const summary = this.calculateSummary(suites);
 
-    return {
+    const result: TestResult = {
       success: summary.failed === 0,
       suites,
       summary,
       timeMs: performance.now() - this.startTime,
     };
+
+    this.config.reporter?.onDone?.(result);
+    return result;
+  }
+
+  /**
+   * Run every discovered test file concurrently. Equivalent to `run()` with
+   * `concurrency` set to the number of test files.
+   */
+  async runAll(): Promise<TestResult> {
+    this.startTime = performance.now();
+    const suites: TestSuite[] = [];
+
+    try {
+      const testFiles = await this.prepareFiles();
+      const executed = await this.runFilesWithConcurrency(testFiles, testFiles.length);
+      suites.push(...executed);
+    } catch (error) {
+      console.error('Test runner error:', error);
+    }
+
+    const summary = this.calculateSummary(suites);
+
+    const result: TestResult = {
+      success: summary.failed === 0,
+      suites,
+      summary,
+      timeMs: performance.now() - this.startTime,
+    };
+
+    this.config.reporter?.onDone?.(result);
+    return result;
   }
 
   /**
@@ -250,4 +291,267 @@ export class TestRunner {
 
     return { total, passed, failed, skipped };
   }
+
+  // ==========================================================================
+  // Ordering, Filtering, Concurrency
+  // ==========================================================================
+
+  /**
+   * Discover, order, and filter the test files before execution.
+   */
+  private async prepareFiles(): Promise<string[]> {
+    const files = await this.findTestFiles();
+    const ordered = this.orderFiles(files);
+    if (!this.config.filter) return ordered;
+    return ordered.filter((file) => this.matchesFilter(file));
+  }
+
+  /**
+   * Apply the configured execution order to a list of files.
+   */
+  private orderFiles(files: string[]): string[] {
+    switch (this.config.order) {
+      case 'random':
+        return this.shuffle(files);
+      case 'reverse':
+        return [...files].reverse();
+      default:
+        return files;
+    }
+  }
+
+  /**
+   * Fisher-Yates shuffle returning a new array.
+   */
+  private shuffle<T>(items: T[]): T[] {
+    const copy = [...items];
+    for (let i = copy.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [copy[i], copy[j]] = [copy[j]!, copy[i]!];
+    }
+    return copy;
+  }
+
+  /**
+   * Match a suite/test name against the configured filter. A string filter is
+   * treated as a substring; a RegExp filter is tested directly.
+   */
+  private matchesFilter(name: string): boolean {
+    const filter = this.config.filter;
+    if (!filter) return true;
+    if (filter instanceof RegExp) return filter.test(name);
+    return name.includes(filter);
+  }
+
+  /**
+   * Run the given files with a bounded worker pool. Suite ordering is
+   * preserved even when suites complete out of order.
+   */
+  private async runFilesWithConcurrency(files: string[], concurrency: number): Promise<TestSuite[]> {
+    const suites: TestSuite[] = new Array<TestSuite>(files.length);
+    if (files.length === 0) return suites;
+    const limit = Math.max(1, concurrency);
+    let next = 0;
+
+    const worker = async (): Promise<void> => {
+      while (next < files.length) {
+        const index = next++;
+        const file = files[index]!;
+        const suiteName = file.split(/[\\/]/).pop() || file;
+
+        this.config.reporter?.onSuiteStart?.({ name: suiteName, file });
+        const suite = await this.runTestFileWithRetry(file);
+        const filtered = this.applyFilterToSuite(suite);
+        suites[index] = filtered;
+
+        for (const testCase of filtered.cases) {
+          this.config.reporter?.onTestStart?.({ name: testCase.name, type: testCase.type, suite: suiteName });
+          this.config.reporter?.onTestEnd?.(testCase);
+        }
+      }
+    };
+
+    const workers: Promise<void>[] = [];
+    for (let i = 0; i < limit; i++) {
+      workers.push(worker());
+    }
+    await Promise.all(workers);
+    return suites;
+  }
+
+  /**
+   * Run a test file, retrying the whole file up to `retry` times when the
+   * suite fails.
+   */
+  private async runTestFileWithRetry(file: string): Promise<TestSuite> {
+    const retries = Math.max(0, this.config.retry ?? 0);
+    let suite = await this.runTestFile(file);
+    let attempt = 0;
+    while (!suite.success && attempt < retries) {
+      attempt++;
+      suite = await this.runTestFile(file);
+    }
+    return suite;
+  }
+
+  /**
+   * Optionally drop test cases that do not match the configured filter.
+   */
+  private applyFilterToSuite(suite: TestSuite): TestSuite {
+    if (!this.config.filter) return suite;
+    const cases = suite.cases.filter((c) => this.matchesFilter(c.name));
+    return {
+      ...suite,
+      cases,
+      success: cases.length > 0 && cases.every((c) => c.status === 'pass'),
+    };
+  }
+}
+
+// ============================================================================
+// Ordering + Reporter Types
+// ============================================================================
+
+/** Supported suite execution orders */
+export type TestOrder = 'declared' | 'random' | 'reverse';
+
+/**
+ * Callback hooks invoked during a test run. All hooks are optional.
+ */
+export interface TestRunnerReporter {
+  /** Called before a suite begins executing */
+  onSuiteStart?(suite: { name: string; file: string }): void;
+  /** Called before a test case begins executing */
+  onTestStart?(test: { name: string; type: TestCase['type']; suite: string }): void;
+  /** Called after a test case finishes */
+  onTestEnd?(test: TestCase): void;
+  /** Called once the whole run is complete */
+  onDone?(result: TestResult): void;
+}
+
+// ============================================================================
+// Summary Builder
+// ============================================================================
+
+export interface TestRunSummary {
+  /** Overall success */
+  success: boolean;
+  /** Total wall-clock time in milliseconds */
+  timeMs: number;
+  /** Suite breakdown */
+  suites: TestSuite[];
+  /** Aggregate totals */
+  summary: TestSummary;
+  /** Per-suite duration keyed by suite name */
+  durations: Record<string, number>;
+}
+
+/**
+ * Incrementally collects suites and builds aggregate summaries. Useful for
+ * streaming reporters that want to accumulate results as suites finish.
+ */
+export class TestRunSummaryBuilder {
+  private suites: TestSuite[] = [];
+  private startedAt: number = 0;
+
+  /** Begin a fresh collection window */
+  start(): this {
+    this.startedAt = performance.now();
+    this.suites = [];
+    return this;
+  }
+
+  /** Record a finished suite */
+  addSuite(suite: TestSuite): this {
+    this.suites.push(suite);
+    return this;
+  }
+
+  /** Aggregate totals across all recorded suites */
+  getSummary(): TestSummary {
+    return this.calculate(this.suites);
+  }
+
+  /** Build a fully shaped run summary */
+  build(): TestRunSummary {
+    const summary = this.calculate(this.suites);
+    const durations: Record<string, number> = {};
+    for (const suite of this.suites) {
+      durations[suite.name] = suite.timeMs;
+    }
+    return {
+      success: summary.failed === 0,
+      timeMs: performance.now() - this.startedAt,
+      suites: this.suites,
+      summary,
+      durations,
+    };
+  }
+
+  /** Print the summary to the console */
+  report(options: { showSuites?: boolean } = {}): void {
+    const built = this.build();
+    console.log(formatTestResults(built, options));
+  }
+
+  private calculate(suites: TestSuite[]): TestSummary {
+    const summary: TestSummary = { total: 0, passed: 0, failed: 0, skipped: 0 };
+    for (const suite of suites) {
+      for (const testCase of suite.cases) {
+        summary.total++;
+        if (testCase.status === 'pass') summary.passed++;
+        else if (testCase.status === 'fail') summary.failed++;
+        else summary.skipped++;
+      }
+    }
+    return summary;
+  }
+}
+
+// ============================================================================
+// Result Formatting
+// ============================================================================
+
+export interface FormatTestResultsOptions {
+  /** Include a per-suite, per-case breakdown */
+  showSuites?: boolean;
+  /** Include failing test details */
+  showFailures?: boolean;
+}
+
+/**
+ * Render a `TestResult` into a human readable multi-line report.
+ */
+export function formatTestResults(result: TestResult, options: FormatTestResultsOptions = {}): string {
+  const lines: string[] = [];
+  lines.push(`Test run ${result.success ? 'PASSED' : 'FAILED'} in ${result.timeMs.toFixed(1)}ms`);
+  lines.push(`  Suites: ${result.suites.length}`);
+  lines.push(
+    `  Tests:  ${result.summary.total}  (passed=${result.summary.passed}, failed=${result.summary.failed}, skipped=${result.summary.skipped})`
+  );
+
+  if (options.showSuites) {
+    lines.push('');
+    lines.push('Suites:');
+    for (const suite of result.suites) {
+      const marker = suite.success ? 'PASS' : 'FAIL';
+      lines.push(`  [${marker}] ${suite.name} (${suite.timeMs.toFixed(1)}ms) ${suite.cases.length} cases`);
+      for (const testCase of suite.cases) {
+        lines.push(`      ${testCase.status.toUpperCase().padEnd(6)} ${testCase.name} (${testCase.timeMs.toFixed(1)}ms)`);
+      }
+    }
+  }
+
+  if (options.showFailures) {
+    const failures = result.suites.flatMap((s) => s.cases.filter((c) => c.status === 'fail'));
+    if (failures.length > 0) {
+      lines.push('');
+      lines.push('Failures:');
+      for (const failure of failures) {
+        lines.push(`  FAIL ${failure.name}: ${failure.error ?? 'unknown error'}`);
+      }
+    }
+  }
+
+  return lines.join('\n');
 }

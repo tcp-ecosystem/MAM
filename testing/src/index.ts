@@ -43,3 +43,33 @@ export {
   type RegressionConfig,
   type BenchmarkOperation,
 } from './benchmark.js';
+export { TestSuiteBuilder } from './suite.js';
+export {
+  ConsoleReporter,
+  JSONReporter,
+  JUnitReporter,
+  createReporter,
+  type Reporter,
+} from './reporters.js';
+export {
+  CoverageCollector,
+  calculateCoverage,
+  formatCoverage,
+  type CoverageReport,
+  type FileCoverage,
+} from './coverage.js';
+export {
+  parametrize,
+  parameterize,
+  expandCases,
+  formatCaseName,
+  type ParamCase,
+} from './parametrize.js';
+export {
+  createMock,
+  expectCalled,
+  mockReturn,
+  createMockModule,
+  resetMock,
+  type MockCall,
+} from './mock.js';

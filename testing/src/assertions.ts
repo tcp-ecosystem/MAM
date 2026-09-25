@@ -5,6 +5,8 @@
  * detailed error messages including source locations.
  */
 
+import { MAMMatcher, type PatternDefinition, type SectionQuery, type MatchableAST } from './matcher.js';
+
 // ============================================================================
 // Types
 // ============================================================================
@@ -402,11 +404,44 @@ export class MAMAssert {
     expectedData: Record<string, unknown>,
     message?: string,
     location?: SourceLocation
+  ): void;
+  /**
+   * Assert that frontmatter contains all of the given required field names
+   */
+  assertFrontmatter(
+    ast: MAMASTPartial,
+    fields: string[],
+    message?: string,
+    location?: SourceLocation
+  ): void;
+  assertFrontmatter(
+    ast: MAMASTPartial,
+    expected: Record<string, unknown> | string[],
+    message?: string,
+    location?: SourceLocation
   ): void {
     const fm = ast.frontmatter?.data ?? {};
+
+    if (Array.isArray(expected)) {
+      const missing = expected.filter((field) => !(field in fm));
+      const passed = missing.length === 0;
+      const msg = message ?? (passed
+        ? 'All required frontmatter fields present'
+        : `Missing frontmatter fields: ${missing.join(', ')}`);
+      this.record({
+        passed,
+        name: 'assertFrontmatter',
+        message: this.prefix(msg),
+        expected,
+        actual: Object.keys(fm),
+        location,
+      });
+      return;
+    }
+
     const missing: string[] = [];
 
-    for (const [key, value] of Object.entries(expectedData)) {
+    for (const [key, value] of Object.entries(expected)) {
       if (!this.deepEqual(fm[key], value)) {
         missing.push(key);
       }
@@ -418,7 +453,7 @@ export class MAMAssert {
       passed,
       name: 'assertFrontmatter',
       message: this.prefix(msg),
-      expected: expectedData,
+      expected,
       actual: fm,
       location,
     });
@@ -431,8 +466,21 @@ export class MAMAssert {
     ast: MAMASTPartial,
     message?: string,
     location?: SourceLocation
+  ): void;
+  /**
+   * Assert that an array of error-like results is empty
+   */
+  assertNoErrors(
+    results: Array<{ message: string }>,
+    message?: string,
+    location?: SourceLocation
+  ): void;
+  assertNoErrors(
+    input: MAMASTPartial | Array<{ message: string }>,
+    message?: string,
+    location?: SourceLocation
   ): void {
-    const errors = ast.errors ?? [];
+    const errors = Array.isArray(input) ? input : (input.errors ?? []);
     const passed = errors.length === 0;
     const msg = message ?? `Expected no errors, got ${errors.length}`;
     this.record({
@@ -599,6 +647,142 @@ export class MAMAssert {
       message: this.prefix(msg),
       expected: substring,
       actual: content.substring(0, 200),
+      location,
+    });
+  }
+
+  /**
+   * Run core module presence checks: frontmatter block, Purpose section,
+   * and absence of parse errors. Records one assertion result per check.
+   */
+  assertValidModule(
+    ast: MAMASTPartial,
+    message?: string,
+    location?: SourceLocation
+  ): void {
+    const fm = ast.frontmatter;
+    const hasFrontmatter = fm !== undefined && fm.data !== undefined;
+    this.record({
+      passed: hasFrontmatter,
+      name: 'assertValidModule:frontmatter',
+      message: this.prefix(message ?? (hasFrontmatter ? 'Frontmatter present' : 'Missing frontmatter block')),
+      expected: 'frontmatter.data',
+      actual: fm?.data,
+      location,
+    });
+
+    const sectionNames = (ast.sections ?? []).map((s) => s.name);
+    const hasPurpose = sectionNames.includes('Purpose');
+    this.record({
+      passed: hasPurpose,
+      name: 'assertValidModule:purpose',
+      message: this.prefix(message ?? (hasPurpose ? 'Purpose section present' : 'Missing Purpose section')),
+      expected: 'Purpose',
+      actual: sectionNames,
+      location,
+    });
+
+    const errorCount = (ast.errors ?? []).length;
+    this.record({
+      passed: errorCount === 0,
+      name: 'assertValidModule:errors',
+      message: this.prefix(message ?? (errorCount === 0 ? 'No parse errors' : `Found ${errorCount} parse errors`)),
+      expected: 0,
+      actual: errorCount,
+      location,
+    });
+  }
+
+  /**
+   * Assert that all of the given section names exist in the AST
+   */
+  assertSections(
+    ast: MAMASTPartial,
+    names: string[],
+    message?: string,
+    location?: SourceLocation
+  ): void {
+    const actual = (ast.sections ?? []).map((s) => s.name);
+    const missing = names.filter((n) => !actual.includes(n));
+    const passed = missing.length === 0;
+    const msg = message ?? (passed
+      ? 'All sections present'
+      : `Missing sections: ${missing.join(', ')}`);
+    this.record({
+      passed,
+      name: 'assertSections',
+      message: this.prefix(msg),
+      expected: names,
+      actual,
+      location,
+    });
+  }
+
+  /**
+   * Assert that all of the given capabilities exist in frontmatter
+   */
+  assertCapabilities(
+    ast: MAMASTPartial,
+    capabilities: string[],
+    message?: string,
+    location?: SourceLocation
+  ): void {
+    const caps = (ast.frontmatter?.data?.capabilities as string[]) ?? [];
+    const missing = capabilities.filter((c) => !caps.includes(c));
+    const passed = missing.length === 0;
+    const msg = message ?? (passed
+      ? 'All capabilities present'
+      : `Missing capabilities: ${missing.join(', ')}`);
+    this.record({
+      passed,
+      name: 'assertCapabilities',
+      message: this.prefix(msg),
+      expected: capabilities,
+      actual: caps,
+      location,
+    });
+  }
+
+  /**
+   * Assert that the AST matches a pattern, delegating to MAMMatcher.
+   *
+   * Accepts a raw regex/string (matched against the serialized AST), a
+   * PatternDefinition (registered then matched), or a SectionQuery (structural
+   * section match).
+   */
+  assertMatches(
+    ast: MAMASTPartial,
+    pattern: string | RegExp | PatternDefinition | SectionQuery,
+    message?: string,
+    location?: SourceLocation
+  ): void {
+    const matcher = new MAMMatcher();
+    let matched = false;
+    let detail = '';
+
+    if (typeof pattern === 'string' || pattern instanceof RegExp) {
+      const result = matcher.matchPattern(JSON.stringify(ast), pattern, 'assertMatches');
+      matched = result.matched;
+      detail = result.matched ? `matched at index ${result.index}` : 'no match';
+    } else if (typeof pattern === 'object' && 'name' in pattern && 'pattern' in pattern) {
+      matcher.addPattern(pattern as PatternDefinition);
+      const regex = matcher.getPattern((pattern as PatternDefinition).name) ?? new RegExp('');
+      const result = matcher.matchPattern(JSON.stringify(ast), regex, 'assertMatches');
+      matched = result.matched;
+      detail = result.matched ? `matched at index ${result.index}` : 'no match';
+    } else {
+      const result = matcher.matchSection(ast as unknown as MatchableAST, pattern as SectionQuery);
+      matched = result.found;
+      detail = result.found ? `found at ${result.path.join('.')}` : 'no matching section';
+    }
+
+    const msg = message ?? `Expected AST to match pattern, ${detail}`;
+    this.record({
+      passed: matched,
+      name: 'assertMatches',
+      message: this.prefix(msg),
+      expected: pattern,
+      actual: detail,
       location,
     });
   }
