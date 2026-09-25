@@ -371,6 +371,45 @@ export class MAMModule {
     mod._source = this._source;
     return mod;
   }
+
+  getName(): string {
+    return this._config.name;
+  }
+
+  getVersion(): string {
+    return this._config.version ?? '0.1.0';
+  }
+
+  getConfig(): MAMModuleConfig {
+    return {
+      ...this._config,
+      tags: [...(this._config.tags ?? [])],
+      permissions: [...(this._config.permissions ?? [])],
+      dependencies: [...(this._config.dependencies ?? [])],
+    };
+  }
+
+  sectionCount(): number {
+    return this._sections.length;
+  }
+
+  isEmpty(): boolean {
+    return this._sections.length === 0;
+  }
+
+  hasContent(name: string): boolean {
+    const section = this.getSection(name);
+    return section !== undefined && section.content.length > 0;
+  }
+
+  toSummary(): string {
+    const name = this._config.name || '(untitled)';
+    const sections = this._sections.length;
+    const blocks = this._sections.reduce((total, section) => {
+      return total + section.content.filter((node) => node.type === 'CodeBlock').length;
+    }, 0);
+    return `${name}: ${sections} sections, ${blocks} code blocks`;
+  }
 }
 
 // ---------------------------------------------------------------------------

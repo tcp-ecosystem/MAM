@@ -1,7 +1,16 @@
-import { describe, it, expect } from 'vitest';
-import { validate } from '../src/validator.js';
-import { parseMAM } from '../src/parser.js';
-import type { AST, ValidationRule } from '../src/validator.js';
+﻿import { describe, it, expect } from 'vitest';
+import {
+  validate,
+  countIssuesBySeverity,
+  hasErrors,
+  hasWarnings,
+  filterIssuesBySeverity,
+  getIssueMessages,
+  isValid,
+  summarizeIssues,
+} from '../mam/validator.js';
+import { parseMAM } from '../mam/parser.js';
+import type { AST, ValidationRule, ValidationIssue } from '../mam/validator.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -13,7 +22,7 @@ function makeAST(content: string): AST {
 
 const VALID_MAM = `---
 id: test-module
-version: 1.0.0
+version: 2.0.0
 name: Test Module
 author: TestAuthor
 runtime: python
@@ -26,7 +35,7 @@ A test module.
 
 const INVALID_ID_MAM = `---
 id: Invalid_ID!
-version: 1.0.0
+version: 2.0.0
 name: Bad Module
 author: Test
 runtime: python
@@ -52,7 +61,7 @@ Test.
 
 const INVALID_RUNTIME_MAM = `---
 id: test
-version: 1.0.0
+version: 2.0.0
 name: Bad Module
 author: Test
 runtime: invalid
@@ -70,7 +79,7 @@ No frontmatter.
 
 const MISSING_SECTIONS = `---
 id: test
-version: 1.0.0
+version: 2.0.0
 name: Test
 author: Test
 runtime: python
@@ -143,7 +152,7 @@ Test.
     it('warns on empty code blocks', () => {
       const content = `---
 id: test
-version: 1.0.0
+version: 2.0.0
 name: Test
 author: Test
 runtime: python
@@ -167,7 +176,7 @@ Test.
     it('warns on code blocks without language', () => {
       const content = `---
 id: test
-version: 1.0.0
+version: 2.0.0
 name: Test
 author: Test
 runtime: python
@@ -191,7 +200,7 @@ some code
     it('validates dependency format', () => {
       const content = `---
 id: test
-version: 1.0.0
+version: 2.0.0
 name: Test
 author: Test
 runtime: python
@@ -212,7 +221,7 @@ Test.
     it('validates reference URLs', () => {
       const content = `---
 id: test
-version: 1.0.0
+version: 2.0.0
 name: Test
 author: Test
 runtime: python
@@ -237,7 +246,7 @@ Test.
     it('validates section ordering', () => {
       const content = `---
 id: test
-version: 1.0.0
+version: 2.0.0
 name: Test
 author: Test
 runtime: python
@@ -315,7 +324,7 @@ runtime: invalid
     it('filters warnings when collectWarnings is false', () => {
       const content = `---
 id: test
-version: 1.0.0
+version: 2.0.0
 name: Test
 author: Test
 runtime: python
@@ -337,7 +346,7 @@ Content.
     it('accepts custom idPattern', () => {
       const content = `---
 id: UPPERCASE_ID
-version: 1.0.0
+version: 2.0.0
 name: Test
 author: Test
 runtime: python
@@ -363,7 +372,7 @@ Test.
     it('accepts custom requiredSections', () => {
       const content = `---
 id: test
-version: 1.0.0
+version: 2.0.0
 name: Test
 author: Test
 runtime: python
@@ -399,5 +408,61 @@ Some content.
       expect(fmIssue?.location).toBeDefined();
       expect(fmIssue?.location?.start.line).toBeGreaterThan(0);
     });
+  });
+});
+
+describe('validator helpers', () => {
+  const bad = `## Purpose\n\nNo front matter.\n`;
+  const warned = '## Python\n\n```\nprint(1)\n```\n';
+
+  it('countIssuesBySeverity tallies severities', () => {
+    const issues = validate(parseMAM(bad).ast);
+    const counts = countIssuesBySeverity(issues);
+    expect(counts.error).toBeGreaterThan(0);
+    expect(counts.error! + (counts.warning ?? 0) + (counts.info ?? 0)).toBe(issues.length);
+  });
+
+  it('hasErrors detects error issues', () => {
+    expect(hasErrors(validate(parseMAM(bad).ast))).toBe(true);
+    expect(hasErrors([])).toBe(false);
+  });
+
+  it('hasWarnings detects warning issues', () => {
+    expect(hasWarnings(validate(parseMAM(warned).ast, { level: 'semantic' }))).toBe(true);
+    expect(hasWarnings([])).toBe(false);
+  });
+
+  it('filterIssuesBySeverity filters by severity', () => {
+    const issues = validate(parseMAM(bad).ast);
+    const errors = filterIssuesBySeverity(issues, 'error');
+    expect(errors.every((issue) => issue.severity === 'error')).toBe(true);
+    expect(errors.length).toBe(countIssuesBySeverity(issues).error);
+  });
+
+  it('getIssueMessages extracts messages', () => {
+    const issues: ValidationIssue[] = [
+      { rule: 'r', code: 'X', message: 'first', severity: 'error' },
+      { rule: 'r', code: 'X', message: 'second', severity: 'warning' },
+    ];
+    expect(getIssueMessages(issues)).toEqual(['first', 'second']);
+    expect(getIssueMessages([])).toEqual([]);
+  });
+
+  it('isValid is true only without errors', () => {
+    expect(isValid([{ rule: 'r', code: 'X', message: 'w', severity: 'warning' }])).toBe(true);
+    expect(isValid([{ rule: 'r', code: 'X', message: 'e', severity: 'error' }])).toBe(false);
+    expect(isValid([])).toBe(true);
+  });
+
+  it('summarizeIssues summarizes counts', () => {
+    const issues: ValidationIssue[] = [
+      { rule: 'r', code: 'X', message: 'e1', severity: 'error' },
+      { rule: 'r', code: 'X', message: 'e2', severity: 'error' },
+      { rule: 'r', code: 'X', message: 'w', severity: 'warning' },
+    ];
+    const summary = summarizeIssues(issues);
+    expect(summary).toContain('2 errors');
+    expect(summary).toContain('1 warning');
+    expect(summarizeIssues([])).toBe('no issues');
   });
 });

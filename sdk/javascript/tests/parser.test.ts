@@ -1,5 +1,14 @@
-import { describe, it, expect } from 'vitest';
-import { parseMAM } from '../src/parser.js';
+﻿import { describe, it, expect } from 'vitest';
+import {
+  parseMAM,
+  hasFrontMatter,
+  getSectionNames,
+  countSections,
+  countCodeBlocks,
+  getCodeBlockLanguages,
+  findSection,
+  isValidSectionName,
+} from '../mam/parser.js';
 
 // ---------------------------------------------------------------------------
 // Minimal module
@@ -7,7 +16,7 @@ import { parseMAM } from '../src/parser.js';
 
 const MINIMAL_MAM = `---
 id: minimal
-version: 1.0.0
+version: 2.0.0
 name: Minimal Module
 author: Test
 runtime: python
@@ -24,7 +33,7 @@ Minimal module.
 
 const BASIC_MAM = `---
 id: basic-module
-version: 1.0.0
+version: 2.0.0
 name: Basic Module
 author: TestAuthor
 runtime: python
@@ -147,7 +156,7 @@ describe('parseMAM', () => {
       const result = parseMAM(MINIMAL_MAM);
       expect(result.ast.frontmatter).not.toBeNull();
       expect(result.ast.frontmatter?.data.id).toBe('minimal');
-      expect(result.ast.frontmatter?.data.version).toBe('1.0.0');
+      expect(result.ast.frontmatter?.data.version).toBe('2.0.0');
       expect(result.ast.frontmatter?.data.name).toBe('Minimal Module');
       expect(result.ast.frontmatter?.data.author).toBe('Test');
       expect(result.ast.frontmatter?.data.runtime).toBe('python');
@@ -162,7 +171,7 @@ describe('parseMAM', () => {
     it('parses numeric fields', () => {
       const content = `---
 id: test
-version: 1.0.0
+version: 2.0.0
 name: Test
 author: T
 runtime: python
@@ -182,7 +191,7 @@ Test.
     it('parses boolean fields', () => {
       const content = `---
 id: test
-version: 1.0.0
+version: 2.0.0
 name: Test
 author: T
 runtime: python
@@ -212,7 +221,7 @@ No frontmatter here.
     it('reports error for unclosed frontmatter', () => {
       const content = `---
 id: test
-version: 1.0.0
+version: 2.0.0
 name: Test
 author: T
 runtime: python
@@ -238,7 +247,7 @@ No closing delimiter.
     it('parses section levels', () => {
       const content = `---
 id: test
-version: 1.0.0
+version: 2.0.0
 name: Test
 author: T
 runtime: python
@@ -282,7 +291,7 @@ Level 3.
     it('reports error for duplicate sections', () => {
       const content = `---
 id: test
-version: 1.0.0
+version: 2.0.0
 name: Test
 author: T
 runtime: python
@@ -303,7 +312,7 @@ Duplicate purpose.
     it('warns on unknown sections by default', () => {
       const content = `---
 id: test
-version: 1.0.0
+version: 2.0.0
 name: Test
 author: T
 runtime: python
@@ -324,7 +333,7 @@ Custom content.
     it('does not warn on unknown sections when allowUnknownSections is true', () => {
       const content = `---
 id: test
-version: 1.0.0
+version: 2.0.0
 name: Test
 author: T
 runtime: python
@@ -345,7 +354,7 @@ Custom content.
     it('warns on empty sections', () => {
       const content = `---
 id: test
-version: 1.0.0
+version: 2.0.0
 name: Test
 author: T
 runtime: python
@@ -389,7 +398,7 @@ Test.
     it('reports error for unclosed code block', () => {
       const content = `---
 id: test
-version: 1.0.0
+version: 2.0.0
 name: Test
 author: T
 runtime: python
@@ -414,7 +423,7 @@ def broken():
     it('parses unordered lists', () => {
       const content = `---
 id: test
-version: 1.0.0
+version: 2.0.0
 name: Test
 author: T
 runtime: python
@@ -455,7 +464,7 @@ Test.
     it('parses blockquotes', () => {
       const content = `---
 id: test
-version: 1.0.0
+version: 2.0.0
 name: Test
 author: T
 runtime: python
@@ -483,7 +492,7 @@ Test.
     it('parses horizontal rules', () => {
       const content = `---
 id: test
-version: 1.0.0
+version: 2.0.0
 name: Test
 author: T
 runtime: python
@@ -543,7 +552,7 @@ Content.
     it('parses paragraphs as content', () => {
       const content = `---
 id: test
-version: 1.0.0
+version: 2.0.0
 name: Test
 author: T
 runtime: python
@@ -567,7 +576,7 @@ that should be captured as a single paragraph.
     it('handles code blocks without language', () => {
       const content = `---
 id: test
-version: 1.0.0
+version: 2.0.0
 name: Test
 author: T
 runtime: python
@@ -590,5 +599,53 @@ some code without language
       expect(code).toBeDefined();
       expect(code!.value).toContain('some code without language');
     });
+  });
+});
+
+describe('parser helpers', () => {
+  const withCode = `---\ntitle: T\nversion: 2.0.0\n---\n\n## Purpose\n\nWords.\n\n## Python\n\n\`\`\`python\nprint(1)\n\`\`\`\n\n## Rules\n\n- rule\n`;
+
+  it('hasFrontMatter detects the YAML block', () => {
+    expect(hasFrontMatter(withCode)).toBe(true);
+    expect(hasFrontMatter('## Purpose\n\nNo front matter.\n')).toBe(false);
+    expect(hasFrontMatter('')).toBe(false);
+  });
+
+  it('getSectionNames returns section titles in order', () => {
+    const ast = parseMAM(withCode).ast;
+    expect(getSectionNames(ast)).toEqual(['Purpose', 'Python', 'Rules']);
+    expect(getSectionNames(parseMAM('').ast)).toEqual([]);
+  });
+
+  it('countSections totals sections', () => {
+    const ast = parseMAM(withCode).ast;
+    expect(countSections(ast)).toBe(3);
+    expect(countSections(parseMAM('').ast)).toBe(0);
+  });
+
+  it('countCodeBlocks totals code blocks', () => {
+    const ast = parseMAM(withCode).ast;
+    expect(countCodeBlocks(ast)).toBe(1);
+    expect(countCodeBlocks(parseMAM('').ast)).toBe(0);
+  });
+
+  it('getCodeBlockLanguages lists distinct languages', () => {
+    const ast = parseMAM(withCode).ast;
+    expect(getCodeBlockLanguages(ast)).toEqual(['python']);
+    const two = parseMAM('## A\n\n```python\nx\n```\n\n## B\n\n```js\ny\n```\n').ast;
+    expect(getCodeBlockLanguages(two)).toEqual(['python', 'js']);
+  });
+
+  it('findSection locates sections case-insensitively', () => {
+    const ast = parseMAM(withCode).ast;
+    expect(findSection(ast, 'purpose')?.name).toBe('Purpose');
+    expect(findSection(ast, 'Rules')?.name).toBe('Rules');
+    expect(findSection(ast, 'Missing')).toBeUndefined();
+  });
+
+  it('isValidSectionName checks standard sections', () => {
+    expect(isValidSectionName('Purpose')).toBe(true);
+    expect(isValidSectionName('Rules')).toBe(true);
+    expect(isValidSectionName('Nonsense')).toBe(false);
   });
 });

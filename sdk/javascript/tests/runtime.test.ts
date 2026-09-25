@@ -1,7 +1,18 @@
-import { describe, it, expect } from 'vitest';
-import { execute, createExecutionHistory } from '../src/runtime.js';
-import { parseMAM } from '../src/parser.js';
-import type { AST } from '../src/parser.js';
+﻿import { describe, it, expect } from 'vitest';
+import {
+  execute,
+  createExecutionHistory,
+  isExecutionSuccess,
+  countSuccessfulSections,
+  getFailedSections,
+  getExecutionLanguages,
+  summarizeExecution,
+  recordExecution,
+  getExecutionHistorySize,
+} from '../mam/runtime.js';
+import { parseMAM } from '../mam/parser.js';
+import type { AST } from '../mam/parser.js';
+import type { ModuleExecutionResult } from '../mam/runtime.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -13,7 +24,7 @@ function makeAST(content: string): AST {
 
 const JS_MODULE = `---
 id: js-test
-version: 1.0.0
+version: 2.0.0
 name: JS Test
 author: Test
 runtime: javascript
@@ -32,7 +43,7 @@ output = 2 + 2;
 
 const JS_MODULE_WITH_INPUTS = `---
 id: js-inputs
-version: 1.0.0
+version: 2.0.0
 name: JS Inputs
 author: Test
 runtime: javascript
@@ -51,7 +62,7 @@ output = name + " says hello";
 
 const PYTHON_MODULE = `---
 id: py-test
-version: 1.0.0
+version: 2.0.0
 name: Python Test
 author: Test
 runtime: python
@@ -70,7 +81,7 @@ output = "hello from python"
 
 const MULTI_SECTION_MODULE = `---
 id: multi
-version: 1.0.0
+version: 2.0.0
 name: Multi
 author: Test
 runtime: javascript
@@ -95,7 +106,7 @@ output = "step2";
 
 const EMPTY_CODE_MODULE = `---
 id: empty
-version: 1.0.0
+version: 2.0.0
 name: Empty
 author: Test
 runtime: javascript
@@ -114,7 +125,7 @@ Empty code test.
 
 const TIMEOUT_MODULE = `---
 id: timeout
-version: 1.0.0
+version: 2.0.0
 name: Timeout
 author: Test
 runtime: javascript
@@ -134,7 +145,7 @@ while(true) {}
 
 const CONSOLE_LOG_MODULE = `---
 id: console
-version: 1.0.0
+version: 2.0.0
 name: Console
 author: Test
 runtime: javascript
@@ -204,7 +215,7 @@ describe('execute', () => {
     it('returns stub result for shell code', async () => {
       const content = `---
 id: shell-test
-version: 1.0.0
+version: 2.0.0
 name: Shell Test
 author: Test
 runtime: shell
@@ -247,7 +258,7 @@ echo "hello"
     it('stops on first error when stopOnError is true', async () => {
       const content = `---
 id: stop
-version: 1.0.0
+version: 2.0.0
 name: Stop
 author: Test
 runtime: javascript
@@ -280,7 +291,7 @@ output = "should not run";
     it('continues after error when stopOnError is false', async () => {
       const content = `---
 id: continue
-version: 1.0.0
+version: 2.0.0
 name: Continue
 author: Test
 runtime: javascript
@@ -313,7 +324,7 @@ output = "ran";
     it('initializes with provided memory', async () => {
       const content = `---
 id: mem
-version: 1.0.0
+version: 2.0.0
 name: Mem
 author: Test
 runtime: javascript
@@ -339,7 +350,7 @@ output = memory.count ?? 0;
     it('injects environment variables', async () => {
       const content = `---
 id: env
-version: 1.0.0
+version: 2.0.0
 name: Env
 author: Test
 runtime: javascript
@@ -365,7 +376,7 @@ output = env.MY_VAR;
     it('returns success with no section results for text-only module', async () => {
       const content = `---
 id: text-only
-version: 1.0.0
+version: 2.0.0
 name: Text Only
 author: Test
 runtime: javascript
@@ -440,7 +451,7 @@ This module has no code blocks.
     it('captures JavaScript runtime errors', async () => {
       const content = `---
 id: err
-version: 1.0.0
+version: 2.0.0
 name: Err
 author: Test
 runtime: javascript
@@ -462,5 +473,81 @@ throw new Error("intentional error");
       expect(result.errors.length).toBeGreaterThan(0);
       expect(result.errors[0]).toContain('intentional error');
     });
+  });
+});
+
+describe('runtime helpers', () => {
+  function makeResult(success: boolean, results: ModuleExecutionResult['sectionResults']): ModuleExecutionResult {
+    return {
+      success,
+      sectionResults: results,
+      output: {},
+      duration: 12,
+      memory: {},
+      errors: success ? [] : ['boom'],
+    };
+  }
+
+  it('isExecutionSuccess mirrors the success flag', () => {
+    expect(isExecutionSuccess(makeResult(true, []))).toBe(true);
+    expect(isExecutionSuccess(makeResult(false, []))).toBe(false);
+  });
+
+  it('countSuccessfulSections tallies passing sections', () => {
+    const result = makeResult(true, [
+      { success: true, output: 'a', errors: [], duration: 1, sectionName: 'A', language: 'python' },
+      { success: false, output: 'b', errors: ['e'], duration: 1, sectionName: 'B', language: 'python' },
+    ]);
+    expect(countSuccessfulSections(result)).toBe(1);
+  });
+
+  it('getFailedSections returns only failures', () => {
+    const result = makeResult(false, [
+      { success: true, output: 'a', errors: [], duration: 1, sectionName: 'A', language: 'python' },
+      { success: false, output: 'b', errors: ['e'], duration: 1, sectionName: 'B', language: 'js' },
+    ]);
+    const failed = getFailedSections(result);
+    expect(failed).toHaveLength(1);
+    expect(failed[0]!.sectionName).toBe('B');
+  });
+
+  it('getExecutionLanguages lists distinct languages', () => {
+    const result = makeResult(true, [
+      { success: true, output: 'a', errors: [], duration: 1, sectionName: 'A', language: 'python' },
+      { success: true, output: 'b', errors: [], duration: 1, sectionName: 'B', language: 'python' },
+      { success: true, output: 'c', errors: [], duration: 1, sectionName: 'C', language: 'js' },
+    ]);
+    expect(getExecutionLanguages(result)).toEqual(['python', 'js']);
+  });
+
+  it('summarizeExecution describes the run', () => {
+    const ok = makeResult(true, [
+      { success: true, output: 'a', errors: [], duration: 1, sectionName: 'A', language: 'python' },
+    ]);
+    expect(summarizeExecution(ok)).toContain('succeeded');
+    expect(summarizeExecution(ok)).toContain('1/1');
+    expect(summarizeExecution(makeResult(false, []))).toContain('failed');
+  });
+
+  it('recordExecution and getExecutionHistorySize manage history', () => {
+    const history = createExecutionHistory();
+    expect(getExecutionHistorySize(history)).toBe(0);
+    recordExecution(history, {
+      timestamp: 1,
+      sectionName: 'A',
+      language: 'python',
+      code: 'x',
+      result: { success: true, output: 'a', errors: [], duration: 1, sectionName: 'A', language: 'python' },
+    });
+    expect(getExecutionHistorySize(history)).toBe(1);
+    recordExecution(history, {
+      timestamp: 2,
+      sectionName: 'B',
+      language: 'js',
+      code: 'y',
+      result: { success: false, output: '', errors: ['e'], duration: 1, sectionName: 'B', language: 'js' },
+    });
+    expect(getExecutionHistorySize(history)).toBe(2);
+    expect(history.getBySection('A')).toHaveLength(1);
   });
 });

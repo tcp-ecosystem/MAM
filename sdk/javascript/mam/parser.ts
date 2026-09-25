@@ -829,3 +829,54 @@ export function parseMAM(
     stats: { totalSections: sections.length, totalCodeBlocks, totalLines, parseTimeMs },
   };
 }
+
+export function hasFrontMatter(content: string): boolean {
+  const first = content.split('\n')[0]?.trim() ?? '';
+  return first === '---';
+}
+
+export function getSectionNames(ast: AST): string[] {
+  return ast.sections.map((section) => section.name);
+}
+
+export function countSections(ast: AST): number {
+  return ast.sections.length;
+}
+
+export function countCodeBlocks(ast: AST): number {
+  let total = 0;
+  for (const section of ast.sections) {
+    for (const node of section.content) {
+      if (node.type === 'CodeBlock') {
+        total++;
+      }
+    }
+  }
+  return total;
+}
+
+export function getCodeBlockLanguages(ast: AST): string[] {
+  const languages: string[] = [];
+  const seen = new Set<string>();
+  for (const section of ast.sections) {
+    for (const node of section.content) {
+      if (node.type === 'CodeBlock') {
+        const language = node.language ?? 'unknown';
+        if (!seen.has(language)) {
+          seen.add(language);
+          languages.push(language);
+        }
+      }
+    }
+  }
+  return languages;
+}
+
+export function findSection(ast: AST, name: string): Section | undefined {
+  const lower = name.toLowerCase();
+  return ast.sections.find((section) => section.name.toLowerCase() === lower);
+}
+
+export function isValidSectionName(name: string): boolean {
+  return STANDARD_SECTIONS.has(name);
+}

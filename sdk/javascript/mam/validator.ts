@@ -501,3 +501,52 @@ export function validateContent(
     parseWarnings: result.warnings,
   };
 }
+
+export function countIssuesBySeverity(issues: ValidationIssue[]): Record<string, number> {
+  const counts: Record<string, number> = { error: 0, warning: 0, info: 0 };
+  for (const issue of issues) {
+    counts[issue.severity] = (counts[issue.severity] ?? 0) + 1;
+  }
+  return counts;
+}
+
+export function hasErrors(issues: ValidationIssue[]): boolean {
+  return issues.some((issue) => issue.severity === 'error');
+}
+
+export function hasWarnings(issues: ValidationIssue[]): boolean {
+  return issues.some((issue) => issue.severity === 'warning');
+}
+
+export function filterIssuesBySeverity(
+  issues: ValidationIssue[],
+  severity: ValidationSeverity,
+): ValidationIssue[] {
+  return issues.filter((issue) => issue.severity === severity);
+}
+
+export function getIssueMessages(issues: ValidationIssue[]): string[] {
+  return issues.map((issue) => issue.message);
+}
+
+export function isValid(issues: ValidationIssue[]): boolean {
+  return !hasErrors(issues);
+}
+
+export function summarizeIssues(issues: ValidationIssue[]): string {
+  if (issues.length === 0) {
+    return 'no issues';
+  }
+  const counts = countIssuesBySeverity(issues);
+  const parts: string[] = [];
+  if ((counts.error ?? 0) > 0) {
+    parts.push(`${counts.error} error${counts.error === 1 ? '' : 's'}`);
+  }
+  if ((counts.warning ?? 0) > 0) {
+    parts.push(`${counts.warning} warning${counts.warning === 1 ? '' : 's'}`);
+  }
+  if ((counts.info ?? 0) > 0) {
+    parts.push(`${counts.info} info`);
+  }
+  return parts.join(', ');
+}

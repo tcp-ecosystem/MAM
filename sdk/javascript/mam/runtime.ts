@@ -385,3 +385,42 @@ async function executeModule(
     errors,
   };
 }
+
+export function isExecutionSuccess(result: ModuleExecutionResult): boolean {
+  return result.success;
+}
+
+export function countSuccessfulSections(result: ModuleExecutionResult): number {
+  return result.sectionResults.filter((section) => section.success).length;
+}
+
+export function getFailedSections(result: ModuleExecutionResult): ExecutionResult[] {
+  return result.sectionResults.filter((section) => !section.success);
+}
+
+export function getExecutionLanguages(result: ModuleExecutionResult): string[] {
+  const languages: string[] = [];
+  const seen = new Set<string>();
+  for (const section of result.sectionResults) {
+    if (!seen.has(section.language)) {
+      seen.add(section.language);
+      languages.push(section.language);
+    }
+  }
+  return languages;
+}
+
+export function summarizeExecution(result: ModuleExecutionResult): string {
+  const total = result.sectionResults.length;
+  const succeeded = countSuccessfulSections(result);
+  const status = result.success ? 'succeeded' : 'failed';
+  return `${status}: ${succeeded}/${total} sections in ${result.duration}ms`;
+}
+
+export function recordExecution(history: ExecutionHistory, entry: ExecutionHistoryEntry): void {
+  history.add(entry);
+}
+
+export function getExecutionHistorySize(history: ExecutionHistory): number {
+  return history.size();
+}

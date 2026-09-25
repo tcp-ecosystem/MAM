@@ -1,13 +1,13 @@
-import { describe, it, expect } from 'vitest';
+﻿import { describe, it, expect } from 'vitest';
 import {
   MAMModule,
   fromAST,
   fromMarkdown,
   diffModules,
   compareModules,
-} from '../src/mam.js';
-import { parseMAM } from '../src/parser.js';
-import type { AST, ContentNode } from '../src/parser.js';
+} from '../mam/mam.js';
+import { parseMAM } from '../mam/parser.js';
+import type { AST, ContentNode } from '../mam/parser.js';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -210,7 +210,7 @@ describe('fromAST', () => {
   it('creates MAMModule from AST', () => {
     const content = `---
 id: from-ast
-version: 1.0.0
+version: 2.0.0
 name: From AST
 author: Test
 runtime: python
@@ -229,7 +229,7 @@ Test.
     const ast = makeAST(content);
     const mod = fromAST(ast);
     expect(mod.name).toBe('From AST');
-    expect(mod.version).toBe('1.0.0');
+    expect(mod.version).toBe('2.0.0');
     expect(mod.id).toBe('from-ast');
     expect(mod.tags).toEqual(['tag1']);
     expect(mod.hasSection('Purpose')).toBe(true);
@@ -261,7 +261,7 @@ describe('fromMarkdown', () => {
   it('creates MAMModule from raw markdown', () => {
     const content = `---
 id: from-md
-version: 1.0.0
+version: 2.0.0
 name: From Markdown
 author: Test
 runtime: javascript
@@ -396,5 +396,64 @@ describe('compareModules', () => {
     });
     const result = compareModules(mod1, mod2);
     expect(result.content.some((c) => c.type === 'added')).toBe(true);
+  });
+});
+
+describe('MAMModule accessor methods', () => {
+  it('getName returns the configured name', () => {
+    const mod = new MAMModule({ name: 'alpha' });
+    expect(mod.getName()).toBe('alpha');
+    mod.setName('beta');
+    expect(mod.getName()).toBe('beta');
+  });
+
+  it('getVersion returns the version with a fallback', () => {
+    expect(new MAMModule({ name: 'a' }).getVersion()).toBe('0.1.0');
+    const mod = new MAMModule({ name: 'a', version: '3.1.4' });
+    expect(mod.getVersion()).toBe('3.1.4');
+    mod.setVersion('9.9.9');
+    expect(mod.getVersion()).toBe('9.9.9');
+  });
+
+  it('getConfig returns a defensive copy', () => {
+    const mod = new MAMModule({ name: 'a', tags: ['x'], permissions: ['p'], dependencies: ['d'] });
+    const config = mod.getConfig();
+    expect(config.name).toBe('a');
+    expect(config.tags).toEqual(['x']);
+    config.tags.push('mutated');
+    config.permissions!.push('mutated');
+    expect(mod.getConfig().tags).toEqual(['x']);
+    expect(mod.getConfig().permissions).toEqual(['p']);
+  });
+
+  it('sectionCount and isEmpty reflect sections', () => {
+    const mod = new MAMModule({ name: 'a' });
+    expect(mod.sectionCount()).toBe(0);
+    expect(mod.isEmpty()).toBe(true);
+    mod.addSectionText('Purpose', 'hi');
+    expect(mod.sectionCount()).toBe(1);
+    expect(mod.isEmpty()).toBe(false);
+  });
+
+  it('hasContent reports non-empty sections', () => {
+    const mod = new MAMModule({ name: 'a' });
+    expect(mod.hasContent('Purpose')).toBe(false);
+    mod.addSectionText('Purpose', 'body');
+    expect(mod.hasContent('Purpose')).toBe(true);
+    expect(mod.hasContent('Missing')).toBe(false);
+  });
+
+  it('toSummary describes the module', () => {
+    const mod = new MAMModule({ name: 'demo' });
+    expect(mod.toSummary()).toContain('demo');
+    expect(mod.toSummary()).toContain('0 sections');
+    mod.addSectionCode('Python', 'python', 'print(1)');
+    expect(mod.toSummary()).toContain('1 sections');
+    expect(mod.toSummary()).toContain('1 code blocks');
+  });
+
+  it('toSummary handles untitled modules', () => {
+    const mod = new MAMModule({ name: '' });
+    expect(mod.toSummary()).toContain('(untitled)');
   });
 });

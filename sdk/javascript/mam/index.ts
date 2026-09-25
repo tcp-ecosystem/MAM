@@ -57,4 +57,13 @@ export type {
   DiffChange,
   DiffResult,
   ModuleDiff,
+  DiffChangeType,
 } from './mam.js';
+export { DEFAULT_SDK_CONFIG, loadSDKConfig, saveSDKConfig, validateSDKConfig, mergeSDKConfigs, resolveSDKConfigPath } from './config.js';
+export type { SDKConfig } from './config.js';
+export { ResultCache, createResultCache, DEFAULT_CACHE_TTL, hashCacheKey, formatCacheStats, isValidCacheKey } from './cache.js';
+export type { CacheEntry, CacheStats } from './cache.js';
+export { formatModuleSummary, formatModuleJSON, formatSectionList, formatValidationReport, formatExecutionResults, formatCodeBlockList, formatFrontMatter } from './format.js';
+export { buildDepGraph, topoSortDepGraph, getDepNodeNames, summarizeDepGraph, getDepSuccessors, getDepPredecessors, hasDepEdge, getDepEdgeLabels } from './graph.js';
+export type { DepNode, DepEdge, DepGraph } from './graph.js';
+export { STARTER_KINDS, listStarterKinds, getStarterTemplate, renderStarter, starterVariables, newModuleStarter, validateStarterName } from './template.js';

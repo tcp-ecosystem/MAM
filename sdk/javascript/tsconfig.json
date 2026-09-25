@@ -4,13 +4,13 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "outDir": "./dist",
-    "rootDir": "./src",
+    "rootDir": "mam",
     "strict": true,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "declaration": true,
     "sourceMap": true
   },
-  "include": ["src/**/*.ts"],
+  "include": ["mam/**/*.ts"],
   "exclude": ["node_modules", "dist"]
 }
