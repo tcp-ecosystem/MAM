@@ -157,3 +157,75 @@ func ValidateSectionType(s string) (SectionType, bool) {
 	}
 	return "", false
 }
+
+// SectionNames returns the display names of every section in order.
+func (m *Module) SectionNames() []string {
+	names := make([]string, 0, len(m.Sections))
+	for _, s := range m.Sections {
+		names = append(names, s.Title)
+	}
+	return names
+}
+
+// SectionCount returns the number of sections in the module.
+func (m *Module) SectionCount() int {
+	return len(m.Sections)
+}
+
+// HasSection reports whether the module contains a section of the given type.
+func (m *Module) HasSection(t SectionType) bool {
+	return m.SectionByType(t) != nil
+}
+
+// CodeBlockLanguages returns the distinct code block languages in the
+// module, in order of first appearance.
+func (m *Module) CodeBlockLanguages() []string {
+	var langs []string
+	seen := make(map[string]bool)
+	for _, cb := range m.AllCodeBlocks() {
+		if !seen[cb.Language] {
+			seen[cb.Language] = true
+			langs = append(langs, cb.Language)
+		}
+	}
+	return langs
+}
+
+// HasCodeBlocks reports whether the section embeds any code blocks.
+func (s Section) HasCodeBlocks() bool {
+	return len(s.CodeBlocks) > 0
+}
+
+// NewModule creates an empty Module rooted at the given path.
+func NewModule(path string) *Module {
+	return &Module{
+		ContentNode: ContentNode{Type: NodeModule, Location: SourceLocation{File: path, Line: 1, Column: 1}},
+		Path:        path,
+	}
+}
+
+// Clone returns a deep copy of the module. The original is never mutated.
+func (m *Module) Clone() *Module {
+	clone := *m
+	clone.Children = append([]ContentNode(nil), m.Children...)
+	if m.FrontMatter != nil {
+		fm := *m.FrontMatter
+		fm.Children = append([]ContentNode(nil), m.FrontMatter.Children...)
+		fm.Tags = append([]string(nil), m.FrontMatter.Tags...)
+		if m.FrontMatter.Metadata != nil {
+			fm.Metadata = make(map[string]string, len(m.FrontMatter.Metadata))
+			for k, v := range m.FrontMatter.Metadata {
+				fm.Metadata[k] = v
+			}
+		}
+		clone.FrontMatter = &fm
+	}
+	clone.Sections = make([]Section, 0, len(m.Sections))
+	for _, s := range m.Sections {
+		sc := s
+		sc.Children = append([]ContentNode(nil), s.Children...)
+		sc.CodeBlocks = append([]CodeBlock(nil), s.CodeBlocks...)
+		clone.Sections = append(clone.Sections, sc)
+	}
+	return &clone
+}

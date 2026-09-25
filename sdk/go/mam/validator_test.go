@@ -369,7 +369,7 @@ func TestValidationReportDefaults(t *testing.T) {
 func TestValidateString(t *testing.T) {
 	content := `---
 title: Valid String Module
-version: 1.0.0
+version: 2.0.0
 ---
 
 ## Purpose

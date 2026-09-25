@@ -145,6 +145,52 @@ func (r *Runtime) isAllowed(lang string) bool {
 	return false
 }
 
+// Config returns a copy of the runtime configuration.
+func (r *Runtime) Config() RuntimeConfig {
+	return r.config
+}
+
+// DefaultRuntimeConfig returns a RuntimeConfig with sensible defaults.
+func DefaultRuntimeConfig() RuntimeConfig {
+	return RuntimeConfig{}
+}
+
+// IsLanguageAllowed reports whether the language may be executed under the
+// current configuration.
+func (r *Runtime) IsLanguageAllowed(lang string) bool {
+	return r.isAllowed(lang)
+}
+
+// SupportedLanguages lists every language tag the runtime can execute.
+func SupportedLanguages() []string {
+	return []string{"python", "javascript", "go", "bash", "ruby", "perl"}
+}
+
+// Succeeded reports whether the process exited with code zero.
+func (res *ExecutionResult) Succeeded() bool {
+	return res.ExitCode == 0
+}
+
+// CombinedOutput returns stdout and stderr concatenated with a separator.
+func (res *ExecutionResult) CombinedOutput() string {
+	if res.Stderr == "" {
+		return res.Stdout
+	}
+	if res.Stdout == "" {
+		return res.Stderr
+	}
+	return res.Stdout + "\n" + res.Stderr
+}
+
+// CountResultsByLanguage tallies execution results per language.
+func CountResultsByLanguage(results []*ExecutionResult) map[string]int {
+	counts := make(map[string]int)
+	for _, res := range results {
+		counts[res.Language]++
+	}
+	return counts
+}
+
 // ExecuteModuleFromPath is a convenience function that parses, validates, and
 // executes a .mam.md file end-to-end.
 func ExecuteModuleFromPath(ctx context.Context, path string, cfg RuntimeConfig) ([]*ExecutionResult, *ValidationReport, error) {

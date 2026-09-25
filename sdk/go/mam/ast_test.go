@@ -77,7 +77,7 @@ func TestFrontMatterWithValues(t *testing.T) {
 		Description: "A test module",
 		Tags:        []string{"test", "example"},
 		Metadata:    map[string]string{"custom": "value"},
-		RawYAML:     "title: Test Module\nversion: 1.0.0",
+		RawYAML:     "title: Test Module\nversion: 2.0.0",
 	}
 	if fm.Title != "Test Module" {
 		t.Errorf("Title = %q, want %q", fm.Title, "Test Module")

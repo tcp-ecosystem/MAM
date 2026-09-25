@@ -215,3 +215,58 @@ func IsValidLanguageTag(lang string) bool {
 	allowed := regexp.MustCompile(`^[a-zA-Z0-9_+\-]+$`)
 	return allowed.MatchString(lang)
 }
+
+// ErrorCount returns the number of error-severity diagnostics.
+func (r *ValidationReport) ErrorCount() int {
+	return len(r.BySeverity(SeverityError))
+}
+
+// WarningCount returns the number of warning-severity diagnostics.
+func (r *ValidationReport) WarningCount() int {
+	return len(r.BySeverity(SeverityWarning))
+}
+
+// HasRule reports whether any diagnostic was produced by the given rule ID.
+func (r *ValidationReport) HasRule(rule string) bool {
+	for _, d := range r.Diagnostics {
+		if d.Rule == rule {
+			return true
+		}
+	}
+	return false
+}
+
+// BySeverity returns every diagnostic with the given severity.
+func (r *ValidationReport) BySeverity(s Severity) []Diagnostic {
+	var out []Diagnostic
+	for _, d := range r.Diagnostics {
+		if d.Severity == s {
+			out = append(out, d)
+		}
+	}
+	return out
+}
+
+// RuleIDs returns the identifiers of every registered rule in order.
+func (v *Validator) RuleIDs() []string {
+	ids := make([]string, 0, len(v.rules))
+	for _, r := range v.rules {
+		ids = append(ids, r.ID)
+	}
+	return ids
+}
+
+// RuleCount returns the number of registered validation rules.
+func (v *Validator) RuleCount() int {
+	return len(v.rules)
+}
+
+// IsValidSeverity reports whether the string is a known severity level.
+func IsValidSeverity(s string) bool {
+	switch Severity(s) {
+	case SeverityError, SeverityWarning, SeverityInfo:
+		return true
+	default:
+		return false
+	}
+}

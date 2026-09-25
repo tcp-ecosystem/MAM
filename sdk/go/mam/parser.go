@@ -152,6 +152,90 @@ func ParseLines(lines []string, filePath string) (*Module, error) {
 	return mod, nil
 }
 
+// HasFrontMatter reports whether the content starts with a YAML front
+// matter delimiter.
+func HasFrontMatter(content string) bool {
+	lines := strings.Split(content, "\n")
+	if len(lines) == 0 {
+		return false
+	}
+	return frontMatterStart.MatchString(strings.TrimSpace(lines[0]))
+}
+
+// ExtractFrontMatterRaw returns the raw YAML text between the opening and
+// closing front matter delimiters, or "" when there is no block.
+func ExtractFrontMatterRaw(content string) string {
+	lines := strings.Split(content, "\n")
+	if len(lines) == 0 || !frontMatterStart.MatchString(strings.TrimSpace(lines[0])) {
+		return ""
+	}
+	var fmLines []string
+	for _, line := range lines[1:] {
+		if frontMatterStart.MatchString(strings.TrimSpace(line)) {
+			break
+		}
+		fmLines = append(fmLines, line)
+	}
+	return strings.Join(fmLines, "\n")
+}
+
+// ListSectionTitles returns the heading titles of every section in order.
+func ListSectionTitles(content string) []string {
+	var titles []string
+	for _, line := range strings.Split(content, "\n") {
+		if m := sectionHeading.FindStringSubmatch(line); m != nil {
+			titles = append(titles, strings.TrimSpace(m[2]))
+		}
+	}
+	return titles
+}
+
+// CountCodeBlocks returns the number of fenced code blocks in the content.
+func CountCodeBlocks(content string) int {
+	count := 0
+	inBlock := false
+	for _, line := range strings.Split(content, "\n") {
+		if !inBlock {
+			if codeBlockStart.MatchString(line) {
+				inBlock = true
+			}
+		} else if codeBlockEnd.MatchString(line) {
+			inBlock = false
+			count++
+		}
+	}
+	return count
+}
+
+// DetectLanguages returns the distinct fenced-code languages in the
+// content, in order of first appearance.
+func DetectLanguages(content string) []string {
+	var langs []string
+	seen := make(map[string]bool)
+	for _, line := range strings.Split(content, "\n") {
+		if m := codeBlockStart.FindStringSubmatch(line); m != nil {
+			lang := m[1]
+			if !seen[lang] {
+				seen[lang] = true
+				langs = append(langs, lang)
+			}
+		}
+	}
+	return langs
+}
+
+// IsMAMFile reports whether the path looks like a MAM module file.
+func IsMAMFile(path string) bool {
+	lower := strings.ToLower(path)
+	return strings.HasSuffix(lower, ".mam.md")
+}
+
+// SplitLines splits content into lines, normalising CRLF to LF first.
+func SplitLines(content string) []string {
+	normalised := strings.ReplaceAll(content, "\r\n", "\n")
+	return strings.Split(normalised, "\n")
+}
+
 // extractCodeBlocks scans body text for fenced code blocks and returns them.
 func extractCodeBlocks(body, filePath string, baseLine int) []CodeBlock {
 	var blocks []CodeBlock

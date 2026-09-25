@@ -272,7 +272,7 @@ func TestExecuteModuleUnsupportedLanguage(t *testing.T) {
 func TestExecuteModuleFromPath(t *testing.T) {
 	content := `---
 title: Exec Module
-version: 1.0.0
+version: 2.0.0
 ---
 
 ## Purpose

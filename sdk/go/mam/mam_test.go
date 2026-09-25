@@ -20,7 +20,7 @@ func createTempMAMFile(t *testing.T, content string) string {
 func TestParseConvenience(t *testing.T) {
 	content := `---
 title: Convenience Parse
-version: 1.0.0
+version: 2.0.0
 ---
 
 ## Purpose
@@ -95,7 +95,7 @@ func TestParseRawEmpty(t *testing.T) {
 func TestValidateConvenience(t *testing.T) {
 	content := `---
 title: Validate Convenience
-version: 1.0.0
+version: 2.0.0
 ---
 
 ## Purpose
@@ -122,7 +122,7 @@ Valid module.
 
 func TestValidateConvenienceInvalid(t *testing.T) {
 	content := `---
-version: 1.0.0
+version: 2.0.0
 ---
 
 ## Purpose
@@ -148,7 +148,7 @@ func TestValidateConvenienceNotFound(t *testing.T) {
 func TestExecuteConvenience(t *testing.T) {
 	content := `---
 title: Execute Convenience
-version: 1.0.0
+version: 2.0.0
 ---
 
 ## Purpose

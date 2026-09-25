@@ -30,7 +30,7 @@ func TestParseWithFrontmatter(t *testing.T) {
 	lines := []string{
 		"---",
 		"title: My Module",
-		"version: 1.0.0",
+		"version: 2.0.0",
 		"author: tester",
 		"description: Test desc",
 		"tags:",
@@ -288,7 +288,7 @@ func TestParseFileEmpty(t *testing.T) {
 func TestParseString(t *testing.T) {
 	content := `---
 title: String Module
-version: 1.0.0
+version: 2.0.0
 ---
 
 ## Purpose
@@ -362,7 +362,7 @@ func TestParseSourceLocations(t *testing.T) {
 	lines := []string{
 		"---",
 		"title: Loc Test",
-		"version: 1.0.0",
+		"version: 2.0.0",
 		"---",
 		"## Purpose",
 		"Content here.",

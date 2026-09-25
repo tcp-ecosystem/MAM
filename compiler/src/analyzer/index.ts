@@ -485,3 +485,36 @@ export function analyzeSemantics(modules: V2ModuleNode[], config?: AnalyzerConfi
   const analyzer = new SemanticAnalyzer(config);
   return analyzer.analyze(modules);
 }
+
+// ============================================================================
+// Focused Analyzers
+// ============================================================================
+
+export {
+  TypeChecker,
+  checkModuleType,
+  type TypeCheckResult,
+  type TypeCheckError,
+  type TypeCheckStats,
+  type ModuleTypeCheck,
+} from './type-checker.js';
+
+export {
+  GraphAnalyzer,
+  type GraphAnalysisResult,
+} from './graph-analyzer.js';
+
+export {
+  ReferenceAnalyzer,
+  type ReferenceAnalysisResult,
+  type ReferenceIssue,
+  type ReferenceKind,
+} from './reference-analyzer.js';
+
+export {
+  PermissionAnalyzer,
+  validatePermissions,
+  type PermissionAnalysisResult,
+  type PermissionIssue,
+  type PermissionConflict,
+} from './permission-analyzer.js';

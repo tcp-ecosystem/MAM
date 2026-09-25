@@ -125,6 +125,54 @@ func (r *PluginRegistry) Plugins() []string {
 	return names
 }
 
+// Get returns the plugin with the given name, or false when absent.
+func (r *PluginRegistry) Get(name string) (Plugin, bool) {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	p, ok := r.plugins[name]
+	return p, ok
+}
+
+// MustRegister registers a plugin and panics on error. It is intended for
+// static setup where duplicates are programming errors.
+func (r *PluginRegistry) MustRegister(p Plugin) {
+	if err := r.Register(p); err != nil {
+		panic(err)
+	}
+}
+
+// HookNames returns the ordered plugin names registered for a hook.
+func (r *PluginRegistry) HookNames(hook Hook) []string {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	return append([]string(nil), r.hooks[hook]...)
+}
+
+// Count returns the number of registered plugins.
+func (r *PluginRegistry) Count() int {
+	r.mu.RLock()
+	defer r.mu.RUnlock()
+	return len(r.plugins)
+}
+
+// Clear removes every registered plugin and hook wiring.
+func (r *PluginRegistry) Clear() {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	r.plugins = make(map[string]Plugin)
+	r.hooks = make(map[Hook][]string)
+}
+
+// KnownHooks returns every hook point in the MAM pipeline.
+func KnownHooks() []Hook {
+	return []Hook{HookBeforeParse, HookAfterParse, HookBeforeExecute, HookAfterExecute, HookOnError}
+}
+
+// NewPluginContext creates a hook context for the given module.
+func NewPluginContext(mod *Module) *PluginContext {
+	return &PluginContext{Module: mod, Extra: make(map[string]interface{})}
+}
+
 // ---- built-in helper plugin -----------------------------------------------
 
 // FuncPlugin is a convenience adapter that turns plain functions into a
