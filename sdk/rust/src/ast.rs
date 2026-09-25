@@ -230,6 +230,80 @@ impl Module {
     }
 }
 
+/// Returns true when the module declares any front matter value.
+pub fn has_front_matter(module: &Module) -> bool {
+    let fm = &module.frontmatter;
+    fm.name.is_some()
+        || fm.version.is_some()
+        || fm.description.is_some()
+        || fm.schema_version.is_some()
+        || fm.license.is_some()
+        || !fm.authors.is_empty()
+        || !fm.tags.is_empty()
+        || !fm.dependencies.is_empty()
+        || !fm.metadata.is_empty()
+}
+
+/// Returns the number of sections in the module.
+pub fn section_count(module: &Module) -> usize {
+    module.sections.len()
+}
+
+/// Returns the total number of code blocks across every section.
+pub fn count_code_blocks(module: &Module) -> usize {
+    module
+        .sections
+        .iter()
+        .map(|s| s.get_code_blocks().len())
+        .sum()
+}
+
+/// Returns the distinct code block languages in first-seen order.
+///
+/// Blocks with no language are reported as `"unknown"`.
+pub fn code_block_languages(module: &Module) -> Vec<String> {
+    let mut languages: Vec<String> = Vec::new();
+    for section in &module.sections {
+        for block in section.get_code_blocks() {
+            let language = if block.language.trim().is_empty() {
+                "unknown".to_string()
+            } else {
+                block.language.clone()
+            };
+            if !languages.contains(&language) {
+                languages.push(language);
+            }
+        }
+    }
+    languages
+}
+
+/// Finds a section by its title, case-insensitively.
+pub fn find_section_by_title<'a>(module: &'a Module, title: &str) -> Option<&'a Section> {
+    let target = title.trim().to_lowercase();
+    if target.is_empty() {
+        return None;
+    }
+    module
+        .sections
+        .iter()
+        .find(|s| s.title.trim().to_lowercase() == target)
+}
+
+/// Returns true when the name matches one of the standard section names.
+pub fn is_standard_section(name: &str) -> bool {
+    let candidate = name.trim().to_lowercase();
+    if candidate.is_empty() {
+        return false;
+    }
+    !matches!(SectionKind::from_str(&candidate), SectionKind::Custom(_))
+}
+
+/// Returns the total number of content nodes across every section.
+pub fn total_content_nodes(module: &Module) -> usize {
+    module.sections.iter().map(|s| s.content.len()).sum()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -277,5 +351,65 @@ mod tests {
         let blocks = section.get_code_blocks();
         assert_eq!(blocks.len(), 1);
         assert_eq!(blocks[0].code, "print('hello')");
+    }
+
+    fn fixture() -> Module {
+        use crate::parser::Parser;
+        let input = "---\nid: demo\nname: Demo\nversion: 2.0.0\n---\n\n\
+                    ## Purpose\n\nDoes things.\n\n\
+                    ## Python\n\n```python\nprint(1)\n```\n\n\
+                    ## JavaScript\n\n```javascript\nconsole.log(1)\n```\n";
+        Parser::new().parse(input, None).unwrap()
+    }
+
+    #[test]
+    fn test_has_front_matter() {
+        let module = fixture();
+        assert!(has_front_matter(&module));
+        assert!(!has_front_matter(&Module::new(String::new())));
+    }
+
+    #[test]
+    fn test_section_count() {
+        assert_eq!(section_count(&fixture()), 3);
+        assert_eq!(section_count(&Module::new(String::new())), 0);
+    }
+
+    #[test]
+    fn test_count_code_blocks() {
+        assert_eq!(count_code_blocks(&fixture()), 2);
+        assert_eq!(count_code_blocks(&Module::new(String::new())), 0);
+    }
+
+    #[test]
+    fn test_code_block_languages_are_distinct() {
+        assert_eq!(
+            code_block_languages(&fixture()),
+            vec!["python".to_string(), "javascript".to_string()]
+        );
+        assert!(code_block_languages(&Module::new(String::new())).is_empty());
+    }
+
+    #[test]
+    fn test_find_section_by_title_is_case_insensitive() {
+        let module = fixture();
+        assert!(find_section_by_title(&module, "purpose").is_some());
+        assert!(find_section_by_title(&module, "  JAVASCRIPT  ").is_some());
+        assert!(find_section_by_title(&module, "Missing").is_none());
+        assert!(find_section_by_title(&module, "").is_none());
+    }
+
+    #[test]
+    fn test_is_standard_section() {
+        assert!(is_standard_section("Purpose"));
+        assert!(is_standard_section("purpose"));
+        assert!(!is_standard_section("Nonsense"));
+        assert!(!is_standard_section(""));
+    }
+
+    #[test]
+    fn test_total_content_nodes() {
+        assert!(total_content_nodes(&fixture()) > 0);
+        assert_eq!(total_content_nodes(&Module::new(String::new())), 0);
     }
 }

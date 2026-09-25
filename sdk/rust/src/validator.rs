@@ -302,6 +302,79 @@ impl Default for Validator {
     }
 }
 
+/// Counts diagnostics as `(errors, warnings, info)`.
+pub fn count_by_severity(result: &ValidationResult) -> (usize, usize, usize) {
+    let mut errors = 0usize;
+    let mut warnings = 0usize;
+    let mut info = 0usize;
+    for diagnostic in &result.diagnostics {
+        match diagnostic.severity {
+            Severity::Error => errors += 1,
+            Severity::Warning => warnings += 1,
+            Severity::Info => info += 1,
+        }
+    }
+    (errors, warnings, info)
+}
+
+/// Returns true when any diagnostic is an error.
+pub fn has_errors(result: &ValidationResult) -> bool {
+    result.diagnostics.iter().any(|d| d.severity == Severity::Error)
+}
+
+/// Returns true when any diagnostic is a warning.
+pub fn has_warnings(result: &ValidationResult) -> bool {
+    result
+        .diagnostics
+        .iter()
+        .any(|d| d.severity == Severity::Warning)
+}
+
+/// Returns the diagnostics with the requested severity.
+pub fn diagnostics_of_severity<'a>(
+    result: &'a ValidationResult,
+    severity: &Severity,
+) -> Vec<&'a Diagnostic> {
+    result
+        .diagnostics
+        .iter()
+        .filter(|d| d.severity == *severity)
+        .collect()
+}
+
+/// Returns the diagnostic messages in order.
+pub fn diagnostic_messages(result: &ValidationResult) -> Vec<String> {
+    result
+        .diagnostics
+        .iter()
+        .map(|d| d.message.clone())
+        .collect()
+}
+
+/// Returns true when the result carries no error diagnostics.
+pub fn result_is_valid(result: &ValidationResult) -> bool {
+    !has_errors(result)
+}
+
+/// Returns a one-line summary such as `2 errors, 1 warning`.
+pub fn summarize_result(result: &ValidationResult) -> String {
+    let (errors, warnings, info) = count_by_severity(result);
+    let mut parts: Vec<String> = Vec::new();
+    if errors > 0 {
+        parts.push(format!("{} error{}", errors, if errors == 1 { "" } else { "s" }));
+    }
+    if warnings > 0 {
+        parts.push(format!("{} warning{}", warnings, if warnings == 1 { "" } else { "s" }));
+    }
+    if info > 0 {
+        parts.push(format!("{} info", info));
+    }
+    if parts.is_empty() {
+        return "no issues".to_string();
+    }
+    parts.join(", ")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -315,7 +388,7 @@ mod tests {
 
     #[test]
     fn test_valid_module() {
-        let input = "---\nname: test-module\nversion: 1.0.0\n---\n\n## Metadata\n\nname: test\n\n## Purpose\n\nTest module.";
+        let input = "---\nname: test-module\nversion: 2.0.0\n---\n\n## Metadata\n\nname: test\n\n## Purpose\n\nTest module.";
         let module = make_module(input);
         let validator = Validator::new();
         let result = validator.validate(&module);
@@ -324,7 +397,7 @@ mod tests {
 
     #[test]
     fn test_missing_required_section() {
-        let input = "---\nname: test-module\nversion: 1.0.0\n---\n\n## Metadata\n\nname: test";
+        let input = "---\nname: test-module\nversion: 2.0.0\n---\n\n## Metadata\n\nname: test";
         let module = make_module(input);
         let validator = Validator::new();
         let result = validator.validate(&module);
@@ -334,7 +407,7 @@ mod tests {
 
     #[test]
     fn test_missing_frontmatter_name() {
-        let input = "---\nversion: 1.0.0\n---\n\n## Metadata\n\nx\n\n## Purpose\n\ny";
+        let input = "---\nversion: 2.0.0\n---\n\n## Metadata\n\nx\n\n## Purpose\n\ny";
         let module = make_module(input);
         let validator = Validator::new();
         let result = validator.validate(&module);
@@ -357,5 +430,104 @@ mod tests {
         let validator = Validator::new();
         let result = validator.validate(&module);
         assert!(result.warnings().iter().any(|e| e.message.contains("Duplicate")));
+    }
+
+    fn mixed_result() -> ValidationResult {
+        let mut result = ValidationResult::new();
+        result.push(Diagnostic {
+            severity: Severity::Error,
+            message: "bad id".to_string(),
+            line: Some(1),
+            section: Some("frontmatter".to_string()),
+        });
+        result.push(Diagnostic {
+            severity: Severity::Error,
+            message: "missing version".to_string(),
+            line: Some(1),
+            section: Some("frontmatter".to_string()),
+        });
+        result.push(Diagnostic {
+            severity: Severity::Warning,
+            message: "out of order".to_string(),
+            line: None,
+            section: Some("purpose".to_string()),
+        });
+        result.push(Diagnostic {
+            severity: Severity::Info,
+            message: "style nit".to_string(),
+            line: None,
+            section: None,
+        });
+        result
+    }
+
+    #[test]
+    fn test_count_by_severity() {
+        assert_eq!(count_by_severity(&mixed_result()), (2, 1, 1));
+        assert_eq!(count_by_severity(&ValidationResult::new()), (0, 0, 0));
+    }
+
+    #[test]
+    fn test_has_errors_and_warnings() {
+        let result = mixed_result();
+        assert!(has_errors(&result));
+        assert!(has_warnings(&result));
+        let clean = ValidationResult::new();
+        assert!(!has_errors(&clean));
+        assert!(!has_warnings(&clean));
+    }
+
+    #[test]
+    fn test_diagnostics_of_severity() {
+        let result = mixed_result();
+        let errors = diagnostics_of_severity(&result, &Severity::Error);
+        assert_eq!(errors.len(), 2);
+        assert!(errors.iter().all(|d| d.severity == Severity::Error));
+        assert!(diagnostics_of_severity(&result, &Severity::Info).len() == 1);
+    }
+
+    #[test]
+    fn test_diagnostic_messages() {
+        let messages = diagnostic_messages(&mixed_result());
+        assert_eq!(messages[0], "bad id");
+        assert_eq!(messages.len(), 4);
+        assert!(diagnostic_messages(&ValidationResult::new()).is_empty());
+    }
+
+    #[test]
+    fn test_result_is_valid() {
+        assert!(result_is_valid(&ValidationResult::new()));
+        assert!(!result_is_valid(&mixed_result()));
+    }
+
+    #[test]
+    fn test_summarize_result() {
+        assert_eq!(summarize_result(&ValidationResult::new()), "no issues");
+        let summary = summarize_result(&mixed_result());
+        assert!(summary.contains("2 errors"));
+        assert!(summary.contains("1 warning"));
+        assert!(summary.contains("1 info"));
+    }
+
+    #[test]
+    fn test_summarize_result_singular_and_info_only() {
+        let mut single = ValidationResult::new();
+        single.push(Diagnostic {
+            severity: Severity::Warning,
+            message: "one warning".to_string(),
+            line: None,
+            section: None,
+        });
+        assert_eq!(summarize_result(&single), "1 warning");
+
+        let mut only_info = ValidationResult::new();
+        only_info.push(Diagnostic {
+            severity: Severity::Info,
+            message: "just info".to_string(),
+            line: None,
+            section: None,
+        });
+        assert_eq!(summarize_result(&only_info), "1 info");
+        assert!(result_is_valid(&only_info));
     }
 }

@@ -179,6 +179,111 @@ impl Default for Runtime {
     }
 }
 
+/// Convenience wrapper mirroring `ExecutionResult::success`.
+pub fn result_is_success(result: &ExecutionResult) -> bool {
+    result.success()
+}
+
+/// Returns the distinct languages of the module's code blocks, in first-seen order.
+///
+/// `ExecutionResult` does not record which language produced it, so the
+/// languages are read from the module that was executed.
+pub fn collect_languages(module: &Module) -> Vec<String> {
+    crate::ast::code_block_languages(module)
+}
+
+/// Returns the section names whose execution failed.
+pub fn collect_failures(
+    results: &HashMap<String, Result<ExecutionResult, RuntimeError>>,
+) -> Vec<String> {
+    let mut failures: Vec<String> = Vec::new();
+    for (name, value) in results {
+        let failed = match value {
+            Ok(execution) => !execution.success(),
+            Err(_) => true,
+        };
+        if failed {
+            failures.push(name.clone());
+        }
+    }
+    failures.sort();
+    failures
+}
+
+/// Counts the successful entries in an execution map.
+pub fn count_successes(
+    results: &HashMap<String, Result<ExecutionResult, RuntimeError>>,
+) -> usize {
+    results
+        .values()
+        .filter(|value| match value {
+            Ok(execution) => execution.success(),
+            Err(_) => false,
+        })
+        .count()
+}
+
+/// Sums the reported duration of every successful execution.
+pub fn total_duration_ms(
+    results: &HashMap<String, Result<ExecutionResult, RuntimeError>>,
+) -> u64 {
+    results
+        .values()
+        .filter_map(|value| match value {
+            Ok(execution) if execution.success() => Some(execution.duration_ms),
+            _ => None,
+        })
+        .sum()
+}
+
+/// Returns a one-line summary of an execution map.
+pub fn summarize_execution(
+    results: &HashMap<String, Result<ExecutionResult, RuntimeError>>,
+) -> String {
+    let passed = count_successes(results);
+    let total = results.len();
+    let failures = collect_failures(results);
+    let state = if failures.is_empty() { "succeeded" } else { "failed" };
+    let mut summary = format!("Execution {}: {}/{} blocks succeeded", state, passed, total);
+    if !failures.is_empty() {
+        summary.push_str(" (failed: ");
+        summary.push_str(&failures.join(", "));
+        summary.push(')');
+    }
+    summary
+}
+
+/// Renders per-section execution output for terminal display.
+pub fn format_execution_output(
+    results: &HashMap<String, Result<ExecutionResult, RuntimeError>>,
+) -> String {
+    if results.is_empty() {
+        return "(no output)".to_string();
+    }
+    let mut names: Vec<&String> = results.keys().collect();
+    names.sort();
+    let mut lines: Vec<String> = Vec::new();
+    for name in names {
+        match &results[name] {
+            Ok(execution) => {
+                lines.push(format!("  {}: {}", name, if execution.success() { "ok" } else { "failed" }));
+                let stdout = execution.stdout.trim_end();
+                if !stdout.is_empty() {
+                    lines.push(format!("    stdout: {}", stdout));
+                }
+                let stderr = execution.stderr.trim_end();
+                if !stderr.is_empty() {
+                    lines.push(format!("    stderr: {}", stderr));
+                }
+            }
+            Err(error) => {
+                lines.push(format!("  {}: error ({})", name, error));
+            }
+        }
+    }
+    lines.join("\n")
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -221,5 +326,91 @@ mod tests {
         );
         let result = runtime.execute_code_block(&block).unwrap();
         assert!(result.stdout.contains("rust_works"));
+    }
+
+    fn ok_result(stdout: &str) -> Result<ExecutionResult, RuntimeError> {
+        Ok(ExecutionResult {
+            exit_code: 0,
+            stdout: stdout.to_string(),
+            stderr: String::new(),
+            duration_ms: 5,
+        })
+    }
+
+    fn err_result() -> Result<ExecutionResult, RuntimeError> {
+        Err(RuntimeError::ExecutionFailed("boom".to_string()))
+    }
+
+    fn sample_map() -> HashMap<String, Result<ExecutionResult, RuntimeError>> {
+        let mut map = HashMap::new();
+        map.insert("Python".to_string(), ok_result("hi"));
+        map.insert("JavaScript".to_string(), ok_result("hi"));
+        map.insert("Broken".to_string(), err_result());
+        map
+    }
+
+    #[test]
+    fn test_result_is_success() {
+        let good = ok_result("x").unwrap();
+        let bad = ExecutionResult {
+            exit_code: 1,
+            stdout: String::new(),
+            stderr: String::new(),
+            duration_ms: 0,
+        };
+        assert!(result_is_success(&good));
+        assert!(!result_is_success(&bad));
+    }
+
+    #[test]
+    fn test_count_successes() {
+        assert_eq!(count_successes(&sample_map()), 2);
+        assert_eq!(count_successes(&HashMap::new()), 0);
+    }
+
+    #[test]
+    fn test_collect_failures_is_sorted() {
+        let mut map = HashMap::new();
+        map.insert("Zeta".to_string(), err_result());
+        map.insert("Alpha".to_string(), err_result());
+        assert_eq!(collect_failures(&map), vec!["Alpha".to_string(), "Zeta".to_string()]);
+        assert!(collect_failures(&HashMap::new()).is_empty());
+    }
+
+    #[test]
+    fn test_collect_languages_reads_the_module() {
+        use crate::parser::Parser;
+        let input = "## Python\n\n```python\nprint(1)\n```\n\n\
+                     ## JavaScript\n\n```javascript\nconsole.log(1)\n```\n";
+        let module = Parser::new().parse(input, None).unwrap();
+        assert_eq!(
+            collect_languages(&module),
+            vec!["python".to_string(), "javascript".to_string()]
+        );
+    }
+
+    #[test]
+    fn test_total_duration_ms() {
+        assert_eq!(total_duration_ms(&sample_map()), 10);
+        assert_eq!(total_duration_ms(&HashMap::new()), 0);
+    }
+
+    #[test]
+    fn test_summarize_execution() {
+        let summary = summarize_execution(&sample_map());
+        assert!(summary.contains("failed"));
+        assert!(summary.contains("2/3"));
+        assert!(summary.contains("Broken"));
+        let clean = HashMap::new();
+        assert!(summarize_execution(&clean).contains("succeeded"));
+    }
+
+    #[test]
+    fn test_format_execution_output() {
+        let text = format_execution_output(&sample_map());
+        assert!(text.contains("Python: ok"));
+        assert!(text.contains("stdout: hi"));
+        assert!(text.contains("Broken: error"));
+        assert_eq!(format_execution_output(&HashMap::new()), "(no output)");
     }
 }

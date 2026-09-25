@@ -8,8 +8,8 @@ use thiserror::Error;
 pub enum PluginError {
     #[error("Plugin '{name}' failed to load: {reason}")]
     LoadFailed { name: String, reason: String },
-    #[error("Plugin '{name}' execution error: {0}")]
-    ExecutionError { name: String, String },
+    #[error("Plugin '{name}' execution error: {message}")]
+    ExecutionError { name: String, message: String },
     #[error("Plugin not found: '{0}'")]
     NotFound(String),
     #[error("Hook '{0}' not supported by plugin")]
@@ -215,8 +215,83 @@ impl Default for PluginRegistry {
     }
 }
 
-pub struct MetadataPlugin;
+/// Returns the names of every registered plugin, in registration order.
+pub fn plugin_names(registry: &PluginRegistry) -> Vec<String> {
+    registry.list().into_iter().map(|(name, _, _)| name.to_string()).collect()
+}
 
+/// Returns the names of the enabled plugins, sorted.
+pub fn enabled_plugin_names(registry: &PluginRegistry) -> Vec<String> {
+    let mut names: Vec<String> = registry
+        .list()
+        .into_iter()
+        .filter(|(_, _, enabled)| *enabled)
+        .map(|(name, _, _)| name.to_string())
+        .collect();
+    names.sort();
+    names
+}
+
+/// Returns true when a plugin is registered under the given name.
+///
+/// Disabled plugins still count as registered.
+pub fn registry_has_plugin(registry: &PluginRegistry, name: &str) -> bool {
+    registry.list().iter().any(|(plugin, _, _)| *plugin == name)
+}
+
+/// Returns the version of a registered plugin, or `None` when absent.
+pub fn plugin_version(registry: &PluginRegistry, name: &str) -> Option<String> {
+    registry
+        .list()
+        .into_iter()
+        .find(|(plugin, _, _)| *plugin == name)
+        .map(|(_, version, _)| version.to_string())
+}
+
+/// Counts the plugins that support the named hook point.
+///
+/// The hook is matched on its `Display` form, for example `"after_parse"`.
+pub fn hook_count_for(registry: &PluginRegistry, hook: &str) -> usize {
+    registry
+        .plugins
+        .iter()
+        .filter(|entry| {
+            entry
+                .plugin
+                .supported_hooks()
+                .iter()
+                .any(|candidate| candidate.to_string() == hook)
+        })
+        .count()
+}
+
+/// Returns plugin names filtered by their enabled flag, sorted.
+pub fn filter_by_enabled(registry: &PluginRegistry, enabled: bool) -> Vec<String> {
+    let mut names: Vec<String> = registry
+        .list()
+        .into_iter()
+        .filter(|(_, _, is_enabled)| *is_enabled == enabled)
+        .map(|(name, _, _)| name.to_string())
+        .collect();
+    names.sort();
+    names
+}
+
+/// Renders a one-line-per-plugin summary of the registry.
+pub fn describe_plugins(registry: &PluginRegistry) -> String {
+    let entries = registry.list();
+    if entries.is_empty() {
+        return "No plugins registered".to_string();
+    }
+    let mut lines: Vec<String> = Vec::new();
+    for (name, version, enabled) in entries {
+        let state = if enabled { "enabled" } else { "disabled" };
+        lines.push(format!("  {} v{} [{}]", name, version, state));
+    }
+    format!("Plugins ({}):\n{}", entries.len(), lines.join("\n"))
+}
+
+pub struct MetadataPlugin;
 impl Plugin for MetadataPlugin {
     fn name(&self) -> &str {
         "metadata"
@@ -392,5 +467,70 @@ mod tests {
             module.frontmatter.metadata.get("test_plugin"),
             Some(&serde_json::json!(true))
         );
+    }
+
+    fn registry_with_one() -> PluginRegistry {
+        let mut registry = PluginRegistry::new();
+        registry.register(Box::new(TestPlugin { name: "test".to_string() }));
+        registry
+    }
+
+    #[test]
+    fn test_plugin_names_and_has_plugin() {
+        let registry = registry_with_one();
+        assert_eq!(plugin_names(&registry), vec!["test".to_string()]);
+        assert!(registry_has_plugin(&registry, "test"));
+        assert!(!registry_has_plugin(&registry, "nope"));
+    }
+
+    #[test]
+    fn test_enabled_plugin_names() {
+        let mut registry = registry_with_one();
+        assert_eq!(enabled_plugin_names(&registry), vec!["test".to_string()]);
+        registry.disable("test").unwrap();
+        assert!(enabled_plugin_names(&registry).is_empty());
+    }
+
+    #[test]
+    fn test_plugin_version() {
+        let registry = registry_with_one();
+        assert_eq!(plugin_version(&registry, "test"), Some("0.1.0".to_string()));
+        assert_eq!(plugin_version(&registry, "nope"), None);
+    }
+
+    #[test]
+    fn test_hook_count_for() {
+        let registry = registry_with_one();
+        assert_eq!(hook_count_for(&registry, "after_parse"), 1);
+        assert_eq!(hook_count_for(&registry, "before_execute"), 0);
+        assert_eq!(hook_count_for(&registry, "not_a_hook"), 0);
+    }
+
+    #[test]
+    fn test_filter_by_enabled() {
+        let mut registry = registry_with_one();
+        assert_eq!(filter_by_enabled(&registry, true), vec!["test".to_string()]);
+        registry.disable("test").unwrap();
+        assert_eq!(filter_by_enabled(&registry, true).len(), 0);
+        assert_eq!(filter_by_enabled(&registry, false), vec!["test".to_string()]);
+    }
+
+    #[test]
+    fn test_describe_plugins() {
+        let text = describe_plugins(&registry_with_one());
+        assert!(text.contains("test v0.1.0"));
+        assert!(text.contains("enabled"));
+        assert_eq!(describe_plugins(&PluginRegistry::new()), "No plugins registered");
+    }
+
+    #[test]
+    fn test_builtin_plugin_names() {
+        let mut registry = PluginRegistry::new();
+        registry.register(Box::new(MetadataPlugin));
+        registry.register(Box::new(MemoryPlugin));
+        let names = enabled_plugin_names(&registry);
+        assert!(names.contains(&"metadata".to_string()));
+        assert!(names.contains(&"memory".to_string()));
+        assert_eq!(hook_count_for(&registry, "after_parse"), 2);
     }
 }
