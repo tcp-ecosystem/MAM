@@ -1,11 +1,11 @@
 {
   "name": "mam-language",
   "displayName": "MAM - Markdown as Module",
-  "description": "Syntax highlighting and language support for MAM modules",
-  "version": "0.1.0",
+  "description": "First-class language support for MAM modules (.mam/.mam.md): syntax highlighting, snippets, CLI-based diagnostics, commands, formatting, folding, symbols, hover, and status bar.",
+  "version": "1.0.0",
   "publisher": "tcp-ecosystems",
   "engines": { "vscode": "^1.85.0" },
-  "categories": ["Programming Languages", "Syntax Highlighting"],
+  "categories": ["Programming Languages", "Syntax Highlighting", "Linters", "Formatters"],
   "activationEvents": ["onLanguage:mam"],
   "main": "./out/extension.js",
   "contributes": {
@@ -18,7 +18,10 @@
     "grammars": [{
       "language": "mam",
       "scopeName": "source.mam",
-      "path": "./syntaxes/mam.tmLanguage.json"
+      "path": "./syntaxes/mam.tmLanguage.json",
+      "embeddedLanguages": {
+        "source.mermaid": "mermaid"
+      }
     }],
     "icons": {
       "mam": {
@@ -26,7 +29,125 @@
         "light": "./icons/mam-light.svg",
         "dark": "./icons/mam-dark.svg"
       }
-    }
+    },
+    "commands": [
+      {
+        "command": "mam.validate",
+        "title": "MAM: Validate Module",
+        "category": "MAM"
+      },
+      {
+        "command": "mam.run",
+        "title": "MAM: Run Module",
+        "category": "MAM"
+      },
+      {
+        "command": "mam.build",
+        "title": "MAM: Build Project",
+        "category": "MAM"
+      },
+      {
+        "command": "mam.compile",
+        "title": "MAM: Compile Module",
+        "category": "MAM"
+      },
+      {
+        "command": "mam.newModule",
+        "title": "MAM: New Module",
+        "category": "MAM"
+      },
+      {
+        "command": "mam.runProject",
+        "title": "MAM: Run Project",
+        "category": "MAM"
+      }
+    ],
+    "menus": {
+      "editor/title": [
+        {
+          "command": "mam.validate",
+          "when": "resourceLangId == mam",
+          "group": "navigation@1"
+        },
+        {
+          "command": "mam.run",
+          "when": "resourceLangId == mam",
+          "group": "navigation@2"
+        }
+      ],
+      "editor/context": [
+        {
+          "command": "mam.validate",
+          "when": "resourceLangId == mam",
+          "group": "mam@1"
+        },
+        {
+          "command": "mam.run",
+          "when": "resourceLangId == mam",
+          "group": "mam@2"
+        },
+        {
+          "command": "mam.compile",
+          "when": "resourceLangId == mam",
+          "group": "mam@3"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "mam.validate",
+          "when": "editorLangId == mam"
+        },
+        {
+          "command": "mam.run",
+          "when": "editorLangId == mam"
+        },
+        {
+          "command": "mam.compile",
+          "when": "editorLangId == mam"
+        }
+      ]
+    },
+    "snippets": [
+      { "language": "mam", "path": "./snippets/mam.code-snippets" }
+    ],
+    "configuration": {
+      "title": "MAM",
+      "properties": {
+        "mam.cliPath": {
+          "type": "string",
+          "default": "mam",
+          "description": "Path to the MAM CLI binary. Defaults to 'mam' (expects @mam/cli on PATH)."
+        },
+        "mam.validateOnSave": {
+          "type": "boolean",
+          "default": true,
+          "description": "Run 'mam validate' automatically when a .mam/.mam.md file is saved."
+        },
+        "mam.defaultTarget": {
+          "type": "string",
+          "enum": ["python", "javascript", "go", "rust"],
+          "default": "python",
+          "description": "Default compile/run target language for MAM modules."
+        },
+        "mam.showStatusBar": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show the MAM status bar item while editing .mam/.mam.md files."
+        }
+      }
+    },
+    "keybindings": [
+      {
+        "command": "mam.validate",
+        "key": "ctrl+alt+v",
+        "when": "editorLangId == mam"
+      },
+      {
+        "command": "mam.run",
+        "key": "ctrl+alt+r",
+        "when": "editorLangId == mam"
+      }
+    ]
   },
   "devDependencies": {
     "@types/vscode": "^1.85.0",

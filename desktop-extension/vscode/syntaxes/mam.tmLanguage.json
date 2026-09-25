@@ -5,13 +5,17 @@
   "patterns": [
     { "include": "#frontmatter" },
     { "include": "#headings" },
+    { "include": "#blockquote" },
+    { "include": "#tables" },
+    { "include": "#code-block" },
+    { "include": "#comments" },
+    { "include": "#lists" },
+    { "include": "#images" },
+    { "include": "#links" },
     { "include": "#bold" },
     { "include": "#italic" },
+    { "include": "#strikethrough" },
     { "include": "#code-inline" },
-    { "include": "#code-block" },
-    { "include": "#lists" },
-    { "include": "#links" },
-    { "include": "#comments" },
     { "include": "#keywords" },
     { "include": "#operators" }
   ],
@@ -23,10 +27,112 @@
       "endCaptures": { "0": { "name": "punctuation.definition.frontmatter.mam" } },
       "patterns": [
         {
-          "match": "^(\\w+):\\s*(.*)$",
+          "match": "^\\s*#.*$",
+          "name": "comment.line.number-sign.frontmatter.mam"
+        },
+        {
+          "match": "^\\s{0,4}(runtime|permissions|capabilities|dependencies|tags|inputs|outputs|imports|exports|workflow|memory|prompts?|plugins|environment)\\s*:\\s*$",
+          "name": "entity.name.tag.frontmatter.keyword.mam"
+        },
+        {
+          "match": "^type\\s*:\\s*(module|system|component|service|workflow|tool|resource|plugin|agent|policy|team|memory|api)\\b",
+          "captures": {
+            "0": { "name": "meta.key-value.type.frontmatter.mam" },
+            "1": { "name": "keyword.control.type.mam" }
+          }
+        },
+        {
+          "match": "^\\s{2,}(language|version|name|email)\\s*:\\s*(.*)$",
+          "captures": {
+            "1": { "name": "entity.name.tag.frontmatter.structured.mam" },
+            "2": { "name": "string.unquoted.frontmatter.mam" }
+          }
+        },
+        {
+          "match": "^\\s{2,}[-*]\\s+(\\[[^\\]]*\\])\\s+(.*)$",
+          "captures": {
+            "1": { "name": "meta.sequence.item.flag.frontmatter.mam" },
+            "2": { "name": "string.unquoted.frontmatter.mam" }
+          }
+        },
+        {
+          "match": "^\\s{2,}[-*]\\s+(.*)$",
+          "captures": {
+            "0": { "name": "punctuation.definition.list.frontmatter.mam" },
+            "1": { "name": "string.unquoted.frontmatter.mam" }
+          }
+        },
+        {
+          "match": "^(\\w[\\w-]*)\\s*:\\s*(true|false|null)\\s*$",
+          "captures": {
+            "1": { "name": "entity.name.tag.frontmatter.mam" },
+            "2": { "name": "constant.language.boolean.frontmatter.mam" }
+          }
+        },
+        {
+          "match": "^(\\w[\\w-]*)\\s*:\\s*(\\d+(?:\\.\\d+)?)\\s*$",
+          "captures": {
+            "1": { "name": "entity.name.tag.frontmatter.mam" },
+            "2": { "name": "constant.numeric.frontmatter.mam" }
+          }
+        },
+        {
+          "match": "^(\\w[\\w-]*)\\s*:\\s*(['\"])(.*?)\\2\\s*$",
+          "captures": {
+            "1": { "name": "entity.name.tag.frontmatter.mam" },
+            "2": { "name": "punctuation.definition.string.begin.frontmatter.mam" },
+            "3": { "name": "string.quoted.frontmatter.mam" },
+            "4": { "name": "punctuation.definition.string.end.frontmatter.mam" }
+          }
+        },
+        {
+          "match": "^(\\w[\\w-]*)\\s*:\\s*\\[([^\\]]*)\\]\\s*$",
+          "captures": {
+            "1": { "name": "entity.name.tag.frontmatter.mam" },
+            "2": {
+              "name": "meta.sequence.frontmatter.mam",
+              "patterns": [
+                {
+                  "match": "(true|false|null)\\b",
+                  "name": "constant.language.boolean.frontmatter.mam"
+                },
+                {
+                  "match": "\\d+(?:\\.\\d+)?",
+                  "name": "constant.numeric.frontmatter.mam"
+                },
+                {
+                  "match": "['\"]([^'\"]*)['\"]",
+                  "captures": {
+                    "1": { "name": "string.quoted.frontmatter.mam" }
+                  }
+                }
+              ]
+            }
+          }
+        },
+        {
+          "match": "^(\\w[\\w-]*)\\s*:\\s*(.*)$",
           "captures": {
             "1": { "name": "entity.name.tag.frontmatter.mam" },
             "2": { "name": "string.unquoted.frontmatter.mam" }
+          }
+        },
+        {
+          "match": "^\\s{2,}.+$",
+          "name": "string.unquoted.frontmatter.mam"
+        },
+        {
+          "match": "(true|false|null)\\b",
+          "name": "constant.language.boolean.frontmatter.mam"
+        },
+        {
+          "match": "\\b\\d+(?:\\.\\d+)?\\b",
+          "name": "constant.numeric.frontmatter.mam"
+        },
+        {
+          "match": "['\"]([^'\"]*)['\"]",
+          "captures": {
+            "1": { "name": "string.quoted.frontmatter.mam" }
           }
         }
       ]
@@ -37,6 +143,14 @@
           "match": "^#\\s+(.*)$",
           "name": "markup.heading.heading-1.mam",
           "captures": { "1": { "name": "entity.name.section.mam" } }
+        },
+        {
+          "match": "^##\\s+(Purpose|Inputs|Outputs|Capabilities|Rules|Workflow|Python|Tests|Examples|References|Modules|Dependencies|Permissions|Memory|Imports|Exports|Plugins|Prompt|Prompts|Configuration|Environment|Metadata|System|Team|Policy)\\b(.*)$",
+          "name": "markup.heading.heading-2.mam",
+          "captures": {
+            "1": { "name": "keyword.control.section.mam" },
+            "2": { "name": "entity.name.section.mam" }
+          }
         },
         {
           "match": "^##\\s+(.*)$",
@@ -63,12 +177,36 @@
       "match": "\\*(.+?)\\*",
       "captures": { "1": { "name": "markup.italic.mam" } }
     },
+    "strikethrough": {
+      "match": "~~(.+?)~~",
+      "name": "markup.strikethrough.mam",
+      "captures": { "1": { "name": "markup.strikethrough.mam" } }
+    },
     "code-inline": {
       "match": "`([^`]+)`",
       "captures": { "1": { "name": "string.quoted.code.mam" } }
     },
     "code-block": {
       "patterns": [
+        {
+          "begin": "```(mermaid)\\s*$",
+          "end": "^```\\s*$",
+          "beginCaptures": {
+            "0": { "name": "punctuation.definition.code-block.begin.mam" },
+            "1": { "name": "entity.name.tag.code-block.mam" }
+          },
+          "endCaptures": {
+            "0": { "name": "punctuation.definition.code-block.end.mam" }
+          },
+          "contentName": "source.mermaid",
+          "patterns": [
+            { "match": "\\b(flowchart|graph|sequenceDiagram|classDiagram|stateDiagram|erDiagram|gantt|pie|journey|mindmap)\\b", "name": "keyword.control.mermaid" },
+            { "match": "\\b(TD|TB|BT|LR|RL)\\b", "name": "constant.language.mermaid" },
+            { "match": "-->|---|--x|==>|-.->|-->\\|", "name": "keyword.operator.arrow.mermaid" },
+            { "match": "\\[[^\\]]*\\]", "name": "string.unquoted.node.mermaid" },
+            { "match": "\\([^)]*\\)", "name": "string.unquoted.node.mermaid" }
+          ]
+        },
         {
           "begin": "```(\\w+)?\\s*$",
           "end": "^```\\s*$",
@@ -88,6 +226,13 @@
     "lists": {
       "patterns": [
         {
+          "match": "^\\s*[-*+]\\s+(\\[[ xX]\\])\\s+",
+          "captures": {
+            "0": { "name": "punctuation.definition.list.mam" },
+            "1": { "name": "constant.language.task.mam" }
+          }
+        },
+        {
           "match": "^\\s*[-*+]\\s+",
           "name": "punctuation.definition.list.mam"
         },
@@ -97,6 +242,32 @@
         }
       ]
     },
+    "tables": {
+      "patterns": [
+        {
+          "match": "^\\|?\\s*:?-{3,}:?\\s*(?:\\|\\s*:?-{3,}:?\\s*)*\\|?\\s*$",
+          "name": "meta.separator.table.mam"
+        },
+        {
+          "match": "\\|",
+          "name": "punctuation.separator.table.mam"
+        }
+      ]
+    },
+    "blockquote": {
+      "begin": "^\\s*>\\s?",
+      "end": "^(?!\\s*>)",
+      "beginCaptures": { "0": { "name": "punctuation.definition.quote.mam" } },
+      "name": "markup.quote.mam"
+    },
+    "images": {
+      "match": "!\\[([^\\]]*)\\]\\(([^)]+)\\)",
+      "captures": {
+        "0": { "name": "markup.raw.image.mam" },
+        "1": { "name": "string.unquoted.link.text.mam" },
+        "2": { "name": "string.unquoted.link.url.mam" }
+      }
+    },
     "links": {
       "patterns": [
         {
@@ -105,21 +276,35 @@
             "1": { "name": "string.unquoted.link.text.mam" },
             "2": { "name": "string.unquoted.link.url.mam" }
           }
+        },
+        {
+          "match": "\\[([^\\]]+)\\]\\[([^\\]]*)\\]",
+          "captures": {
+            "1": { "name": "string.unquoted.link.text.mam" },
+            "2": { "name": "string.unquoted.link.reference.mam" }
+          }
         }
       ]
     },
     "comments": {
-      "match": "^\\s*<!--.*?-->",
-      "name": "comment.line.mam"
+      "begin": "<!--",
+      "end": "-->",
+      "beginCaptures": { "0": { "name": "punctuation.definition.comment.begin.mam" } },
+      "endCaptures": { "0": { "name": "punctuation.definition.comment.end.mam" } },
+      "name": "comment.block.html.mam"
     },
     "keywords": {
       "patterns": [
         {
-          "match": "\\b(Purpose|Inputs|Outputs|Capabilities|Rules|Workflow|Dependencies|Permissions|Tests|Examples|References)\\b",
+          "match": "\\b(Purpose|Inputs|Outputs|Capabilities|Rules|Workflow|Dependencies|Permissions|Tests|Examples|References|Modules|Memory|Imports|Exports|Plugins|Prompt|Prompts)\\b",
           "name": "keyword.control.section.mam"
         },
         {
-          "match": "\\b(required|optional|yes|no|true|false)\\b",
+          "match": "\\b(module|system|component|service|workflow|tool|resource|plugin|agent|policy|team|memory|api)\\b",
+          "name": "keyword.control.type.mam"
+        },
+        {
+          "match": "\\b(required|optional|yes|no|true|false|mandatory)\\b",
           "name": "keyword.other.mam"
         },
         {
@@ -132,7 +317,8 @@
       "patterns": [
         { "match": "->", "name": "keyword.operator.arrow.mam" },
         { "match": "=>", "name": "keyword.operator.fat-arrow.mam" },
-        { "match": "\\|", "name": "keyword.operator.pipe.mam" }
+        { "match": "\\|", "name": "keyword.operator.pipe.mam" },
+        { "match": "↓|\\^|→", "name": "keyword.operator.flow.mam" }
       ]
     }
   }
