@@ -1,9 +1,14 @@
 """Tests for the MAM AST types."""
 
 import json
+
 import pytest
+
 from mam.ast import (
     AST,
+    CODE_SECTION_NAMES,
+    REQUIRED_SECTIONS,
+    STANDARD_SECTIONS_ORDER,
     CodeBlock,
     ContentNode,
     FrontMatter,
@@ -15,11 +20,15 @@ from mam.ast import (
     Section,
     SectionType,
     SourceLocation,
-    STANDARD_SECTIONS_ORDER,
-    REQUIRED_SECTIONS,
-    CODE_SECTION_NAMES,
     Table,
     TableRow,
+    code_block_languages,
+    count_code_blocks,
+    find_section,
+    has_front_matter,
+    is_standard_section,
+    section_count,
+    section_names,
 )
 
 
@@ -372,7 +381,7 @@ class TestAST:
         assert "frontmatter" in parsed
 
     def test_to_markdown(self) -> None:
-        fm = FrontMatter(raw="id: test\nversion: 1.0.0", data={"id": "test"})
+        fm = FrontMatter(raw="id: test\nversion: 2.0.0", data={"id": "test"})
         sec = Section(name="Purpose", raw_content="Do things.")
         ast = AST(frontmatter=fm, sections=[sec])
         md = ast.to_markdown()
@@ -525,3 +534,69 @@ class TestConstants:
     def test_code_section_names(self) -> None:
         assert "Python" in CODE_SECTION_NAMES
         assert "JavaScript" in CODE_SECTION_NAMES
+
+
+FIXTURE = """---
+id: helpers
+name: Helpers
+version: 2.0.0
+runtime: python
+---
+
+## Purpose
+
+Does things.
+
+## Python
+
+```python
+print(1)
+```
+
+## JavaScript
+
+```javascript
+console.log(1)
+```
+"""
+
+
+class TestASTQueryHelpers:
+    """Tests for the module-level AST query helpers."""
+
+    @pytest.fixture
+    def ast(self) -> AST:
+        from mam.parser import parse_mam
+
+        return parse_mam(FIXTURE).ast
+
+    def test_has_front_matter(self, ast: AST) -> None:
+        assert has_front_matter(ast) is True
+        assert has_front_matter(AST()) is False
+
+    def test_section_count(self, ast: AST) -> None:
+        assert section_count(ast) == 3
+        assert section_count(AST()) == 0
+
+    def test_count_code_blocks(self, ast: AST) -> None:
+        assert count_code_blocks(ast) == 2
+        assert count_code_blocks(AST()) == 0
+
+    def test_code_block_languages_are_distinct_and_ordered(self, ast: AST) -> None:
+        assert code_block_languages(ast) == ["python", "javascript"]
+        assert code_block_languages(AST()) == []
+
+    def test_section_names(self, ast: AST) -> None:
+        assert section_names(ast) == ["Purpose", "Python", "JavaScript"]
+
+    def test_find_section_is_case_insensitive(self, ast: AST) -> None:
+        assert find_section(ast, "purpose") is not None
+        assert find_section(ast, "  JAVAScript  ") is not None
+        assert find_section(ast, "Missing") is None
+        assert find_section(ast, "") is None
+
+    def test_is_standard_section(self) -> None:
+        assert is_standard_section("Purpose") is True
+        assert is_standard_section("purpose") is True
+        assert is_standard_section("Nonsense") is False
+        assert is_standard_section("") is False

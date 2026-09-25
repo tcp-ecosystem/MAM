@@ -16,6 +16,8 @@ dependencies = [
 [project.optional-dependencies]
 dev = [
     "pytest>=7.0",
+    "ruff>=0.6",
+    "mypy>=1.10",
 ]
 
 [tool.setuptools.packages.find]
@@ -23,3 +25,50 @@ where = ["src"]
 
 [project.scripts]
 mam = "mam.cli:main"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "F",    # pyflakes: unused imports, undefined names
+    "E",    # pycodestyle errors
+    "W",    # pycodestyle warnings
+    "I",    # isort import ordering
+    "B",    # flake8-bugbear
+    "C4",   # flake8-comprehensions
+    "UP",   # pyupgrade
+]
+ignore = [
+    # The package intentionally uses typing.List/Optional and typing imports
+    # rather than PEP 585/604 built-in generics, paired with
+    # `from __future__ import annotations`. Rewriting those annotations across
+    # the codebase is a style change with no correctness benefit, so the
+    # pyupgrade rules that enforce it stay off.
+    "UP006",
+    "UP007",
+    "UP035",
+    "UP045",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# The package __init__ re-exports the public API; F401 is expected there and
+# is additionally protected by __all__.
+"src/mam/__init__.py" = ["F401"]
+
+[tool.mypy]
+python_version = "3.10"
+files = ["src"]
+ignore_missing_imports = true
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+no_implicit_optional = true
+check_untyped_defs = true
+disallow_untyped_defs = true
+disallow_incomplete_defs = true
+warn_return_any = true
+show_error_codes = true
+pretty = true

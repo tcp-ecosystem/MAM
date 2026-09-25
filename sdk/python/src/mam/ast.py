@@ -9,7 +9,6 @@ with serialization support.
 from __future__ import annotations
 
 import json
-import re
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import Any, Dict, List, Optional
@@ -230,7 +229,8 @@ class FrontMatter:
 
     @property
     def tags(self) -> List[str]:
-        return self.data.get("tags", [])
+        values: List[str] = self.data.get("tags", [])
+        return values
 
     @property
     def description(self) -> Optional[str]:
@@ -238,11 +238,13 @@ class FrontMatter:
 
     @property
     def dependencies(self) -> List[str]:
-        return self.data.get("dependencies", [])
+        values: List[str] = self.data.get("dependencies", [])
+        return values
 
     @property
     def permissions(self) -> List[str]:
-        return self.data.get("permissions", [])
+        values: List[str] = self.data.get("permissions", [])
+        return values
 
     def get(self, key: str, default: Any = None) -> Any:
         return self.data.get(key, default)
@@ -726,7 +728,82 @@ class MAMModule:
         )
 
 
+def has_front_matter(ast: AST) -> bool:
+    """Return True when the AST carries a non-empty front matter block.
+
+    A front matter block is considered empty when it declares no fields at all.
+    """
+
+    if ast.frontmatter.data:
+        return True
+    return bool(ast.frontmatter.raw.strip())
+
+
+def section_count(ast: AST) -> int:
+    """Return the number of sections in the AST."""
+
+    return len(ast.sections)
+
+
+def count_code_blocks(ast: AST) -> int:
+    """Return the total number of code blocks across every section."""
+
+    return sum(len(section.code_blocks) for section in ast.sections)
+
+
+def code_block_languages(ast: AST) -> List[str]:
+    """Return distinct code block languages in first-seen document order.
+
+    Blocks without a language are reported as ``"unknown"`` so that the result
+    always matches the number of distinct language slots actually present.
+    """
+
+    languages: List[str] = []
+    for block in ast.all_code_blocks:
+        language = block.language or "unknown"
+        if language not in languages:
+            languages.append(language)
+    return languages
+
+
+def section_names(ast: AST) -> List[str]:
+    """Return the section titles of the AST in document order."""
+
+    return [section.name for section in ast.sections]
+
+
+def find_section(ast: AST, name: str) -> Optional[Section]:
+    """Locate a section by name, case-insensitively.
+
+    Returns None when no section matches.
+    """
+
+    if not name:
+        return None
+    target = name.strip().casefold()
+    for section in ast.sections:
+        if section.name.strip().casefold() == target:
+            return section
+    return None
+
+
+def is_standard_section(name: str) -> bool:
+    """Return True when the name is one of the standard MAM sections."""
+
+    if not name:
+        return False
+    candidate = name.strip().casefold()
+    return any(standard.casefold() == candidate for standard in STANDARD_SECTIONS_ORDER)
+
+
 __all__ = [
+    "code_block_languages",
+    "count_code_blocks",
+    "find_section",
+    "has_front_matter",
+    "is_standard_section",
+    "section_count",
+    "section_names",
     "AST",
     "CodeBlock",
     "ContentNode",

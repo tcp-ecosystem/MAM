@@ -1,14 +1,29 @@
 """Tests for the MAM runtime."""
 
 import pytest
+
 from mam.runtime import (
-    ExecutionContext,
     ExecutionConfig,
+    ExecutionContext,
     ExecutionResult,
     ExecutionStatus,
     MAMRuntime,
+    count_successful,
     execute,
+    execution_languages,
+    failed_sections,
+    format_execution_output,
+    is_success,
+    record_execution,
+    summarize_execution,
+    total_duration,
 )
+
+
+def _mentions_missing(result: ExecutionResult) -> bool:
+    """Return True when an error result indicates a missing executable."""
+
+    return "not found" in (result.error_message or "").lower()
 
 
 class TestExecutionStatus:
@@ -173,7 +188,7 @@ class TestMAMRuntime:
     def test_execute_bash(self) -> None:
         runtime = MAMRuntime(ExecutionConfig(timeout_seconds=5))
         result = runtime.execute_code("bash", "echo 'bash works'")
-        if result.status == ExecutionStatus.ERROR and "not found" in (result.error_message or "").lower():
+        if result.status == ExecutionStatus.ERROR and _mentions_missing(result):
             pytest.skip("bash not available on this platform")
         assert result.success
         assert "bash works" in result.stdout
@@ -181,7 +196,7 @@ class TestMAMRuntime:
     def test_execute_node(self) -> None:
         runtime = MAMRuntime(ExecutionConfig(timeout_seconds=5))
         result = runtime.execute_code("javascript", "console.log('node works')")
-        if result.status == ExecutionStatus.ERROR and "not found" in (result.error_message or "").lower():
+        if result.status == ExecutionStatus.ERROR and _mentions_missing(result):
             pytest.skip("Node.js not installed")
         assert result.success
         assert "node works" in result.stdout
@@ -297,3 +312,78 @@ class TestExecuteFunction:
         result = execute({"sections": []})
         assert "total_time_ms" in result
         assert result["total_time_ms"] >= 0
+
+
+def _block(status: str, language: str = "python", time_ms: float = 1.0) -> dict:
+    return {
+        "status": status,
+        "language": language,
+        "execution_time_ms": time_ms,
+        "stdout": "" if status != "success" else "ok",
+        "stderr": "" if status != "success" else "",
+    }
+
+
+def _payload(blocks: dict, success: bool = True) -> dict:
+    return {"success": success, "results": blocks, "total_time_ms": 12.5}
+
+
+class TestRuntimeHelpers:
+    """Tests for the execution payload helper functions."""
+
+    def test_is_success(self) -> None:
+        assert is_success(_payload({"A": [_block("success")]})) is True
+        assert is_success(_payload({"A": [_block("failed")]}, success=False)) is False
+        assert is_success(ExecutionResult(status=ExecutionStatus.SUCCESS)) is True
+        assert is_success("not a result") is False
+
+    def test_count_successful(self) -> None:
+        payload = _payload({"A": [_block("success"), _block("failed")]})
+        assert count_successful(payload) == 1
+        assert count_successful(_payload({})) == 0
+
+    def test_failed_sections_skips_skipped_blocks(self) -> None:
+        payload = _payload(
+            {
+                "A": [_block("skipped"), _block("success")],
+                "B": [_block("timeout")],
+                "C": [_block("error")],
+            },
+            success=False,
+        )
+        assert failed_sections(payload) == ["B", "C"]
+        assert failed_sections(_payload({})) == []
+
+    def test_execution_languages(self) -> None:
+        payload = _payload(
+            {"A": [_block("success"), _block("success", "js")]},
+        )
+        assert execution_languages(payload) == ["python", "js"]
+
+    def test_total_duration(self) -> None:
+        assert total_duration(_payload({})) == 12.5
+        bare = {"results": {"A": [_block("success", time_ms=2.5)]}}
+        assert total_duration(bare) == 2.5
+
+    def test_summarize_execution(self) -> None:
+        ok = _payload({"A": [_block("success")]})
+        assert "succeeded" in summarize_execution(ok)
+        assert "1/1" in summarize_execution(ok)
+        bad = _payload({"B": [_block("failed")]}, success=False)
+        assert "failed" in summarize_execution(bad)
+        assert "B" in summarize_execution(bad)
+
+    def test_record_execution(self) -> None:
+        history: list = []
+        record_execution(history, {"n": 1})
+        record_execution(history, {"n": 2})
+        assert len(history) == 2
+        assert history[0] == {"n": 1}
+        assert history[0] is not history[-1]
+
+    def test_format_execution_output(self) -> None:
+        payload = _payload({"A": [_block("success")]})
+        text = format_execution_output(payload)
+        assert "python" in text
+        assert "stdout: ok" in text
+        assert format_execution_output(_payload({})) == "(no output)"

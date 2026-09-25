@@ -8,7 +8,6 @@ discovery, lifecycle hooks, and hook-based event dispatch.
 from __future__ import annotations
 
 import importlib
-import inspect
 import logging
 from dataclasses import dataclass, field
 from enum import Enum
@@ -332,10 +331,92 @@ class PluginManager:
         return f"PluginManager(plugins={len(self._plugins)}, hooks={len(self.get_hooks())})"
 
 
+def enabled_plugin_names(manager: PluginManager) -> List[str]:
+    """Return the names of all currently enabled plugins, sorted."""
+
+    return sorted(
+        meta.name for meta in manager.list_meta() if meta.enabled
+    )
+
+
+def plugin_has_hook(manager: PluginManager, name: str) -> bool:
+    """Return True when at least one registered hook carries the given name."""
+
+    return any(hook.name == name for hook in manager.get_hooks())
+
+
+def hook_count(manager: PluginManager, lifecycle: Optional[PluginLifecycle] = None) -> int:
+    """Return the number of registered hooks, optionally for one lifecycle only."""
+
+    return len(manager.get_hooks(lifecycle))
+
+
+def plugin_meta_dicts(manager: PluginManager) -> List[Dict[str, Any]]:
+    """Return every plugin's metadata as plain dictionaries, sorted by name."""
+
+    return [
+        meta.to_dict()
+        for meta in sorted(manager.list_meta(), key=lambda m: m.name)
+    ]
+
+
+def sort_plugin_meta(metas: List[PluginMeta], key: str = "name") -> List[PluginMeta]:
+    """Return a new list of metadata sorted by the requested attribute.
+
+    Args:
+        metas: The metadata objects to sort.
+        key: Attribute name to sort on, for example ``name``, ``version``,
+            ``author``, or ``enabled``.
+
+    Raises:
+        ValueError: When the key is not a metadata attribute.
+    """
+
+    if key not in ("name", "version", "author", "description", "enabled"):
+        raise ValueError(f"Cannot sort plugins by unknown key: {key}")
+    return sorted(metas, key=lambda meta: getattr(meta, key))
+
+
+def find_plugin(
+    manager: PluginManager,
+    predicate: Callable[[PluginMeta], bool],
+) -> Optional[PluginMeta]:
+    """Return the first plugin metadata matching the predicate, or None.
+
+    Plugins are inspected in sorted name order so results are deterministic.
+    """
+
+    for meta in sorted(manager.list_meta(), key=lambda m: m.name):
+        if predicate(meta):
+            return meta
+    return None
+
+
+def require_plugin(manager: PluginManager, name: str) -> PluginMeta:
+    """Return the metadata for a plugin, raising ``KeyError`` when absent.
+
+    Raises:
+        KeyError: When no plugin is registered under the given name.
+    """
+
+    meta = manager.get(name)
+    if meta is None:
+        available = ", ".join(manager.list_plugins()) or "none"
+        raise KeyError(f"Plugin '{name}' is not registered. Registered: {available}")
+    return meta.meta
+
+
 __all__ = [
     "Plugin",
     "PluginManager",
     "PluginHook",
     "PluginLifecycle",
     "PluginMeta",
+    "enabled_plugin_names",
+    "find_plugin",
+    "hook_count",
+    "plugin_has_hook",
+    "plugin_meta_dicts",
+    "require_plugin",
+    "sort_plugin_meta",
 ]

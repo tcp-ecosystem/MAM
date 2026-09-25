@@ -10,10 +10,9 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from pathlib import Path
-from typing import List, Optional
-
 from importlib.metadata import version as _get_version
+from pathlib import Path
+from typing import Any, List, Optional
 
 from .ast import MAMModule, ParseResult
 
@@ -22,8 +21,8 @@ try:
 except Exception:
     __version__ = "0.2.0"
 from .parser import parse_mam
-from .runtime import ExecutionConfig, MAMRuntime, execute
-from .validator import MAMValidator, ValidationSeverity, validate
+from .runtime import ExecutionConfig, execute
+from .validator import ValidationSeverity, validate
 
 __all__ = ["main"]
 
@@ -183,7 +182,7 @@ def _format_parse_result(result: ParseResult) -> str:
     return "\n".join(lines)
 
 
-def _format_validation_result(issues: list) -> str:  # type: ignore
+def _format_validation_result(issues: list) -> str:
     if not issues:
         return "Validation passed: no issues found."
 
@@ -191,7 +190,7 @@ def _format_validation_result(issues: list) -> str:  # type: ignore
     lines.append(f"Validation issues: {len(issues)}")
     lines.append("")
 
-    by_severity: dict = {}  # type: ignore
+    by_severity: dict = {}
     for issue in issues:
         sev = issue.severity.to_string()
         by_severity.setdefault(sev, []).append(issue)
@@ -207,7 +206,7 @@ def _format_validation_result(issues: list) -> str:  # type: ignore
     return "\n".join(lines)
 
 
-def _format_execution_result(results: dict) -> str:  # type: ignore
+def _format_execution_result(results: dict) -> str:
     lines: List[str] = []
     success = results["success"]
     lines.append(f"Execution: {'SUCCESS' if success else 'FAILED'}")
@@ -330,5 +329,141 @@ def main(args: Optional[List[str]] = None) -> None:
     parsed.func(parsed)
 
 
+def build_parser() -> argparse.ArgumentParser:
+    """Return the fully configured MAM argument parser.
+
+    Public counterpart of the internal builder, so embedders can reuse the CLI
+    definition in their own applications.
+    """
+
+    return _build_parser()
+
+
+def run(args: Optional[List[str]] = None) -> int:
+    """Run the CLI and return a process exit code instead of exiting.
+
+    Returns 0 on success, 1 on a handled failure, and 2 for a usage error.
+    This makes the CLI straightforward to embed and to test.
+    """
+
+    parser = build_parser()
+    try:
+        parsed = parser.parse_args(args)
+    except SystemExit as exc:
+        code = exc.code
+        if code is None:
+            return 0
+        if isinstance(code, int):
+            return code
+        return 2
+
+    if not parsed.command:
+        parser.print_help()
+        return 0
+
+    try:
+        parsed.func(parsed)
+    except SystemExit as exc:
+        code = exc.code
+        if code is None:
+            return 0
+        return code if isinstance(code, int) else 1
+    except Exception as exc:  # noqa: BLE001
+        print(f"Error: {exc}", file=sys.stderr)
+        return 1
+    return 0
+
+
+def exit_code_for(issues: Optional[List[Any]] = None, success: bool = True) -> int:
+    """Map a validation or execution outcome to a CLI exit code.
+
+    Returns 0 when everything is clean, 1 when errors are present, and 2 when
+    the run failed outright.
+    """
+
+    if not success:
+        return 2
+    if not issues:
+        return 0
+    for issue in issues:
+        severity = getattr(issue, "severity", None)
+        if severity is None:
+            continue
+        if severity >= ValidationSeverity.ERROR:
+            return 1
+    return 0
+
+
+def version_header(name: str = "mam-sdk") -> str:
+    """Return a one-line banner naming the CLI and its version."""
+
+    return f"{name} {__version__}"
+
+
+def format_ast(result: ParseResult, indent: str = "  ") -> str:
+    """Render a compact structural summary of a parsed module."""
+
+    ast = result.ast
+    lines: List[str] = []
+    name = ast.frontmatter.name or ast.frontmatter.id or "(untitled)"
+    lines.append(f"Module: {name}")
+    if ast.frontmatter.version:
+        lines.append(f"{indent}version: {ast.frontmatter.version}")
+    if ast.frontmatter.runtime:
+        lines.append(f"{indent}runtime: {ast.frontmatter.runtime}")
+    lines.append(f"{indent}sections: {len(ast.sections)}")
+    blocks = sum(len(section.code_blocks) for section in ast.sections)
+    lines.append(f"{indent}code blocks: {blocks}")
+    for section in ast.sections:
+        lines.append(f"{indent}- {section.name} ({len(section.content_nodes)} nodes)")
+    return "\n".join(lines)
+
+
+def format_issues_compact(issues: List[Any], limit: int = 20) -> str:
+    """Render validation issues as one line each, capped at ``limit`` entries."""
+
+    if not issues:
+        return "No issues found."
+    lines: List[str] = []
+    for issue in issues[:limit]:
+        severity = getattr(issue, "severity", None)
+        render = getattr(severity, "to_string", None)
+        label = render() if callable(render) else str(severity)
+        rule = getattr(issue, "rule", "") or "-"
+        section = getattr(issue, "section", None)
+        location = f" [{section}]" if section else ""
+        lines.append(f"[{label}] ({rule}){location} {getattr(issue, 'message', '')}")
+    remaining = len(issues) - limit
+    if remaining > 0:
+        lines.append(f"... and {remaining} more")
+    return "\n".join(lines)
+
+
+def format_module_summary(module: MAMModule) -> str:
+    """Render a compact summary of a built MAMModule instance."""
+
+    lines: List[str] = [f"Module: {module.name or '(untitled)'}"]
+    lines.append(f"  version: {module.version}")
+    lines.append(f"  runtime: {module.runtime}")
+    if module.author:
+        lines.append(f"  author: {module.author}")
+    if module.tags:
+        lines.append(f"  tags: {', '.join(module.tags)}")
+    lines.append(f"  sections: {len(module.sections)}")
+    return "\n".join(lines)
+
+
 if __name__ == "__main__":
     main()
+
+
+__all__ = [
+    "main",
+    "build_parser",
+    "run",
+    "exit_code_for",
+    "version_header",
+    "format_ast",
+    "format_issues_compact",
+    "format_module_summary",
+]

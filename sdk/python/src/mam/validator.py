@@ -9,19 +9,16 @@ analysis, dependency verification, and custom rule support.
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import IntEnum
 from typing import Any, Callable, Dict, List, Optional
 
 from .ast import (
     AST,
-    CodeBlock,
-    FrontMatter,
+    CODE_SECTION_NAMES,
+    STANDARD_SECTIONS_ORDER,
     Section,
     SectionType,
-    STANDARD_SECTIONS_ORDER,
-    REQUIRED_SECTIONS,
-    CODE_SECTION_NAMES,
 )
 
 __all__ = [
@@ -705,4 +702,89 @@ def validate(ast: AST, strict: bool = False) -> List[ValidationIssue]:
     return issues
 
 
-__all__ = ["validate", "MAMValidator", "ValidationSeverity", "ValidationIssue", "ValidationRule"]
+def count_issues_by_severity(issues: List[ValidationIssue]) -> Dict[str, int]:
+    """Count issues keyed by severity name.
+
+    Every known severity is present in the result, using 0 when absent, so
+    callers can rely on the shape of the mapping.
+    """
+
+    counts: Dict[str, int] = {}
+    for severity in ValidationSeverity:
+        counts[severity.to_string()] = 0
+    for issue in issues:
+        key = issue.severity.to_string()
+        counts[key] = counts.get(key, 0) + 1
+    return counts
+
+
+def has_errors(issues: List[ValidationIssue]) -> bool:
+    """Return True when any issue is at least as severe as ``error``."""
+
+    return any(issue.severity >= ValidationSeverity.ERROR for issue in issues)
+
+
+def has_warnings(issues: List[ValidationIssue]) -> bool:
+    """Return True when any issue is at least as severe as ``warning``.
+
+    Errors and criticals also satisfy this predicate.
+    """
+
+    return any(issue.severity >= ValidationSeverity.WARNING for issue in issues)
+
+
+def filter_by_severity(
+    issues: List[ValidationIssue], severity: ValidationSeverity
+) -> List[ValidationIssue]:
+    """Return only the issues with exactly the requested severity."""
+
+    return [issue for issue in issues if issue.severity == severity]
+
+
+def issue_messages(issues: List[ValidationIssue]) -> List[str]:
+    """Return the messages of the issues, in order."""
+
+    return [issue.message for issue in issues]
+
+
+def is_valid(issues: List[ValidationIssue]) -> bool:
+    """Return True when no issue is at ``error`` severity or above."""
+
+    return not has_errors(issues)
+
+
+def summarize_issues(issues: List[ValidationIssue]) -> str:
+    """Return a one-line count summary, pluralized correctly."""
+
+    if not issues:
+        return "no issues"
+    counts = count_issues_by_severity(issues)
+    parts: List[str] = []
+    for severity in (
+        ValidationSeverity.CRITICAL,
+        ValidationSeverity.ERROR,
+        ValidationSeverity.WARNING,
+        ValidationSeverity.INFO,
+    ):
+        count = counts.get(severity.to_string(), 0)
+        if not count:
+            continue
+        label = severity.to_string()
+        parts.append(f"{count} {label}" + ("s" if count != 1 else ""))
+    return ", ".join(parts)
+
+
+__all__ = [
+    "validate",
+    "MAMValidator",
+    "ValidationSeverity",
+    "ValidationIssue",
+    "ValidationRule",
+    "count_issues_by_severity",
+    "filter_by_severity",
+    "has_errors",
+    "has_warnings",
+    "is_valid",
+    "issue_messages",
+    "summarize_issues",
+]

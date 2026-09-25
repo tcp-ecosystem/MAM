@@ -1,14 +1,23 @@
 """Tests for the MAM parser."""
 
-import pytest
 from mam.ast import NodeType, SectionType
-from mam.parser import MAMParser, parse_mam
-
+from mam.parser import (
+    MAMParser,
+    count_headings,
+    detect_runtime,
+    extract_code_blocks,
+    extract_front_matter,
+    normalize_mam,
+    parse_mam,
+    parse_mam_safe,
+    split_sections,
+    strip_code_blocks,
+)
 
 SAMPLE_MAM = """\
 ---
 id: test-module
-version: 1.0.0
+version: 2.0.0
 name: Test Module
 author: Test Author
 runtime: python
@@ -99,7 +108,7 @@ Just some text with no front matter or headings.
 FRONTMATTER_ONLY_MAM = """\
 ---
 id: frontmatter-only
-version: 1.0.0
+version: 2.0.0
 name: Frontmatter Only
 author: Tester
 runtime: python
@@ -114,7 +123,7 @@ class TestParseMam:
         result = parse_mam(SAMPLE_MAM, source="test.mam.md")
         assert result.success
         assert result.ast.frontmatter.id == "test-module"
-        assert result.ast.frontmatter.version == "1.0.0"
+        assert result.ast.frontmatter.version == "2.0.0"
         assert result.ast.frontmatter.name == "Test Module"
         assert result.ast.frontmatter.author == "Test Author"
         assert result.ast.frontmatter.runtime == "python"
@@ -195,7 +204,7 @@ class TestFrontMatter:
     """Tests for front matter parsing."""
 
     def test_unclosed_frontmatter(self) -> None:
-        content = "---\nid: test\nversion: 1.0.0\nname: Test\nauthor: Author\nruntime: python\n"
+        content = "---\nid: test\nversion: 2.0.0\nname: Test\nauthor: Author\nruntime: python\n"
         result = parse_mam(content)
         assert not result.success
         assert any("Unclosed" in e.message for e in result.errors)
@@ -207,13 +216,19 @@ class TestFrontMatter:
         assert any("YAML" in e.message or "Invalid" in e.message for e in result.errors)
 
     def test_invalid_id_format(self) -> None:
-        content = "---\nid: INVALID_ID!\nversion: 1.0.0\nname: Test\nauthor: Author\nruntime: python\n---\n\n# Test\n\n## Purpose\n\nTest.\n"
+        content = (
+            "---\nid: INVALID_ID!\nversion: 2.0.0\nname: Test\n"
+            "author: Author\nruntime: python\n---\n\n# Test\n\n## Purpose\n\nTest.\n"
+        )
         result = parse_mam(content)
         assert not result.success
         assert any("Invalid module id" in e.message for e in result.errors)
 
     def test_invalid_version_format(self) -> None:
-        content = "---\nid: test\nversion: not-a-version\nname: Test\nauthor: Author\nruntime: python\n---\n\n# Test\n\n## Purpose\n\nTest.\n"
+        content = (
+            "---\nid: test\nversion: not-a-version\nname: Test\n"
+            "author: Author\nruntime: python\n---\n\n# Test\n\n## Purpose\n\nTest.\n"
+        )
         result = parse_mam(content)
         assert not result.success
         assert any("Invalid version" in e.message for e in result.errors)
@@ -228,7 +243,7 @@ class TestFrontMatter:
         result = parse_mam(SAMPLE_MAM)
         fm = result.ast.frontmatter
         assert fm.id == "test-module"
-        assert fm.version == "1.0.0"
+        assert fm.version == "2.0.0"
         assert fm.name == "Test Module"
         assert fm.author == "Test Author"
         assert fm.runtime == "python"
@@ -341,7 +356,10 @@ class TestMAMParser:
 
     def test_validate_ids_false(self) -> None:
         parser = MAMParser(validate_ids=False)
-        content = "---\nid: INVALID\nversion: 1.0.0\nname: Test\nauthor: Author\nruntime: python\n---\n\n# Test\n\n## Purpose\n\nTest.\n"
+        content = (
+            "---\nid: INVALID\nversion: 2.0.0\nname: Test\n"
+            "author: Author\nruntime: python\n---\n\n# Test\n\n## Purpose\n\nTest.\n"
+        )
         result = parser.parse(content)
         id_errors = [e for e in result.errors if "Invalid module id" in e.message]
         assert len(id_errors) == 0
@@ -384,7 +402,7 @@ class TestAST:
 
     def test_ast_version(self) -> None:
         result = parse_mam(SAMPLE_MAM)
-        assert result.ast.version == "1.0.0"
+        assert result.ast.version == "2.0.0"
 
     def test_ast_purpose(self) -> None:
         result = parse_mam(SAMPLE_MAM)
@@ -479,3 +497,77 @@ class TestParseResult:
         assert result.success
         result_empty = parse_mam(EMPTY_MAM)
         assert not result_empty.success or len(result_empty.warnings) > 0
+
+
+CODE_MAM = """---
+id: code-module
+name: Code Module
+version: 2.0.0
+runtime: python
+---
+
+## Purpose
+
+Has code.
+
+## Python
+
+```python
+print(1)
+```
+
+## JavaScript
+
+```javascript
+console.log(1)
+```
+"""
+
+
+class TestParserHelpers:
+    """Tests for the text-level parser helpers."""
+
+    def test_parse_mam_safe_never_raises(self) -> None:
+        result = parse_mam_safe(CODE_MAM)
+        assert result.success is True
+        assert parse_mam_safe("").ast is not None
+
+    def test_extract_front_matter(self) -> None:
+        data = extract_front_matter(CODE_MAM)
+        assert data["id"] == "code-module"
+        assert extract_front_matter("## Purpose\n\nNo front matter.\n") == {}
+        assert extract_front_matter("") == {}
+
+    def test_split_sections(self) -> None:
+        pairs = split_sections(CODE_MAM)
+        assert [name for name, _ in pairs] == ["Purpose", "Python", "JavaScript"]
+        assert "print(1)" in dict(pairs)["Python"]
+        assert split_sections("") == []
+
+    def test_strip_code_blocks(self) -> None:
+        stripped = strip_code_blocks(CODE_MAM)
+        assert "print(1)" not in stripped
+        assert "```" in stripped
+        assert "console.log(1)" not in stripped
+        assert strip_code_blocks("") == ""
+
+    def test_count_headings(self) -> None:
+        assert count_headings(CODE_MAM) == 3
+        assert count_headings("") == 0
+        assert count_headings("no headings here") == 0
+
+    def test_extract_code_blocks(self) -> None:
+        blocks = extract_code_blocks(CODE_MAM)
+        assert [block.language for block in blocks] == ["python", "javascript"]
+        assert blocks[0].code.strip() == "print(1)"
+        assert extract_code_blocks("") == []
+
+    def test_normalize_mam(self) -> None:
+        assert normalize_mam("a  \r\nb\n\n\n\nc") == "a\nb\n\nc\n"
+        assert normalize_mam("") == ""
+        assert normalize_mam("only\n") == "only\n"
+
+    def test_detect_runtime(self) -> None:
+        assert detect_runtime(CODE_MAM) == "python"
+        assert detect_runtime("```js\nconsole.log(1)\n```\n") == "javascript"
+        assert detect_runtime("## Purpose\n\nNo code.\n") is None

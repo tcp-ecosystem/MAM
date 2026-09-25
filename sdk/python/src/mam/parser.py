@@ -226,7 +226,9 @@ class _SectionParser:
                 continue
 
             table_row_match = TABLE_ROW.match(stripped)
-            if table_row_match and (i + 1 < len(lines) and TABLE_SEPARATOR.match(lines[i + 1].strip())):
+            if table_row_match and (
+                i + 1 < len(lines) and TABLE_SEPARATOR.match(lines[i + 1].strip())
+            ):
                 table, end_idx, table_errors = self._parse_table(lines, i)
                 if table:
                     section.tables.append(table)
@@ -697,4 +699,230 @@ def parse_mam(
     return parser.parse(content, source=source)
 
 
-__all__ = ["parse_mam", "MAMParser"]
+def parse_mam_safe(
+    content: str, source: Optional[str] = None, strict: bool = False
+) -> ParseResult:
+    """Parse a MAM document, converting unexpected failures into parse errors.
+
+    Unlike :func:`parse_mam` this never raises: any unexpected exception is
+    captured as a ``ParseError`` on the returned result.
+    """
+
+    try:
+        return parse_mam(content, source=source, strict=strict)
+    except Exception as exc:  # noqa: BLE001
+        ast = AST()
+        ast.errors.append(
+            ParseError(message=f"Internal parser error: {exc}", source=source)
+        )
+        return ParseResult(ast=ast, source=source)
+
+
+def extract_front_matter(content: str) -> Dict[str, Any]:
+    """Return the front matter mapping of a MAM document.
+
+    An empty dict is returned when the document has no front matter block or
+    when the block is not a YAML mapping.
+    """
+
+    if not content:
+        return {}
+    lines = content.splitlines()
+    if not lines:
+        return {}
+    if lines[0].strip() != FRONTMATTER_DELIMITER:
+        return {}
+    for index in range(1, len(lines)):
+        if lines[index].strip() == FRONTMATTER_DELIMITER:
+            raw = "\n".join(lines[1:index])
+            try:
+                loaded = yaml.safe_load(raw)
+            except yaml.YAMLError:
+                return {}
+            if isinstance(loaded, dict):
+                return loaded
+            return {}
+    return {}
+
+
+def split_sections(content: str) -> List[Tuple[str, str]]:
+    """Split a MAM document into ``(heading, body)`` pairs.
+
+    The front matter block is ignored. Headings at depth 1-6 are recognized and
+    each heading's body runs until the next heading at the same or shallower
+    depth.
+    """
+
+    if not content:
+        return []
+    lines = content.splitlines()
+    start = 0
+    if lines and lines[0].strip() == FRONTMATTER_DELIMITER:
+        for index in range(1, len(lines)):
+            if lines[index].strip() == FRONTMATTER_DELIMITER:
+                start = index + 1
+                break
+    results: List[Tuple[str, str]] = []
+    current_name: Optional[str] = None
+    current_depth = 0
+    buffer: List[str] = []
+    for line in lines[start:]:
+        match = HEADING_PATTERN.match(line)
+        if match:
+            if current_name is not None:
+                results.append((current_name, "\n".join(buffer).strip("\n")))
+            current_name = match.group(2).strip()
+            current_depth = len(match.group(1))
+            buffer = []
+            continue
+        if current_name is not None:
+            if not line.strip() and not buffer:
+                continue
+            buffer.append(line)
+    if current_name is not None:
+        results.append((current_name, "\n".join(buffer).strip("\n")))
+    _ = current_depth
+    return results
+
+
+def strip_code_blocks(content: str) -> str:
+    """Return the document with every fenced code block replaced by a marker.
+
+    Useful for prose-oriented analysis such as word counts or documentation
+    checks where executable content should not be counted.
+    """
+
+    if not content:
+        return ""
+    output: List[str] = []
+    fence: Optional[str] = None
+    for line in content.splitlines():
+        stripped = line.strip()
+        if fence is None:
+            opening = FENCED_CODE_OPEN.match(stripped)
+            if opening:
+                fence = opening.group(1)[0] * 3
+                output.append("```")
+                continue
+            output.append(line)
+        else:
+            if stripped.startswith(fence):
+                fence = None
+                output.append("```")
+            else:
+                output.append("```")
+    return "\n".join(output)
+
+
+def count_headings(content: str) -> int:
+    """Return the number of Markdown headings in the document."""
+
+    if not content:
+        return 0
+    return sum(1 for line in content.splitlines() if HEADING_PATTERN.match(line))
+
+
+def extract_code_blocks(content: str) -> List[CodeBlock]:
+    """Return every fenced code block in the document, in order.
+
+    This works on raw text and does not require a full parse, so it is safe to
+    use on documents that do not parse cleanly.
+    """
+
+    blocks: List[CodeBlock] = []
+    if not content:
+        return blocks
+    fence: Optional[str] = None
+    language = ""
+    buffer: List[str] = []
+    for line in content.splitlines():
+        if fence is None:
+            opening = FENCED_CODE_OPEN.match(line.strip())
+            if opening:
+                fence = opening.group(1)[0] * 3
+                language = opening.group(2) or ""
+                buffer = []
+            continue
+        if line.strip().startswith(fence):
+            blocks.append(
+                CodeBlock(language=language, code="\n".join(buffer), is_executable=False)
+            )
+            fence = None
+            language = ""
+            buffer = []
+            continue
+        buffer.append(line)
+    return blocks
+
+
+def normalize_mam(content: str) -> str:
+    """Normalize line endings and trailing whitespace for stable output.
+
+    CRLF and CR line endings become LF, trailing whitespace is removed from each
+    line, runs of three or more blank lines collapse to one, and the result
+    always ends with exactly one newline.
+    """
+
+    if not content:
+        return ""
+    text = content.replace("\r\n", "\n").replace("\r", "\n")
+    lines = [line.rstrip() for line in text.split("\n")]
+    collapsed: List[str] = []
+    blank_run = 0
+    for line in lines:
+        if line:
+            blank_run = 0
+            collapsed.append(line)
+            continue
+        blank_run += 1
+        if blank_run <= 1:
+            collapsed.append(line)
+    while collapsed and not collapsed[-1]:
+        collapsed.pop()
+    return "\n".join(collapsed) + "\n"
+
+
+def detect_runtime(content: str) -> Optional[str]:
+    """Infer the primary runtime language of a MAM document.
+
+    Front matter wins when it declares a runtime. Otherwise the most common
+    code block language is used, mapped to a canonical runtime name. Returns
+    None when the document declares and contains nothing conclusive.
+    """
+
+    declared = extract_front_matter(content).get("runtime")
+    if isinstance(declared, str) and declared.strip():
+        return declared.strip()
+    counts: Dict[str, int] = {}
+    for block in extract_code_blocks(content):
+        key = block.language or "unknown"
+        counts[key] = counts.get(key, 0) + 1
+    if not counts:
+        return None
+    best = sorted(counts.items(), key=lambda item: (-item[1], item[0]))[0][0]
+    aliases = {
+        "py": "python",
+        "python": "python",
+        "js": "javascript",
+        "javascript": "javascript",
+        "ts": "typescript",
+        "typescript": "typescript",
+        "sh": "shell",
+        "bash": "shell",
+        "shell": "shell",
+    }
+    return aliases.get(best, best)
+
+
+__all__ = [
+    "MAMParser",
+    "count_headings",
+    "detect_runtime",
+    "extract_code_blocks",
+    "extract_front_matter",
+    "normalize_mam",
+    "parse_mam",
+    "parse_mam_safe",
+    "split_sections",
+    "strip_code_blocks",
+]

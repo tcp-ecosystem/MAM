@@ -12,14 +12,13 @@ import os
 import subprocess
 import sys
 import tempfile
-import time
 import threading
+import time
 from dataclasses import dataclass, field
 from enum import Enum
-from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
-from .ast import AST, CodeBlock, Section, SectionType
+from .ast import AST, Section
 
 __all__ = [
     "execute",
@@ -536,6 +535,139 @@ def execute(
     }
 
 
+def _iter_block_results(result: Any) -> List[Dict[str, Any]]:
+    """Flatten a result payload into a list of per-block result dicts."""
+
+    if isinstance(result, ExecutionResult):
+        return [result.to_dict()]
+    if not isinstance(result, dict):
+        return []
+    results = result.get("results", {})
+    if not isinstance(results, dict):
+        return []
+    flattened: List[Dict[str, Any]] = []
+    for entries in results.values():
+        if isinstance(entries, list):
+            flattened.extend(entry for entry in entries if isinstance(entry, dict))
+    return flattened
+
+
+def is_success(result: Any) -> bool:
+    """Return True when an execution payload or result reports success.
+
+    Accepts either the dictionary returned by :func:`execute` or a single
+    :class:`ExecutionResult`.
+    """
+
+    if isinstance(result, ExecutionResult):
+        return result.success
+    if not isinstance(result, dict):
+        return False
+    if "success" in result:
+        return bool(result["success"])
+    return all(entry.get("status") == "success" for entry in _iter_block_results(result))
+
+
+def count_successful(result: Any) -> int:
+    """Count the per-block results whose status is ``success``."""
+
+    return sum(1 for entry in _iter_block_results(result) if entry.get("status") == "success")
+
+
+def failed_sections(result: Any) -> List[str]:
+    """Return the names of sections that produced at least one non-success result.
+
+    Skipped blocks do not count as failures.
+    """
+
+    if not isinstance(result, dict):
+        return []
+    results = result.get("results", {})
+    if not isinstance(results, dict):
+        return []
+    failed: List[str] = []
+    for name, entries in results.items():
+        if not isinstance(entries, list):
+            continue
+        for entry in entries:
+            if not isinstance(entry, dict):
+                continue
+            status = entry.get("status")
+            if status in ("failed", "timeout", "error"):
+                failed.append(str(name))
+                break
+    return failed
+
+
+def execution_languages(result: Any) -> List[str]:
+    """Return the distinct languages executed, in first-seen order."""
+
+    languages: List[str] = []
+    for entry in _iter_block_results(result):
+        language = entry.get("language") or "unknown"
+        if language not in languages:
+            languages.append(str(language))
+    return languages
+
+
+def total_duration(result: Any) -> float:
+    """Return the total execution duration in milliseconds.
+
+    Uses the payload total when available, otherwise sums per-block times.
+    """
+
+    if isinstance(result, dict):
+        total = result.get("total_time_ms")
+        if isinstance(total, (int, float)):
+            return float(total)
+    return float(
+        sum(float(entry.get("execution_time_ms", 0.0)) for entry in _iter_block_results(result))
+    )
+
+
+def summarize_execution(result: Any) -> str:
+    """Return a one-line human-readable summary of an execution payload."""
+
+    blocks = _iter_block_results(result)
+    passed = count_successful(result)
+    state = "succeeded" if is_success(result) else "failed"
+    failed_names = failed_sections(result)
+    summary = f"Execution {state}: {passed}/{len(blocks)} blocks succeeded"
+    if failed_names:
+        summary += " (failed: " + ", ".join(failed_names) + ")"
+    return summary
+
+
+def record_execution(history: List[Dict[str, Any]], entry: Dict[str, Any]) -> List[Dict[str, Any]]:
+    """Append an entry to an execution history list and return the list.
+
+    Supports building histories outside of :class:`MAMRuntime`, for example when
+    aggregating runs across several modules.
+    """
+
+    history.append(dict(entry))
+    return history
+
+
+def format_execution_output(result: Any, indent: str = "  ") -> str:
+    """Render per-block output of an execution payload for terminal display."""
+
+    lines: List[str] = []
+    for entry in _iter_block_results(result):
+        language = entry.get("language") or "unknown"
+        status = entry.get("status") or "unknown"
+        lines.append(f"{indent}[{language}] {status}")
+        stdout = (entry.get("stdout") or "").rstrip()
+        stderr = (entry.get("stderr") or "").rstrip()
+        if stdout:
+            lines.append(f"{indent}  stdout: {stdout}")
+        if stderr:
+            lines.append(f"{indent}  stderr: {stderr}")
+    if not lines:
+        return "(no output)"
+    return "\n".join(lines)
+
+
 __all__ = [
     "execute",
     "MAMRuntime",
@@ -543,4 +675,12 @@ __all__ = [
     "ExecutionConfig",
     "ExecutionContext",
     "ExecutionStatus",
+    "count_successful",
+    "execution_languages",
+    "failed_sections",
+    "format_execution_output",
+    "is_success",
+    "record_execution",
+    "summarize_execution",
+    "total_duration",
 ]

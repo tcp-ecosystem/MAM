@@ -1,21 +1,26 @@
 """Tests for the MAM validator."""
 
-import pytest
-from mam.ast import AST, FrontMatter, Section, SourceLocation
+from mam.ast import AST, FrontMatter, Section
 from mam.parser import parse_mam
 from mam.validator import (
     MAMValidator,
     ValidationIssue,
     ValidationRule,
     ValidationSeverity,
+    count_issues_by_severity,
+    filter_by_severity,
+    has_errors,
+    has_warnings,
+    is_valid,
+    issue_messages,
+    summarize_issues,
     validate,
 )
-
 
 VALID_MAM = """\
 ---
 id: valid-module
-version: 1.0.0
+version: 2.0.0
 name: Valid Module
 author: Test Author
 runtime: python
@@ -167,27 +172,49 @@ class TestMAMValidator:
         )
         validator = MAMValidator()
         issues = validator.validate(ast)
-        field_issues = [i for i in issues if "required" in i.message.lower() and "field" in i.message.lower()]
+        field_issues = [
+            i
+            for i in issues
+            if "required" in i.message.lower() and "field" in i.message.lower()
+        ]
         assert len(field_issues) >= 3
 
     def test_validate_invalid_id(self) -> None:
-        content = "---\nid: INVALID_ID\nversion: 1.0.0\nname: Test\nauthor: Author\nruntime: python\n---\n\n# Test\n\n## Purpose\n\nTest.\n"
+        content = (
+            "---\nid: INVALID_ID\nversion: 2.0.0\nname: Test\n"
+            "author: Author\nruntime: python\n---\n\n# Test\n\n## Purpose\n\nTest.\n"
+        )
         result = parse_mam(content)
         validator = MAMValidator()
         issues = validator.validate(result.ast)
-        id_issues = [i for i in issues if "id" in i.message.lower() and ("invalid" in i.message.lower() or "format" in i.rule.lower())]
+        id_issues = [
+            i
+            for i in issues
+            if "id" in i.message.lower()
+            and ("invalid" in i.message.lower() or "format" in i.rule.lower())
+        ]
         assert len(id_issues) >= 1
 
     def test_validate_invalid_version(self) -> None:
-        content = "---\nid: test\nversion: bad\nname: Test\nauthor: Author\nruntime: python\n---\n\n# Test\n\n## Purpose\n\nTest.\n"
+        content = (
+            "---\nid: test\nversion: bad\nname: Test\n"
+            "author: Author\nruntime: python\n---\n\n# Test\n\n## Purpose\n\nTest.\n"
+        )
         result = parse_mam(content)
         validator = MAMValidator()
         issues = validator.validate(result.ast)
-        version_issues = [i for i in issues if "version" in i.message.lower() or "version" in i.rule.lower()]
+        version_issues = [
+            i
+            for i in issues
+            if "version" in i.message.lower() or "version" in i.rule.lower()
+        ]
         assert len(version_issues) >= 1
 
     def test_validate_missing_purpose(self) -> None:
-        content = "---\nid: test\nversion: 1.0.0\nname: Test\nauthor: Author\nruntime: python\n---\n\n# Test\n\n## Inputs\n\nSomething.\n"
+        content = (
+            "---\nid: test\nversion: 2.0.0\nname: Test\n"
+            "author: Author\nruntime: python\n---\n\n# Test\n\n## Inputs\n\nSomething.\n"
+        )
         result = parse_mam(content)
         validator = MAMValidator()
         issues = validator.validate(result.ast)
@@ -195,7 +222,11 @@ class TestMAMValidator:
         assert len(purpose_issues) >= 1
 
     def test_validate_empty_section(self) -> None:
-        content = "---\nid: test\nversion: 1.0.0\nname: Test\nauthor: Author\nruntime: python\n---\n\n# Test\n\n## Purpose\n\nDo things.\n\n## Empty\n\n"
+        content = (
+            "---\nid: test\nversion: 2.0.0\nname: Test\n"
+            "author: Author\nruntime: python\n---\n\n# Test\n\n"
+            "## Purpose\n\nDo things.\n\n## Empty\n\n"
+        )
         result = parse_mam(content)
         validator = MAMValidator()
         issues = validator.validate(result.ast)
@@ -207,7 +238,11 @@ class TestMAMValidator:
         result = parse_mam(content)
         validator = MAMValidator()
         issues = validator.validate(result.ast)
-        lang_issues = [i for i in issues if "language" in i.message.lower() and "missing" in i.message.lower()]
+        lang_issues = [
+            i
+            for i in issues
+            if "language" in i.message.lower() and "missing" in i.message.lower()
+        ]
         assert len(lang_issues) >= 1
 
     def test_validate_table_structure(self) -> None:
@@ -221,14 +256,18 @@ class TestMAMValidator:
         result = parse_mam(content)
         validator = MAMValidator()
         issues = validator.validate(result.ast)
-        table_issues = [i for i in issues if "column" in i.message.lower() or "columns" in i.message.lower()]
+        table_issues = [
+            i
+            for i in issues
+            if "column" in i.message.lower() or "columns" in i.message.lower()
+        ]
         assert len(table_issues) >= 1
 
     def test_validate_inputs_table_headers(self) -> None:
         content = """\
 ---
 id: test
-version: 1.0.0
+version: 2.0.0
 name: Test
 author: Author
 runtime: python
@@ -305,7 +344,7 @@ Test.
         content = """\
 ---
 id: test
-version: 1.0.0
+version: 2.0.0
 name: Test
 author: Author
 runtime: python
@@ -331,7 +370,11 @@ def run():
         result = parse_mam(content)
         validator = MAMValidator()
         issues = validator.validate(result.ast)
-        dep_issues = [i for i in issues if "not declared" in i.message.lower() or "dependencies" in i.rule.lower()]
+        dep_issues = [
+            i
+            for i in issues
+            if "not declared" in i.message.lower() or "dependencies" in i.rule.lower()
+        ]
         assert len(dep_issues) >= 1
 
 
@@ -354,3 +397,66 @@ class TestValidateFunction:
         issues_strict = validate(result.ast, strict=True)
         issues_normal = validate(result.ast, strict=False)
         assert len(issues_strict) >= len(issues_normal)
+
+
+def _issue(message: str, severity: ValidationSeverity) -> ValidationIssue:
+    return ValidationIssue(message=message, severity=severity, rule="test")
+
+
+MIXED_ISSUES = [
+    _issue("bad id", ValidationSeverity.ERROR),
+    _issue("missing version", ValidationSeverity.ERROR),
+    _issue("out of order", ValidationSeverity.WARNING),
+    _issue("style nit", ValidationSeverity.INFO),
+]
+
+
+class TestValidatorHelpers:
+    """Tests for the validation issue helper functions."""
+
+    def test_count_issues_by_severity(self) -> None:
+        counts = count_issues_by_severity(MIXED_ISSUES)
+        assert counts["error"] == 2
+        assert counts["warning"] == 1
+        assert counts["info"] == 1
+        assert counts["critical"] == 0
+        assert sum(counts.values()) == len(MIXED_ISSUES)
+
+    def test_has_errors(self) -> None:
+        assert has_errors(MIXED_ISSUES) is True
+        assert has_errors([]) is False
+        assert has_errors([_issue("w", ValidationSeverity.WARNING)]) is False
+
+    def test_has_warnings(self) -> None:
+        assert has_warnings(MIXED_ISSUES) is True
+        assert has_warnings([_issue("i", ValidationSeverity.INFO)]) is False
+        assert has_warnings([]) is False
+
+    def test_filter_by_severity(self) -> None:
+        errors = filter_by_severity(MIXED_ISSUES, ValidationSeverity.ERROR)
+        assert len(errors) == 2
+        assert all(i.severity == ValidationSeverity.ERROR for i in errors)
+        assert filter_by_severity(MIXED_ISSUES, ValidationSeverity.CRITICAL) == []
+
+    def test_issue_messages(self) -> None:
+        assert issue_messages(MIXED_ISSUES) == [
+            "bad id",
+            "missing version",
+            "out of order",
+            "style nit",
+        ]
+        assert issue_messages([]) == []
+
+    def test_is_valid(self) -> None:
+        assert is_valid([]) is True
+        assert is_valid([_issue("w", ValidationSeverity.WARNING)]) is True
+        assert is_valid([_issue("e", ValidationSeverity.ERROR)]) is False
+        assert is_valid([_issue("c", ValidationSeverity.CRITICAL)]) is False
+
+    def test_summarize_issues(self) -> None:
+        assert summarize_issues([]) == "no issues"
+        summary = summarize_issues(MIXED_ISSUES)
+        assert "2 errors" in summary
+        assert "1 warning" in summary
+        assert "1 info" in summary
+        assert summarize_issues([_issue("only", ValidationSeverity.WARNING)]) == "1 warning"
