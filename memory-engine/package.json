@@ -1,0 +1,29 @@
+{
+  "name": "@mam/memory-engine",
+  "version": "0.1.0",
+  "description": "Standalone MAM Memory Engine: short-term, long-term, episodic and semantic memory layers",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0",
+    "vitest": "^1.2.0",
+    "@types/node": "^20.11.0"
+  },
+  "files": ["dist", "README.md"],
+  "keywords": ["mam", "memory", "short-term", "long-term", "episodic", "semantic", "agents"],
+  "author": "MAM Team",
+  "license": "MIT"
+}
