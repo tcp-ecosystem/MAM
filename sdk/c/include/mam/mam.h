@@ -309,7 +309,14 @@ mam_module_t *mam_module_new(void);
 /** Releases a module and every string it owns. NULL safe. */
 void mam_module_free(mam_module_t *module);
 
-/** Returns a borrowed one line summary, or `"(untitled)"` when unnamed. */
+/**
+ * Returns a one line summary of the module.
+ *
+ * The returned pointer is owned by the SDK and is replaced by the next call to
+ * this function, so it must not be freed and must not be held across another
+ * call. It does survive mam_module_free, unlike the module's own strings. Use
+ * mam_format_module_summary when you need a rendering you own.
+ */
 const char *mam_module_summary(const mam_module_t *module);
 
 /** Returns a borrowed module name, falling back to the file name. */

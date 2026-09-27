@@ -16,6 +16,17 @@
 
 static mam_error_t g_last_error;
 
+/**
+ * Backing store for the pointer returned by mam_module_summary.
+ *
+ * Replaced on every call, so the previous rendering is released rather than
+ * leaked. Single static rather than thread-local: the function is documented as
+ * returning a borrowed pointer, and callers that need to keep a rendering
+ * across threads should use mam_format_module_summary, which returns an owned
+ * string instead.
+ */
+static char *g_summary_buffer = NULL;
+
 void mam_error_set(mam_status_t status, const char *message, size_t line, size_t column)
 {
     g_last_error.status = status;
@@ -405,7 +416,16 @@ const char *mam_module_summary(const mam_module_t *module)
     if (module == NULL) {
         return "(null module)";
     }
-    return mam_format_module_summary(module);
+    /* Rendered into a single static buffer rather than a caller-owned string,
+     * so the returned pointer stays valid until the next call on any thread
+     * and survives mam_module_free. Callers must not free it. */
+    char *rendered = mam_format_module_summary(module);
+    if (rendered == NULL) {
+        return "";
+    }
+    free(g_summary_buffer);
+    g_summary_buffer = rendered;
+    return g_summary_buffer;
 }
 
 size_t mam_module_code_block_count(const mam_module_t *module)

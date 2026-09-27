@@ -61,3 +61,46 @@ yarn.lock
 pnpm-lock.yaml
 .mam-cache/
 *.lint-baseline.json
+
+# Java (sdk/java)
+target/
+*.class
+*.jar
+*.war
+
+# .NET (sdk/csharp)
+bin/
+obj/
+*.user
+
+# C and C++ (sdk/c, sdk/cpp)
+*.o
+*.obj
+*.a
+*.lib
+*.so
+*.so.*
+*.dylib
+*.dll
+*.exe
+*.out
+*.d
+*.gcda
+*.gcno
+*.gcov
+
+# Rust (sdk/rust)
+*.rs.bk
+
+# Ruby (sdk/ruby)
+*.gem
+.bundle/
+vendor/bundle/
+
+# Python caches
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
