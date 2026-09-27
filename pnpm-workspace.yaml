@@ -13,6 +13,7 @@ packages:
   - "lsp"
   - "package-manager"
   - "memory-engine"
+  - "knowledge-engine"
   - "reference"
   - "testing"
   - "registry/*"
