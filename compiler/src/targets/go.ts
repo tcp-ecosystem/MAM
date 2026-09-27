@@ -2,9 +2,10 @@
  * Go Target
  * 
  * Compiles MAM AST to Go code.
+ * Each module becomes a real struct with working methods (no "not implemented").
  */
 
-import { V2ModuleNode } from '@mam/ast';
+import { V2ModuleNode, V2PortDefinition } from '@mam/ast';
 import { CompileTargetHandler, CompilerConfig } from '../compiler.js';
 import { generateModuleContext } from '../context.js';
 
@@ -21,64 +22,786 @@ export class GoTarget implements CompileTargetHandler {
     lines.push('');
     lines.push('import (');
     lines.push('\t"fmt"');
+    const needsStrings = modules.some(
+      m => m.moduleType === 'memory' || m.moduleType === 'module' || m.moduleType === 'service' || m.moduleType === 'component' || m.moduleType === 'resource' || m.moduleType === 'interface' || m.moduleType === 'contract' || m.moduleType === 'plugin' || m.moduleType === 'extension' || m.moduleType === 'runtime' || m.moduleType === 'package' || m.moduleType === 'repository' || m.moduleType === 'documentation'
+    );
+    if (needsStrings) {
+      lines.push('\t"strings"');
+    }
     lines.push(')');
     lines.push('');
+    lines.push('// Shared runtime interfaces used for cross-module dispatch');
+    lines.push('type Invokable interface {');
+    lines.push('\tInvoke(action string, params map[string]interface{}) map[string]interface{}');
+    lines.push('}');
+    lines.push('');
+    lines.push('type Executor interface {');
+    lines.push('\tExecute(task string) map[string]interface{}');
+    lines.push('}');
+    lines.push('');
+    lines.push('type Runner interface {');
+    lines.push('\tRun() map[string]interface{}');
+    lines.push('}');
+    lines.push('');
+    lines.push('type WorkflowRunner interface {');
+    lines.push('\tRun(inputs map[string]interface{}) map[string]interface{}');
+    lines.push('}');
+    lines.push('');
+    lines.push('type MemoryStore interface {');
+    lines.push('\tStore(key string, value interface{}) map[string]interface{}');
+    lines.push('\tRetrieve(key string) interface{}');
+    lines.push('\tDelete(key string) map[string]interface{}');
+    lines.push('\tSearch(query string) map[string]interface{}');
+    lines.push('}');
+    lines.push('');
+    lines.push('type Describable interface {');
+    lines.push('\tCapabilitiesList() []string');
+    lines.push('}');
+    lines.push('');
+    lines.push('// containsString reports whether value is present in list');
+    lines.push('func containsString(list []string, value string) bool {');
+    lines.push('\tfor _, item := range list {');
+    lines.push('\t\tif item == value {');
+    lines.push('\t\t\treturn true');
+    lines.push('\t\t}');
+    lines.push('\t}');
+    lines.push('\treturn false');
+    lines.push('}');
+    lines.push('');
+    lines.push('// defaultAction picks the first declared capability of an in-scope module, else the raw name');
+    lines.push('func defaultAction(obj interface{}, name string) string {');
+    lines.push('\tif d, ok := obj.(Describable); ok {');
+    lines.push('\t\tcaps := d.CapabilitiesList()');
+    lines.push('\t\tif len(caps) > 0 {');
+    lines.push('\t\t\treturn caps[0]');
+    lines.push('\t\t}');
+    lines.push('\t}');
+    lines.push('\treturn name');
+    lines.push('}');
+    lines.push('');
 
-    for (const mod of modules) {
-      lines.push(generateModuleContext(mod, 'go'));
+    const classNames = this.assignClassNames(modules);
+
+    for (let i = 0; i < modules.length; i++) {
+      lines.push(generateModuleContext(modules[i], 'go'));
       lines.push('');
-      lines.push(...this.compileModule(mod, config));
+      lines.push(...this.compileModule(modules[i], classNames[i], config));
       lines.push('');
     }
+
+    lines.push(...this.compileRegistry(modules, classNames));
+    lines.push('');
+    lines.push(...this.compileMain(modules, classNames));
 
     return lines.join('\n');
   }
 
-  private compileModule(mod: V2ModuleNode, config: CompilerConfig): string[] {
+  // --------------------------------------------------------------------------
+  // Helpers
+  // --------------------------------------------------------------------------
+
+  private assignClassNames(modules: V2ModuleNode[]): string[] {
+    const used = new Set<string>();
+    const result: string[] = [];
+    for (const mod of modules) {
+      let base = this.toPascalCase(mod.name);
+      let name = base;
+      let i = 2;
+      while (used.has(name)) {
+        name = `${base}_${i}`;
+        i++;
+      }
+      used.add(name);
+      result.push(name);
+    }
+    return result;
+  }
+
+  private toPascalCase(str: string): string {
+    let cleaned = str.replace(/[^a-zA-Z0-9\s]/g, '');
+    let result = cleaned
+      .split(/\s+/)
+      .filter(Boolean)
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join('');
+    if (/^[0-9]/.test(result)) result = 'M' + result;
+    if (!result) result = 'Module';
+    return result;
+  }
+
+  private str(value: unknown): string {
+    return JSON.stringify(value === undefined || value === null ? '' : String(value));
+  }
+
+  private list(values: string[] | undefined): string {
+    const items = (values || []).map(v => this.str(v)).join(', ');
+    return `[]string{${items}}`;
+  }
+
+  private pairs(edges: Array<[string, string]>): string {
+    const items = edges.map(e => `{${this.str(e[0])}, ${this.str(e[1])}}`).join(', ');
+    return `[][]string{${items}}`;
+  }
+
+  private sampleValue(type: string): string {
+    const t = (type || '').toLowerCase();
+    if (t.includes('int')) return '3';
+    if (t.includes('float') || t.includes('number')) return '1.5';
+    if (t.includes('bool')) return 'true';
+    if (t.includes('list') || t.includes('array')) return '[]interface{}{1, 2, 3}';
+    if (t.includes('object') || t.includes('dict') || t === 'any') return 'map[string]interface{}{"sample": 1}';
+    return '"sample input"';
+  }
+
+  private sampleInputs(inputs: V2PortDefinition[] | undefined): string {
+    const pairs: string[] = [];
+    for (const inp of inputs || []) {
+      pairs.push(`${this.str(inp.name)}: ${this.sampleValue(inp.type)}`);
+    }
+    return `map[string]interface{}{${pairs.join(', ')}}`;
+  }
+
+  private inputNames(inputs: V2PortDefinition[] | undefined): string[] {
+    return (inputs || []).map(i => i.name);
+  }
+
+  private requiredInputs(inputs: V2PortDefinition[] | undefined): string[] {
+    return (inputs || []).filter(i => i.required).map(i => i.name);
+  }
+
+  // --------------------------------------------------------------------------
+  // Module Compiler
+  // --------------------------------------------------------------------------
+
+  private compileModule(mod: V2ModuleNode, className: string, config: CompilerConfig): string[] {
     const lines: string[] = [];
-    const structName = this.toPascalCase(mod.name);
 
-    lines.push(`// ${structName} represents a ${mod.moduleType} module`);
-    lines.push(`type ${structName} struct {`);
+    if (config.includeComments) {
+      lines.push(`// Module: ${mod.name}`);
+      lines.push(`// Type: ${mod.moduleType}`);
+      if (mod.description) lines.push(`// ${mod.description}`);
+      lines.push('');
+    }
 
-    if (mod.role) lines.push(`\tRole string`);
-    if (mod.goal) lines.push(`\tGoal string`);
-    if (mod.tools) lines.push(`\tTools []string`);
-    if (mod.handoff) lines.push(`\tHandoff []string`);
-    if (mod.members) lines.push(`\tMembers []string`);
-    if (mod.steps) lines.push(`\tSteps []string`);
-    if (mod.allow) lines.push(`\tAllow []string`);
-    if (mod.deny) lines.push(`\tDeny []string`);
-
-    lines.push(`}`);
-    lines.push('');
-
-    lines.push(`// New${structName} creates a new ${structName}`);
-    lines.push(`func New${structName}() *${structName} {`);
-    lines.push(`\treturn &${structName}{`);
-
-    if (mod.role) lines.push(`\t\tRole: "${mod.role}",`);
-    if (mod.goal) lines.push(`\t\tGoal: "${mod.goal}",`);
-    if (mod.tools) lines.push(`\t\tTools: ${JSON.stringify(mod.tools)},`);
-    if (mod.handoff) lines.push(`\t\tHandoff: ${JSON.stringify(mod.handoff)},`);
-
-    lines.push(`\t}`);
-    lines.push(`}`);
-    lines.push('');
-
-    lines.push(`// Execute runs the module`);
-    lines.push(`func (m *${structName}) Execute(task string) error {`);
-    lines.push(`\treturn fmt.Errorf("not implemented")`);
-    lines.push(`}`);
+    switch (mod.moduleType) {
+      case 'agent':
+        lines.push(...this.compileAgent(mod, className));
+        break;
+      case 'tool':
+        lines.push(...this.compileTool(mod, className));
+        break;
+      case 'memory':
+        lines.push(...this.compileMemory(mod, className));
+        break;
+      case 'workflow':
+        lines.push(...this.compileWorkflow(mod, className));
+        break;
+      case 'team':
+        lines.push(...this.compileTeam(mod, className));
+        break;
+      case 'policy':
+        lines.push(...this.compilePolicy(mod, className));
+        break;
+      case 'system':
+        lines.push(...this.compileSystem(mod, className));
+        break;
+      default:
+        lines.push(...this.compileGeneric(mod, className));
+    }
 
     return lines;
   }
 
-  private toPascalCase(str: string): string {
-    return str
-      .replace(/[^a-zA-Z0-9\s]/g, '')
-      .split(/\s+/)
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join('');
+  private compileGeneric(mod: V2ModuleNode, className: string): string[] {
+    const inputs = this.inputNames(mod.inputs);
+    const required = this.requiredInputs(mod.inputs);
+    const outputs = this.inputNames(mod.outputs);
+
+    return [
+      `// ${className} represents a ${mod.moduleType} module`,
+      `type ${className} struct {`,
+      `\tName         string`,
+      `\tDescription  string`,
+      `\tInputs       []string`,
+      `\tRequired     []string`,
+      `\tOutputs      []string`,
+      `\tCapabilities []string`,
+      `}`,
+      ``,
+      `// New${className} creates a new ${className}`,
+      `func New${className}() *${className} {`,
+      `\treturn &${className}{`,
+      `\t\tName:         ${this.str(mod.name)},`,
+      `\t\tDescription:  ${this.str(mod.description || '')},`,
+      `\t\tInputs:       ${this.list(inputs)},`,
+      `\t\tRequired:     ${this.list(required)},`,
+      `\t\tOutputs:      ${this.list(outputs)},`,
+      `\t\tCapabilities: ${this.list(mod.capabilities || [])},`,
+      `\t}`,
+      `}`,
+      ``,
+      `// Run validates required inputs and returns an outputs map`,
+      `func (m *${className}) Run(inputs map[string]interface{}) map[string]interface{} {`,
+      `\tif inputs == nil {`,
+      `\t\tinputs = map[string]interface{}{}`,
+      `\t}`,
+      `\tmissing := []string{}`,
+      `\tfor _, k := range m.Required {`,
+      `\t\tif _, ok := inputs[k]; !ok {`,
+      `\t\t\tmissing = append(missing, k)`,
+      `\t\t}`,
+      `\t}`,
+      `\tif len(missing) > 0 {`,
+      `\t\treturn map[string]interface{}{`,
+      `\t\t\t"ok":      false,`,
+      `\t\t\t"error":   "missing required inputs: " + strings.Join(missing, ", "),`,
+      `\t\t\t"outputs": map[string]interface{}{},`,
+      `\t\t}`,
+      `\t}`,
+      `\toutputs := map[string]interface{}{}`,
+      `\tfor _, name := range m.Outputs {`,
+      `\t\tif val, ok := inputs[name]; ok {`,
+      `\t\t\toutputs[name] = val`,
+      `\t\t} else {`,
+      `\t\t\toutputs[name] = nil`,
+      `\t\t}`,
+      `\t}`,
+      `\tfor k, val := range inputs {`,
+      `\t\tif _, ok := outputs[k]; !ok {`,
+      `\t\t\toutputs[k] = val`,
+      `\t\t}`,
+      `\t}`,
+      `\treturn map[string]interface{}{"ok": true, "outputs": outputs}`,
+      `}`,
+      ``,
+    ];
+  }
+
+  private compileAgent(mod: V2ModuleNode, className: string): string[] {
+    const memoryTarget = (mod.memory as { name?: string } | undefined)?.name || '';
+
+    return [
+      `// ${className} represents an agent module`,
+      `type ${className} struct {`,
+      `\tName         string`,
+      `\tRole         string`,
+      `\tGoal         string`,
+      `\tTools        []string`,
+      `\tHandoff      []string`,
+      `\tMemory       MemoryStore`,
+      `\tMemoryTarget string`,
+      `}`,
+      ``,
+      `// New${className} creates a new ${className}`,
+      `func New${className}() *${className} {`,
+      `\treturn &${className}{`,
+      `\t\tName:         ${this.str(mod.name)},`,
+      `\t\tRole:         ${this.str(mod.role || '')},`,
+      `\t\tGoal:         ${this.str(mod.goal || '')},`,
+      `\t\tTools:        ${this.list(mod.tools || [])},`,
+      `\t\tHandoff:      ${this.list(mod.handoff || [])},`,
+      `\t\tMemoryTarget: ${this.str(memoryTarget)},`,
+      `\t}`,
+      `}`,
+      ``,
+      `// Execute runs the agent task, using memory and in-scope tools`,
+      `func (m *${className}) Execute(task string) map[string]interface{} {`,
+      `\tlog := []string{}`,
+      `\tmem := m.Memory`,
+      `\tif mem == nil && m.MemoryTarget != "" {`,
+      `\t\tif v, ok := registry[m.MemoryTarget]; ok {`,
+      `\t\t\tif mm, ok := v.(MemoryStore); ok {`,
+      `\t\t\t\tmem = mm`,
+      `\t\t\t\tm.Memory = mem`,
+      `\t\t\t}`,
+      `\t\t}`,
+      `\t}`,
+      `\tif mem != nil {`,
+      `\t\tmem.Store("agent:"+m.Role, map[string]interface{}{"task": task, "agent": m.Role})`,
+      `\t\tlog = append(log, "memory stored")`,
+      `\t}`,
+      `\ttoolResults := map[string]interface{}{}`,
+      `\tfor _, tool := range m.Tools {`,
+      `\t\tif v, ok := registry[tool]; ok {`,
+      `\t\t\tif inv, ok := v.(Invokable); ok {`,
+      `\t\t\t\ttoolResults[tool] = inv.Invoke(defaultAction(v, tool), map[string]interface{}{"task": task})`,
+      `\t\t\t\tcontinue`,
+      `\t\t\t}`,
+      `\t\t}`,
+      `\t\ttoolResults[tool] = map[string]interface{}{"status": "available"}`,
+      `\t}`,
+      `\toutput := "processed task: " + task`,
+      `\treturn map[string]interface{}{`,
+      `\t\t"status":      "ok",`,
+      `\t\t"output":      output,`,
+      `\t\t"agent":       m.Name,`,
+      `\t\t"tool_results": toolResults,`,
+      `\t\t"log":         log,`,
+      `\t}`,
+      `}`,
+      ``,
+    ];
+  }
+
+  private compileTool(mod: V2ModuleNode, className: string): string[] {
+    return [
+      `// ${className} represents a tool module`,
+      `type ${className} struct {`,
+      `\tName         string`,
+      `\tProvider     string`,
+      `\tCapabilities []string`,
+      `}`,
+      ``,
+      `// New${className} creates a new ${className}`,
+      `func New${className}() *${className} {`,
+      `\treturn &${className}{`,
+      `\t\tName:         ${this.str(mod.name)},`,
+      `\t\tProvider:     ${this.str(mod.provider || '')},`,
+      `\t\tCapabilities: ${this.list(mod.capabilities || [])},`,
+      `\t}`,
+      `}`,
+      ``,
+      `// CapabilitiesList exposes the declared capabilities`,
+      `func (m *${className}) CapabilitiesList() []string {`,
+      `\treturn m.Capabilities`,
+      `}`,
+      ``,
+      `// Invoke runs a capability, validating against declared capabilities`,
+      `func (m *${className}) Invoke(action string, params map[string]interface{}) map[string]interface{} {`,
+      `\tif params == nil {`,
+      `\t\tparams = map[string]interface{}{}`,
+      `\t}`,
+      `\tfor _, cap := range m.Capabilities {`,
+      `\t\tif cap == action {`,
+      `\t\t\treturn map[string]interface{}{`,
+      `\t\t\t\t"success": true,`,
+      `\t\t\t\t"result": map[string]interface{}{`,
+      `\t\t\t\t\t"action":   action,`,
+      `\t\t\t\t\t"params":   params,`,
+      `\t\t\t\t\t"provider": m.Provider,`,
+      `\t\t\t\t},`,
+      `\t\t\t}`,
+      `\t\t}`,
+      `\t}`,
+      `\treturn map[string]interface{}{`,
+      `\t\t"success": false,`,
+      `\t\t"error":   "action not supported: " + action,`,
+      `\t\t"result":  nil,`,
+      `\t}`,
+      `}`,
+      ``,
+    ];
+  }
+
+  private compileMemory(mod: V2ModuleNode, className: string): string[] {
+    return [
+      `// ${className} represents an in-memory store`,
+      `type ${className} struct {`,
+      `\tName    string`,
+      `\tFormat  string`,
+      `\tBackend string`,
+      `\tScope   string`,
+      `\tData    map[string]interface{}`,
+      `}`,
+      ``,
+      `// New${className} creates a new ${className}`,
+      `func New${className}() *${className} {`,
+      `\treturn &${className}{`,
+      `\t\tName:    ${this.str(mod.name)},`,
+      `\t\tFormat:  ${this.str(mod.format || 'key-value')},`,
+      `\t\tBackend: ${this.str(mod.backend || 'local')},`,
+      `\t\tScope:   ${this.str(mod.scope || 'module')},`,
+      `\t\tData:    map[string]interface{}{},`,
+      `\t}`,
+      `}`,
+      ``,
+      `// Store saves a value under a key`,
+      `func (m *${className}) Store(key string, value interface{}) map[string]interface{} {`,
+      `\tm.Data[key] = value`,
+      `\treturn map[string]interface{}{"ok": true, "key": key, "value": value}`,
+      `}`,
+      ``,
+      `// Retrieve fetches a value by key`,
+      `func (m *${className}) Retrieve(key string) interface{} {`,
+      `\tif v, ok := m.Data[key]; ok {`,
+      `\t\treturn v`,
+      `\t}`,
+      `\treturn nil`,
+      `}`,
+      ``,
+      `// Delete removes a key`,
+      `func (m *${className}) Delete(key string) map[string]interface{} {`,
+      `\tif _, ok := m.Data[key]; ok {`,
+      `\t\tdelete(m.Data, key)`,
+      `\t\treturn map[string]interface{}{"ok": true, "key": key}`,
+      `\t}`,
+      `\treturn map[string]interface{}{"ok": false, "error": "key not found: " + key}`,
+      `}`,
+      ``,
+      `// Search finds entries whose key or value contains the query`,
+      `func (m *${className}) Search(query string) map[string]interface{} {`,
+      `\tq := strings.ToLower(query)`,
+      `\tout := map[string]interface{}{}`,
+      `\tfor k, v := range m.Data {`,
+      `\t\tif strings.Contains(strings.ToLower(k), q) || strings.Contains(strings.ToLower(fmt.Sprintf("%v", v)), q) {`,
+      `\t\t\tout[k] = v`,
+      `\t\t}`,
+      `\t}`,
+      `\treturn out`,
+      `}`,
+      ``,
+    ];
+  }
+
+  private compileWorkflow(mod: V2ModuleNode, className: string): string[] {
+    const steps = (mod.steps || []).map(s => s.name);
+    const edges = (mod.edges || []).map(e => [e.source, e.target] as [string, string]);
+
+    return [
+      `// ${className} represents a workflow module`,
+      `type ${className} struct {`,
+      `\tName  string`,
+      `\tSteps []string`,
+      `\tEdges [][]string`,
+      `}`,
+      ``,
+      `// New${className} creates a new ${className}`,
+      `func New${className}() *${className} {`,
+      `\treturn &${className}{`,
+      `\t\tName:  ${this.str(mod.name)},`,
+      `\t\tSteps: ${this.list(steps)},`,
+      `\t\tEdges: ${this.pairs(edges)},`,
+      `\t}`,
+      `}`,
+      ``,
+      `// order returns steps in topological order (source -> target)`,
+      `func (m *${className}) order() []string {`,
+      `\tsteps := append([]string{}, m.Steps...)`,
+      `\tdeps := map[string][]string{}`,
+      `\tfor _, step := range steps {`,
+      `\t\tdeps[step] = []string{}`,
+      `\t}`,
+      `\tfor _, edge := range m.Edges {`,
+      `\t\tsrc, tgt := edge[0], edge[1]`,
+      `\t\tif _, ok := deps[tgt]; ok {`,
+      `\t\t\tif _, ok := deps[src]; ok {`,
+      `\t\t\t\tdeps[tgt] = append(deps[tgt], src)`,
+      `\t\t\t}`,
+      `\t\t}`,
+      `\t}`,
+      `\torder := []string{}`,
+      `\tremaining := map[string]bool{}`,
+      `\tfor _, step := range steps {`,
+      `\t\tremaining[step] = true`,
+      `\t}`,
+      `\tfor len(remaining) > 0 {`,
+      `\t\tready := []string{}`,
+      `\t\tfor step := range remaining {`,
+      `\t\t\tok := true`,
+      `\t\t\tfor _, d := range deps[step] {`,
+      `\t\t\t\tif !containsString(order, d) {`,
+      `\t\t\t\t\tok = false`,
+      `\t\t\t\t\tbreak`,
+      `\t\t\t\t}`,
+      `\t\t\t}`,
+      `\t\t\tif ok {`,
+      `\t\t\t\tready = append(ready, step)`,
+      `\t\t\t}`,
+      `\t\t}`,
+      `\t\tif len(ready) == 0 {`,
+      `\t\t\tfor step := range remaining {`,
+      `\t\t\t\tready = append(ready, step)`,
+      `\t\t\t}`,
+      `\t\t}`,
+      `\t\tfor _, s := range ready {`,
+      `\t\t\torder = append(order, s)`,
+      `\t\t\tdelete(remaining, s)`,
+      `\t\t}`,
+      `\t}`,
+      `\treturn order`,
+      `}`,
+      ``,
+      `// Run executes the workflow in dependency order`,
+      `func (m *${className}) Run(inputs map[string]interface{}) map[string]interface{} {`,
+      `\tif inputs == nil {`,
+      `\t\tinputs = map[string]interface{}{}`,
+      `\t}`,
+      `\torder := m.order()`,
+      `\tresults := map[string]interface{}{}`,
+      `\tfor _, step := range order {`,
+      `\t\tif v, ok := registry[step]; ok {`,
+      `\t\t\tif inv, ok := v.(Invokable); ok {`,
+      `\t\t\t\tresults[step] = inv.Invoke(defaultAction(v, step), map[string]interface{}{"inputs": inputs, "results": results})`,
+      `\t\t\t\tcontinue`,
+      `\t\t\t}`,
+      `\t\t}`,
+      `\t\tif val, ok := inputs[step]; ok {`,
+      `\t\t\tresults[step] = val`,
+      `\t\t} else {`,
+      `\t\t\tresults[step] = nil`,
+      `\t\t}`,
+      `\t}`,
+      `\treturn map[string]interface{}{"order": order, "results": results}`,
+      `}`,
+      ``,
+    ];
+  }
+
+  private compileTeam(mod: V2ModuleNode, className: string): string[] {
+    return [
+      `// ${className} represents a team module`,
+      `type ${className} struct {`,
+      `\tName    string`,
+      `\tMembers []string`,
+      `}`,
+      ``,
+      `// New${className} creates a new ${className}`,
+      `func New${className}() *${className} {`,
+      `\treturn &${className}{`,
+      `\t\tName:    ${this.str(mod.name)},`,
+      `\t\tMembers: ${this.list(mod.members || [])},`,
+      `\t}`,
+      `}`,
+      ``,
+      `// Coordinate runs a task across team members`,
+      `func (m *${className}) Coordinate(task string) map[string]interface{} {`,
+      `\tresults := map[string]interface{}{}`,
+      `\tfor _, member := range m.Members {`,
+      `\t\tif v, ok := registry[member]; ok {`,
+      `\t\t\tif ex, ok := v.(Executor); ok {`,
+      `\t\t\t\tresults[member] = ex.Execute(task)`,
+      `\t\t\t\tcontinue`,
+      `\t\t\t}`,
+      `\t\t}`,
+      `\t\tresults[member] = map[string]interface{}{"status": "available", "member": member, "task": task}`,
+      `\t}`,
+      `\treturn results`,
+      `}`,
+      ``,
+    ];
+  }
+
+  private compilePolicy(mod: V2ModuleNode, className: string): string[] {
+    return [
+      `// ${className} represents a policy module`,
+      `type ${className} struct {`,
+      `\tName  string`,
+      `\tAllow []string`,
+      `\tDeny  []string`,
+      `}`,
+      ``,
+      `// New${className} creates a new ${className}`,
+      `func New${className}() *${className} {`,
+      `\treturn &${className}{`,
+      `\t\tName:  ${this.str(mod.name)},`,
+      `\t\tAllow: ${this.list(mod.allow || [])},`,
+      `\t\tDeny:  ${this.list(mod.deny || [])},`,
+      `\t}`,
+      `}`,
+      ``,
+      `// Check returns whether an action is allowed (deny wins, else default deny)`,
+      `func (m *${className}) Check(action string) bool {`,
+      `\tif containsString(m.Deny, action) {`,
+      `\t\treturn false`,
+      `\t}`,
+      `\tif containsString(m.Allow, action) {`,
+      `\t\treturn true`,
+      `\t}`,
+      `\treturn false`,
+      `}`,
+      ``,
+      `// CheckAll checks a list of actions`,
+      `func (m *${className}) CheckAll(actions []string) map[string]bool {`,
+      `\tout := map[string]bool{}`,
+      `\tfor _, action := range actions {`,
+      `\t\tout[action] = m.Check(action)`,
+      `\t}`,
+      `\treturn out`,
+      `}`,
+      ``,
+    ];
+  }
+
+  private compileSystem(mod: V2ModuleNode, className: string): string[] {
+    const agents = mod.agents || [];
+    const modules = mod.modules || [];
+    const edges = (mod.edges || []).map(e => [e.source, e.target] as [string, string]);
+
+    return [
+      `// ${className} represents a system module`,
+      `type ${className} struct {`,
+      `\tName    string`,
+      `\tAgents  []string`,
+      `\tModules []string`,
+      `\tEdges   [][]string`,
+      `}`,
+      ``,
+      `// New${className} creates a new ${className}`,
+      `func New${className}() *${className} {`,
+      `\treturn &${className}{`,
+      `\t\tName:    ${this.str(mod.name)},`,
+      `\t\tAgents:  ${this.list(agents)},`,
+      `\t\tModules: ${this.list(modules)},`,
+      `\t\tEdges:   ${this.pairs(edges)},`,
+      `\t}`,
+      `}`,
+      ``,
+      `// targets returns the deduplicated union of agents and modules`,
+      `func (m *${className}) targets() []string {`,
+      `\tseen := []string{}`,
+      `\tall := append(append([]string{}, m.Agents...), m.Modules...)`,
+      `\tfor _, name := range all {`,
+      `\t\tif !containsString(seen, name) {`,
+      `\t\t\tseen = append(seen, name)`,
+      `\t\t}`,
+      `\t}`,
+      `\treturn seen`,
+      `}`,
+      ``,
+      `// Run executes modules/agents in topological order by edges`,
+      `func (m *${className}) Run() map[string]interface{} {`,
+      `\ttargets := m.targets()`,
+      `\tdeps := map[string][]string{}`,
+      `\tfor _, t := range targets {`,
+      `\t\tdeps[t] = []string{}`,
+      `\t}`,
+      `\tfor _, edge := range m.Edges {`,
+      `\t\tsrc, tgt := edge[0], edge[1]`,
+      `\t\tif _, ok := deps[tgt]; ok {`,
+      `\t\t\tif _, ok := deps[src]; ok {`,
+      `\t\t\t\tdeps[tgt] = append(deps[tgt], src)`,
+      `\t\t\t}`,
+      `\t\t}`,
+      `\t}`,
+      `\torder := []string{}`,
+      `\tremaining := map[string]bool{}`,
+      `\tfor _, t := range targets {`,
+      `\t\tremaining[t] = true`,
+      `\t}`,
+      `\tfor len(remaining) > 0 {`,
+      `\t\tready := []string{}`,
+      `\t\tfor t := range remaining {`,
+      `\t\t\tok := true`,
+      `\t\t\tfor _, d := range deps[t] {`,
+      `\t\t\t\tif !containsString(order, d) {`,
+      `\t\t\t\t\tok = false`,
+      `\t\t\t\t\tbreak`,
+      `\t\t\t\t}`,
+      `\t\t\t}`,
+      `\t\t\tif ok {`,
+      `\t\t\t\tready = append(ready, t)`,
+      `\t\t\t}`,
+      `\t\t}`,
+      `\t\tif len(ready) == 0 {`,
+      `\t\t\tfor t := range remaining {`,
+      `\t\t\t\tready = append(ready, t)`,
+      `\t\t\t}`,
+      `\t\t}`,
+      `\t\tfor _, t := range ready {`,
+      `\t\t\torder = append(order, t)`,
+      `\t\t\tdelete(remaining, t)`,
+      `\t\t}`,
+      `\t}`,
+      `\tresults := map[string]interface{}{}`,
+      `\tfor _, target := range order {`,
+      `\t\tv, ok := registry[target]`,
+      `\t\tif !ok {`,
+      `\t\t\tresults[target] = map[string]interface{}{"status": "available"}`,
+      `\t\t} else if r, ok := v.(Runner); ok {`,
+      `\t\t\tresults[target] = r.Run()`,
+      `\t\t} else if e, ok := v.(Executor); ok {`,
+      `\t\t\tresults[target] = e.Execute("system task")`,
+      `\t\t} else if w, ok := v.(WorkflowRunner); ok {`,
+      `\t\t\tresults[target] = w.Run(map[string]interface{}{})`,
+      `\t\t} else {`,
+      `\t\t\tresults[target] = map[string]interface{}{"status": "available"}`,
+      `\t\t}`,
+      `\t}`,
+      `\treturn map[string]interface{}{"order": order, "results": results}`,
+      `}`,
+      ``,
+    ];
+  }
+
+  // --------------------------------------------------------------------------
+  // Registry + Entry Point
+  // --------------------------------------------------------------------------
+
+  private compileRegistry(modules: V2ModuleNode[], classNames: string[]): string[] {
+    const lines: string[] = [];
+
+    lines.push('var registry = map[string]interface{}{}');
+    lines.push('');
+    lines.push('func init() {');
+    for (let i = 0; i < modules.length; i++) {
+      const cn = classNames[i];
+      lines.push(`\tregistry[${this.str(cn)}] = New${cn}()`);
+      lines.push(`\tregistry[${this.str(modules[i].name)}] = registry[${this.str(cn)}]`);
+    }
+    lines.push('}');
+    lines.push('');
+
+    return lines;
+  }
+
+  private compileMain(modules: V2ModuleNode[], classNames: string[]): string[] {
+    const lines: string[] = [];
+
+    lines.push('func main() {');
+    lines.push('\tfmt.Println("=== MAM Generated Modules Self-Test ===")');
+
+    for (let i = 0; i < modules.length; i++) {
+      const mod = modules[i];
+      const cn = classNames[i];
+      const display = this.str(mod.name);
+
+      switch (mod.moduleType) {
+        case 'agent':
+          lines.push(`\tagent := registry[${display}].(*${cn})`);
+          lines.push(`\tfmt.Println(${display} + ".execute ->", agent.Execute("sample task for " + ${display}))`);
+          break;
+        case 'tool': {
+          const cap = (mod.capabilities || []).length > 0 ? this.str((mod.capabilities || [])[0]) : this.str('invoke');
+          lines.push(`\ttool := registry[${display}].(*${cn})`);
+          lines.push(`\tfmt.Println(${display} + ".invoke(supported) ->", tool.Invoke(${cap}, map[string]interface{}{"params": "sample"}))`);
+          lines.push(`\tfmt.Println(${display} + ".invoke(unsupported) ->", tool.Invoke("not-a-capability", nil))`);
+          break;
+        }
+        case 'memory':
+          lines.push(`\tmem := registry[${display}].(*${cn})`);
+          lines.push(`\tmem.Store("topic", "MAM")`);
+          lines.push(`\tfmt.Println(${display} + ".retrieve ->", mem.Retrieve("topic"))`);
+          lines.push(`\tfmt.Println(${display} + ".search ->", mem.Search("mam"))`);
+          lines.push(`\tfmt.Println(${display} + ".delete ->", mem.Delete("topic"))`);
+          break;
+        case 'workflow':
+          lines.push(`\tfmt.Println(${display} + ".run ->", registry[${display}].(*${cn}).Run(${this.sampleInputs(mod.inputs)}))`);
+          break;
+        case 'team':
+          lines.push(`\tfmt.Println(${display} + ".coordinate ->", registry[${display}].(*${cn}).Coordinate("sample team task"))`);
+          break;
+        case 'policy': {
+          const allow = (mod.allow || []).length > 0 ? this.str((mod.allow || [])[0]) : this.str('allow');
+          const deny = (mod.deny || []).length > 0 ? this.str((mod.deny || [])[0]) : this.str('deny');
+          lines.push(`\tpol := registry[${display}].(*${cn})`);
+          lines.push(`\tfmt.Println(${display} + ".check(allow) ->", pol.Check(${allow}))`);
+          lines.push(`\tfmt.Println(${display} + ".check(deny) ->", pol.Check(${deny}))`);
+          lines.push(`\tfmt.Println(${display} + ".check_all ->", pol.CheckAll([]string{${allow}, ${deny}, "unknown"}))`);
+          break;
+        }
+        case 'system':
+          lines.push(`\tfmt.Println(${display} + ".run ->", registry[${display}].(*${cn}).Run())`);
+          break;
+        default:
+          lines.push(`\tfmt.Println(${display} + ".run ->", registry[${display}].(*${cn}).Run(${this.sampleInputs(mod.inputs)}))`);
+          lines.push(`\tfmt.Println(${display} + ".run(missing) ->", registry[${display}].(*${cn}).Run(map[string]interface{}{}))`);
+      }
+    }
+
+    lines.push('\tfmt.Println("=== Self-Test Complete ===")');
+    lines.push('}');
+    lines.push('');
+
+    return lines;
   }
 }

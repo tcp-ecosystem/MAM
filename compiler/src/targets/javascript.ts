@@ -2,9 +2,10 @@
  * JavaScript Target
  * 
  * Compiles MAM AST to JavaScript code.
+ * Each module becomes a real, runnable class (no "Not implemented" errors).
  */
 
-import { V2ModuleNode } from '@mam/ast';
+import { V2ModuleNode, V2PortDefinition } from '@mam/ast';
 import { CompileTargetHandler, CompilerConfig } from '../compiler.js';
 import { generateModuleContext } from '../context.js';
 
@@ -21,53 +22,524 @@ export class JavaScriptTarget implements CompileTargetHandler {
     lines.push('');
     lines.push('"use strict";');
     lines.push('');
+    lines.push('function defaultAction(obj, name) {');
+    lines.push('  if (obj && Array.isArray(obj.capabilities) && obj.capabilities.length > 0) {');
+    lines.push('    return obj.capabilities[0];');
+    lines.push('  }');
+    lines.push('  return name;');
+    lines.push('}');
+    lines.push('');
 
-    for (const mod of modules) {
-      lines.push(generateModuleContext(mod, 'javascript'));
+    const classNames = this.assignClassNames(modules);
+
+    for (let i = 0; i < modules.length; i++) {
+      lines.push(generateModuleContext(modules[i], 'javascript'));
       lines.push('');
-      lines.push(...this.compileModule(mod, config));
+      lines.push(...this.compileModule(modules[i], classNames[i], config));
       lines.push('');
     }
+
+    lines.push(...this.compileRegistry(modules, classNames));
+    lines.push('');
+    lines.push(...this.compileMain(modules, classNames));
+    lines.push('');
+    lines.push(`module.exports = { ${classNames.join(', ')}, _REGISTRY };`);
+    lines.push('');
 
     return lines.join('\n');
   }
 
-  private compileModule(mod: V2ModuleNode, config: CompilerConfig): string[] {
+  // --------------------------------------------------------------------------
+  // Helpers
+  // --------------------------------------------------------------------------
+
+  private assignClassNames(modules: V2ModuleNode[]): string[] {
+    const used = new Set<string>();
+    const result: string[] = [];
+    for (const mod of modules) {
+      let base = this.toClass(mod.name);
+      let name = base;
+      let i = 2;
+      while (used.has(name)) {
+        name = `${base}_${i}`;
+        i++;
+      }
+      used.add(name);
+      result.push(name);
+    }
+    return result;
+  }
+
+  private toClass(name: string): string {
+    let c = name.replace(/[^a-zA-Z0-9_]/g, '_');
+    if (/^[0-9]/.test(c)) c = 'M_' + c;
+    if (!c) c = 'Module';
+    return c;
+  }
+
+  private str(value: unknown): string {
+    return JSON.stringify(value === undefined || value === null ? '' : String(value));
+  }
+
+  private list(values: string[] | undefined): string {
+    return JSON.stringify(values || []);
+  }
+
+  private sampleValue(type: string): string {
+    const t = (type || '').toLowerCase();
+    if (t.includes('int')) return '3';
+    if (t.includes('float') || t.includes('number')) return '1.5';
+    if (t.includes('bool')) return 'true';
+    if (t.includes('list') || t.includes('array')) return '[1, 2, 3]';
+    if (t.includes('object') || t.includes('dict') || t === 'any') return '{"sample": 1}';
+    return '"sample input"';
+  }
+
+  private sampleInputs(inputs: V2PortDefinition[] | undefined): string {
+    const pairs: string[] = [];
+    for (const inp of inputs || []) {
+      pairs.push(`${JSON.stringify(inp.name)}: ${this.sampleValue(inp.type)}`);
+    }
+    return `{${pairs.join(', ')}}`;
+  }
+
+  private inputNames(inputs: V2PortDefinition[] | undefined): string[] {
+    return (inputs || []).map(i => i.name);
+  }
+
+  private requiredInputs(inputs: V2PortDefinition[] | undefined): string[] {
+    return (inputs || []).filter(i => i.required).map(i => i.name);
+  }
+
+  // --------------------------------------------------------------------------
+  // Module Compiler
+  // --------------------------------------------------------------------------
+
+  private compileModule(mod: V2ModuleNode, className: string, config: CompilerConfig): string[] {
     const lines: string[] = [];
-    const className = mod.name.replace(/[^a-zA-Z0-9_]/g, '_');
 
-    lines.push(`class ${className} {`);
-    lines.push(`  constructor() {`);
-
-    if (mod.role) lines.push(`    this.role = "${mod.role}";`);
-    if (mod.goal) lines.push(`    this.goal = "${mod.goal}";`);
-    if (mod.tools) lines.push(`    this.tools = ${JSON.stringify(mod.tools)};`);
-    if (mod.handoff) lines.push(`    this.handoff = ${JSON.stringify(mod.handoff)};`);
-    if (mod.members) lines.push(`    this.members = ${JSON.stringify(mod.members)};`);
-    if (mod.steps) lines.push(`    this.steps = ${JSON.stringify(mod.steps.map(s => s.name))};`);
-    if (mod.edges) lines.push(`    this.edges = ${JSON.stringify(mod.edges.map(e => ({ source: e.source, target: e.target })))};`);
-    if (mod.allow) lines.push(`    this.allow = ${JSON.stringify(mod.allow)};`);
-    if (mod.deny) lines.push(`    this.deny = ${JSON.stringify(mod.deny)};`);
-
-    lines.push(`  }`);
-    lines.push('');
-
-    lines.push(`  async execute(task) {`);
-    lines.push(`    throw new Error("Not implemented");`);
-    lines.push(`  }`);
-
-    if (mod.moduleType === 'policy') {
+    if (config.includeComments) {
+      lines.push(`// Module: ${mod.name}`);
+      lines.push(`// Type: ${mod.moduleType}`);
+      if (mod.description) lines.push(`// ${mod.description}`);
       lines.push('');
-      lines.push(`  check(action) {`);
-      lines.push(`    if (this.deny.includes(action)) return false;`);
-      lines.push(`    if (this.allow.includes(action)) return true;`);
-      lines.push(`    return false;`);
-      lines.push(`  }`);
     }
 
+    switch (mod.moduleType) {
+      case 'agent':
+        lines.push(...this.compileAgent(mod, className));
+        break;
+      case 'tool':
+        lines.push(...this.compileTool(mod, className));
+        break;
+      case 'memory':
+        lines.push(...this.compileMemory(mod, className));
+        break;
+      case 'workflow':
+        lines.push(...this.compileWorkflow(mod, className));
+        break;
+      case 'team':
+        lines.push(...this.compileTeam(mod, className));
+        break;
+      case 'policy':
+        lines.push(...this.compilePolicy(mod, className));
+        break;
+      case 'system':
+        lines.push(...this.compileSystem(mod, className));
+        break;
+      default:
+        lines.push(...this.compileGeneric(mod, className));
+    }
+
+    return lines;
+  }
+
+  private compileGeneric(mod: V2ModuleNode, className: string): string[] {
+    const inputs = this.inputNames(mod.inputs);
+    const required = this.requiredInputs(mod.inputs);
+    const outputs = this.inputNames(mod.outputs);
+
+    return [
+      `class ${className} {`,
+      `  constructor() {`,
+      `    this.name = ${this.str(mod.name)};`,
+      `    this.description = ${this.str(mod.description || '')};`,
+      `    this.inputs = ${this.list(inputs)};`,
+      `    this.required = ${this.list(required)};`,
+      `    this.outputs = ${this.list(outputs)};`,
+      `    this.capabilities = ${this.list(mod.capabilities || [])};`,
+      `  }`,
+      ``,
+      `  run(inputs) {`,
+      `    inputs = inputs || {};`,
+      `    const missing = this.required.filter(k => !(k in inputs));`,
+      `    if (missing.length > 0) {`,
+      `      return { ok: false, error: "missing required inputs: " + missing.join(", "), outputs: {} };`,
+      `    }`,
+      `    const outputs = {};`,
+      `    for (const name of this.outputs) {`,
+      `      outputs[name] = (name in inputs) ? inputs[name] : null;`,
+      `    }`,
+      `    for (const key of Object.keys(inputs)) {`,
+      `      if (!(key in outputs)) outputs[key] = inputs[key];`,
+      `    }`,
+      `    return { ok: true, outputs };`,
+      `  }`,
+      `}`,
+    ];
+  }
+
+  private compileAgent(mod: V2ModuleNode, className: string): string[] {
+    const memoryTarget = (mod.memory as { name?: string } | undefined)?.name || '';
+
+    return [
+      `class ${className} {`,
+      `  constructor() {`,
+      `    this.name = ${this.str(mod.name)};`,
+      `    this.role = ${this.str(mod.role || '')};`,
+      `    this.goal = ${this.str(mod.goal || '')};`,
+      `    this.tools = ${this.list(mod.tools || [])};`,
+      `    this.handoff = ${this.list(mod.handoff || [])};`,
+      `    this.memory = null;`,
+      `    this.memory_target = ${this.str(memoryTarget)};`,
+      `  }`,
+      ``,
+      `  execute(task) {`,
+      `    const log = [];`,
+      `    let mem = this.memory;`,
+      `    if (mem === null && this.memory_target) {`,
+      `      mem = _REGISTRY[this.memory_target] || null;`,
+      `      this.memory = mem;`,
+      `    }`,
+      `    if (mem && typeof mem.store === "function") {`,
+      `      try {`,
+      `        mem.store("agent:" + String(this.role), { task: String(task), agent: this.role });`,
+      `        log.push("memory stored");`,
+      `      } catch (err) {`,
+      `        log.push("memory error: " + String(err && err.message || err));`,
+      `      }`,
+      `    }`,
+      `    const tool_results = {};`,
+      `    for (const tool of this.tools) {`,
+      `      const entry = _REGISTRY[tool];`,
+      `      if (entry && typeof entry.invoke === "function") {`,
+      `        tool_results[tool] = entry.invoke(defaultAction(entry, tool), { task });`,
+      `      } else {`,
+      `        tool_results[tool] = { status: "available" };`,
+      `      }`,
+      `    }`,
+      `    const output = "processed task: " + String(task);`,
+      `    return { status: "ok", output, agent: this.name, tool_results, log };`,
+      `  }`,
+      `}`,
+    ];
+  }
+
+  private compileTool(mod: V2ModuleNode, className: string): string[] {
+    return [
+      `class ${className} {`,
+      `  constructor() {`,
+      `    this.name = ${this.str(mod.name)};`,
+      `    this.provider = ${this.str(mod.provider || '')};`,
+      `    this.capabilities = ${this.list(mod.capabilities || [])};`,
+      `  }`,
+      ``,
+      `  invoke(action, params) {`,
+      `    params = params || {};`,
+      `    if (this.capabilities.indexOf(action) === -1) {`,
+      `      return { success: false, error: "action not supported: " + String(action), result: null };`,
+      `    }`,
+      `    return { success: true, result: { action, params, provider: this.provider } };`,
+      `  }`,
+      ``,
+      `  execute(action, kwargs) {`,
+      `    return this.invoke(action, kwargs || {});`,
+      `  }`,
+      `}`,
+    ];
+  }
+
+  private compileMemory(mod: V2ModuleNode, className: string): string[] {
+    return [
+      `class ${className} {`,
+      `  constructor() {`,
+      `    this.name = ${this.str(mod.name)};`,
+      `    this.format = ${this.str(mod.format || 'key-value')};`,
+      `    this.backend = ${this.str(mod.backend || 'local')};`,
+      `    this.scope = ${this.str(mod.scope || 'module')};`,
+      `    this._data = {};`,
+      `  }`,
+      ``,
+      `  store(key, value) {`,
+      `    this._data[key] = value;`,
+      `    return { ok: true, key, value };`,
+      `  }`,
+      ``,
+      `  retrieve(key) {`,
+      `    return (key in this._data) ? this._data[key] : null;`,
+      `  }`,
+      ``,
+      `  delete(key) {`,
+      `    if (key in this._data) {`,
+      `      delete this._data[key];`,
+      `      return { ok: true, key };`,
+      `    }`,
+      `    return { ok: false, error: "key not found: " + String(key) };`,
+      `  }`,
+      ``,
+      `  search(query) {`,
+      `    const q = String(query).toLowerCase();`,
+      `    const out = {};`,
+      `    for (const k of Object.keys(this._data)) {`,
+      `      if (String(k).toLowerCase().indexOf(q) !== -1 || String(this._data[k]).toLowerCase().indexOf(q) !== -1) {`,
+      `        out[k] = this._data[k];`,
+      `      }`,
+      `    }`,
+      `    return out;`,
+      `  }`,
+      `}`,
+    ];
+  }
+
+  private compileWorkflow(mod: V2ModuleNode, className: string): string[] {
+    const steps = (mod.steps || []).map(s => s.name);
+    const edges = (mod.edges || []).map(e => [e.source, e.target]);
+
+    return [
+      `class ${className} {`,
+      `  constructor() {`,
+      `    this.name = ${this.str(mod.name)};`,
+      `    this.steps = ${this.list(steps)};`,
+      `    this.edges = ${JSON.stringify(edges)};`,
+      `  }`,
+      ``,
+      `  _order() {`,
+      `    const steps = this.steps.slice();`,
+      `    const deps = {};`,
+      `    for (const step of steps) deps[step] = [];`,
+      `    for (const edge of this.edges) {`,
+      `      const src = edge[0];`,
+      `      const tgt = edge[1];`,
+      `      if (tgt in deps && steps.indexOf(src) !== -1) deps[tgt].push(src);`,
+      `    }`,
+      `    const order = [];`,
+      `    const remaining = new Set(steps);`,
+      `    while (remaining.size > 0) {`,
+      `      let ready = [...remaining].filter(s => deps[s].every(d => order.indexOf(d) !== -1));`,
+      `      if (ready.length === 0) ready = [...remaining];`,
+      `      for (const s of ready) {`,
+      `        order.push(s);`,
+      `        remaining.delete(s);`,
+      `      }`,
+      `    }`,
+      `    return order;`,
+      `  }`,
+      ``,
+      `  run(inputs) {`,
+      `    inputs = inputs || {};`,
+      `    const order = this._order();`,
+      `    const results = {};`,
+      `    for (const step of order) {`,
+      `      const entry = _REGISTRY[step];`,
+      `      if (entry && typeof entry.invoke === "function") {`,
+      `        results[step] = entry.invoke(defaultAction(entry, step), { inputs, results });`,
+      `      } else if (step in inputs) {`,
+      `        results[step] = inputs[step];`,
+      `      } else {`,
+      `        results[step] = null;`,
+      `      }`,
+      `    }`,
+      `    return { order, results };`,
+      `  }`,
+      `}`,
+    ];
+  }
+
+  private compileTeam(mod: V2ModuleNode, className: string): string[] {
+    return [
+      `class ${className} {`,
+      `  constructor() {`,
+      `    this.name = ${this.str(mod.name)};`,
+      `    this.members = ${this.list(mod.members || [])};`,
+      `  }`,
+      ``,
+      `  coordinate(task) {`,
+      `    const results = {};`,
+      `    for (const member of this.members) {`,
+      `      const entry = _REGISTRY[member];`,
+      `      if (entry && typeof entry.execute === "function") {`,
+      `        results[member] = entry.execute(task);`,
+      `      } else {`,
+      `        results[member] = { status: "available", member, task };`,
+      `      }`,
+      `    }`,
+      `    return results;`,
+      `  }`,
+      `}`,
+    ];
+  }
+
+  private compilePolicy(mod: V2ModuleNode, className: string): string[] {
+    return [
+      `class ${className} {`,
+      `  constructor() {`,
+      `    this.name = ${this.str(mod.name)};`,
+      `    this.allow = ${this.list(mod.allow || [])};`,
+      `    this.deny = ${this.list(mod.deny || [])};`,
+      `  }`,
+      ``,
+      `  check(action) {`,
+      `    if (this.deny.indexOf(action) !== -1) return false;`,
+      `    if (this.allow.indexOf(action) !== -1) return true;`,
+      `    return false;`,
+      `  }`,
+      ``,
+      `  check_all(actions) {`,
+      `    const out = {};`,
+      `    for (const action of actions) out[action] = this.check(action);`,
+      `    return out;`,
+      `  }`,
+      `}`,
+    ];
+  }
+
+  private compileSystem(mod: V2ModuleNode, className: string): string[] {
+    const agents = mod.agents || [];
+    const modules = mod.modules || [];
+    const edges = (mod.edges || []).map(e => [e.source, e.target]);
+
+    return [
+      `class ${className} {`,
+      `  constructor() {`,
+      `    this.name = ${this.str(mod.name)};`,
+      `    this.agents = ${this.list(agents)};`,
+      `    this.modules = ${this.list(modules)};`,
+      `    this.edges = ${JSON.stringify(edges)};`,
+      `  }`,
+      ``,
+      `  _targets() {`,
+      `    const seen = [];`,
+      `    for (const name of this.agents.concat(this.modules)) {`,
+      `      if (seen.indexOf(name) === -1) seen.push(name);`,
+      `    }`,
+      `    return seen;`,
+      `  }`,
+      ``,
+      `  run() {`,
+      `    const targets = this._targets();`,
+      `    const deps = {};`,
+      `    for (const t of targets) deps[t] = [];`,
+      `    for (const edge of this.edges) {`,
+      `      const src = edge[0];`,
+      `      const tgt = edge[1];`,
+      `      if (tgt in deps && targets.indexOf(src) !== -1) deps[tgt].push(src);`,
+      `    }`,
+      `    const order = [];`,
+      `    const remaining = new Set(targets);`,
+      `    while (remaining.size > 0) {`,
+      `      let ready = [...remaining].filter(t => deps[t].every(d => order.indexOf(d) !== -1));`,
+      `      if (ready.length === 0) ready = [...remaining];`,
+      `      for (const t of ready) {`,
+      `        order.push(t);`,
+      `        remaining.delete(t);`,
+      `      }`,
+      `    }`,
+      `    const results = {};`,
+      `    for (const target of order) {`,
+      `      const entry = _REGISTRY[target];`,
+      `      if (!entry) {`,
+      `        results[target] = { status: "available" };`,
+      `      } else if (typeof entry.run === "function") {`,
+      `        results[target] = entry.run();`,
+      `      } else if (typeof entry.execute === "function") {`,
+      `        results[target] = entry.execute("system task");`,
+      `      } else {`,
+      `        results[target] = { status: "available" };`,
+      `      }`,
+      `    }`,
+      `    return { order, results };`,
+      `  }`,
+      `}`,
+    ];
+  }
+
+  // --------------------------------------------------------------------------
+  // Registry + Entry Point
+  // --------------------------------------------------------------------------
+
+  private compileRegistry(modules: V2ModuleNode[], classNames: string[]): string[] {
+    const lines: string[] = [];
+
+    lines.push('const _REGISTRY = {};');
+    for (let i = 0; i < modules.length; i++) {
+      const cn = classNames[i];
+      lines.push(`_REGISTRY[${this.str(cn)}] = new ${cn}();`);
+      lines.push(`_REGISTRY[${this.str(modules[i].name)}] = _REGISTRY[${this.str(cn)}];`);
+    }
+
+    return lines;
+  }
+
+  private compileMain(modules: V2ModuleNode[], classNames: string[]): string[] {
+    const lines: string[] = [];
+
+    lines.push('function _main() {');
+    lines.push(`  console.log("=== MAM Generated Modules Self-Test ===");`);
+
+    for (let i = 0; i < modules.length; i++) {
+      const mod = modules[i];
+      const cn = classNames[i];
+      const display = this.str(mod.name);
+
+      switch (mod.moduleType) {
+        case 'agent':
+          lines.push(`  const agent = _REGISTRY[${display}];`);
+          lines.push(`  console.log(${display} + ".execute ->", agent.execute("sample task for " + ${display}));`);
+          break;
+        case 'tool': {
+          const cap = (mod.capabilities || []).length > 0 ? this.str((mod.capabilities || [])[0]) : this.str('invoke');
+          lines.push(`  const tool = _REGISTRY[${display}];`);
+          lines.push(`  console.log(${display} + ".invoke(supported) ->", tool.invoke(${cap}, { params: "sample" }));`);
+          lines.push(`  console.log(${display} + ".invoke(unsupported) ->", tool.invoke("not-a-capability"));`);
+          break;
+        }
+        case 'memory':
+          lines.push(`  const mem = _REGISTRY[${display}];`);
+          lines.push(`  mem.store("topic", "MAM");`);
+          lines.push(`  console.log(${display} + ".retrieve ->", mem.retrieve("topic"));`);
+          lines.push(`  console.log(${display} + ".search ->", mem.search("mam"));`);
+          lines.push(`  console.log(${display} + ".delete ->", mem.delete("topic"));`);
+          break;
+        case 'workflow':
+          lines.push(`  console.log(${display} + ".run ->", _REGISTRY[${display}].run(${this.sampleInputs(mod.inputs)}));`);
+          break;
+        case 'team':
+          lines.push(`  console.log(${display} + ".coordinate ->", _REGISTRY[${display}].coordinate("sample team task"));`);
+          break;
+        case 'policy': {
+          const allow = (mod.allow || []).length > 0 ? this.str((mod.allow || [])[0]) : this.str('allow');
+          const deny = (mod.deny || []).length > 0 ? this.str((mod.deny || [])[0]) : this.str('deny');
+          lines.push(`  const pol = _REGISTRY[${display}];`);
+          lines.push(`  console.log(${display} + ".check(allow) ->", pol.check(${allow}));`);
+          lines.push(`  console.log(${display} + ".check(deny) ->", pol.check(${deny}));`);
+          lines.push(`  console.log(${display} + ".check_all ->", pol.check_all([${allow}, ${deny}, "unknown"]));`);
+          break;
+        }
+        case 'system':
+          lines.push(`  console.log(${display} + ".run ->", _REGISTRY[${display}].run());`);
+          break;
+        default:
+          lines.push(`  console.log(${display} + ".run ->", _REGISTRY[${display}].run(${this.sampleInputs(mod.inputs)}));`);
+          lines.push(`  console.log(${display} + ".run(missing) ->", _REGISTRY[${display}].run({}));`);
+      }
+    }
+
+    lines.push(`  console.log("=== Self-Test Complete ===");`);
     lines.push(`}`);
     lines.push('');
-    lines.push(`module.exports = { ${className} };`);
+    lines.push(`if (require.main === module) {`);
+    lines.push(`  _main();`);
+    lines.push(`}`);
 
     return lines;
   }

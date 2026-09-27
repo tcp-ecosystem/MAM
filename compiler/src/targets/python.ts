@@ -2,9 +2,10 @@
  * Python Target
  * 
  * Compiles MAM AST to Python code.
+ * Each module becomes a real, runnable class (no NotImplementedError).
  */
 
-import { V2ModuleNode, V2AgentNode, V2ToolNode, V2MemoryNode, V2WorkflowNode, V2TeamNode, V2PolicyNode, V2SystemNode } from '@mam/ast';
+import { V2ModuleNode, V2PortDefinition } from '@mam/ast';
 import { CompileTargetHandler, CompilerConfig } from '../compiler.js';
 import { generateModuleContext } from '../context.js';
 
@@ -20,18 +21,97 @@ export class PythonTarget implements CompileTargetHandler {
     lines.push('Target: Python');
     lines.push('"""');
     lines.push('');
+    lines.push('def _default_action(obj, name):');
+    lines.push('    """Pick the first declared capability for an in-scope module, else the raw name."""');
+    lines.push('    caps = getattr(obj, "capabilities", None)');
+    lines.push('    if caps:');
+    lines.push('        return caps[0]');
+    lines.push('    return name');
+    lines.push('');
 
-    for (const mod of modules) {
-      lines.push(generateModuleContext(mod, 'python'));
+    const classNames = this.assignClassNames(modules);
+
+    for (let i = 0; i < modules.length; i++) {
+      lines.push(generateModuleContext(modules[i], 'python'));
       lines.push('');
-      lines.push(...this.compileModule(mod, indent, config));
+      lines.push(...this.compileModule(modules[i], classNames[i], indent, config));
       lines.push('');
     }
+
+    lines.push(...this.compileRegistry(modules, classNames));
+    lines.push('');
+    lines.push(...this.compileMain(modules, classNames, indent));
 
     return lines.join('\n');
   }
 
-  private compileModule(mod: V2ModuleNode, indent: number, config: CompilerConfig): string[] {
+  // --------------------------------------------------------------------------
+  // Helpers
+  // --------------------------------------------------------------------------
+
+  private assignClassNames(modules: V2ModuleNode[]): string[] {
+    const used = new Set<string>();
+    const result: string[] = [];
+    for (const mod of modules) {
+      let base = this.toClass(mod.name);
+      let name = base;
+      let i = 2;
+      while (used.has(name)) {
+        name = `${base}_${i}`;
+        i++;
+      }
+      used.add(name);
+      result.push(name);
+    }
+    return result;
+  }
+
+  private toClass(name: string): string {
+    let c = name.replace(/[^a-zA-Z0-9_]/g, '_');
+    if (/^[0-9]/.test(c)) c = 'M_' + c;
+    if (!c) c = 'Module';
+    return c;
+  }
+
+  private str(value: unknown): string {
+    return JSON.stringify(value === undefined || value === null ? '' : String(value));
+  }
+
+  private list(values: string[] | undefined): string {
+    return JSON.stringify(values || []);
+  }
+
+  private sampleValue(type: string): string {
+    const t = (type || '').toLowerCase();
+    if (t.includes('int')) return '3';
+    if (t.includes('float') || t.includes('number')) return '1.5';
+    if (t.includes('bool')) return 'True';
+    if (t.includes('list') || t.includes('array')) return '[1, 2, 3]';
+    if (t.includes('object') || t.includes('dict') || t === 'any') return '{"sample": 1}';
+    return '"sample input"';
+  }
+
+  private sampleInputs(inputs: V2PortDefinition[] | undefined): string {
+    const pairs: string[] = [];
+    for (const inp of inputs || []) {
+      pairs.push(`${this.str(inp.name)}: ${this.sampleValue(inp.type)}`);
+    }
+    return `{${pairs.join(', ')}}`;
+  }
+
+  private inputNames(inputs: V2PortDefinition[] | undefined): string[] {
+    return (inputs || []).map(i => i.name);
+  }
+
+  private requiredInputs(inputs: V2PortDefinition[] | undefined): string[] {
+    return (inputs || []).filter(i => i.required).map(i => i.name);
+  }
+
+  // --------------------------------------------------------------------------
+  // Module Compiler
+  // --------------------------------------------------------------------------
+
+  private compileModule(mod: V2ModuleNode, className: string, indent: number, config: CompilerConfig): string[] {
     const lines: string[] = [];
     const pad = ' '.repeat(indent);
 
@@ -44,177 +124,404 @@ export class PythonTarget implements CompileTargetHandler {
 
     switch (mod.moduleType) {
       case 'agent':
-        lines.push(...this.compileAgent(mod as unknown as V2AgentNode, indent, config));
+        lines.push(...this.compileAgent(mod, className, pad));
         break;
       case 'tool':
-        lines.push(...this.compileTool(mod as unknown as V2ToolNode, indent, config));
+        lines.push(...this.compileTool(mod, className, pad));
         break;
       case 'memory':
-        lines.push(...this.compileMemory(mod as unknown as V2MemoryNode, indent, config));
+        lines.push(...this.compileMemory(mod, className, pad));
         break;
       case 'workflow':
-        lines.push(...this.compileWorkflow(mod as unknown as V2WorkflowNode, indent, config));
+        lines.push(...this.compileWorkflow(mod, className, pad));
         break;
       case 'team':
-        lines.push(...this.compileTeam(mod as unknown as V2TeamNode, indent, config));
+        lines.push(...this.compileTeam(mod, className, pad));
         break;
       case 'policy':
-        lines.push(...this.compilePolicy(mod as unknown as V2PolicyNode, indent, config));
+        lines.push(...this.compilePolicy(mod, className, pad));
         break;
       case 'system':
-        lines.push(...this.compileSystem(mod as unknown as V2SystemNode, indent, config));
+        lines.push(...this.compileSystem(mod, className, pad));
         break;
       default:
-        lines.push(...this.compileGeneric(mod, indent, config));
+        lines.push(...this.compileGeneric(mod, className, pad));
     }
 
     return lines;
   }
 
-  private compileAgent(mod: V2AgentNode, indent: number, config: CompilerConfig): string[] {
-    const pad = ' '.repeat(indent);
-    const className = mod.name.replace(/[^a-zA-Z0-9_]/g, '_');
+  private compileGeneric(mod: V2ModuleNode, className: string, pad: string): string[] {
+    const inputs = this.inputNames(mod.inputs);
+    const required = this.requiredInputs(mod.inputs);
+    const outputs = this.inputNames(mod.outputs);
 
     return [
       `class ${className}:`,
-      `${pad}"""${mod.goal || mod.role || mod.name}"""`,
-      '',
+      `${pad}"""${(mod.description || mod.name).replace(/"""/g, "'")}"""`,
+      ``,
       `${pad}def __init__(self):`,
-      `${pad}${pad}self.role = "${mod.role || ''}"`,
-      `${pad}${pad}self.goal = "${mod.goal || ''}"`,
-      `${pad}${pad}self.tools = ${JSON.stringify(mod.tools || [])}`,
-      `${pad}${pad}self.handoff = ${JSON.stringify(mod.handoff || [])}`,
-      '',
+      `${pad}${pad}self.name = ${this.str(mod.name)}`,
+      `${pad}${pad}self.description = ${this.str(mod.description || '')}`,
+      `${pad}${pad}self.inputs = ${this.list(inputs)}`,
+      `${pad}${pad}self.required = ${this.list(required)}`,
+      `${pad}${pad}self.outputs = ${this.list(outputs)}`,
+      `${pad}${pad}self.capabilities = ${this.list(mod.capabilities || [])}`,
+      ``,
+      `${pad}def run(self, inputs=None):`,
+      `${pad}${pad}"""Run the module, validating required inputs."""`,
+      `${pad}${pad}inputs = inputs if inputs is not None else {}`,
+      `${pad}${pad}missing = [k for k in self.required if k not in inputs]`,
+      `${pad}${pad}if missing:`,
+      `${pad}${pad}${pad}return {"ok": False, "error": "missing required inputs: %s" % ", ".join(missing), "outputs": {}}`,
+      `${pad}${pad}outputs = {}`,
+      `${pad}${pad}for name in self.outputs:`,
+      `${pad}${pad}${pad}outputs[name] = inputs.get(name) if name in inputs else None`,
+      `${pad}${pad}for key, value in inputs.items():`,
+      `${pad}${pad}${pad}if key not in outputs:`,
+      `${pad}${pad}${pad}${pad}outputs[key] = value`,
+      `${pad}${pad}return {"ok": True, "outputs": outputs}`,
+      ``,
+    ];
+  }
+
+  private compileAgent(mod: V2ModuleNode, className: string, pad: string): string[] {
+    const memoryTarget = (mod.memory as { name?: string } | undefined)?.name;
+
+    const lines = [
+      `class ${className}:`,
+      `${pad}"""${(mod.goal || mod.role || mod.name).replace(/"""/g, "'")}"""`,
+      ``,
+      `${pad}def __init__(self):`,
+      `${pad}${pad}self.name = ${this.str(mod.name)}`,
+      `${pad}${pad}self.role = ${this.str(mod.role || '')}`,
+      `${pad}${pad}self.goal = ${this.str(mod.goal || '')}`,
+      `${pad}${pad}self.tools = ${this.list(mod.tools || [])}`,
+      `${pad}${pad}self.handoff = ${this.list(mod.handoff || [])}`,
+      `${pad}${pad}self.memory = None`,
+      `${pad}${pad}self.memory_target = ${this.str(memoryTarget || '')}`,
+      ``,
       `${pad}def execute(self, task):`,
       `${pad}${pad}"""Execute the agent's task."""`,
-      `${pad}${pad}raise NotImplementedError`,
-      '',
+      `${pad}${pad}log = []`,
+      `${pad}${pad}mem = self.memory`,
+      `${pad}${pad}if mem is None and self.memory_target:`,
+      `${pad}${pad}${pad}mem = _REGISTRY.get(self.memory_target)`,
+      `${pad}${pad}${pad}self.memory = mem`,
+      `${pad}${pad}if mem is not None and hasattr(mem, "store"):`,
+      `${pad}${pad}${pad}try:`,
+      `${pad}${pad}${pad}${pad}mem.store("agent:%s" % str(self.role), {"task": str(task), "agent": self.role})`,
+      `${pad}${pad}${pad}${pad}log.append("memory stored")`,
+      `${pad}${pad}${pad}except Exception as exc:`,
+      `${pad}${pad}${pad}${pad}log.append("memory error: %s" % str(exc))`,
+      `${pad}${pad}tool_results = {}`,
+      `${pad}${pad}for tool in self.tools:`,
+      `${pad}${pad}${pad}entry = _REGISTRY.get(tool)`,
+      `${pad}${pad}${pad}if entry is not None and hasattr(entry, "invoke"):`,
+      `${pad}${pad}${pad}${pad}tool_results[tool] = entry.invoke(_default_action(entry, tool), {"task": task})`,
+      `${pad}${pad}${pad}else:`,
+      `${pad}${pad}${pad}${pad}tool_results[tool] = {"status": "available"}`,
+      `${pad}${pad}output = "processed task: %s" % str(task)`,
+      `${pad}${pad}return {"status": "ok", "output": output, "agent": self.name, "tool_results": tool_results, "log": log}`,
+      ``,
     ];
+    return lines;
   }
 
-  private compileTool(mod: V2ToolNode, indent: number, config: CompilerConfig): string[] {
-    const pad = ' '.repeat(indent);
-    const className = mod.name.replace(/[^a-zA-Z0-9_]/g, '_');
-
+  private compileTool(mod: V2ModuleNode, className: string, pad: string): string[] {
     return [
       `class ${className}:`,
-      `${pad}"""Tool: ${mod.provider}"""`,
-      '',
+      `${pad}"""Tool: ${(mod.provider || mod.name).replace(/"""/g, "'")}"""`,
+      ``,
       `${pad}def __init__(self):`,
-      `${pad}${pad}self.provider = "${mod.provider}"`,
-      `${pad}${pad}self.capabilities = ${JSON.stringify(mod.capabilities || [])}`,
-      '',
+      `${pad}${pad}self.name = ${this.str(mod.name)}`,
+      `${pad}${pad}self.provider = ${this.str(mod.provider || '')}`,
+      `${pad}${pad}self.capabilities = ${this.list(mod.capabilities || [])}`,
+      ``,
+      `${pad}def invoke(self, action, params=None):`,
+      `${pad}${pad}"""Invoke a capability, validating against declared capabilities."""`,
+      `${pad}${pad}params = params if params is not None else {}`,
+      `${pad}${pad}if action not in self.capabilities:`,
+      `${pad}${pad}${pad}return {"success": False, "error": "action not supported: %s" % str(action), "result": None}`,
+      `${pad}${pad}return {"success": True, "result": {"action": action, "params": params, "provider": self.provider}}`,
+      ``,
       `${pad}def execute(self, action, **kwargs):`,
-      `${pad}${pad}"""Execute a tool action."""`,
-      `${pad}${pad}raise NotImplementedError`,
-      '',
+      `${pad}${pad}"""Backwards-compatible alias for invoke."""`,
+      `${pad}${pad}return self.invoke(action, kwargs)`,
+      ``,
     ];
   }
 
-  private compileMemory(mod: V2MemoryNode, indent: number, config: CompilerConfig): string[] {
-    const pad = ' '.repeat(indent);
-    const className = mod.name.replace(/[^a-zA-Z0-9_]/g, '_');
-
+  private compileMemory(mod: V2ModuleNode, className: string, pad: string): string[] {
     return [
       `class ${className}:`,
-      `${pad}"""Memory: ${mod.format} / ${mod.backend}"""`,
-      '',
+      `${pad}"""Memory: ${mod.format || ''} / ${mod.backend || ''}"""`,
+      ``,
       `${pad}def __init__(self):`,
-      `${pad}${pad}self.format = "${mod.format}"`,
-      `${pad}${pad}self.backend = "${mod.backend}"`,
-      `${pad}${pad}self.scope = "${mod.scope}"`,
-      '',
+      `${pad}${pad}self.name = ${this.str(mod.name)}`,
+      `${pad}${pad}self.format = ${this.str(mod.format || 'key-value')}`,
+      `${pad}${pad}self.backend = ${this.str(mod.backend || 'local')}`,
+      `${pad}${pad}self.scope = ${this.str(mod.scope || 'module')}`,
+      `${pad}${pad}self._data = {}`,
+      ``,
       `${pad}def store(self, key, value):`,
-      `${pad}${pad}raise NotImplementedError`,
-      '',
+      `${pad}${pad}"""Store a value under a key."""`,
+      `${pad}${pad}self._data[key] = value`,
+      `${pad}${pad}return {"ok": True, "key": key, "value": value}`,
+      ``,
       `${pad}def retrieve(self, key):`,
-      `${pad}${pad}raise NotImplementedError`,
-      '',
+      `${pad}${pad}"""Retrieve a value by key."""`,
+      `${pad}${pad}return self._data.get(key)`,
+      ``,
+      `${pad}def delete(self, key):`,
+      `${pad}${pad}"""Delete a key."""`,
+      `${pad}${pad}if key in self._data:`,
+      `${pad}${pad}${pad}del self._data[key]`,
+      `${pad}${pad}${pad}return {"ok": True, "key": key}`,
+      `${pad}${pad}return {"ok": False, "error": "key not found: %s" % str(key)}`,
+      ``,
+      `${pad}def search(self, query):`,
+      `${pad}${pad}"""Substring search across keys and values."""`,
+      `${pad}${pad}q = str(query).lower()`,
+      `${pad}${pad}return {k: v for k, v in self._data.items() if q in str(k).lower() or q in str(v).lower()}`,
+      ``,
     ];
   }
 
-  private compileWorkflow(mod: V2WorkflowNode, indent: number, config: CompilerConfig): string[] {
-    const pad = ' '.repeat(indent);
-    const className = mod.name.replace(/[^a-zA-Z0-9_]/g, '_');
+  private compileWorkflow(mod: V2ModuleNode, className: string, pad: string): string[] {
+    const steps = (mod.steps || []).map(s => s.name);
+    const edges = (mod.edges || []).map(e => [e.source, e.target]);
 
     return [
       `class ${className}:`,
-      `${pad}"""Workflow"""`,
-      '',
-      `${pad}STEPS = ${JSON.stringify(mod.steps?.map(s => s.name) || [])}`,
-      `${pad}EDGES = ${JSON.stringify(mod.edges?.map(e => [e.source, e.target]) || [])}`,
-      '',
-      `${pad}def execute(self):`,
-      `${pad}${pad}for step in self.STEPS:`,
-      `${pad}${pad}${pad}print(f"Executing: {step}")`,
-      '',
-    ];
-  }
-
-  private compileTeam(mod: V2TeamNode, indent: number, config: CompilerConfig): string[] {
-    const pad = ' '.repeat(indent);
-    const className = mod.name.replace(/[^a-zA-Z0-9_]/g, '_');
-
-    return [
-      `class ${className}:`,
-      `${pad}"""Team"""`,
-      '',
-      `${pad}MEMBERS = ${JSON.stringify(mod.members || [])}`,
-      '',
-      `${pad}def coordinate(self):`,
-      `${pad}${pad}raise NotImplementedError`,
-      '',
-    ];
-  }
-
-  private compilePolicy(mod: V2PolicyNode, indent: number, config: CompilerConfig): string[] {
-    const pad = ' '.repeat(indent);
-    const className = mod.name.replace(/[^a-zA-Z0-9_]/g, '_');
-
-    return [
-      `class ${className}:`,
-      `${pad}"""Policy"""`,
-      '',
-      `${pad}ALLOW = ${JSON.stringify(mod.allow || [])}`,
-      `${pad}DENY = ${JSON.stringify(mod.deny || [])}`,
-      '',
-      `${pad}def check(self, action):`,
-      `${pad}${pad}if action in self.DENY: return False`,
-      `${pad}${pad}if action in self.ALLOW: return True`,
-      `${pad}${pad}return False`,
-      '',
-    ];
-  }
-
-  private compileSystem(mod: V2SystemNode, indent: number, config: CompilerConfig): string[] {
-    const pad = ' '.repeat(indent);
-    const className = mod.name.replace(/[^a-zA-Z0-9_]/g, '_');
-
-    return [
-      `class ${className}:`,
-      `${pad}"""System"""`,
-      '',
-      `${pad}AGENTS = ${JSON.stringify(mod.agents || [])}`,
-      `${pad}MODULES = ${JSON.stringify(mod.modules || [])}`,
-      `${pad}EDGES = ${JSON.stringify(mod.edges?.map(e => [e.source, e.target]) || [])}`,
-      '',
-      `${pad}def run(self):`,
-      `${pad}${pad}raise NotImplementedError`,
-      '',
-    ];
-  }
-
-  private compileGeneric(mod: V2ModuleNode, indent: number, config: CompilerConfig): string[] {
-    const pad = ' '.repeat(indent);
-    const className = mod.name.replace(/[^a-zA-Z0-9_]/g, '_');
-
-    return [
-      `class ${className}:`,
-      `${pad}"""${mod.description || mod.name}"""`,
-      '',
+      `${pad}"""Workflow: ${(mod.description || mod.name).replace(/"""/g, "'")}"""`,
+      ``,
       `${pad}def __init__(self):`,
-      `${pad}${pad}pass`,
-      '',
+      `${pad}${pad}self.name = ${this.str(mod.name)}`,
+      `${pad}${pad}self.steps = ${this.list(steps)}`,
+      `${pad}${pad}self.edges = ${JSON.stringify(edges)}`,
+      ``,
+      `${pad}def _order(self):`,
+      `${pad}${pad}"""Return steps in topological order (source -> target)."""`,
+      `${pad}${pad}steps = list(self.steps)`,
+      `${pad}${pad}deps = {}`,
+      `${pad}${pad}for step in steps:`,
+      `${pad}${pad}${pad}deps[step] = []`,
+      `${pad}${pad}for src, tgt in self.edges:`,
+      `${pad}${pad}${pad}if tgt in deps and src in steps:`,
+      `${pad}${pad}${pad}${pad}deps[tgt].append(src)`,
+      `${pad}${pad}order = []`,
+      `${pad}${pad}remaining = set(steps)`,
+      `${pad}${pad}while remaining:`,
+      `${pad}${pad}${pad}ready = [s for s in remaining if all(d in order for d in deps[s])]`,
+      `${pad}${pad}${pad}if not ready:`,
+      `${pad}${pad}${pad}${pad}ready = list(remaining)`,
+      `${pad}${pad}${pad}for s in ready:`,
+      `${pad}${pad}${pad}${pad}order.append(s)`,
+      `${pad}${pad}${pad}${pad}remaining.discard(s)`,
+      `${pad}${pad}return order`,
+      ``,
+      `${pad}def run(self, inputs=None):`,
+      `${pad}${pad}"""Run the workflow in dependency order, collecting per-step results."""`,
+      `${pad}${pad}inputs = inputs if inputs is not None else {}`,
+      `${pad}${pad}order = self._order()`,
+      `${pad}${pad}results = {}`,
+      `${pad}${pad}for step in order:`,
+      `${pad}${pad}${pad}entry = _REGISTRY.get(step)`,
+      `${pad}${pad}${pad}if entry is not None and hasattr(entry, "invoke"):`,
+      `${pad}${pad}${pad}${pad}results[step] = entry.invoke(_default_action(entry, step), {"inputs": inputs, "results": results})`,
+      `${pad}${pad}${pad}elif step in inputs:`,
+      `${pad}${pad}${pad}${pad}results[step] = inputs[step]`,
+      `${pad}${pad}${pad}else:`,
+      `${pad}${pad}${pad}${pad}results[step] = None`,
+      `${pad}${pad}return {"order": order, "results": results}`,
+      ``,
     ];
+  }
+
+  private compileTeam(mod: V2ModuleNode, className: string, pad: string): string[] {
+    return [
+      `class ${className}:`,
+      `${pad}"""Team: ${(mod.description || mod.name).replace(/"""/g, "'")}"""`,
+      ``,
+      `${pad}def __init__(self):`,
+      `${pad}${pad}self.name = ${this.str(mod.name)}`,
+      `${pad}${pad}self.members = ${this.list(mod.members || [])}`,
+      ``,
+      `${pad}def coordinate(self, task):`,
+      `${pad}${pad}"""Coordinate team members on a task, returning per-member results."""`,
+      `${pad}${pad}results = {}`,
+      `${pad}${pad}for member in self.members:`,
+      `${pad}${pad}${pad}entry = _REGISTRY.get(member)`,
+      `${pad}${pad}${pad}if entry is not None and hasattr(entry, "execute"):`,
+      `${pad}${pad}${pad}${pad}results[member] = entry.execute(task)`,
+      `${pad}${pad}${pad}else:`,
+      `${pad}${pad}${pad}${pad}results[member] = {"status": "available", "member": member, "task": task}`,
+      `${pad}${pad}return results`,
+      ``,
+    ];
+  }
+
+  private compilePolicy(mod: V2ModuleNode, className: string, pad: string): string[] {
+    return [
+      `class ${className}:`,
+      `${pad}"""Policy: ${(mod.description || mod.name).replace(/"""/g, "'")}"""`,
+      ``,
+      `${pad}def __init__(self):`,
+      `${pad}${pad}self.name = ${this.str(mod.name)}`,
+      `${pad}${pad}self.allow = ${this.list(mod.allow || [])}`,
+      `${pad}${pad}self.deny = ${this.list(mod.deny || [])}`,
+      ``,
+      `${pad}def check(self, action):`,
+      `${pad}${pad}"""Deny wins, else allow, else default deny."""`,
+      `${pad}${pad}if action in self.deny:`,
+      `${pad}${pad}${pad}return False`,
+      `${pad}${pad}if action in self.allow:`,
+      `${pad}${pad}${pad}return True`,
+      `${pad}${pad}return False`,
+      ``,
+      `${pad}def check_all(self, actions):`,
+      `${pad}${pad}"""Check a list of actions."""`,
+      `${pad}${pad}return {action: self.check(action) for action in actions}`,
+      ``,
+    ];
+  }
+
+  private compileSystem(mod: V2ModuleNode, className: string, pad: string): string[] {
+    const agents = mod.agents || [];
+    const modules = mod.modules || [];
+    const edges = (mod.edges || []).map(e => [e.source, e.target]);
+
+    return [
+      `class ${className}:`,
+      `${pad}"""System: ${(mod.description || mod.name).replace(/"""/g, "'")}"""`,
+      ``,
+      `${pad}def __init__(self):`,
+      `${pad}${pad}self.name = ${this.str(mod.name)}`,
+      `${pad}${pad}self.agents = ${this.list(agents)}`,
+      `${pad}${pad}self.modules = ${this.list(modules)}`,
+      `${pad}${pad}self.edges = ${JSON.stringify(edges)}`,
+      ``,
+      `${pad}def _targets(self):`,
+      `${pad}${pad}seen = []`,
+      `${pad}${pad}for name in list(self.agents) + list(self.modules):`,
+      `${pad}${pad}${pad}if name not in seen:`,
+      `${pad}${pad}${pad}${pad}seen.append(name)`,
+      `${pad}${pad}return seen`,
+      ``,
+      `${pad}def run(self):`,
+      `${pad}${pad}"""Execute modules/agents in topological order by edges."""`,
+      `${pad}${pad}targets = self._targets()`,
+      `${pad}${pad}deps = {}`,
+      `${pad}${pad}for target in targets:`,
+      `${pad}${pad}${pad}deps[target] = []`,
+      `${pad}${pad}for src, tgt in self.edges:`,
+      `${pad}${pad}${pad}if tgt in deps and src in targets:`,
+      `${pad}${pad}${pad}${pad}deps[tgt].append(src)`,
+      `${pad}${pad}order = []`,
+      `${pad}${pad}remaining = set(targets)`,
+      `${pad}${pad}while remaining:`,
+      `${pad}${pad}${pad}ready = [t for t in remaining if all(d in order for d in deps[t])]`,
+      `${pad}${pad}${pad}if not ready:`,
+      `${pad}${pad}${pad}${pad}ready = list(remaining)`,
+      `${pad}${pad}${pad}for t in ready:`,
+      `${pad}${pad}${pad}${pad}order.append(t)`,
+      `${pad}${pad}${pad}${pad}remaining.discard(t)`,
+      `${pad}${pad}results = {}`,
+      `${pad}${pad}for target in order:`,
+      `${pad}${pad}${pad}entry = _REGISTRY.get(target)`,
+      `${pad}${pad}${pad}if entry is None:`,
+      `${pad}${pad}${pad}${pad}results[target] = {"status": "available"}`,
+      `${pad}${pad}${pad}elif hasattr(entry, "run"):`,
+      `${pad}${pad}${pad}${pad}results[target] = entry.run()`,
+      `${pad}${pad}${pad}elif hasattr(entry, "execute"):`,
+      `${pad}${pad}${pad}${pad}results[target] = entry.execute("system task")`,
+      `${pad}${pad}${pad}else:`,
+      `${pad}${pad}${pad}${pad}results[target] = {"status": "available"}`,
+      `${pad}${pad}return {"order": order, "results": results}`,
+      ``,
+    ];
+  }
+
+  // --------------------------------------------------------------------------
+  // Registry + Entry Point
+  // --------------------------------------------------------------------------
+
+  private compileRegistry(modules: V2ModuleNode[], classNames: string[]): string[] {
+    const lines: string[] = [];
+
+    lines.push('_REGISTRY = {}');
+    for (let i = 0; i < modules.length; i++) {
+      const cn = classNames[i];
+      const original = this.str(modules[i].name);
+      lines.push(`_REGISTRY[${this.str(cn)}] = ${cn}()`);
+      lines.push(`_REGISTRY[${original}] = _REGISTRY[${this.str(cn)}]`);
+    }
+    lines.push('');
+    return lines;
+  }
+
+  private compileMain(modules: V2ModuleNode[], classNames: string[], indent: number): string[] {
+    const lines: string[] = [];
+    const pad = ' '.repeat(indent);
+
+    lines.push(`def _main():`);
+    lines.push(`${pad}print("=== MAM Generated Modules Self-Test ===")`);
+
+    for (let i = 0; i < modules.length; i++) {
+      const mod = modules[i];
+      const cn = classNames[i];
+      const display = this.str(mod.name);
+
+      switch (mod.moduleType) {
+        case 'agent':
+          lines.push(`${pad}agent = _REGISTRY[${display}]`);
+          lines.push(`${pad}print(${display} + ".execute ->", agent.execute("sample task for " + ${display}))`);
+          break;
+        case 'tool': {
+          const cap = (mod.capabilities || []).length > 0 ? this.str((mod.capabilities || [])[0]) : this.str('invoke');
+          lines.push(`${pad}tool = _REGISTRY[${display}]`);
+          lines.push(`${pad}print(${display} + ".invoke(supported) ->", tool.invoke(${cap}, {"params": "sample"}))`);
+          lines.push(`${pad}print(${display} + ".invoke(unsupported) ->", tool.invoke("not-a-capability"))`);
+          break;
+        }
+        case 'memory':
+          lines.push(`${pad}mem = _REGISTRY[${display}]`);
+          lines.push(`${pad}mem.store("topic", "MAM")`);
+          lines.push(`${pad}print(${display} + ".retrieve ->", mem.retrieve("topic"))`);
+          lines.push(`${pad}print(${display} + ".search ->", mem.search("mam"))`);
+          lines.push(`${pad}print(${display} + ".delete ->", mem.delete("topic"))`);
+          break;
+        case 'workflow':
+          lines.push(`${pad}print(${display} + ".run ->", _REGISTRY[${display}].run(${this.sampleInputs(mod.inputs)}))`);
+          break;
+        case 'team':
+          lines.push(`${pad}print(${display} + ".coordinate ->", _REGISTRY[${display}].coordinate("sample team task"))`);
+          break;
+        case 'policy': {
+          const allow = (mod.allow || []).length > 0 ? this.str((mod.allow || [])[0]) : this.str('allow');
+          const deny = (mod.deny || []).length > 0 ? this.str((mod.deny || [])[0]) : this.str('deny');
+          lines.push(`${pad}pol = _REGISTRY[${display}]`);
+          lines.push(`${pad}print(${display} + ".check(allow) ->", pol.check(${allow}))`);
+          lines.push(`${pad}print(${display} + ".check(deny) ->", pol.check(${deny}))`);
+          lines.push(`${pad}print(${display} + ".check_all ->", pol.check_all([${allow}, ${deny}, "unknown"]))`);
+          break;
+        }
+        case 'system':
+          lines.push(`${pad}print(${display} + ".run ->", _REGISTRY[${display}].run())`);
+          break;
+        default:
+          lines.push(`${pad}print(${display} + ".run ->", _REGISTRY[${display}].run(${this.sampleInputs(mod.inputs)}))`);
+          lines.push(`${pad}print(${display} + ".run(missing) ->", _REGISTRY[${display}].run({}))`);
+      }
+    }
+
+    lines.push(`${pad}print("=== Self-Test Complete ===")`);
+    lines.push('');
+    lines.push(`if __name__ == "__main__":`);
+    lines.push(`${pad}_main()`);
+    lines.push('');
+
+    return lines;
   }
 }

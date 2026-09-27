@@ -1,10 +1,15 @@
 /**
  * Docker Target
- * 
- * Compiles MAM AST to Dockerfile and docker-compose.yml.
+ *
+ * Compiles MAM AST to a real, syntactically valid Dockerfile.
+ * - Single module  -> one Dockerfile (base image selected from the module's
+ *   declared runtime, ENV from metadata, EXPOSE from network permissions).
+ * - Multiple modules -> a multi-stage Dockerfile (one stage per module) plus a
+ *   suggested docker-compose.yml kept as comments so the emitted file remains a
+ *   valid Dockerfile.
  */
 
-import { V2ModuleNode } from '@mam/ast';
+import { V2ModuleNode, V2AgentNode, V2ToolNode, V2MemoryNode, V2WorkflowNode, V2TeamNode, V2PolicyNode, V2SystemNode } from '@mam/ast';
 import { CompileTargetHandler, CompilerConfig } from '../compiler.js';
 import { generateModuleContext } from '../context.js';
 
@@ -18,47 +23,256 @@ export class DockerTarget implements CompileTargetHandler {
     lines.push('# Target: Docker');
     lines.push('');
 
-    // Embed context for each module
     for (const mod of modules) {
-      lines.push(generateModuleContext(mod, 'docker'));
+      lines.push(this.commentSafe(generateModuleContext(mod, 'docker')));
       lines.push('');
     }
 
-    lines.push('FROM python:3.11-slim');
+    if (modules.length <= 1) {
+      if (modules.length === 1) {
+        lines.push(...this.dockerfile(modules[0], false));
+      }
+    } else {
+      lines.push('# ======================================================================');
+      lines.push('# Dockerfile (multi-stage): one build stage per MAM module.');
+      lines.push('# Build a single stage with: docker build --target <stage> -t mam/<stage> .');
+      lines.push('# ======================================================================');
+      for (const mod of modules) {
+        lines.push(...this.dockerfile(mod, true));
+      }
+      lines.push('');
+      lines.push('# ======================================================================');
+      lines.push('# docker-compose.yml (suggested)');
+      lines.push('# ======================================================================');
+      for (const line of this.composeSuggestions(modules)) {
+        lines.push(`# ${line}`);
+      }
+    }
+
+    return lines.join('\n') + '\n';
+  }
+
+  private dockerfile(mod: V2ModuleNode, asStage: boolean): string[] {
+    const lang = this.runtimeOf(mod);
+    const stage = this.toStageName(mod.name);
+    const env = this.moduleEnv(mod);
+    const port = this.modulePort(mod);
+    const lines: string[] = [];
+
+    if (asStage) {
+      lines.push(`# ------------------------------`);
+      lines.push(`# Stage: ${stage} (${mod.moduleType})`);
+      lines.push(`# ------------------------------`);
+      lines.push(`FROM ${this.baseImage(lang)} AS ${stage}`);
+    } else {
+      lines.push(`# Dockerfile for module: ${mod.name} (${mod.moduleType})`);
+      lines.push(`FROM ${this.baseImage(lang)}`);
+    }
     lines.push('');
     lines.push('WORKDIR /app');
     lines.push('');
-
-    // Collect dependencies
-    const dependencies = new Set<string>();
-    for (const mod of modules) {
-      if (mod.requires) {
-        for (const req of mod.requires) {
-          dependencies.add(req);
-        }
-      }
+    for (const [ek, ev] of Object.entries(env)) {
+      lines.push(`ENV ${ek}=${this.dockerValue(ev)}`);
     }
-
-    if (dependencies.size > 0) {
-      lines.push('# Dependencies');
-      lines.push('COPY requirements.txt .');
-      lines.push('RUN pip install -r requirements.txt');
-      lines.push('');
-    }
-
+    if (Object.keys(env).length > 0) lines.push('');
+    lines.push('# Copy module source into the image');
     lines.push('COPY . .');
     lines.push('');
+    lines.push('# Install declared dependencies (no-op when the manifest is absent)');
+    lines.push(`${this.installCmd(lang)} || true`);
+    lines.push('');
+    if (port) {
+      lines.push(`EXPOSE ${port}`);
+      lines.push('');
+    }
+    lines.push(this.cmdFor(lang, mod.name));
+    return lines;
+  }
 
-    // Add ports if network permissions
+  private composeSuggestions(modules: V2ModuleNode[]): string[] {
+    const lines: string[] = [];
+    lines.push('services:');
     for (const mod of modules) {
-      if (mod.permissions?.network === 'internet') {
-        lines.push('EXPOSE 8080');
-        break;
+      const stage = this.toStageName(mod.name);
+      const port = this.modulePort(mod);
+      lines.push(`  ${stage}:`);
+      lines.push('    build:');
+      lines.push('      context: .');
+      lines.push('      dockerfile: Dockerfile');
+      lines.push(`      target: ${stage}`);
+      if (port) {
+        lines.push('    ports:');
+        lines.push(`      - "${port}:${port}"`);
+      }
+      lines.push('    environment:');
+      for (const [ek, ev] of Object.entries(this.moduleEnv(mod))) {
+        lines.push(`      ${ek}: "${this.dockerValue(ev)}"`);
       }
     }
+    return lines;
+  }
 
-    lines.push('CMD ["python", "main.py"]');
+  // ==========================================================================
+  // Helpers
+  // ==========================================================================
 
-    return lines.join('\n');
+  private commentSafe(text: string): string {
+    return text
+      .split('\n')
+      .map(l => {
+        const t = l.trim();
+        if (t === '') return '#';
+        if (l.startsWith('#')) return l;
+        return `# ${l}`;
+      })
+      .join('\n');
+  }
+
+  private runtimeOf(mod: V2ModuleNode): string {
+    const meta = mod.metadata as Record<string, unknown> | undefined;
+    const rt = (meta?.runtime as Record<string, unknown>) || {};
+    return String(rt.language || 'python').toLowerCase().trim() || 'python';
+  }
+
+  private baseImage(lang: string): string {
+    switch (lang) {
+      case 'python':
+        return 'python:3.12-slim';
+      case 'javascript':
+      case 'node':
+      case 'nodejs':
+      case 'typescript':
+      case 'ts':
+        return 'node:20-alpine';
+      case 'go':
+      case 'golang':
+        return 'golang:1.22-alpine';
+      case 'rust':
+        return 'rust:1.75';
+      case 'shell':
+      case 'bash':
+      case 'sh':
+        return 'alpine:3.19';
+      default:
+        return 'python:3.12-slim';
+    }
+  }
+
+  private installCmd(lang: string): string {
+    switch (lang) {
+      case 'javascript':
+      case 'node':
+      case 'nodejs':
+      case 'typescript':
+      case 'ts':
+        return 'RUN npm ci --omit=dev 2>/dev/null';
+      case 'go':
+      case 'golang':
+        return 'RUN go mod download 2>/dev/null';
+      case 'rust':
+        return 'RUN cargo fetch 2>/dev/null';
+      case 'shell':
+      case 'bash':
+      case 'sh':
+        return 'RUN true';
+      default:
+        return 'RUN pip install --no-cache-dir -r requirements.txt 2>/dev/null';
+    }
+  }
+
+  private cmdFor(lang: string, name: string): string {
+    switch (lang) {
+      case 'javascript':
+      case 'node':
+      case 'nodejs':
+      case 'typescript':
+      case 'ts':
+        return 'CMD ["node", "index.js"]';
+      case 'go':
+      case 'golang':
+        return 'CMD ["./bin/main"]';
+      case 'rust':
+        return `CMD ["./target/release/${this.toStageName(name)}"]`;
+      case 'shell':
+      case 'bash':
+      case 'sh':
+        return 'CMD ["sh", "run.sh"]';
+      default:
+        return 'CMD ["python", "main.py"]';
+    }
+  }
+
+  private dockerValue(v: unknown): string {
+    return String(v).replace(/[\r\n\t]+/g, ' ').replace(/\$/g, '$$').replace(/"/g, '');
+  }
+
+  private toStageName(name: string): string {
+    let s = name.toLowerCase().replace(/[^a-z0-9._-]/g, '-').replace(/-+/g, '-').replace(/^[._-]+|[._-]+$/g, '');
+    if (s === '') s = 'module';
+    if (!/^[a-z0-9]/.test(s)) s = 'mam-' + s;
+    return s;
+  }
+
+  private moduleEnv(mod: V2ModuleNode): Record<string, string> {
+    const env: Record<string, string> = {
+      MAM_MODULE: mod.name,
+      MAM_TYPE: mod.moduleType,
+    };
+    switch (mod.moduleType) {
+      case 'agent': {
+        const a = mod as unknown as V2AgentNode;
+        env.AGENT_ROLE = a.role || '';
+        env.AGENT_GOAL = a.goal || '';
+        if (a.tools?.length) env.AGENT_TOOLS = a.tools.join(',');
+        if (a.handoff?.length) env.AGENT_HANDOFF = a.handoff.join(',');
+        break;
+      }
+      case 'tool': {
+        const t = mod as unknown as V2ToolNode;
+        env.TOOL_PROVIDER = t.provider || '';
+        if (t.capabilities?.length) env.TOOL_CAPABILITIES = t.capabilities.join(',');
+        break;
+      }
+      case 'memory': {
+        const m = mod as unknown as V2MemoryNode;
+        env.MEMORY_FORMAT = m.format || '';
+        env.MEMORY_BACKEND = m.backend || '';
+        env.MEMORY_SCOPE = m.scope || '';
+        break;
+      }
+      case 'workflow': {
+        const w = mod as unknown as V2WorkflowNode;
+        if (w.steps?.length) env.WORKFLOW_STEPS = w.steps.map(s => s.name).join(',');
+        break;
+      }
+      case 'team': {
+        const t = mod as unknown as V2TeamNode;
+        if (t.members?.length) env.TEAM_MEMBERS = t.members.join(',');
+        break;
+      }
+      case 'policy': {
+        const p = mod as unknown as V2PolicyNode;
+        if (p.allow?.length) env.POLICY_ALLOW = p.allow.join(',');
+        if (p.deny?.length) env.POLICY_DENY = p.deny.join(',');
+        break;
+      }
+      case 'system': {
+        const s = mod as unknown as V2SystemNode;
+        if (s.agents?.length) env.SYSTEM_AGENTS = s.agents.join(',');
+        if (s.modules?.length) env.SYSTEM_MODULES = s.modules.join(',');
+        break;
+      }
+      default:
+        break;
+    }
+    return env;
+  }
+
+  private modulePort(mod: V2ModuleNode): number | null {
+    const network = mod.permissions?.network;
+    if (network !== 'internet' && network !== 'internal') return null;
+    const raw = mod.permissions?.custom?.port;
+    const parsed = raw ? parseInt(String(raw), 10) : NaN;
+    return Number.isFinite(parsed) && parsed > 0 && parsed <= 65535 ? parsed : 8080;
   }
 }
