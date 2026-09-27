@@ -423,3 +423,62 @@ function getDefaultCompletions(): CompletionItem[] {
 
   return items;
 }
+
+export function filterCompletionsByPrefix(items: CompletionItem[], prefix: string): CompletionItem[] {
+  const lower = prefix.toLowerCase();
+  return items.filter(item => item.label.toLowerCase().startsWith(lower));
+}
+
+export function sortCompletionsByLabel(items: CompletionItem[]): CompletionItem[] {
+  return [...items].sort((a, b) => a.label.localeCompare(b.label));
+}
+
+export function deduplicateCompletions(items: CompletionItem[]): CompletionItem[] {
+  const seen = new Set<string>();
+  const result: CompletionItem[] = [];
+  for (const item of items) {
+    if (!seen.has(item.label)) {
+      seen.add(item.label);
+      result.push(item);
+    }
+  }
+  return result;
+}
+
+export function getTTLValueCompletions(): CompletionItem[] {
+  const values = ['30m', '1h', '24h', '7d', '30d'];
+  return values.map((value, idx) => ({
+    label: value,
+    kind: CompletionItemKind.Value,
+    detail: 'TTL duration',
+    sortText: `a${String(idx).padStart(3, '0')}`,
+  }));
+}
+
+export function getBooleanValueCompletions(): CompletionItem[] {
+  return ['true', 'false'].map((value, idx) => ({
+    label: value,
+    kind: CompletionItemKind.Value,
+    detail: 'Boolean value',
+    sortText: `a${String(idx).padStart(3, '0')}`,
+  }));
+}
+
+export function getFrontmatterSnippetCompletion(): CompletionItem {
+  return {
+    label: '---frontmatter---',
+    kind: CompletionItemKind.Snippet,
+    detail: 'Front matter template',
+    insertText: '---\nid: ${1:module-name}\nversion: ${2:1.0.0}\nname: ${3:Module Name}\nauthor: ${4:author}\nruntime: ${5:python}\n---\n',
+    insertTextFormat: InsertTextFormat.Snippet,
+    sortText: 'c0',
+  };
+}
+
+export function mergeCompletionLists(...lists: CompletionItem[][]): CompletionItem[] {
+  const merged: CompletionItem[] = [];
+  for (const list of lists) {
+    merged.push(...list);
+  }
+  return deduplicateCompletions(merged);
+}

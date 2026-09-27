@@ -10,7 +10,7 @@
  * Id: text-transform
  * Name: Text Transform
  * Type: module
- * Version: 1.0.0
+ * version: 2.0.0
  * Author: MAM Team
  * License: MIT
  * Description: Transform text between different cases and formats with length tracking

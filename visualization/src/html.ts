@@ -529,3 +529,49 @@ export class HTMLRenderer {
     return text.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 }
+
+export function extractSvgNodeIds(html: string): string[] {
+  const ids: string[] = [];
+  const seen = new Set<string>();
+  const pattern = /<g[^>]*data-id="([^"]+)"[^>]*>/g;
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(html)) !== null) {
+    const id = match[1] as string;
+    if (!seen.has(id)) {
+      seen.add(id);
+      ids.push(id);
+    }
+  }
+  return ids;
+}
+
+export function hasHtmlNode(html: string, id: string): boolean {
+  if (extractSvgNodeIds(html).includes(id)) return true;
+  return html.includes(`>${id}<`) || html.includes(`"${id}"`);
+}
+
+export function countHtmlScriptTags(output: HTMLOutput): number {
+  const matches = output.html.match(/<script[\s>]/gi);
+  return (matches ? matches.length : 0) + output.scripts.length;
+}
+
+export function getHtmlTitle(html: string): string | undefined {
+  const match = html.match(/<title>([^<]*)<\/title>/i);
+  return match ? (match[1] as string) : undefined;
+}
+
+export function hasDarkTheme(css: string): boolean {
+  return /background\s*:\s*#([0-9a-f]{3}|[0-9a-f]{6})\b/i.test(css) &&
+    css.toLowerCase().includes('color');
+}
+
+export function countCssRules(css: string): number {
+  const matches = css.match(/\{[^}]*\}/g);
+  return matches ? matches.length : 0;
+}
+
+export function isCompleteHtmlDocument(html: string): boolean {
+  const lower = html.toLowerCase();
+  return lower.includes('<!doctype html') && lower.includes('<html') &&
+    lower.includes('</html>') && lower.includes('<body');
+}

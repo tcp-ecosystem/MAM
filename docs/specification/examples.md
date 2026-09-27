@@ -11,7 +11,7 @@ The simplest valid MAM module:
 ```markdown
 ---
 id: hello
-version: 1.0.0
+version: 2.0.0
 name: Hello
 author: LifeJiggy
 runtime: python
@@ -38,7 +38,7 @@ A module with inputs, outputs, and rules:
 ```markdown
 ---
 id: greeting
-version: 1.0.0
+version: 2.0.0
 name: Greeting Module
 author: LifeJiggy
 runtime: python
@@ -116,7 +116,7 @@ An AI agent module with prompt and memory:
 ```markdown
 ---
 id: customer-support
-version: 1.0.0
+version: 2.0.0
 name: Customer Support Agent
 author: LifeJiggy
 runtime: python
@@ -321,7 +321,7 @@ A module that declares plugin requirements:
 ```markdown
 ---
 id: custom-validator
-version: 1.0.0
+version: 2.0.0
 name: Custom Validation Plugin
 author: LifeJiggy
 runtime: python
@@ -376,7 +376,7 @@ A module with strict permissions:
 ```markdown
 ---
 id: secret-manager
-version: 1.0.0
+version: 2.0.0
 name: Secret Manager
 author: LifeJiggy
 runtime: python
@@ -440,7 +440,7 @@ A module that depends on other modules:
 ```markdown
 ---
 id: auth-api
-version: 1.0.0
+version: 2.0.0
 name: Authentication API
 author: LifeJiggy
 runtime: python

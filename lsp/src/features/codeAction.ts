@@ -142,7 +142,7 @@ function createAddFrontmatterFieldAction(
 
   const examples: Record<string, string> = {
     id: 'id: module-name',
-    version: 'version: 1.0.0',
+    version: 'version: 2.0.0',
     name: 'name: Module Name',
     author: 'author: Author Name',
     runtime: 'runtime: python',
@@ -254,7 +254,7 @@ function createAddFrontmatterAction(
     'Add frontmatter template',
     uri,
     range,
-    '---\nid: module-name\nversion: 1.0.0\nname: Module Name\nauthor: Author\nruntime: python\n---\n\n',
+    '---\nid: module-name\nversion: 2.0.0\nname: Module Name\nauthor: Author\nruntime: python\n---\n\n',
     CodeActionKind.QuickFix,
     [diagnostic],
   );
@@ -386,4 +386,37 @@ function getAddMissingSectionsEdits(text: string): TextEdit[] {
     },
     newText: additions,
   }];
+}
+
+export function getOrganizeSectionEdits(text: string): TextEdit[] {
+  return getOrganizeEdits(text);
+}
+
+export function getMissingSectionEdits(text: string): TextEdit[] {
+  return getAddMissingSectionsEdits(text);
+}
+
+export function suggestClosestRuntime(input: string): string {
+  return findClosestRuntime(input);
+}
+
+export function hasFixableDiagnostics(diagnostics: Diagnostic[]): boolean {
+  return diagnostics.some(d => d.code !== undefined);
+}
+
+export function filterActionsByKind(actions: CodeAction[], kind: string): CodeAction[] {
+  return actions.filter(action => String(action.kind) === kind);
+}
+
+export function countActionsByKind(actions: CodeAction[]): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const action of actions) {
+    const key = String(action.kind);
+    counts[key] = (counts[key] ?? 0) + 1;
+  }
+  return counts;
+}
+
+export function getActionTitles(actions: CodeAction[]): string[] {
+  return actions.map(action => action.title);
 }

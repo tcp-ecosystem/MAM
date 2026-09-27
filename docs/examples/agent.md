@@ -11,7 +11,7 @@ An AI agent that handles customer queries:
 ```markdown
 ---
 id: customer-support
-version: 1.0.0
+version: 2.0.0
 name: Customer Support Agent
 author: LifeJiggy
 runtime: python
@@ -111,7 +111,7 @@ An AI agent that reviews code:
 ```markdown
 ---
 id: code-review
-version: 1.0.0
+version: 2.0.0
 name: Code Review Agent
 author: LifeJiggy
 runtime: python
@@ -199,7 +199,7 @@ An AI agent that analyzes data:
 ```markdown
 ---
 id: data-analyst
-version: 1.0.0
+version: 2.0.0
 name: Data Analyst Agent
 author: LifeJiggy
 runtime: python
@@ -275,7 +275,7 @@ An AI agent that conducts research:
 ```markdown
 ---
 id: research-agent
-version: 1.0.0
+version: 2.0.0
 name: Research Agent
 author: LifeJiggy
 runtime: python

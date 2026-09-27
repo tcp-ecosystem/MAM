@@ -15,7 +15,7 @@ Every MAM module MUST begin with YAML front matter delimited by `---`. Front mat
 ```yaml
 ---
 id: my-module
-version: 1.0.0
+version: 2.0.0
 name: My Module
 author: Your Name
 runtime: python
@@ -194,7 +194,7 @@ repository: https://github.com/lifejiggy/mam-auth
 MAM specification version:
 
 ```yaml
-mam_version: 1.0.0
+mam_version: 2.0.0
 ```
 
 ---
@@ -224,7 +224,7 @@ permissions:
   - filesystem
 license: MIT
 repository: https://github.com/lifejiggy/mam-auth
-mam_version: 1.0.0
+mam_version: 2.0.0
 ---
 ```
 

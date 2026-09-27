@@ -401,3 +401,45 @@ function validateDuplicateSections(content: string, uri: string): Diagnostic[] {
 
   return diagnostics;
 }
+
+export function getRecommendedSectionOrder(): string[] {
+  return [...RECOMMENDED_ORDER];
+}
+
+export function countDiagnosticsBySeverity(diagnostics: Diagnostic[]): Record<string, number> {
+  const counts: Record<string, number> = { error: 0, warning: 0, information: 0, hint: 0 };
+  for (const diagnostic of diagnostics) {
+    if (diagnostic.severity === DiagnosticSeverity.Error) counts.error!++;
+    else if (diagnostic.severity === DiagnosticSeverity.Warning) counts.warning!++;
+    else if (diagnostic.severity === DiagnosticSeverity.Information) counts.information!++;
+    else if (diagnostic.severity === DiagnosticSeverity.Hint) counts.hint!++;
+  }
+  return counts;
+}
+
+export function filterDiagnosticsByCode(diagnostics: Diagnostic[], code: string): Diagnostic[] {
+  return diagnostics.filter(d => String(d.code) === code);
+}
+
+export function hasBlockingErrors(diagnostics: Diagnostic[]): boolean {
+  return diagnostics.some(d => d.severity === DiagnosticSeverity.Error);
+}
+
+export function validateRequiredSectionsOnly(content: string, uri = ''): Diagnostic[] {
+  return validateRequiredSections(content, uri);
+}
+
+export function validateDuplicateSectionsOnly(content: string, uri = ''): Diagnostic[] {
+  return validateDuplicateSections(content, uri);
+}
+
+export function getDiagnosticSummary(diagnostics: Diagnostic[]): string {
+  if (diagnostics.length === 0) return 'no issues';
+  const counts = countDiagnosticsBySeverity(diagnostics);
+  const parts: string[] = [];
+  if (counts.error! > 0) parts.push(`${counts.error} error${counts.error === 1 ? '' : 's'}`);
+  if (counts.warning! > 0) parts.push(`${counts.warning} warning${counts.warning === 1 ? '' : 's'}`);
+  if (counts.information! > 0) parts.push(`${counts.information} info`);
+  if (counts.hint! > 0) parts.push(`${counts.hint} hint${counts.hint === 1 ? '' : 's'}`);
+  return parts.join(', ');
+}

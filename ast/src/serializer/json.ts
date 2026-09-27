@@ -266,6 +266,125 @@ export function patchAST(
   return merged;
 }
 
+export function estimateJSONSize(ast: MAMModule): number {
+  return JSON.stringify(ast).length;
+}
+
+export function canonicalSerialize(ast: MAMModule): string {
+  return JSON.stringify(canonicalize(ast));
+}
+
+export function stripLocations(ast: MAMModule): MAMModule {
+  return stripLocationField(ast) as MAMModule;
+}
+
+export function diffAST(
+  a: MAMModule,
+  b: MAMModule,
+): Array<{ path: string; kind: 'added' | 'removed' | 'changed'; before?: unknown; after?: unknown }> {
+  const diffs: Array<{ path: string; kind: 'added' | 'removed' | 'changed'; before?: unknown; after?: unknown }> = [];
+  diffValues(a, b, '', diffs);
+  return diffs;
+}
+
+export function hashAST(ast: MAMModule): string {
+  const text = canonicalSerialize(ast);
+  let hash = 0x811c9dc5;
+  for (let i = 0; i < text.length; i++) {
+    hash ^= text.charCodeAt(i);
+    hash = Math.imul(hash, 0x01000193);
+  }
+  return (hash >>> 0).toString(16).padStart(8, '0');
+}
+
+export function validateRoundTrip(ast: MAMModule): JSONSchemaValidationResult {
+  try {
+    const json: string = serializeToJSON(ast);
+    const parsed: unknown = JSON.parse(json);
+    const schema = validateJSONSchema(parsed);
+    const errors: string[] = [];
+    if (!schema.valid) {
+      errors.push(...schema.errors);
+    }
+    const roundTripped = deserializeFromJSON(json);
+    if (canonicalSerialize(ast) !== canonicalSerialize(roundTripped)) {
+      errors.push('Round-trip changed the canonical serialization');
+    }
+    return { valid: errors.length === 0, errors };
+  } catch (error) {
+    return {
+      valid: false,
+      errors: [error instanceof Error ? error.message : String(error)],
+    };
+  }
+}
+
+export function isPlainASTObject(value: unknown): value is Record<string, unknown> {
+  if (value === null || typeof value !== 'object') return false;
+  if (Array.isArray(value)) return false;
+  const prototype = Object.getPrototypeOf(value);
+  return prototype === Object.prototype || prototype === null;
+}
+
+function canonicalize(value: unknown): unknown {
+  if (value === null || typeof value !== 'object') return value;
+  if (Array.isArray(value)) return value.map((item) => canonicalize(item));
+
+  const source = value as Record<string, unknown>;
+  const result: Record<string, unknown> = {};
+  for (const key of Object.keys(source).sort()) {
+    if (source[key] === undefined) continue;
+    result[key] = canonicalize(source[key]);
+  }
+  return result;
+}
+
+function stripLocationField(value: unknown): unknown {
+  if (value === null || typeof value !== 'object') return value;
+  if (Array.isArray(value)) return value.map((item) => stripLocationField(item));
+
+  const source = value as Record<string, unknown>;
+  const result: Record<string, unknown> = {};
+  for (const key of Object.keys(source)) {
+    if (key === 'location') continue;
+    result[key] = stripLocationField(source[key]);
+  }
+  return result;
+}
+
+function diffValues(
+  before: unknown,
+  after: unknown,
+  path: string,
+  out: Array<{ path: string; kind: 'added' | 'removed' | 'changed'; before?: unknown; after?: unknown }>,
+): void {
+  if (Object.is(before, after)) return;
+
+  const beforeIsObject = before !== null && typeof before === 'object';
+  const afterIsObject = after !== null && typeof after === 'object';
+
+  if (beforeIsObject && afterIsObject && Array.isArray(before) === Array.isArray(after)) {
+    const beforeRecord = before as Record<string, unknown>;
+    const afterRecord = after as Record<string, unknown>;
+    const keys = new Set([...Object.keys(beforeRecord), ...Object.keys(afterRecord)]);
+    for (const key of keys) {
+      const childPath = path === '' ? key : `${path}.${key}`;
+      const inBefore = key in beforeRecord;
+      const inAfter = key in afterRecord;
+      if (!inBefore) {
+        out.push({ path: childPath, kind: 'added', after: afterRecord[key] });
+      } else if (!inAfter) {
+        out.push({ path: childPath, kind: 'removed', before: beforeRecord[key] });
+      } else {
+        diffValues(beforeRecord[key], afterRecord[key], childPath, out);
+      }
+    }
+    return;
+  }
+
+  out.push({ path: path === '' ? '$' : path, kind: 'changed', before, after });
+}
+
 // ============================================================================
 // Internal Helpers
 // ============================================================================

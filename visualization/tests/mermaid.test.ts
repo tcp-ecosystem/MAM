@@ -1,5 +1,15 @@
 import { describe, it, expect } from 'vitest';
-import { MermaidGenerator, MermaidOutput } from '../src/mermaid.js';
+import {
+  MermaidGenerator,
+  MermaidOutput,
+  sanitizeMermaidId,
+  countMermaidCodeLines,
+  extractMermaidNodeIds,
+  extractMermaidEdgePairs,
+  hasMermaidNodeId,
+  getMermaidDiagramHeader,
+  isFlowchartCode,
+} from '../src/mermaid.js';
 import { GraphData, GraphNode, GraphEdge } from '../src/graph.js';
 import { V2ModuleNode } from '@mam/ast';
 
@@ -188,5 +198,49 @@ describe('MermaidGenerator', () => {
 
       expect(result.nodeCount).toBe(0);
     });
+  });
+});
+
+describe('mermaid output helpers', () => {
+  const code = 'flowchart TD\n  alpha[Alpha]\n  beta{Beta}\n  alpha --> beta';
+
+  it('should sanitize ids', () => {
+    expect(sanitizeMermaidId('my-module')).toBe('my_module');
+    expect(sanitizeMermaidId('')).toBe('node');
+    expect(sanitizeMermaidId('9lives')).toBe('n_9lives');
+    expect(sanitizeMermaidId('ok_id')).toBe('ok_id');
+  });
+
+  it('should count code lines', () => {
+    const output: MermaidOutput = { code, type: 'flowchart', nodeCount: 2, edgeCount: 1 };
+    expect(countMermaidCodeLines(output)).toBe(4);
+    expect(countMermaidCodeLines({ code: '', type: 'flowchart', nodeCount: 0, edgeCount: 0 })).toBe(0);
+  });
+
+  it('should extract node ids', () => {
+    expect(extractMermaidNodeIds(code)).toEqual(['alpha', 'beta']);
+    expect(extractMermaidNodeIds('flowchart TD')).toEqual([]);
+  });
+
+  it('should extract edge pairs', () => {
+    expect(extractMermaidEdgePairs(code)).toEqual([{ from: 'alpha', to: 'beta' }]);
+    expect(extractMermaidEdgePairs('flowchart TD\n  a[A]')).toEqual([]);
+  });
+
+  it('should check node presence', () => {
+    expect(hasMermaidNodeId(code, 'alpha')).toBe(true);
+    expect(hasMermaidNodeId(code, 'gamma')).toBe(false);
+  });
+
+  it('should build diagram headers', () => {
+    expect(getMermaidDiagramHeader('flowchart', 'TD')).toBe('flowchart TD');
+    expect(getMermaidDiagramHeader('graph', 'LR')).toBe('flowchart LR');
+    expect(getMermaidDiagramHeader('sequence', 'TD')).toBe('sequence');
+  });
+
+  it('should detect flowcharts', () => {
+    expect(isFlowchartCode(code)).toBe(true);
+    expect(isFlowchartCode('sequenceDiagram\n  a->b: hi')).toBe(false);
+    expect(isFlowchartCode('')).toBe(false);
   });
 });

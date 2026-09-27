@@ -45,3 +45,11 @@ export {
   isModuleType,
   getModuleTypeDefinition,
 } from './keywords.js';
+
+export { createV2BaseNode } from './base.js';
+export { cloneV2Node } from './base.js';
+export { isV2ModuleNode } from './nodes.js';
+export { createV2ModuleNode } from './nodes.js';
+export { mergePermissionSets } from './supporting.js';
+export { suggestModuleType } from './keywords.js';
+export { findModuleTypeByAlias } from './keywords.js';

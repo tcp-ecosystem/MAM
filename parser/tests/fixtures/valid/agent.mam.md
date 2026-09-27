@@ -1,7 +1,7 @@
 ---
 id: research-agent
 name: Research Agent
-version: 1.0.0
+version: 2.0.0
 author: LifeJiggy
 runtime: python
 tags:

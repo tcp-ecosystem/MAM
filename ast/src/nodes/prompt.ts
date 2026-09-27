@@ -269,3 +269,118 @@ export function buildFullPrompt(node: PromptNode): string {
   parts.push(node.content);
   return parts.join('\n');
 }
+
+export function hasPromptVariables(node: PromptNode): boolean {
+  return (node.variables?.length ?? 0) > 0;
+}
+
+export function countPromptVariables(node: PromptNode): number {
+  return node.variables?.length ?? 0;
+}
+
+export function summarizePrompt(node: PromptNode): string {
+  const excerpt = node.content.replace(/\s+/g, ' ').trim();
+  const truncated = excerpt.length > 80 ? `${excerpt.slice(0, 77)}...` : excerpt;
+  const header = [
+    node.role ?? 'prompt',
+    `${(node.variables ?? []).length} variables`,
+    `${(node.templates ?? []).length} templates`,
+  ].join(', ');
+  return truncated.length > 0 ? `${header}: ${truncated}` : header;
+}
+
+export function withPromptVariable(node: PromptNode, variable: PromptVariable): PromptNode {
+  return {
+    ...node,
+    variables: [...(node.variables ?? []), variable],
+  };
+}
+
+export function withoutPromptVariable(
+  node: PromptNode,
+  nameOrPredicate: string | ((variable: PromptVariable) => boolean),
+): PromptNode {
+  if (!node.variables) {
+    return { ...node };
+  }
+  const predicate =
+    typeof nameOrPredicate === 'string'
+      ? (variable: PromptVariable) => variable.name === nameOrPredicate
+      : nameOrPredicate;
+  return {
+    ...node,
+    variables: node.variables.filter((variable) => !predicate(variable)),
+  };
+}
+
+export function clonePromptNode(
+  node: PromptNode,
+  options?: { stripLocation?: boolean },
+): PromptNode {
+  const clone: PromptNode = { ...node };
+  if (node.variables) {
+    clone.variables = node.variables.map((variable) => ({ ...variable }));
+  }
+  if (node.templates) {
+    clone.templates = node.templates.map((template) => ({ ...template }));
+  }
+  if (node.stopSequences) {
+    clone.stopSequences = [...node.stopSequences];
+  }
+  if (options?.stripLocation) {
+    delete clone.location;
+  }
+  return clone;
+}
+
+export function mergePromptNodes(a: PromptNode, b: PromptNode): PromptNode {
+  const variables = (a.variables ?? []).map((variable) => ({ ...variable }));
+  const variableIndex = new Map<string, number>(
+    variables.map((variable, i): [string, number] => [variable.name, i]),
+  );
+  for (const variable of b.variables ?? []) {
+    const existing = variableIndex.get(variable.name);
+    if (existing !== undefined) {
+      variables[existing] = { ...variable };
+    } else {
+      variableIndex.set(variable.name, variables.length);
+      variables.push({ ...variable });
+    }
+  }
+
+  const templates = (a.templates ?? []).map((template) => ({ ...template }));
+  const templateIndex = new Map<string, number>(
+    templates.map((template, i): [string, number] => [template.id, i]),
+  );
+  for (const template of b.templates ?? []) {
+    const existing = templateIndex.get(template.id);
+    if (existing !== undefined) {
+      templates[existing] = { ...template };
+    } else {
+      templateIndex.set(template.id, templates.length);
+      templates.push({ ...template });
+    }
+  }
+
+  const stopSequences = [...(a.stopSequences ?? []), ...(b.stopSequences ?? [])];
+
+  const merged: PromptNode = {
+    type: 'Prompt',
+    content: b.content,
+    systemPrompt: b.systemPrompt ?? a.systemPrompt,
+    role: b.role ?? a.role,
+    temperature: b.temperature ?? a.temperature,
+    maxTokens: b.maxTokens ?? a.maxTokens,
+    location: b.location ?? a.location,
+  };
+  if (variables.length > 0) {
+    merged.variables = variables;
+  }
+  if (templates.length > 0) {
+    merged.templates = templates;
+  }
+  if (stopSequences.length > 0) {
+    merged.stopSequences = stopSequences;
+  }
+  return merged;
+}

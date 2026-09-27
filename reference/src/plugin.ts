@@ -200,3 +200,52 @@ export function createPlugin(def: Partial<CLIPlugin> & Pick<CLIPlugin, 'name' | 
     ...def,
   };
 }
+
+export function isCLIPlugin(value: unknown): value is CLIPlugin {
+  if (typeof value !== 'object' || value === null) return false;
+  const obj = value as Record<string, unknown>;
+  return typeof obj.name === 'string' && typeof obj.version === 'string';
+}
+
+export function validatePlugin(plugin: CLIPlugin): string[] {
+  const errors: string[] = [];
+  if (!plugin.name) {
+    errors.push('plugin.name is required');
+  }
+  if (!plugin.version) {
+    errors.push('plugin.version is required');
+  } else if (!/^\d+\.\d+\.\d+/.test(plugin.version)) {
+    errors.push(`plugin.version must be semver, got "${plugin.version}"`);
+  }
+  const seen = new Set<string>();
+  for (const command of plugin.commands ?? []) {
+    if (!command.name) {
+      errors.push('plugin command name is required');
+    } else if (seen.has(command.name)) {
+      errors.push(`duplicate plugin command "${command.name}"`);
+    } else {
+      seen.add(command.name);
+    }
+  }
+  return errors;
+}
+
+export function getPluginCommandNames(plugin: CLIPlugin): string[] {
+  return (plugin.commands ?? []).map((command) => command.name);
+}
+
+export function findPluginCommand(plugin: CLIPlugin, name: string): PluginCommand | undefined {
+  return plugin.commands?.find((command) => command.name === name);
+}
+
+export function hasPluginHook(plugin: CLIPlugin, hook: keyof PluginHooks): boolean {
+  return typeof plugin.hooks?.[hook] === 'function';
+}
+
+export function getLoadedPluginNames(manager: PluginManager): string[] {
+  return manager.getPlugins().map((plugin) => plugin.name);
+}
+
+export function countPluginCommands(manager: PluginManager): number {
+  return manager.getCommands().length;
+}

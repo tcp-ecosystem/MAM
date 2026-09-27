@@ -1,5 +1,17 @@
 import { describe, it, expect } from 'vitest';
-import { GraphVisualizer, GraphData, GraphNode, GraphEdge } from '../src/graph.js';
+import {
+  GraphVisualizer,
+  GraphData,
+  GraphNode,
+  GraphEdge,
+  createGraphNode,
+  createGraphEdge,
+  createEmptyGraph,
+  getNodeIds,
+  findNodeById,
+  getSuccessors,
+  getPredecessors,
+} from '../src/graph.js';
 import { V2ModuleNode } from '@mam/ast';
 
 function makeModule(overrides: Partial<V2ModuleNode> = {}): V2ModuleNode {
@@ -170,5 +182,66 @@ describe('GraphVisualizer', () => {
       const result = viz.generate(data.nodes.map(n => makeModule({ name: n.id })));
       expect(result.metadata.depth).toBeGreaterThanOrEqual(0);
     });
+  });
+});
+
+describe('graph helpers', () => {
+  const graph: GraphData = {
+    nodes: [
+      { id: 'a', label: 'A', type: 'agent' },
+      { id: 'b', label: 'B', type: 'tool' },
+    ],
+    edges: [{ from: 'a', to: 'b', type: 'direct' }],
+    metadata: { nodeCount: 2, edgeCount: 1, depth: 1 },
+  };
+
+  it('should create nodes and edges', () => {
+    expect(createGraphNode('x', 'X', 'module')).toEqual({ id: 'x', label: 'X', type: 'module' });
+    expect(createGraphEdge('x', 'y')).toEqual({ from: 'x', to: 'y', type: 'direct' });
+    expect(createGraphEdge('x', 'y', 'handoff').type).toBe('handoff');
+  });
+
+  it('should create empty graphs', () => {
+    const empty = createEmptyGraph();
+    expect(empty.nodes).toEqual([]);
+    expect(empty.edges).toEqual([]);
+    expect(empty.metadata).toEqual({ nodeCount: 0, edgeCount: 0, depth: 0 });
+  });
+
+  it('should list node ids', () => {
+    expect(getNodeIds(graph)).toEqual(['a', 'b']);
+    expect(getNodeIds(createEmptyGraph())).toEqual([]);
+  });
+
+  it('should find nodes by id', () => {
+    expect(findNodeById(graph, 'a')?.label).toBe('A');
+    expect(findNodeById(graph, 'missing')).toBeUndefined();
+  });
+
+  it('should list successors', () => {
+    expect(getSuccessors(graph, 'a')).toEqual(['b']);
+    expect(getSuccessors(graph, 'b')).toEqual([]);
+  });
+
+  it('should list predecessors', () => {
+    expect(getPredecessors(graph, 'b')).toEqual(['a']);
+    expect(getPredecessors(graph, 'a')).toEqual([]);
+  });
+
+  it('should handle multi-edge graphs', () => {
+    const multi: GraphData = {
+      nodes: [
+        { id: 'a', label: 'A', type: 'agent' },
+        { id: 'b', label: 'B', type: 'tool' },
+        { id: 'c', label: 'C', type: 'memory' },
+      ],
+      edges: [
+        { from: 'a', to: 'b', type: 'direct' },
+        { from: 'a', to: 'c', type: 'handoff' },
+      ],
+      metadata: { nodeCount: 3, edgeCount: 2, depth: 1 },
+    };
+    expect(getSuccessors(multi, 'a')).toEqual(['b', 'c']);
+    expect(getPredecessors(multi, 'c')).toEqual(['a']);
   });
 });

@@ -397,6 +397,28 @@ function getExtension(target: string): string {
   }
 }
 
+export const CLI_NAME = 'mamc';
+
+export const CLI_VERSION = '2.0.0';
+
+export const CLI_DESCRIPTION = 'MAM Reference Implementation — Complete MAM toolchain';
+
+export function getCommandNames(): string[] {
+  return program.commands.map((cmd) => cmd.name());
+}
+
+export function hasCommand(name: string): boolean {
+  return getCommandNames().includes(name);
+}
+
+export function getCommandDescription(name: string): string | undefined {
+  return program.commands.find((cmd) => cmd.name() === name)?.description();
+}
+
+export function getExtensionForTarget(target: string): string {
+  return getExtension(target);
+}
+
 // ============================================================================
 // Run
 // ============================================================================

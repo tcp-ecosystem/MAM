@@ -10,7 +10,7 @@ Source: C:\Users\USER\LifeJiggy\Prompt_AI-Support\MAM\examples\basic\hello.mam.m
     Id: hello-world
     Name: Hello World
     Type: module
-    Version: 1.0.0
+    version: 2.0.0
     Author: MAM Team
     License: MIT
     Description: Minimal MAM module demonstrating core concepts

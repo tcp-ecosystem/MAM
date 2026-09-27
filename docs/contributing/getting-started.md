@@ -170,7 +170,7 @@ describe('Parser', () => {
   it('should parse basic module', () => {
     const input = `---
 id: test
-version: 1.0.0
+version: 2.0.0
 name: Test
 author: Test
 runtime: python

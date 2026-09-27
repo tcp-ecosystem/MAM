@@ -58,7 +58,7 @@ Every MAM module MUST begin with YAML front matter delimited by `---`:
 ```yaml
 ---
 id: authentication
-version: 1.0.0
+version: 2.0.0
 name: Authentication Module
 author: LifeJiggy
 tags:
@@ -554,7 +554,7 @@ Modules must declare their version and the spec version they conform to:
 ```yaml
 ---
 version: 1.2.0
-mam_version: 1.0.0
+mam_version: 2.0.0
 ---
 ```
 

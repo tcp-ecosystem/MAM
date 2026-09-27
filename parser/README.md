@@ -15,7 +15,7 @@ import { parseMAM } from '@mam/parser';
 
 const result = parseMAM(`---
 id: my-agent
-version: 1.0.0
+version: 2.0.0
 name: My Agent
 author: Developer
 runtime: python

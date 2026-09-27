@@ -13,6 +13,70 @@ import { getReferences } from '../src/features/references.js';
 import { getFormatting } from '../src/features/formatting.js';
 import { getCodeActions } from '../src/features/codeAction.js';
 import { getDiagnostics } from '../src/features/diagnostics.js';
+import {
+  getDocumentSymbols,
+  hasDocumentSymbols,
+  countDocumentSymbols,
+  findSymbolByName,
+  filterSymbolsByKind,
+  flattenSymbols,
+  getSymbolNames,
+} from '../src/features/documentSymbol.js';
+import {
+  prepareRename,
+  getRenameEdits,
+  isRenameableAt,
+  getRenameRange,
+  countRenameTargets,
+  validateNewName,
+  findRenameTargets,
+} from '../src/features/rename.js';
+import {
+  getDocumentHighlights,
+  hasHighlights,
+  countHighlights,
+  getHighlightRanges,
+  groupHighlightsByKind,
+  isHighlightableAt,
+  sortHighlights,
+} from '../src/features/documentHighlight.js';
+import {
+  getFoldingRanges,
+  hasFoldingRanges,
+  countFoldingRanges,
+  getSectionFoldingRanges,
+  getCodeBlockFoldingRanges,
+  getFrontmatterFoldingRange,
+  findLargestFoldingRange,
+} from '../src/features/foldingRange.js';
+import {
+  getSignatureHelp,
+  hasSignatureHelp,
+  getActiveParameterIndex,
+  getEdgeSignatureItems,
+  formatSignatureLabel,
+  isSignatureTriggerCharacter,
+  countSignatures,
+} from '../src/features/signatureHelp.js';
+import {
+  getCodeLenses,
+  hasCodeLenses,
+  countCodeLenses,
+  getSectionCodeLenses,
+  getCodeBlockCodeLenses,
+  filterCodeLensesByCommand,
+  getCodeLensCommands,
+} from '../src/features/codeLens.js';
+import {
+  getWorkspaceSymbols,
+  hasWorkspaceSymbol,
+  countWorkspaceSymbols,
+  filterSymbolsByQuery,
+  sortWorkspaceSymbols,
+  getWorkspaceSymbolNames,
+  groupSymbolsByDocument,
+} from '../src/features/workspaceSymbol.js';
+import { MAMSymbolKind } from '../src/protocol/mam.js';
 
 // ============================================================================
 // Helpers
@@ -24,7 +88,7 @@ function createDoc(text: string, uri = 'file:///test.mam.md'): TextDocument {
 
 const SIMPLE_MAM = `---
 id: test-module
-version: 1.0.0
+version: 2.0.0
 name: Test Module
 author: Test Author
 runtime: python
@@ -61,7 +125,7 @@ def example():
 
 const AGENT_MAM = `---
 id: test-agent
-version: 1.0.0
+version: 2.0.0
 name: Test Agent
 author: Test Author
 runtime: python
@@ -316,7 +380,7 @@ describe('getDefinition', () => {
   });
 
   it('should return definition for YAML keys', () => {
-    const doc = createDoc('---\nid: test\nversion: 1.0.0\n---\n');
+    const doc = createDoc('---\nid: test\nversion: 2.0.0\n---\n');
     const result = getDefinition('file:///test.mam.md', { line: 2, character: 3 }, doc, null);
 
     // May find the key definition
@@ -447,7 +511,7 @@ describe('getFormatting', () => {
 
 describe('getCodeActions', () => {
   it('should suggest adding Purpose section', () => {
-    const doc = createDoc('---\nid: test\nversion: 1.0.0\nname: Test\nauthor: Author\nruntime: python\n---\n');
+    const doc = createDoc('---\nid: test\nversion: 2.0.0\nname: Test\nauthor: Author\nruntime: python\n---\n');
     const result = getCodeActions(
       doc,
       { start: { line: 0, character: 0 }, end: { line: 0, character: 0 } },
@@ -557,14 +621,14 @@ describe('getDiagnostics', () => {
   });
 
   it('should detect invalid runtime', () => {
-    const doc = createDoc('---\nid: test\nversion: 1.0.0\nname: Test\nauthor: Author\nruntime: invalid\n---\n\n## Purpose\n\nContent\n');
+    const doc = createDoc('---\nid: test\nversion: 2.0.0\nname: Test\nauthor: Author\nruntime: invalid\n---\n\n## Purpose\n\nContent\n');
     const result = getDiagnostics(doc, null);
 
     expect(result.some(d => d.message.includes('Invalid runtime'))).toBe(true);
   });
 
   it('should detect code blocks without language', () => {
-    const doc = createDoc('---\nid: test\nversion: 1.0.0\nname: Test\nauthor: Author\nruntime: python\n---\n\n## Purpose\n\n```\ncode\n```\n');
+    const doc = createDoc('---\nid: test\nversion: 2.0.0\nname: Test\nauthor: Author\nruntime: python\n---\n\n## Purpose\n\n```\ncode\n```\n');
     const result = getDiagnostics(doc, null);
 
     expect(result.some(d => d.message.includes('no language identifier'))).toBe(true);
@@ -584,5 +648,158 @@ describe('getDiagnostics', () => {
     const result = getDiagnostics(doc, null);
 
     expect(Array.isArray(result)).toBe(true);
+  });
+});
+
+describe('documentSymbol', () => {
+  it('should extract section and code block symbols', () => {
+    const doc = createDoc(SIMPLE_MAM);
+    const symbols = getDocumentSymbols(doc, null);
+
+    expect(symbols.length).toBeGreaterThan(0);
+    expect(symbols[0]!.name).toBe('Purpose');
+    expect(hasDocumentSymbols(doc, null)).toBe(true);
+    expect(countDocumentSymbols(doc, null)).toBeGreaterThanOrEqual(symbols.length);
+    expect(getSymbolNames(doc, null)).toContain('Purpose');
+  });
+
+  it('should find and filter symbols', () => {
+    const doc = createDoc(SIMPLE_MAM);
+    const symbols = getDocumentSymbols(doc, null);
+
+    expect(findSymbolByName(doc, 'Purpose', null)?.name).toBe('Purpose');
+    expect(findSymbolByName(doc, 'Missing', null)).toBeUndefined();
+    expect(filterSymbolsByKind(doc, MAMSymbolKind.Section, null).length).toBe(symbols.length);
+    expect(flattenSymbols(symbols).length).toBe(countDocumentSymbols(doc, null));
+  });
+});
+
+describe('rename', () => {
+  it('should prepare and validate renames', () => {
+    const doc = createDoc('## Purpose\n\nPurpose matters.\n');
+
+    expect(validateNewName('Inputs')).toBe(true);
+    expect(validateNewName('')).toBe(false);
+    expect(validateNewName('9bad')).toBe(false);
+    expect(isRenameableAt(doc, { line: 0, character: 4 })).toBe(true);
+    const prepared = prepareRename(doc, { line: 0, character: 4 });
+    expect(prepared?.placeholder).toBe('Purpose');
+    expect(getRenameRange(doc, { line: 0, character: 4 })).not.toBeNull();
+  });
+
+  it('should compute rename targets and edits', () => {
+    const doc = createDoc('## Purpose\n\nPurpose matters.\n');
+    const targets = findRenameTargets(doc, { line: 0, character: 4 });
+
+    expect(targets.length).toBeGreaterThanOrEqual(2);
+    expect(countRenameTargets(doc, { line: 0, character: 4 })).toBe(targets.length);
+    const edits = getRenameEdits(doc, { line: 0, character: 4 }, 'Goal');
+    expect(edits.changes[doc.uri]).toHaveLength(targets.length);
+    expect(getRenameEdits(doc, { line: 0, character: 4 }, '').changes).toEqual({});
+  });
+});
+
+describe('documentHighlight', () => {
+  it('should highlight all occurrences of the word', () => {
+    const doc = createDoc('## Purpose\n\nPurpose matters.\n');
+    const highlights = getDocumentHighlights(doc, { line: 0, character: 4 });
+
+    expect(highlights.length).toBeGreaterThanOrEqual(2);
+    expect(hasHighlights(doc, { line: 0, character: 4 })).toBe(true);
+    expect(countHighlights(doc, { line: 0, character: 4 })).toBe(highlights.length);
+    expect(getHighlightRanges(doc, { line: 0, character: 4 })).toHaveLength(highlights.length);
+    expect(isHighlightableAt(doc, { line: 0, character: 4 })).toBe(true);
+  });
+
+  it('should group and sort highlights', () => {
+    const doc = createDoc('## Purpose\n\nPurpose matters.\n');
+    const highlights = getDocumentHighlights(doc, { line: 0, character: 4 });
+    const groups = groupHighlightsByKind(highlights);
+
+    expect(groups.size).toBeGreaterThan(0);
+    const sorted = sortHighlights([...highlights].reverse());
+    expect(sorted[0]!.range.start.line).toBeLessThanOrEqual(sorted[sorted.length - 1]!.range.start.line);
+  });
+});
+
+describe('foldingRange', () => {
+  it('should fold sections, code blocks, and frontmatter', () => {
+    const doc = createDoc(SIMPLE_MAM);
+    const ranges = getFoldingRanges(doc);
+
+    expect(ranges.length).toBeGreaterThan(0);
+    expect(hasFoldingRanges(doc)).toBe(true);
+    expect(countFoldingRanges(doc)).toBe(ranges.length);
+    expect(getSectionFoldingRanges(doc).length).toBeGreaterThan(0);
+    expect(getCodeBlockFoldingRanges(doc).length).toBeGreaterThan(0);
+    expect(getFrontmatterFoldingRange(doc)).not.toBeNull();
+    expect(findLargestFoldingRange(doc)).not.toBeNull();
+    expect(findLargestFoldingRange(createDoc('plain'))).toBeNull();
+  });
+});
+
+describe('signatureHelp', () => {
+  it('should help with edges, pairs, and fences', () => {
+    expect(getSignatureHelp('start -> ', 9)).not.toBeNull();
+    expect(hasSignatureHelp('start -> ', 9)).toBe(true);
+    expect(getSignatureHelp('plain text', 5)).toBeNull();
+    expect(getActiveParameterIndex('start -> ', 9)).toBe(1);
+    expect(getActiveParameterIndex('start ->', 8)).toBe(0);
+    expect(isSignatureTriggerCharacter('>')).toBe(true);
+    expect(isSignatureTriggerCharacter('x')).toBe(false);
+  });
+
+  it('should describe edge signatures', () => {
+    const items = getEdgeSignatureItems();
+
+    expect(items.length).toBeGreaterThan(0);
+    expect(formatSignatureLabel(items[0]!)).toContain('source');
+    expect(countSignatures()).toBeGreaterThanOrEqual(items.length);
+  });
+});
+
+describe('codeLens', () => {
+  it('should provide section and code block lenses', () => {
+    const doc = createDoc(SIMPLE_MAM);
+    const lenses = getCodeLenses(doc);
+
+    expect(lenses.length).toBeGreaterThan(0);
+    expect(hasCodeLenses(doc)).toBe(true);
+    expect(countCodeLenses(doc)).toBe(lenses.length);
+    expect(getSectionCodeLenses(doc).length).toBeGreaterThan(0);
+    expect(getCodeBlockCodeLenses(doc).length).toBeGreaterThan(0);
+  });
+
+  it('should filter lenses and list commands', () => {
+    const doc = createDoc(SIMPLE_MAM);
+    const lenses = getCodeLenses(doc);
+    const commands = getCodeLensCommands(doc);
+
+    expect(commands).toContain('mam.showReferences');
+    expect(filterCodeLensesByCommand(lenses, 'mam.showReferences').length).toBe(
+      getSectionCodeLenses(doc).length,
+    );
+  });
+});
+
+describe('workspaceSymbol', () => {
+  it('should search symbols across documents', () => {
+    const docs = [createDoc(SIMPLE_MAM), createDoc('## Rules\n\n- rule\n', 'file:///other.mam.md')];
+
+    expect(hasWorkspaceSymbol(docs, 'purp')).toBe(true);
+    expect(countWorkspaceSymbols(docs, 'purp')).toBeGreaterThan(0);
+    expect(getWorkspaceSymbolNames(docs, '')).toContain('Purpose');
+    const groups = groupSymbolsByDocument(getWorkspaceSymbols(docs, ''));
+    expect(groups.size).toBe(2);
+  });
+
+  it('should filter and sort symbol lists', () => {
+    const docs = [createDoc(SIMPLE_MAM)];
+    const symbols = getWorkspaceSymbols(docs, '');
+
+    expect(filterSymbolsByQuery(symbols, 'PURPOSE').length).toBeGreaterThan(0);
+    expect(filterSymbolsByQuery(symbols, 'zzz').length).toBe(0);
+    const sorted = sortWorkspaceSymbols([...symbols].reverse());
+    expect(sorted[0]!.name.localeCompare(sorted[sorted.length - 1]!.name)).toBeLessThanOrEqual(0);
   });
 });

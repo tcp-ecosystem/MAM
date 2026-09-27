@@ -2,7 +2,7 @@
 # MAM Metadata
 id: template-api
 name: API Module Template
-version: 1.0.0
+version: 2.0.0
 type: system
 
 author: MAM Team

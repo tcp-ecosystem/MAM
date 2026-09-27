@@ -10,7 +10,7 @@ Source: C:\Users\USER\LifeJiggy\Prompt_AI-Support\MAM\examples\advanced\monitori
     Id: monitoring-agent
     Name: System Monitoring Agent
     Type: module
-    Version: 1.0.0
+    version: 2.0.0
     Author: MAM Team
     License: MIT
     Description: A monitoring agent that collects system metrics, detects anomalies using statistical analysis, and sends alerts. Includes AlertManager and MetricsCollector tool modules with filesystem and network permissions.

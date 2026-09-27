@@ -6603,7 +6603,7 @@ export class MAMPackage {
   private generateDefaultModule(name: string): string {
     return `---
 id: ${name}
-version: 1.0.0
+version: 2.0.0
 name: ${name}
 author: Unknown
 runtime: python

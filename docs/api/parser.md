@@ -46,7 +46,7 @@ function parse(
 const result = parse(`
 ---
 id: hello
-version: 1.0.0
+version: 2.0.0
 name: Hello
 author: LifeJiggy
 runtime: python
@@ -224,7 +224,7 @@ import { parse } from '@mam/parser';
 
 const input = `---
 id: my-module
-version: 1.0.0
+version: 2.0.0
 name: My Module
 author: Test
 runtime: python

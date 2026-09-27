@@ -1,7 +1,7 @@
 ---
 id: validation-plugin
 name: Validation Plugin
-version: 1.0.0
+version: 2.0.0
 type: plugin
 author: MAM Examples
 description: >

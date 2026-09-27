@@ -10,6 +10,13 @@ import {
   resolveConfigPath,
   saveConfig,
   loadConfig,
+  cloneConfig,
+  getConfigValue,
+  setConfigValue,
+  listConfiguredTargets,
+  hasTarget,
+  diffConfigKeys,
+  isDefaultConfig,
 } from '../src/config.js';
 import type { MAMConfig } from '../src/types.js';
 
@@ -351,5 +358,69 @@ describe('loadConfig', () => {
     await writeFile(pkgPath, JSON.stringify({ mam: { version: '1', project: { name: 'from-pkg', version: '1.0.0' } } }), 'utf-8');
     const loaded = await loadConfig(TMP);
     expect(loaded.project?.name).toBe('from-pkg');
+  });
+});
+
+describe('cloneConfig', () => {
+  it('should deep clone without sharing references', () => {
+    const clone = cloneConfig(DEFAULT_CONFIG);
+    expect(clone).toEqual(DEFAULT_CONFIG);
+    expect(clone).not.toBe(DEFAULT_CONFIG);
+    clone.project!.name = 'changed';
+    expect(DEFAULT_CONFIG.project!.name).not.toBe('changed');
+  });
+});
+
+describe('getConfigValue', () => {
+  it('should read nested values by dot path', () => {
+    expect(getConfigValue(DEFAULT_CONFIG, 'version')).toBe('1');
+    expect(getConfigValue(DEFAULT_CONFIG, 'project.name')).toBe('my-mam-project');
+    expect(getConfigValue(DEFAULT_CONFIG, 'build.target')).toBe('python');
+  });
+
+  it('should return undefined for missing paths', () => {
+    expect(getConfigValue(DEFAULT_CONFIG, 'nope')).toBeUndefined();
+    expect(getConfigValue(DEFAULT_CONFIG, 'project.nope.deeper')).toBeUndefined();
+  });
+});
+
+describe('setConfigValue', () => {
+  it('should set nested values immutably', () => {
+    const updated = setConfigValue(DEFAULT_CONFIG, 'project.name', 'renamed');
+    expect(updated.project!.name).toBe('renamed');
+    expect(DEFAULT_CONFIG.project!.name).toBe('my-mam-project');
+  });
+
+  it('should create intermediate objects', () => {
+    const updated = setConfigValue(DEFAULT_CONFIG, 'targets.python.output', './out');
+    expect((updated.targets as Record<string, Record<string, string>>).python!.output).toBe('./out');
+  });
+});
+
+describe('listConfiguredTargets / hasTarget', () => {
+  it('should list and check targets', () => {
+    expect(listConfiguredTargets(DEFAULT_CONFIG)).toEqual([]);
+    expect(hasTarget(DEFAULT_CONFIG, 'python')).toBe(false);
+    const updated = setConfigValue(DEFAULT_CONFIG, 'targets.python.output', './out');
+    expect(listConfiguredTargets(updated)).toEqual(['python']);
+    expect(hasTarget(updated, 'python')).toBe(true);
+  });
+});
+
+describe('diffConfigKeys', () => {
+  it('should report differing top-level keys', () => {
+    const other = cloneConfig(DEFAULT_CONFIG);
+    other.version = '2';
+    expect(diffConfigKeys(DEFAULT_CONFIG, other)).toEqual(['version']);
+    expect(diffConfigKeys(DEFAULT_CONFIG, cloneConfig(DEFAULT_CONFIG))).toEqual([]);
+  });
+});
+
+describe('isDefaultConfig', () => {
+  it('should detect default configuration', () => {
+    expect(isDefaultConfig(DEFAULT_CONFIG)).toBe(true);
+    expect(isDefaultConfig(cloneConfig(DEFAULT_CONFIG))).toBe(true);
+    const other = setConfigValue(DEFAULT_CONFIG, 'version', '2');
+    expect(isDefaultConfig(other)).toBe(false);
   });
 });

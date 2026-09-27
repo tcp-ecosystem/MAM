@@ -23,7 +23,7 @@ id: test
     it('should tokenize YAML key-value pairs', () => {
       const input = `---
 id: test-module
-version: 1.0.0
+version: 2.0.0
 name: Test Module
 ---`;
       

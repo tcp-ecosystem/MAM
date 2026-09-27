@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { TARGET_EXTENSIONS, SUPPORTED_TARGETS } from '../src/types.js';
+import { TARGET_EXTENSIONS, SUPPORTED_TARGETS, EXIT_CODES } from '../src/types.js';
 import type {
   CLIOptions,
   CLIContext,
@@ -30,6 +30,12 @@ import type {
   RegistrySearchOptions,
   RegistryPackageInfo,
   OutputFormat,
+  PipelineStage,
+  PipelineContext,
+  PipelineResult,
+  PipelineOptions,
+  DoctorCheckResult,
+  DoctorReport,
 } from '../src/types.js';
 
 describe('TARGET_EXTENSIONS', () => {
@@ -294,5 +300,60 @@ describe('OutputFormat type', () => {
   it('should accept valid formats', () => {
     const formats: OutputFormat[] = ['text', 'json', 'yaml'];
     expect(formats).toHaveLength(3);
+  });
+});
+
+describe('PipelineStage', () => {
+  it('should describe a runnable stage', () => {
+    const stage: PipelineStage = { name: 'build', run: async () => {} };
+    expect(stage.name).toBe('build');
+    expect(typeof stage.run).toBe('function');
+  });
+});
+
+describe('PipelineContext', () => {
+  it('should carry cwd and values', () => {
+    const ctx: PipelineContext = { cwd: '/tmp', values: { a: 1 } };
+    expect(ctx.cwd).toBe('/tmp');
+    expect(ctx.values.a).toBe(1);
+  });
+});
+
+describe('PipelineResult', () => {
+  it('should report success and stages', () => {
+    const result: PipelineResult = { success: true, stagesRun: ['a'], errors: [], timeMs: 5 };
+    expect(result.success).toBe(true);
+    expect(result.stagesRun).toEqual(['a']);
+  });
+});
+
+describe('PipelineOptions', () => {
+  it('should allow stopOnError and verbose', () => {
+    const options: PipelineOptions = { stopOnError: false, verbose: true };
+    expect(options.stopOnError).toBe(false);
+  });
+});
+
+describe('DoctorCheckResult', () => {
+  it('should describe a check outcome', () => {
+    const check: DoctorCheckResult = { name: 'node', status: 'pass', message: 'ok' };
+    expect(check.status).toBe('pass');
+  });
+});
+
+describe('DoctorReport', () => {
+  it('should bundle checks with timing', () => {
+    const report: DoctorReport = { checks: [], timeMs: 1 };
+    expect(report.checks).toEqual([]);
+  });
+});
+
+describe('EXIT_CODES', () => {
+  it('should define standard exit codes', () => {
+    expect(EXIT_CODES.SUCCESS).toBe(0);
+    expect(EXIT_CODES.GENERAL_ERROR).toBe(1);
+    expect(EXIT_CODES.INVALID_USAGE).toBe(2);
+    expect(EXIT_CODES.NOT_FOUND).toBe(3);
+    expect(EXIT_CODES.VALIDATION_FAILED).toBe(4);
   });
 });

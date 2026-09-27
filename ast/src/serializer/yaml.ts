@@ -136,6 +136,202 @@ export function deserializeFromYAML(yaml: string): MAMModule {
   return result as unknown as MAMModule;
 }
 
+export function escapeYAMLString(value: string): string {
+  let escaped = '';
+  for (let i = 0; i < value.length; i++) {
+    const code = value.charCodeAt(i);
+    const ch = value[i];
+    if (ch === '\\') {
+      escaped += '\\\\';
+    } else if (ch === '"') {
+      escaped += '\\"';
+    } else if (ch === '\n') {
+      escaped += '\\n';
+    } else if (ch === '\r') {
+      escaped += '\\r';
+    } else if (ch === '\t') {
+      escaped += '\\t';
+    } else if (code < 0x20 || code === 0x7f) {
+      escaped += `\\x${code.toString(16).padStart(2, '0')}`;
+    } else {
+      escaped += ch;
+    }
+  }
+  return escaped;
+}
+
+export function detectYAMLIndent(yaml: string): number {
+  for (const line of yaml.split('\n')) {
+    if (line.trim() === '') continue;
+    const match = line.match(/^[ ]+/);
+    if (match) return match[0].length;
+  }
+  return 0;
+}
+
+export function normalizeYAMLIndent(yaml: string, indent: number): string {
+  const current = detectYAMLIndent(yaml);
+  if (current === 0 || current === indent) return yaml;
+  const scale = indent / current;
+  return yaml
+    .split('\n')
+    .map((line) => {
+      if (line.trim() === '') return line;
+      const spaces = line.length - line.trimStart().length;
+      if (spaces === 0) return line;
+      return ' '.repeat(Math.round(spaces * scale)) + line.slice(spaces);
+    })
+    .join('\n');
+}
+
+export function validateYAMLShape(yaml: string): { valid: boolean; errors: string[] } {
+  const errors: string[] = [];
+  if (yaml.trim() === '') {
+    errors.push('YAML input is empty');
+    return { valid: false, errors };
+  }
+
+  const lines = yaml.split('\n');
+  const topLevelKeys = new Set<string>();
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.includes('\t')) {
+      errors.push(`line ${i + 1}: tab character in indentation`);
+      continue;
+    }
+    const trimmed = line.trim();
+    if (trimmed === '' || trimmed.startsWith('#') || trimmed === '---' || trimmed === '...') continue;
+    const isTopLevel = line.length === trimmed.length;
+    if (!isTopLevel) continue;
+    const match = trimmed.match(/^([^:]+):\s*(.*)$/);
+    if (!match) continue;
+    const key = match[1].trim();
+    if (key === '') continue;
+    if (topLevelKeys.has(key)) {
+      errors.push(`line ${i + 1}: duplicate top-level key "${key}"`);
+    }
+    topLevelKeys.add(key);
+  }
+
+  return { valid: errors.length === 0, errors };
+}
+
+export function serializeFrontMatterToYAML(data: Record<string, unknown>, indent: number = 2): string {
+  const lines: string[] = [];
+  appendYAMLMap(lines, data, '', indent);
+  return lines.join('\n');
+}
+
+export function parseFlatYAMLMap(yaml: string): Record<string, string> {
+  const result: Record<string, string> = {};
+  for (const line of yaml.split('\n')) {
+    if (line.startsWith(' ') || line.startsWith('\t')) continue;
+    const trimmed = line.trim();
+    if (trimmed === '' || trimmed.startsWith('#') || trimmed.startsWith('-')) continue;
+    const match = trimmed.match(/^([^:]+):\s*(.*)$/);
+    if (!match) continue;
+    const key = match[1].trim();
+    if (key === '') continue;
+    let value = match[2].trim();
+    if (
+      value.length >= 2 &&
+      ((value.startsWith('"') && value.endsWith('"')) ||
+        (value.startsWith("'") && value.endsWith("'")))
+    ) {
+      value = value.slice(1, -1);
+    }
+    result[key] = value;
+  }
+  return result;
+}
+
+export function yamlHasDocumentMarkers(yaml: string): boolean {
+  const lines = yaml.split('\n');
+  if (lines.length === 0) return false;
+  return lines[0].trim() === '---' || lines[lines.length - 1].trim() === '...';
+}
+
+function appendYAMLMap(
+  lines: string[],
+  obj: Record<string, unknown>,
+  pad: string,
+  indent: number,
+): void {
+  const opts: Required<YAMLOptions> = {
+    indent,
+    lineWidth: 80,
+    quotingType: 'auto',
+    sortKeys: false,
+    documentMarker: false,
+    includeLocation: false,
+    maxDepth: 0,
+  };
+  for (const key of Object.keys(obj)) {
+    const value = obj[key];
+    if (value === undefined) continue;
+    if (value !== null && typeof value === 'object' && !Array.isArray(value)) {
+      const nested = value as Record<string, unknown>;
+      const nestedKeys = Object.keys(nested).filter((k) => nested[k] !== undefined);
+      if (nestedKeys.length === 0) {
+        lines.push(`${pad}${key}: {}`);
+      } else {
+        lines.push(`${pad}${key}:`);
+        appendYAMLMap(lines, nested, `${pad}${' '.repeat(indent)}`, indent);
+      }
+    } else if (Array.isArray(value)) {
+      if (value.length === 0) {
+        lines.push(`${pad}${key}: []`);
+      } else {
+        lines.push(`${pad}${key}:`);
+        appendYAMLSequence(lines, value, pad, indent);
+      }
+    } else {
+      lines.push(`${pad}${key}: ${serializeValue(value, opts, 0)}`);
+    }
+  }
+}
+
+function appendYAMLSequence(
+  lines: string[],
+  items: unknown[],
+  pad: string,
+  indent: number,
+): void {
+  const opts: Required<YAMLOptions> = {
+    indent,
+    lineWidth: 80,
+    quotingType: 'auto',
+    sortKeys: false,
+    documentMarker: false,
+    includeLocation: false,
+    maxDepth: 0,
+  };
+  for (const item of items) {
+    if (item === undefined) continue;
+    const itemPad = `${pad}  `;
+    if (item !== null && typeof item === 'object' && !Array.isArray(item)) {
+      const nested = item as Record<string, unknown>;
+      const nestedKeys = Object.keys(nested).filter((k) => nested[k] !== undefined);
+      if (nestedKeys.length === 0) {
+        lines.push(`${itemPad}- {}`);
+        continue;
+      }
+      const entryPad = `${itemPad}  `;
+      const nestedLines: string[] = [];
+      appendYAMLMap(nestedLines, nested, entryPad, indent);
+      if (nestedLines.length > 0) {
+        nestedLines[0] = `${itemPad}- ${nestedLines[0].slice(entryPad.length)}`;
+        lines.push(...nestedLines);
+      }
+    } else if (Array.isArray(item)) {
+      lines.push(`${itemPad}- []`);
+    } else {
+      lines.push(`${itemPad}- ${serializeValue(item, opts, 0)}`);
+    }
+  }
+}
+
 // ============================================================================
 // Value Serialization
 // ============================================================================

@@ -174,3 +174,37 @@ function ensureSectionSpacing(lines: string[]): string[] {
 
   return result;
 }
+
+export interface MAMFormattingOptions {
+  tabSize: number;
+  insertSpaces: boolean;
+}
+
+export const DEFAULT_FORMATTING_OPTIONS: MAMFormattingOptions = {
+  tabSize: 2,
+  insertSpaces: true,
+};
+
+export function isFormatted(content: string, options: MAMFormattingOptions = DEFAULT_FORMATTING_OPTIONS): boolean {
+  return getFormatting(content, options).length === 0;
+}
+
+export function formatLine(line: string, options: MAMFormattingOptions = DEFAULT_FORMATTING_OPTIONS): string {
+  let result = removeTrailingWhitespace(line);
+  result = normalizeIndentation(result, options);
+  return formatSectionHeading(result, 0, []);
+}
+
+export function trimTrailingWhitespace(content: string): string {
+  return content.split('\n').map(removeTrailingWhitespace).join('\n');
+}
+
+export function normalizeBlankLines(content: string): string {
+  return collapseBlankLines(content.split('\n')).join('\n');
+}
+
+export function getFormattingSummary(content: string, options: MAMFormattingOptions = DEFAULT_FORMATTING_OPTIONS): string {
+  const edits = getFormatting(content, options);
+  if (edits.length === 0) return 'clean';
+  return `${edits.length} edit${edits.length === 1 ? '' : 's'}`;
+}

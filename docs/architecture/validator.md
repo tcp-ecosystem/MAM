@@ -297,7 +297,7 @@ class LSPReporter implements Reporter {
 ```markdown
 ---
 id: hello
-version: 1.0.0
+version: 2.0.0
 name: Hello
 author: LifeJiggy
 runtime: python

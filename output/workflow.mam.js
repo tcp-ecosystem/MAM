@@ -10,7 +10,7 @@
  * Id: content-pipeline
  * Name: Content Pipeline Workflow
  * Type: module
- * Version: 1.0.0
+ * version: 2.0.0
  * Author: MAM Team
  * License: MIT
  * Description: Multi-step content pipeline with branching and parallel execution

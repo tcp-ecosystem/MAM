@@ -33,6 +33,27 @@ import type {
   Link,
   Image,
 } from '../src/nodes/index.js';
+import {
+  traverseWithHooks,
+  findFirstNode,
+  collectNodeTypes,
+  MAMProfiler,
+  findNodesByType,
+  getMaxDepth,
+  traverseTree,
+} from '../src/visitor/index.js';
+import {
+  hasNodeType,
+  collectCodeBlockLanguages,
+  mapParagraphValues,
+} from '../src/visitor/visitor.js';
+import {
+  getNodeTypes,
+  collectPaths,
+  someNode,
+  everyNodeShallow,
+  collectValuesByKey,
+} from '../src/visitor/traverser.js';
 
 function loc() {
   return createLocation(1, 0, 0, 10, 5, 100, 'test.mam.md');
@@ -760,5 +781,336 @@ describe('Visitor with deeply nested structures', () => {
     expect(sectionContentTypes.get('Purpose')).toContain('Paragraph');
     expect(sectionContentTypes.get('Python')).toContain('CodeBlock');
     expect(sectionContentTypes.get('Tests')).toContain('List');
+  });
+});
+
+describe('traverseWithHooks', () => {
+  it('should fire enter before leave for the root', () => {
+    const events: string[] = [];
+    traverseWithHooks(createTestModule(), {
+      enter: (node) => events.push(`enter:${node.type}`),
+      leave: (node) => events.push(`leave:${node.type}`),
+    });
+    expect(events[0]).toBe('enter:MAMModule');
+    expect(events[events.length - 1]).toBe('leave:MAMModule');
+  });
+
+  it('should walk frontmatter before sections', () => {
+    const events: string[] = [];
+    traverseWithHooks(createTestModule(), {
+      enter: (node) => events.push(`enter:${node.type}`),
+    });
+    expect(events.slice(0, 4)).toEqual([
+      'enter:MAMModule',
+      'enter:FrontMatter',
+      'enter:Section',
+      'enter:Paragraph',
+    ]);
+  });
+
+  it('should call enter and leave the same number of times', () => {
+    let enters = 0;
+    let leaves = 0;
+    traverseWithHooks(createTestModule(), {
+      enter: () => { enters++; },
+      leave: () => { leaves++; },
+    });
+    expect(enters).toBeGreaterThan(10);
+    expect(leaves).toBe(enters);
+  });
+
+  it('should support enter-only hooks', () => {
+    const entered: string[] = [];
+    traverseWithHooks(createMinimalModule(), {
+      enter: (node) => entered.push(node.type),
+    });
+    expect(entered).toEqual(['MAMModule']);
+  });
+});
+
+describe('findFirstNode', () => {
+  it('should return the root when it matches first', () => {
+    const found = findFirstNode(createTestModule(), (node) => node.type === 'MAMModule');
+    expect(found?.type).toBe('MAMModule');
+  });
+
+  it('should find the first code block', () => {
+    const found = findFirstNode(createTestModule(), (node) => node.type === 'CodeBlock') as CodeBlock | undefined;
+    expect(found?.value).toBe('print("hello")');
+  });
+
+  it('should return undefined when nothing matches', () => {
+    const found = findFirstNode(createTestModule(), (node) => node.type === 'Nonexistent');
+    expect(found).toBeUndefined();
+  });
+});
+
+describe('hasNodeType', () => {
+  it('should detect present types', () => {
+    expect(hasNodeType(createTestModule(), 'MAMModule')).toBe(true);
+    expect(hasNodeType(createTestModule(), 'CodeBlock')).toBe(true);
+    expect(hasNodeType(createTestModule(), 'Bold')).toBe(true);
+  });
+
+  it('should reject absent types', () => {
+    expect(hasNodeType(createTestModule(), 'Nonexistent' as any)).toBe(false);
+    expect(hasNodeType(createMinimalModule(), 'Section')).toBe(false);
+  });
+});
+
+describe('collectNodeTypes', () => {
+  it('should collect unique types in visit order', () => {
+    const types = collectNodeTypes(createTestModule());
+    expect(types[0]).toBe('MAMModule');
+    expect(types[1]).toBe('FrontMatter');
+    expect(types).toContain('CodeBlock');
+    expect(types).toContain('InlineText');
+    expect(new Set(types).size).toBe(types.length);
+  });
+
+  it('should collect types from minimal module', () => {
+    expect(collectNodeTypes(createMinimalModule())).toEqual(['MAMModule']);
+  });
+});
+
+describe('collectCodeBlockLanguages', () => {
+  it('should collect unique languages', () => {
+    const mod = createTestModule();
+    mod.sections[1].content.push({
+      type: 'CodeBlock',
+      language: 'javascript',
+      value: 'console.log(1)',
+      metadata: {},
+      executable: false,
+      location: loc(),
+    });
+    mod.sections[1].content.push({
+      type: 'CodeBlock',
+      language: 'python',
+      value: 'print(2)',
+      metadata: {},
+      executable: true,
+      location: loc(),
+    });
+    expect(collectCodeBlockLanguages(mod)).toEqual(['python', 'javascript']);
+  });
+
+  it('should return empty array when there are no code blocks', () => {
+    expect(collectCodeBlockLanguages(createMinimalModule())).toEqual([]);
+  });
+});
+
+describe('mapParagraphValues', () => {
+  it('should map paragraph values without mutating the original', () => {
+    const mod = createTestModule();
+    const mapped = mapParagraphValues(mod, (value) => value.toUpperCase());
+    const original = mod.sections[0].content[0] as Paragraph;
+    const mappedFirst = mapped.sections[0].content[0] as Paragraph;
+    expect(original.value).toBe('Test purpose content');
+    expect(mappedFirst.value).toBe('TEST PURPOSE CONTENT');
+    expect(mappedFirst).not.toBe(original);
+  });
+
+  it('should pass the paragraph to the mapping function', () => {
+    const seen: string[] = [];
+    const mapped = mapParagraphValues(createTestModule(), (value, paragraph) => {
+      seen.push(paragraph.type);
+      return value;
+    });
+    expect(mapped.type).toBe('MAMModule');
+    expect(seen.length).toBeGreaterThan(0);
+    expect(seen.every((t) => t === 'Paragraph')).toBe(true);
+  });
+
+  it('should map paragraphs inside lists and blockquotes', () => {
+    const mapped = mapParagraphValues(createTestModule(), (value) => value.toUpperCase());
+    const listParagraph = (mapped.sections[2].content[0] as List).items[0].content[0] as Paragraph;
+    const quote = mapped.sections[2].content[4] as Blockquote;
+    expect(listParagraph.value).toBe('LIST ITEM TEXT');
+    expect((quote.children[0] as Paragraph).value).toBe('NOTE TEXT');
+  });
+
+  it('should leave non-paragraph nodes untouched', () => {
+    const mod = createTestModule();
+    const mapped = mapParagraphValues(mod, (value) => value.toUpperCase());
+    expect((mapped.sections[1].content[0] as CodeBlock).value).toBe('print("hello")');
+    expect(mapped.sections[1].content[0]).toBe(mod.sections[1].content[0]);
+  });
+});
+
+describe('MAMProfiler', () => {
+  it('should count visits per node type', () => {
+    const profiler = new MAMProfiler();
+    profiler.profile(createTestModule());
+    expect(profiler.getCount('MAMModule')).toBe(1);
+    expect(profiler.getCount('Section')).toBe(3);
+    expect(profiler.getCount('Paragraph')).toBe(4);
+    expect(profiler.getCount('CodeBlock')).toBe(1);
+    expect(profiler.getCount('InlineText')).toBe(10);
+    expect(profiler.getCount('Nonexistent')).toBe(0);
+  });
+
+  it('should accumulate counts across profile calls', () => {
+    const profiler = new MAMProfiler();
+    const mod = createTestModule();
+    profiler.profile(mod);
+    profiler.profile(mod);
+    expect(profiler.getCount('Section')).toBe(6);
+    expect(profiler.getCount('MAMModule')).toBe(2);
+  });
+
+  it('should expose total equal to sum of counts', () => {
+    const profiler = new MAMProfiler();
+    profiler.profile(createTestModule());
+    const counts = profiler.getCounts();
+    const sum = Object.values(counts).reduce((acc, n) => acc + n, 0);
+    expect(profiler.getTotal()).toBe(sum);
+    expect(profiler.getTotal()).toBeGreaterThan(10);
+    expect(counts.MAMModule).toBe(1);
+  });
+
+  it('should profile through visitMAMModule', () => {
+    const profiler = new MAMProfiler();
+    profiler.visitMAMModule(createTestModule());
+    expect(profiler.getCount('MAMModule')).toBe(1);
+    expect(profiler.getCount('FrontMatter')).toBe(1);
+  });
+
+  it('should reset counters', () => {
+    const profiler = new MAMProfiler();
+    profiler.profile(createTestModule());
+    profiler.reset();
+    expect(profiler.getTotal()).toBe(0);
+    expect(profiler.getCount('Section')).toBe(0);
+    expect(profiler.getCounts()).toEqual({});
+  });
+
+  it('should profile minimal module', () => {
+    const profiler = new MAMProfiler();
+    profiler.profile(createMinimalModule());
+    expect(profiler.getTotal()).toBe(1);
+    expect(profiler.getCount('Section')).toBe(0);
+  });
+});
+
+describe('findNodesByType', () => {
+  it('should find all nodes of a given type', () => {
+    const sections = findNodesByType(createTestModule() as any, 'Section');
+    expect(sections).toHaveLength(3);
+    expect(sections.every((n) => n.type === 'Section')).toBe(true);
+  });
+
+  it('should find code blocks by type', () => {
+    const blocks = findNodesByType(createTestModule() as any, 'CodeBlock') as any[];
+    expect(blocks).toHaveLength(1);
+    expect(blocks[0].value).toBe('print("hello")');
+  });
+
+  it('should return an empty array when nothing matches', () => {
+    expect(findNodesByType(createMinimalModule() as any, 'Section')).toEqual([]);
+  });
+});
+
+describe('getNodeTypes', () => {
+  it('should collect unique types visible to the traverser', () => {
+    const types = getNodeTypes(createTestModule() as any);
+    expect(types).toContain('MAMModule');
+    expect(types).toContain('Section');
+    expect(types).toContain('InlineText');
+    expect(new Set(types).size).toBe(types.length);
+  });
+
+  it('should collect types for minimal module', () => {
+    expect(getNodeTypes(createMinimalModule() as any)).toEqual(['MAMModule']);
+  });
+});
+
+describe('getMaxDepth & collectPaths', () => {
+  it('should report zero depth for root-only module', () => {
+    expect(getMaxDepth(createMinimalModule() as any)).toBe(0);
+  });
+
+  it('should report nested depth for full module', () => {
+    expect(getMaxDepth(createTestModule() as any)).toBe(5);
+  });
+
+  it('should collect one path per visited node', () => {
+    const mod = createTestModule();
+    const paths = collectPaths(mod as any);
+    expect(paths).toHaveLength(countNodes(mod as any));
+    expect(paths[0]).toEqual([]);
+  });
+
+  it('should include nested key paths', () => {
+    const paths = collectPaths(createTestModule() as any);
+    expect(paths).toContainEqual(['sections']);
+    expect(paths).toContainEqual(['sections', 'content']);
+  });
+});
+
+describe('someNode', () => {
+  it('should return true when any node matches', () => {
+    expect(someNode(createTestModule() as any, (n) => n.type === 'CodeBlock')).toBe(true);
+    expect(someNode(createMinimalModule() as any, (n) => n.type === 'MAMModule')).toBe(true);
+  });
+
+  it('should return false when no node matches', () => {
+    expect(someNode(createTestModule() as any, (n) => n.type === 'Nonexistent')).toBe(false);
+  });
+});
+
+describe('everyNodeShallow', () => {
+  it('should verify the root and its direct children only', () => {
+    const mod = createTestModule();
+    expect(everyNodeShallow(mod as any, (n) => ['MAMModule', 'FrontMatter', 'Section'].includes(n.type))).toBe(true);
+  });
+
+  it('should ignore deeper nodes that fail the predicate', () => {
+    expect(everyNodeShallow(createTestModule() as any, (n) => n.type !== 'CodeBlock')).toBe(true);
+    expect(everyNodeShallow(createTestModule() as any, (n) => n.type !== 'Paragraph')).toBe(true);
+  });
+
+  it('should return false when a direct child fails', () => {
+    expect(everyNodeShallow(createTestModule() as any, (n) => n.type !== 'Section')).toBe(false);
+  });
+
+  it('should return false when the root fails', () => {
+    expect(everyNodeShallow(createMinimalModule() as any, () => false)).toBe(false);
+  });
+});
+
+describe('collectValuesByKey', () => {
+  it('should collect values from nodes that have the key', () => {
+    const values = collectValuesByKey(createTestModule() as any, 'value');
+    expect(values).toContain('Test purpose content');
+    expect(values).toContain('print("hello")');
+    expect(values).toContain('Sub heading');
+    expect(values).toContain('Important note');
+    expect(values).not.toContain('List item text');
+    expect(values.length).toBeGreaterThan(5);
+  });
+
+  it('should return empty array when no node has the key', () => {
+    expect(collectValuesByKey(createMinimalModule() as any, 'value')).toEqual([]);
+  });
+});
+
+describe('traverseTree', () => {
+  it('should traverse the tree through the barrel alias', () => {
+    const types: string[] = [];
+    traverseTree(createTestModule() as any, (node) => {
+      types.push(node.type);
+    });
+    expect(types[0]).toBe('MAMModule');
+    expect(types).toContain('Section');
+    expect(types).toContain('CodeBlock');
+  });
+
+  it('should visit only the root for a minimal module', () => {
+    const types: string[] = [];
+    traverseTree(createMinimalModule() as any, (node) => {
+      types.push(node.type);
+    });
+    expect(types).toEqual(['MAMModule']);
   });
 });

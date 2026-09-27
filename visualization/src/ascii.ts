@@ -180,3 +180,40 @@ export class ASCIIArt {
     }
   }
 }
+
+export function countAsciiLines(output: ASCIIOutput): number {
+  if (output.art.length === 0) return 0;
+  return output.art.split('\n').length;
+}
+
+export function getAsciiDimensions(output: ASCIIOutput): { width: number; height: number } {
+  return { width: output.width, height: output.height };
+}
+
+export function hasAsciiContent(output: ASCIIOutput): boolean {
+  return output.art.trim().length > 0;
+}
+
+export function getAsciiLine(output: ASCIIOutput, index: number): string | undefined {
+  return output.art.split('\n')[index];
+}
+
+export function sliceAsciiLines(output: ASCIIOutput, start: number, end: number): string {
+  return output.art.split('\n').slice(start, end).join('\n');
+}
+
+export function joinAsciiOutputs(outputs: ASCIIOutput[]): ASCIIOutput {
+  const arts = outputs.map((output) => output.art).filter((art) => art.length > 0);
+  const art = arts.join('\n');
+  const lines = art.length === 0 ? [] : art.split('\n');
+  return {
+    art,
+    width: lines.reduce((max, line) => Math.max(max, line.length), 0),
+    height: lines.length,
+  };
+}
+
+export function getAsciiLineWidths(output: ASCIIOutput): number[] {
+  if (output.art.length === 0) return [];
+  return output.art.split('\n').map((line) => line.length);
+}

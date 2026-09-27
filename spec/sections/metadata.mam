@@ -1,7 +1,7 @@
 ---
 id: section-metadata
 name: Metadata Section
-version: 1.0.0
+version: 2.0.0
 type: module
 author: MAM Team
 description: >
@@ -143,7 +143,7 @@ content: |
   ---
   id: user-auth
   name: User Auth
-  version: 1.0.0
+  version: 2.0.0
   author: MAM Team
   runtime: python
   ---
@@ -159,7 +159,7 @@ errors: []
 ```python
 def test_metadata():
     content = ("---\nid: user-auth\nname: User Auth\n"
-               "version: 1.0.0\nauthor: MAM Team\nruntime: python\n---")
+               "version: 2.0.0\nauthor: MAM Team\nruntime: python\n---")
     data = extract_metadata(content)
     assert data["id"] == "user-auth"
     assert validate_id("user-auth")

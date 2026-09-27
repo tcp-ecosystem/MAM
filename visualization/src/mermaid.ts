@@ -206,3 +206,56 @@ export class MermaidGenerator {
     return count;
   }
 }
+
+export function sanitizeMermaidId(id: string): string {
+  const cleaned = id.replace(/[^A-Za-z0-9_]/g, '_');
+  if (cleaned.length === 0) return 'node';
+  if (/^[0-9]/.test(cleaned)) return `n_${cleaned}`;
+  return cleaned;
+}
+
+export function countMermaidCodeLines(output: MermaidOutput): number {
+  if (output.code.length === 0) return 0;
+  return output.code.split('\n').length;
+}
+
+export function extractMermaidNodeIds(code: string): string[] {
+  const ids: string[] = [];
+  const seen = new Set<string>();
+  const pattern = /^\s*([A-Za-z0-9_]+)\s*[\[\({]/gm;
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(code)) !== null) {
+    const id = match[1] as string;
+    if (!seen.has(id)) {
+      seen.add(id);
+      ids.push(id);
+    }
+  }
+  return ids;
+}
+
+export function extractMermaidEdgePairs(code: string): Array<{ from: string; to: string }> {
+  const pairs: Array<{ from: string; to: string }> = [];
+  const pattern = /([A-Za-z0-9_]+)\s*-->?\s*(?:\|[^|]*\|\s*)?([A-Za-z0-9_]+)/g;
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(code)) !== null) {
+    pairs.push({ from: match[1] as string, to: match[2] as string });
+  }
+  return pairs;
+}
+
+export function hasMermaidNodeId(code: string, id: string): boolean {
+  return extractMermaidNodeIds(code).includes(id);
+}
+
+export function getMermaidDiagramHeader(type: string, direction: string): string {
+  if (type === 'flowchart' || type === 'graph') {
+    return `flowchart ${direction}`;
+  }
+  return type;
+}
+
+export function isFlowchartCode(code: string): boolean {
+  const first = code.split('\n')[0]?.trim() ?? '';
+  return first.startsWith('flowchart') || first.startsWith('graph');
+}

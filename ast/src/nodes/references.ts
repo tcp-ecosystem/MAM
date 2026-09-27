@@ -199,3 +199,72 @@ export function getAllReferenceTags(node: ReferencesNode): string[] {
 export function countReferences(node: ReferencesNode): number {
   return node.references.length;
 }
+
+export function hasReferences(node: ReferencesNode): boolean {
+  return node.references.length > 0;
+}
+
+export function countReferencesByType(node: ReferencesNode): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const ref of node.references) {
+    const key = ref.type ?? 'untyped';
+    counts[key] = (counts[key] ?? 0) + 1;
+  }
+  return counts;
+}
+
+export function summarizeReferences(node: ReferencesNode): string {
+  return `References: ${node.references.length} total, ${getReferencesWithUrl(node).length} with URL, ${getAllReferenceTags(node).length} tags`;
+}
+
+export function withReference(node: ReferencesNode, reference: Reference): ReferencesNode {
+  return { ...node, references: [...node.references, reference] };
+}
+
+export function withoutReference(
+  node: ReferencesNode,
+  titleOrPredicate: string | ((reference: Reference) => boolean),
+): ReferencesNode {
+  const predicate =
+    typeof titleOrPredicate === 'string'
+      ? (reference: Reference) => reference.title.toLowerCase() === titleOrPredicate.toLowerCase()
+      : titleOrPredicate;
+  return { ...node, references: node.references.filter((reference) => !predicate(reference)) };
+}
+
+export function cloneReferencesNode(
+  node: ReferencesNode,
+  options?: { stripLocation?: boolean },
+): ReferencesNode {
+  const cloned: ReferencesNode = {
+    type: 'References',
+    references: node.references.map((reference): Reference => ({
+      ...reference,
+      ...(reference.authors !== undefined ? { authors: [...reference.authors] } : {}),
+      ...(reference.tags !== undefined ? { tags: [...reference.tags] } : {}),
+    })),
+    location: node.location,
+  };
+  if (options?.stripLocation) {
+    delete cloned.location;
+  }
+  return cloned;
+}
+
+export function mergeReferencesNodes(a: ReferencesNode, b: ReferencesNode): ReferencesNode {
+  const references = [...a.references];
+  for (const reference of b.references) {
+    if (
+      !references.some(
+        (existing) => existing.title.toLowerCase() === reference.title.toLowerCase(),
+      )
+    ) {
+      references.push(reference);
+    }
+  }
+  return {
+    type: 'References',
+    references,
+    location: a.location ?? b.location,
+  };
+}

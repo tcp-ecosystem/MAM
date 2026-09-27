@@ -1,5 +1,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { Logger, createLogger, getDefaultLogger, setDefaultLogger } from '../src/logger.js';
+import {
+  Logger,
+  createLogger,
+  getDefaultLogger,
+  setDefaultLogger,
+  LOG_LEVELS,
+  isLogLevel,
+  compareLogLevels,
+  isLevelEnabled,
+  formatLogMessage,
+  createSilentLogger,
+  createMemoryLogger,
+} from '../src/logger.js';
 
 function createMockWriteStream(): { write: ReturnType<typeof vi.fn>; output: () => string } {
   const written: string[] = [];
@@ -239,5 +251,68 @@ describe('getDefaultLogger / setDefaultLogger', () => {
     const a = getDefaultLogger();
     const b = getDefaultLogger();
     expect(a).toBe(b);
+  });
+});
+
+describe('LOG_LEVELS', () => {
+  it('should list levels in order', () => {
+    expect(LOG_LEVELS).toEqual(['debug', 'info', 'warn', 'error', 'silent']);
+  });
+});
+
+describe('isLogLevel', () => {
+  it('should validate level names', () => {
+    expect(isLogLevel('info')).toBe(true);
+    expect(isLogLevel('silent')).toBe(true);
+    expect(isLogLevel('verbose')).toBe(false);
+    expect(isLogLevel(42)).toBe(false);
+  });
+});
+
+describe('compareLogLevels', () => {
+  it('should order levels', () => {
+    expect(compareLogLevels('debug', 'error')).toBeLessThan(0);
+    expect(compareLogLevels('error', 'debug')).toBeGreaterThan(0);
+    expect(compareLogLevels('info', 'info')).toBe(0);
+  });
+});
+
+describe('isLevelEnabled', () => {
+  it('should respect the current level', () => {
+    expect(isLevelEnabled('info', 'warn')).toBe(true);
+    expect(isLevelEnabled('warn', 'info')).toBe(false);
+    expect(isLevelEnabled('silent', 'error')).toBe(false);
+    expect(isLevelEnabled('debug', 'debug')).toBe(true);
+  });
+});
+
+describe('formatLogMessage', () => {
+  it('should format with tag and prefix', () => {
+    expect(formatLogMessage('info', 'hello')).toContain('hello');
+    expect(formatLogMessage('warn', 'hello', 'cli')).toContain('[cli]');
+  });
+});
+
+describe('createSilentLogger', () => {
+  it('should create a silent logger', () => {
+    const logger = createSilentLogger();
+    expect(logger.getLevel()).toBe('silent');
+    expect(() => logger.info('quiet')).not.toThrow();
+  });
+});
+
+describe('createMemoryLogger', () => {
+  it('should capture error output lines', () => {
+    const { logger, lines } = createMemoryLogger({ level: 'debug', color: false });
+    logger.error('oops');
+    expect(lines).toHaveLength(1);
+    expect(lines.join('\n')).toContain('oops');
+  });
+
+  it('should respect the configured level', () => {
+    const { logger, lines } = createMemoryLogger({ level: 'silent', color: false });
+    logger.error('quiet');
+    expect(lines).toHaveLength(0);
+    expect(logger.getLevel()).toBe('silent');
   });
 });

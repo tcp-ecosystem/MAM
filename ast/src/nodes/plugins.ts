@@ -208,3 +208,89 @@ export function hasPlugin(node: PluginsNode, name: string): boolean {
 export function countPlugins(node: PluginsNode): number {
   return node.plugins.length;
 }
+
+export function hasPlugins(node: PluginsNode): boolean {
+  return node.plugins.length > 0;
+}
+
+export function countEnabledPlugins(node: PluginsNode): number {
+  return node.plugins.filter((plugin) => plugin.enabled !== false).length;
+}
+
+export function summarizePlugins(node: PluginsNode): string {
+  const enabled = node.plugins.filter((plugin) => plugin.enabled !== false).length;
+  const suffix = `${enabled} enabled`;
+  if (node.plugins.length === 0) {
+    return `0 plugins (${suffix})`;
+  }
+  const list = node.plugins.map((plugin) => plugin.name).join(', ');
+  return `${node.plugins.length} plugins (${suffix}): ${list}`;
+}
+
+export function withPlugin(node: PluginsNode, plugin: PluginRef): PluginsNode {
+  return {
+    ...node,
+    plugins: [...node.plugins, plugin],
+  };
+}
+
+export function withoutPlugin(
+  node: PluginsNode,
+  nameOrPredicate: string | ((plugin: PluginRef) => boolean),
+): PluginsNode {
+  const predicate =
+    typeof nameOrPredicate === 'string'
+      ? (plugin: PluginRef) => plugin.name === nameOrPredicate
+      : nameOrPredicate;
+  return {
+    ...node,
+    plugins: node.plugins.filter((plugin) => !predicate(plugin)),
+  };
+}
+
+export function clonePluginsNode(
+  node: PluginsNode,
+  options?: { stripLocation?: boolean },
+): PluginsNode {
+  const clone: PluginsNode = {
+    ...node,
+    plugins: node.plugins.map((plugin) => {
+      const copy: PluginRef = { ...plugin };
+      if (plugin.config) {
+        copy.config = { ...plugin.config };
+      }
+      if (plugin.capabilities) {
+        copy.capabilities = [...plugin.capabilities];
+      }
+      if (plugin.dependencies) {
+        copy.dependencies = [...plugin.dependencies];
+      }
+      return copy;
+    }),
+  };
+  if (options?.stripLocation) {
+    delete clone.location;
+  }
+  return clone;
+}
+
+export function mergePluginsNodes(a: PluginsNode, b: PluginsNode): PluginsNode {
+  const plugins = a.plugins.map((plugin) => ({ ...plugin }));
+  const index = new Map<string, number>(
+    plugins.map((plugin, i): [string, number] => [plugin.name, i]),
+  );
+  for (const plugin of b.plugins) {
+    const existing = index.get(plugin.name);
+    if (existing !== undefined) {
+      plugins[existing] = { ...plugin };
+    } else {
+      index.set(plugin.name, plugins.length);
+      plugins.push({ ...plugin });
+    }
+  }
+  return {
+    type: 'Plugins',
+    plugins,
+    location: b.location ?? a.location,
+  };
+}

@@ -383,3 +383,107 @@ export function createDefaultRetryDefinition(): V2RetryDefinition {
 export function createDefaultTimeoutDefinition(): V2TimeoutDefinition {
   return { value: 30, unit: 's', action: 'abort' };
 }
+
+// ============================================================================
+// Extended Factories and Guards
+// ============================================================================
+
+export function createPortDefinition(
+  name: string,
+  type: string,
+  options?: { required?: boolean; description?: string; default?: unknown }
+): V2PortDefinition {
+  const port: V2PortDefinition = { name, type, required: options?.required ?? true };
+  if (options?.description !== undefined) {
+    port.description = options.description;
+  }
+  if (options?.default !== undefined) {
+    port.default = options.default;
+  }
+  return port;
+}
+
+export function createPermissionSet(overrides?: V2PermissionSet): V2PermissionSet {
+  return { ...createDefaultPermissionSet(), ...overrides };
+}
+
+export function isPortDefinition(value: unknown): value is V2PortDefinition {
+  if (typeof value !== 'object' || value === null) return false;
+  const obj = value as Record<string, unknown>;
+  return (
+    typeof obj.name === 'string' &&
+    typeof obj.type === 'string' &&
+    typeof obj.required === 'boolean' &&
+    (obj.description === undefined || typeof obj.description === 'string')
+  );
+}
+
+export function isPermissionSet(value: unknown): value is V2PermissionSet {
+  if (typeof value !== 'object' || value === null || Array.isArray(value)) return false;
+  const obj = value as Record<string, unknown>;
+  const allowed: Record<string, string[]> = {
+    filesystem: ['read', 'write', 'none'],
+    network: ['internet', 'internal', 'none'],
+    python: ['sandbox', 'full', 'none'],
+    memory: ['local', 'shared', 'none'],
+    exec: ['allowed', 'denied'],
+  };
+  for (const key of Object.keys(obj)) {
+    if (key !== 'custom' && !(key in allowed)) return false;
+  }
+  for (const [key, values] of Object.entries(allowed)) {
+    const current = obj[key];
+    if (current !== undefined && (typeof current !== 'string' || !values.includes(current))) {
+      return false;
+    }
+  }
+  if (obj.custom !== undefined) {
+    if (typeof obj.custom !== 'object' || obj.custom === null || Array.isArray(obj.custom)) return false;
+    const custom = obj.custom as Record<string, unknown>;
+    for (const entry of Object.values(custom)) {
+      if (typeof entry !== 'string') return false;
+    }
+  }
+  return true;
+}
+
+export function mergePermissionSets(a: V2PermissionSet, b: V2PermissionSet): V2PermissionSet {
+  const merged: V2PermissionSet = { ...a, ...b };
+  if (a.custom !== undefined || b.custom !== undefined) {
+    merged.custom = { ...a.custom, ...b.custom };
+  }
+  return merged;
+}
+
+export function countPorts(node: {
+  ports?: V2PortDefinition[];
+  inputs?: V2PortDefinition[];
+  outputs?: V2PortDefinition[];
+  parameters?: V2PortDefinition[];
+  returns?: V2PortDefinition[];
+}): number {
+  return (
+    (node.ports?.length ?? 0) +
+    (node.inputs?.length ?? 0) +
+    (node.outputs?.length ?? 0) +
+    (node.parameters?.length ?? 0) +
+    (node.returns?.length ?? 0)
+  );
+}
+
+export function createMemoryReference(
+  type: 'local' | 'shared' | 'external',
+  options?: { name?: string; backend?: string; scope?: string }
+): V2MemoryReference {
+  const reference: V2MemoryReference = { type };
+  if (options?.name !== undefined) {
+    reference.name = options.name;
+  }
+  if (options?.backend !== undefined) {
+    reference.backend = options.backend;
+  }
+  if (options?.scope !== undefined) {
+    reference.scope = options.scope;
+  }
+  return reference;
+}

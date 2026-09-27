@@ -229,7 +229,7 @@ mam build               # compile the whole project to targets
 ---
 id: authentication
 name: Authentication Module
-version: 1.0.0
+version: 2.0.0
 type: module
 author: MAM Team
 license: MIT
@@ -438,23 +438,23 @@ MAM compiles to 16 target languages:
 
 | Target | Command | Extension |
 |--------|---------|-----------|
-| Python | `mam compile module.mam.md -t python` | `.py` |
-| JavaScript | `mam compile module.mam.md -t javascript` | `.js` |
-| Go | `mam compile module.mam.md -t go` | `.go` |
-| Rust | `mam compile module.mam.md -t rust` | `.rs` |
-| C# | `mam compile module.mam.md -t csharp` | `.cs` |
-| Java | `mam compile module.mam.md -t java` | `.java` |
-| WebAssembly | `mam compile module.mam.md -t wasm` | `.wasm` |
-| JSON | `mam compile module.mam.md -t json` | `.json` |
-| OpenAI SDK | `mam compile module.mam.md -t openai` | `.json` |
-| LangGraph | `mam compile module.mam.md -t langgraph` | `.py` |
-| CrewAI | `mam compile module.mam.md -t crewai` | `.py` |
-| Gemini | `mam compile module.mam.md -t gemini` | `.py` |
-| AutoGen | `mam compile module.mam.md -t autogen` | `.py` |
-| Claude SDK | `mam compile module.mam.md -t claude` | `.ts` |
-| Kubernetes | `mam compile module.mam.md -t kubernetes` | `.yaml` |
-| Terraform | `mam compile module.mam.md -t terraform` | `.tf` |
-| Docker | `mam compile module.mam.md -t docker` | `Dockerfile` |
+| Python | `mam compile module.mam -t python` | `.py` |
+| JavaScript | `mam compile module.mam -t javascript` | `.js` |
+| Go | `mam compile module.mam -t go` | `.go` |
+| Rust | `mam compile module.mam -t rust` | `.rs` |
+| C# | `mam compile module.mam -t csharp` | `.cs` |
+| Java | `mam compile module.mam -t java` | `.java` |
+| WebAssembly | `mam compile module.mam -t wasm` | `.wasm` |
+| JSON | `mam compile module.mam -t json` | `.json` |
+| OpenAI SDK | `mam compile module.mam -t openai` | `.json` |
+| LangGraph | `mam compile module.mam -t langgraph` | `.py` |
+| CrewAI | `mam compile module.mam -t crewai` | `.py` |
+| Gemini | `mam compile module.mam -t gemini` | `.py` |
+| AutoGen | `mam compile module.mam -t autogen` | `.py` |
+| Claude SDK | `mam compile module.mam -t claude` | `.ts` |
+| Kubernetes | `mam compile module.mam -t kubernetes` | `.yaml` |
+| Terraform | `mam compile module.mam -t terraform` | `.tf` |
+| Docker | `mam compile module.mam -t docker` | `Dockerfile` |
 
 ---
 

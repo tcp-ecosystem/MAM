@@ -11,7 +11,7 @@ Extract, Transform, Load pipeline:
 ```markdown
 ---
 id: etl-pipeline
-version: 1.0.0
+version: 2.0.0
 name: ETL Pipeline
 author: LifeJiggy
 runtime: python
@@ -95,7 +95,7 @@ Multi-step approval process:
 ```markdown
 ---
 id: approval-workflow
-version: 1.0.0
+version: 2.0.0
 name: Approval Workflow
 author: LifeJiggy
 runtime: python
@@ -184,7 +184,7 @@ Synchronize data between systems:
 ```markdown
 ---
 id: data-sync
-version: 1.0.0
+version: 2.0.0
 name: Data Sync Workflow
 author: LifeJiggy
 runtime: python
@@ -255,7 +255,7 @@ Send notifications through multiple channels:
 ```markdown
 ---
 id: notification-workflow
-version: 1.0.0
+version: 2.0.0
 name: Notification Workflow
 author: LifeJiggy
 runtime: python

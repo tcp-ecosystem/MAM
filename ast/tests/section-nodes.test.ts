@@ -40,6 +40,13 @@ import {
   requiresAdminAccess,
   getPermissionResources,
   findPermissionByResource,
+  hasPermissions,
+  countPermissionConditions,
+  summarizePermissions,
+  withPermission,
+  withoutPermission,
+  clonePermissionsNode,
+  mergePermissionsNodes,
 } from '../src/nodes/permissions.js';
 import {
   createMermaidNode,
@@ -51,6 +58,13 @@ import {
   getMermaidEdgePairs,
   hasMermaidNode,
   countMermaidElements,
+  summarizeMermaid,
+  addMermaidParsedNode,
+  removeMermaidParsedNode,
+  cloneMermaidNode,
+  mergeMermaidNodes,
+  getMermaidAdjacency,
+  hasMermaidCycle,
 } from '../src/nodes/mermaid.js';
 import {
   createPromptNode,
@@ -65,6 +79,13 @@ import {
   hasVariable,
   findTemplateById,
   getTemplateIds,
+  hasPromptVariables,
+  countPromptVariables,
+  summarizePrompt,
+  withPromptVariable,
+  withoutPromptVariable,
+  clonePromptNode,
+  mergePromptNodes,
 } from '../src/nodes/prompt.js';
 import {
   createWorkflowNode,
@@ -79,6 +100,13 @@ import {
   getSuccessors,
   getPredecessors,
   countWorkflowElements,
+  summarizeWorkflow,
+  withWorkflowStep,
+  withoutWorkflowStep,
+  cloneWorkflowNode,
+  mergeWorkflowNodes,
+  getIsolatedSteps,
+  getLongestPathLength,
 } from '../src/nodes/workflow.js';
 import {
   createMetadataNode,
@@ -91,6 +119,13 @@ import {
   getDependencyNames,
   hasDependency as hasMetaDep,
   mergeMetadataNodes,
+  hasMetadataPermissions,
+  countMetadataPermissions,
+  summarizeMetadata,
+  withMetadataPermission,
+  withoutMetadataPermission,
+  cloneMetadataNode,
+  mergeMetadataPermissions,
 } from '../src/nodes/metadata.js';
 import {
   createInputsNode,
@@ -116,6 +151,13 @@ import {
   countOutputPorts,
   summarizeOutputPorts,
   getNullableOutputPorts,
+  hasOutputs,
+  countOutputs,
+  summarizeOutputs,
+  withOutput,
+  withoutOutput,
+  cloneOutputsNode,
+  mergeOutputsNodes,
 } from '../src/nodes/outputs.js';
 import {
   createExportsNode,
@@ -204,6 +246,13 @@ import {
   isPluginEnabled,
   hasPlugin,
   countPlugins,
+  hasPlugins,
+  countEnabledPlugins,
+  summarizePlugins,
+  withPlugin,
+  withoutPlugin,
+  clonePluginsNode,
+  mergePluginsNodes,
 } from '../src/nodes/plugins.js';
 import {
   createPythonNode,
@@ -232,6 +281,54 @@ import {
   isEncrypted,
   countIndexes,
 } from '../src/nodes/memory.js';
+import {
+  createPurposeNode,
+  createPurposeGoal,
+  hasGoals,
+  countGoals,
+  summarizeSuccessCriteria,
+  withGoal,
+  withoutGoal,
+  clonePurposeNode,
+  mergePurposeNodes,
+} from '../src/nodes/purpose.js';
+import {
+  findSectionByName,
+  getSectionNames,
+  hasSection,
+  countContentNodes,
+  isContentNode,
+  isInlineNode,
+  createEmptyModule,
+} from '../src/nodes/index.js';
+import {
+  isV2ModuleNode,
+  isV2AgentNode,
+  createV2ModuleNode,
+  V2_NODE_TYPES,
+} from '../src/nodes/v2/nodes.js';
+import {
+  isV2NodeType,
+  createV2BaseNode,
+  cloneV2Node,
+  getV2NodeType,
+  compareModuleTypes,
+} from '../src/nodes/v2/base.js';
+import {
+  createPortDefinition,
+  isPortDefinition,
+  isPermissionSet,
+  mergePermissionSets,
+  countPorts as countV2Ports,
+  createMemoryReference,
+} from '../src/nodes/v2/supporting.js';
+import {
+  MODULE_TYPE_COUNT,
+  isV2SectionKeyword,
+  assertModuleType,
+  suggestModuleType,
+  findModuleTypeByAlias,
+} from '../src/nodes/v2/keywords.js';
 
 describe('Capabilities Utilities', () => {
   const node = createCapabilitiesNode({
@@ -1239,5 +1336,336 @@ describe('Memory Utilities', () => {
   it('should count indexes', () => {
     expect(countIndexes(node)).toBe(2);
     expect(countIndexes(createMemoryNode())).toBe(0);
+  });
+});
+
+describe('New Mermaid Features', () => {
+  const content = `flowchart LR
+  A[Start] --> B[Process]
+  B[Process] --> C[End]`;
+
+  it('should summarize, extend, and inspect the diagram graph', () => {
+    const node = createMermaidNode({ content });
+    expect(summarizeMermaid(node)).toContain('flowchart');
+    const adjacency = getMermaidAdjacency(node);
+    expect(adjacency.get('A')).toContain('B');
+    expect(hasMermaidCycle(node)).toBe(false);
+  });
+
+  it('should add, remove, clone, and merge parsed nodes', () => {
+    const node = createMermaidNode({ content });
+    const added = addMermaidParsedNode(node, { id: 'D', label: 'Extra' });
+    expect(hasMermaidNode(added, 'D')).toBe(true);
+    const removed = removeMermaidParsedNode(added, 'D');
+    expect(hasMermaidNode(removed, 'D')).toBe(false);
+    const clone = cloneMermaidNode(node, { stripLocation: true });
+    expect(clone.location).toBeUndefined();
+    expect(getMermaidNodeIds(clone)).toEqual(getMermaidNodeIds(node));
+    const other = createMermaidNode({ content, autoParse: false });
+    const merged = mergeMermaidNodes(node, other);
+    expect(getMermaidNodeIds(merged)).toEqual(expect.arrayContaining(['A']));
+  });
+
+  it('should detect a cycle in a hand-built graph', () => {
+    const base = createMermaidNode({ content: 'x', autoParse: false });
+    const cyclic = {
+      ...base,
+      parsedNodes: [{ id: 'A' }, { id: 'B' }],
+      parsedEdges: [
+        { from: 'A', to: 'B' },
+        { from: 'B', to: 'A' },
+      ],
+    };
+    expect(hasMermaidCycle(cyclic)).toBe(true);
+  });
+});
+
+describe('New Workflow Features', () => {
+  const linear = createWorkflowNode({
+    steps: [
+      createWorkflowStep('start'),
+      createWorkflowStep('process'),
+      createWorkflowStep('end'),
+    ],
+    edges: [
+      createWorkflowEdge('start', 'process'),
+      createWorkflowEdge('process', 'end'),
+    ],
+  });
+
+  it('should summarize the workflow', () => {
+    expect(summarizeWorkflow(linear)).toContain('3 steps');
+    expect(summarizeWorkflow(linear)).toContain('acyclic');
+  });
+
+  it('should add and remove steps immutably', () => {
+    const added = withWorkflowStep(linear, createWorkflowStep('extra'));
+    expect(added.steps).toHaveLength(4);
+    expect(linear.steps).toHaveLength(3);
+    const removed = withoutWorkflowStep(added, 'extra');
+    expect(removed.steps).toHaveLength(3);
+    const pruned = withoutWorkflowStep(linear, 'process');
+    expect(pruned.steps.map((s) => s.name)).toEqual(['start', 'end']);
+    expect(pruned.edges ?? []).toHaveLength(0);
+  });
+
+  it('should clone and merge workflows', () => {
+    const clone = cloneWorkflowNode(linear, { stripLocation: true });
+    expect(clone.location).toBeUndefined();
+    expect(clone.steps).toEqual(linear.steps);
+    expect(clone.steps).not.toBe(linear.steps);
+    const other = createWorkflowNode({
+      steps: [createWorkflowStep('audit')],
+      edges: [createWorkflowEdge('end', 'audit')],
+    });
+    const merged = mergeWorkflowNodes(linear, other);
+    expect(merged.steps.map((s) => s.name)).toEqual(
+      expect.arrayContaining(['start', 'audit']),
+    );
+  });
+
+  it('should find isolated steps and longest path length', () => {
+    const withIsolated = withWorkflowStep(linear, createWorkflowStep('lonely'));
+    expect(getIsolatedSteps(withIsolated).map((s) => s.name)).toEqual(['lonely']);
+    expect(getLongestPathLength(linear)).toBe(3);
+    const cyclic = createWorkflowNode({
+      steps: [createWorkflowStep('a'), createWorkflowStep('b')],
+      edges: [createWorkflowEdge('a', 'b'), createWorkflowEdge('b', 'a')],
+    });
+    expect(getLongestPathLength(cyclic)).toBe(0);
+  });
+});
+
+describe('New Metadata Features', () => {
+  it('should check, count, and summarize permissions', () => {
+    const node = createMetadataNode({
+      name: 'Demo',
+      version: '1.0.0',
+      runtime: 'python',
+      tags: ['t'],
+      permissions: [createMetadataPermission('fs', 'read')],
+      dependencies: [createMetadataDependency('lodash', '^4.0.0')],
+    });
+    expect(hasMetadataPermissions(node)).toBe(true);
+    expect(hasMetadataPermissions(createMetadataNode())).toBe(false);
+    expect(countMetadataPermissions(node)).toBe(1);
+    expect(summarizeMetadata(node)).toContain('Demo');
+  });
+
+  it('should add, remove, clone, and merge permissions', () => {
+    const node = createMetadataNode({
+      permissions: [createMetadataPermission('fs', 'read')],
+    });
+    const added = withMetadataPermission(node, createMetadataPermission('net', 'write'));
+    expect(countMetadataPermissions(added)).toBe(2);
+    const removed = withoutMetadataPermission(added, 'fs');
+    expect(countMetadataPermissions(removed)).toBe(1);
+    const clone = cloneMetadataNode(added, { stripLocation: true });
+    expect(clone.location).toBeUndefined();
+    expect(clone.permissions).toEqual(added.permissions);
+    const merged = mergeMetadataPermissions(node, added);
+    expect(merged.map((p) => p.resource)).toEqual(expect.arrayContaining(['fs', 'net']));
+  });
+});
+
+describe('New Outputs Features', () => {
+  it('should check, count, and summarize outputs', () => {
+    const node = createOutputsNode({
+      ports: [createOutputPort('result', 'json'), createOutputPort('error', 'string')],
+    });
+    expect(hasOutputs(node)).toBe(true);
+    expect(hasOutputs(createOutputsNode())).toBe(false);
+    expect(countOutputs(node)).toBe(2);
+    expect(summarizeOutputs(node)).toContain('result');
+  });
+
+  it('should add, remove, clone, and merge outputs', () => {
+    const node = createOutputsNode({ ports: [createOutputPort('a', 'string')] });
+    const added = withOutput(node, createOutputPort('b', 'number'));
+    expect(countOutputs(added)).toBe(2);
+    const removed = withoutOutput(added, 'a');
+    expect(countOutputs(removed)).toBe(1);
+    const clone = cloneOutputsNode(added, { stripLocation: true });
+    expect(clone.location).toBeUndefined();
+    const other = createOutputsNode({ ports: [createOutputPort('b', 'json')] });
+    const merged = mergeOutputsNodes(added, other);
+    expect(merged.ports).toHaveLength(2);
+    expect(merged.ports.find((p) => p.name === 'b')?.type).toBe('json');
+  });
+});
+
+describe('New Permissions Features', () => {
+  it('should check, count conditions, and summarize', () => {
+    const node = createPermissionsNode({
+      permissions: [
+        createPermission('fs:/tmp', 'read', {
+          conditions: [{ type: 'env', expression: 'X=1' }],
+        }),
+        createPermission('net:api', 'write'),
+      ],
+    });
+    expect(hasPermissions(node)).toBe(true);
+    expect(hasPermissions(createPermissionsNode())).toBe(false);
+    expect(countPermissionConditions(node)).toBe(1);
+    expect(summarizePermissions(node)).toContain('permissions');
+  });
+
+  it('should add, remove, clone, and merge permissions', () => {
+    const node = createPermissionsNode({ permissions: [createPermission('a', 'read')] });
+    const added = withPermission(node, createPermission('b', 'write'));
+    expect(added.permissions).toHaveLength(2);
+    const removed = withoutPermission(added, 'a');
+    expect(removed.permissions).toHaveLength(1);
+    const clone = clonePermissionsNode(added, { stripLocation: true });
+    expect(clone.location).toBeUndefined();
+    const merged = mergePermissionsNodes(node, added);
+    expect(merged.permissions).toHaveLength(3);
+  });
+});
+
+describe('New Prompt Features', () => {
+  it('should check, count, and summarize prompt variables', () => {
+    const node = createPromptNode({
+      content: 'Hello {{name}}',
+      variables: [createPromptVariable('name')],
+    });
+    expect(hasPromptVariables(node)).toBe(true);
+    expect(hasPromptVariables(createPromptNode({ content: 'hi' }))).toBe(false);
+    expect(countPromptVariables(node)).toBe(1);
+    expect(summarizePrompt(node)).toContain('variables');
+  });
+
+  it('should add, remove, clone, and merge prompt variables', () => {
+    const node = createPromptNode({ content: '{{a}}', variables: [createPromptVariable('a')] });
+    const added = withPromptVariable(node, createPromptVariable('b'));
+    expect(countPromptVariables(added)).toBe(2);
+    const removed = withoutPromptVariable(added, 'a');
+    expect(countPromptVariables(removed)).toBe(1);
+    const clone = clonePromptNode(added, { stripLocation: true });
+    expect(clone.location).toBeUndefined();
+    const other = createPromptNode({ content: '{{b}} {{c}}', variables: [createPromptVariable('c')] });
+    const merged = mergePromptNodes(added, other);
+    expect(countPromptVariables(merged)).toBe(3);
+  });
+});
+
+describe('New Purpose Features', () => {
+  it('should check, count, and summarize goals and criteria', () => {
+    const node = createPurposeNode({
+      content: 'Do things',
+      goals: [createPurposeGoal('g1', 'first')],
+      successCriteria: [{ id: 'c1', description: 'done', target: '100%' }],
+    });
+    expect(hasGoals(node)).toBe(true);
+    expect(hasGoals(createPurposeNode({ content: 'x' }))).toBe(false);
+    expect(countGoals(node)).toBe(1);
+    expect(summarizeSuccessCriteria(node)).toContain('c1');
+  });
+
+  it('should add, remove, clone, and merge goals', () => {
+    const node = createPurposeNode({ content: 'x', goals: [createPurposeGoal('g1', 'a')] });
+    const added = withGoal(node, createPurposeGoal('g2', 'b'));
+    expect(countGoals(added)).toBe(2);
+    const removed = withoutGoal(added, 'g1');
+    expect(countGoals(removed)).toBe(1);
+    const clone = clonePurposeNode(added, { stripLocation: true });
+    expect(clone.location).toBeUndefined();
+    const merged = mergePurposeNodes(node, added);
+    expect(countGoals(merged)).toBe(2);
+  });
+});
+
+describe('New Plugins Features', () => {
+  it('should check, count enabled, and summarize plugins', () => {
+    const node = createPluginsNode({
+      plugins: [
+        createPluginRef('auth', { enabled: true }),
+        createPluginRef('cache', { enabled: false }),
+      ],
+    });
+    expect(hasPlugins(node)).toBe(true);
+    expect(hasPlugins(createPluginsNode())).toBe(false);
+    expect(countEnabledPlugins(node)).toBe(1);
+    expect(summarizePlugins(node)).toContain('auth');
+  });
+
+  it('should add, remove, clone, and merge plugins', () => {
+    const node = createPluginsNode({ plugins: [createPluginRef('a')] });
+    const added = withPlugin(node, createPluginRef('b'));
+    expect(added.plugins).toHaveLength(2);
+    const removed = withoutPlugin(added, 'a');
+    expect(removed.plugins).toHaveLength(1);
+    const clone = clonePluginsNode(added, { stripLocation: true });
+    expect(clone.location).toBeUndefined();
+    const other = createPluginsNode({ plugins: [createPluginRef('b', { version: '2.0.0' })] });
+    const merged = mergePluginsNodes(added, other);
+    expect(merged.plugins).toHaveLength(2);
+    expect(merged.plugins.find((p) => p.name === 'b')?.version).toBe('2.0.0');
+  });
+});
+
+describe('V1 Module Index Helpers', () => {
+  it('should manage sections of an empty module', () => {
+    const mod = createEmptyModule();
+    expect(getSectionNames(mod)).toEqual([]);
+    expect(hasSection(mod, 'Purpose')).toBe(false);
+    expect(findSectionByName(mod, 'Purpose')).toBeUndefined();
+    expect(countContentNodes(mod)).toBe(0);
+  });
+
+  it('should classify content and inline nodes', () => {
+    expect(isContentNode({ type: 'Paragraph' })).toBe(true);
+    expect(isContentNode({ type: 'Nope' })).toBe(false);
+    expect(isInlineNode({ type: 'Bold' })).toBe(true);
+    expect(isInlineNode({ type: 'Paragraph' })).toBe(false);
+  });
+});
+
+describe('V2 Node Helpers', () => {
+  const loc = {
+    start: { line: 1, column: 1, offset: 0 },
+    end: { line: 1, column: 1, offset: 0 },
+    source: '',
+  };
+
+  it('should guard, create, clone, and compare v2 nodes', () => {
+    const mod = createV2ModuleNode('m', 'agent', loc);
+    expect(isV2ModuleNode(mod)).toBe(true);
+    expect(isV2AgentNode(mod)).toBe(false);
+    expect(V2_NODE_TYPES).toContain('ModuleNode');
+    expect(isV2NodeType('ModuleNode')).toBe(true);
+    expect(isV2NodeType('Nope')).toBe(false);
+    const base = createV2BaseNode('ModuleNode', loc);
+    expect(getV2NodeType(base)).toBe('ModuleNode');
+    const clone = cloneV2Node(base);
+    expect(clone).toEqual(base);
+    expect(clone).not.toBe(base);
+    expect(compareModuleTypes('agent', 'tool')).toBeLessThan(0);
+  });
+
+  it('should work with ports, permission sets, and memory references', () => {
+    const port = createPortDefinition('in', 'string');
+    expect(isPortDefinition(port)).toBe(true);
+    expect(isPortDefinition({ name: 'x' })).toBe(false);
+    expect(isPermissionSet({ filesystem: 'read' })).toBe(true);
+    expect(isPermissionSet({ filesystem: 'bogus' })).toBe(false);
+    const merged = mergePermissionSets({ filesystem: 'read' }, { network: 'none' });
+    expect(merged.filesystem).toBe('read');
+    expect(merged.network).toBe('none');
+    expect(countV2Ports({ inputs: [port] })).toBe(1);
+    expect(createMemoryReference('local', { name: 'm' })).toEqual({
+      type: 'local',
+      name: 'm',
+    });
+  });
+
+  it('should work with module type keywords', () => {
+    expect(MODULE_TYPE_COUNT).toBe(19);
+    expect(isV2SectionKeyword('steps')).toBe(true);
+    expect(isV2SectionKeyword('nope')).toBe(false);
+    expect(assertModuleType('agent')).toBe('agent');
+    expect(() => assertModuleType('nope')).toThrow();
+    expect(suggestModuleType('agnt')).toBe('agent');
+    expect(findModuleTypeByAlias('bot')).toBe('agent');
   });
 });

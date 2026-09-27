@@ -318,3 +318,55 @@ export class DOTRenderer {
       .replace(/\n/g, '\\n');
   }
 }
+
+export function sanitizeDotId(id: string): string {
+  const cleaned = id.replace(/[^A-Za-z0-9_]/g, '_');
+  if (cleaned.length === 0) return 'node';
+  if (/^[0-9]/.test(cleaned)) return `n_${cleaned}`;
+  return cleaned;
+}
+
+export function countDotNodes(output: DOTOutput): number {
+  const matches = output.dot.match(/^\s*[A-Za-z0-9_]+\s*\[/gm);
+  return matches ? matches.length : 0;
+}
+
+export function countDotEdges(output: DOTOutput): number {
+  const matches = output.dot.match(/->/g);
+  return matches ? matches.length : 0;
+}
+
+export function extractDotNodeIds(output: DOTOutput): string[] {
+  const ids: string[] = [];
+  const seen = new Set<string>();
+  const pattern = /^\s*([A-Za-z0-9_]+)\s*\[/gm;
+  let match: RegExpExecArray | null;
+  while ((match = pattern.exec(output.dot)) !== null) {
+    const id = match[1] as string;
+    if (!seen.has(id)) {
+      seen.add(id);
+      ids.push(id);
+    }
+  }
+  return ids;
+}
+
+export function hasDotNode(output: DOTOutput, id: string): boolean {
+  return extractDotNodeIds(output).includes(id);
+}
+
+export function validateDotBraces(output: DOTOutput): boolean {
+  let depth = 0;
+  for (const ch of output.dot) {
+    if (ch === '{') depth++;
+    if (ch === '}') {
+      depth--;
+      if (depth < 0) return false;
+    }
+  }
+  return depth === 0;
+}
+
+export function getDotRankdirLine(rankdir: string): string {
+  return `rankdir=${rankdir};`;
+}

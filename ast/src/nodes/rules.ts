@@ -240,3 +240,66 @@ export function countRules(node: RulesNode): number {
 export function countActiveRules(node: RulesNode): number {
   return getActiveRules(node).length;
 }
+
+export function hasRules(node: RulesNode): boolean {
+  return node.rules.length > 0;
+}
+
+export function countRulesByPriority(node: RulesNode): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const rule of node.rules) {
+    const key = rule.priority ?? 'medium';
+    counts[key] = (counts[key] ?? 0) + 1;
+  }
+  return counts;
+}
+
+export function summarizeRules(node: RulesNode): string {
+  const critical = node.rules.filter((rule) => rule.priority === 'critical').length;
+  return `Rules: ${node.rules.length} total, ${countActiveRules(node)} active, ${critical} critical`;
+}
+
+export function withRule(node: RulesNode, rule: Rule): RulesNode {
+  return { ...node, rules: [...node.rules, rule] };
+}
+
+export function withoutRule(
+  node: RulesNode,
+  textOrPredicate: string | ((rule: Rule) => boolean),
+): RulesNode {
+  const predicate =
+    typeof textOrPredicate === 'string'
+      ? (rule: Rule) => rule.text === textOrPredicate
+      : textOrPredicate;
+  return { ...node, rules: node.rules.filter((rule) => !predicate(rule)) };
+}
+
+export function cloneRulesNode(node: RulesNode, options?: { stripLocation?: boolean }): RulesNode {
+  const cloned: RulesNode = {
+    type: 'Rules',
+    rules: node.rules.map((rule): Rule => ({
+      ...rule,
+      ...(rule.examples !== undefined ? { examples: [...rule.examples] } : {}),
+      ...(rule.tags !== undefined ? { tags: [...rule.tags] } : {}),
+    })),
+    location: node.location,
+  };
+  if (options?.stripLocation) {
+    delete cloned.location;
+  }
+  return cloned;
+}
+
+export function mergeRulesNodes(a: RulesNode, b: RulesNode): RulesNode {
+  const rules = [...a.rules];
+  for (const rule of b.rules) {
+    if (!rules.some((existing) => existing.text === rule.text)) {
+      rules.push(rule);
+    }
+  }
+  return {
+    type: 'Rules',
+    rules,
+    location: a.location ?? b.location,
+  };
+}

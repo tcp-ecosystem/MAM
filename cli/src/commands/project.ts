@@ -41,7 +41,7 @@ async function openProject(options: ProjectOptions): Promise<Project> {
 const STARTER_MODULE = `---
 id: hello
 name: Hello
-version: 1.0.0
+version: 2.0.0
 type: module
 author: MAM Team
 description: >
@@ -130,7 +130,7 @@ print(greet("MAM"))
 const STARTER_SYSTEM = `---
 id: system
 name: My System
-version: 1.0.0
+version: 2.0.0
 type: system
 author: MAM Team
 description: >

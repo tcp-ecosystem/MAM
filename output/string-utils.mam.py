@@ -10,7 +10,7 @@ Source: C:\Users\USER\LifeJiggy\Prompt_AI-Support\MAM\examples\basic\string-util
     Id: string-utils
     Name: String Utilities
     Type: module
-    Version: 1.0.0
+    version: 2.0.0
     Author: MAM Team
     License: MIT
     Description: Common string manipulation utilities with Unicode support and error handling

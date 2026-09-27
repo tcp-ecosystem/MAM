@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://mam.dev/schema/section.schema.json",
+  "title": "MAM section",
+  "type": "object",
+  "required": ["kind", "title", "content", "location"],
+  "properties": {
+    "kind": { "enum": ["metadata", "purpose", "inputs", "outputs", "rules", "workflow", "mermaid", "python", "prompt", "memory", "examples", "tests", "references", "dependencies", "exports", "imports", "plugins", "permissions", "capabilities", "Custom"] },
+    "title": { "type": "string", "minLength": 1 },
+    "content": { "type": "array", "items": { "$ref": "#/$defs/contentNode" } },
+    "location": { "$ref": "#/$defs/location" }
+  },
+  "$defs": {
+    "location": { "type": "object", "required": ["line", "column", "offset", "file"], "properties": { "line": { "type": "integer", "minimum": 1 }, "column": { "type": "integer", "minimum": 1 }, "offset": { "type": "integer", "minimum": 0 }, "file": { "type": "string" } } },
+    "contentNode": { "type": "object", "required": ["kind", "location"], "properties": { "kind": { "enum": ["Heading", "Paragraph", "CodeBlock", "List", "Table", "Blockquote", "HorizontalRule", "Link", "Image", "Text"] }, "location": { "$ref": "#/$defs/location" } }, "additionalProperties": true }
+  }
+}

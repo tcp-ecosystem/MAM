@@ -264,3 +264,36 @@ export class JSONExporter {
     };
   }
 }
+
+export function stringifyJsonOutput(output: JSONOutput, indent = 2): string {
+  return JSON.stringify(output.data, null, indent);
+}
+
+export function getJsonOutputFormat(output: JSONOutput): string {
+  return output.format;
+}
+
+export function isJsonOutputFormat(output: JSONOutput, format: string): boolean {
+  return output.format === format;
+}
+
+export function minifyJsonString(json: string): string {
+  return JSON.stringify(JSON.parse(json));
+}
+
+export function prettifyJsonString(json: string, indent = 2): string {
+  return JSON.stringify(JSON.parse(json), null, indent);
+}
+
+export function isValidJsonString(text: string): boolean {
+  try {
+    JSON.parse(text);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function getJsonByteLength(output: JSONOutput): number {
+  return Buffer.byteLength(stringifyJsonOutput(output), 'utf-8');
+}

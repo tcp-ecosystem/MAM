@@ -112,3 +112,337 @@ export {
   getASTStats,
   type ASTStats,
 } from './serializer/index.js';
+
+export {
+  type SourceSpan,
+  type SourcePosition,
+  type SpanOptions,
+  createSpan,
+  spanFromLocation,
+  spanAt,
+  spanContains,
+  spanContainsLine,
+  spanOverlap,
+  spanMerge,
+  spanLineCount,
+  spanLength,
+  spanCompare,
+  spanEquals,
+  splitSpanAt,
+  spanOffset,
+  offsetToPosition,
+  positionToOffset,
+  spanToString,
+  spanToLineRange,
+  isValidSpan,
+  spanContainsSpan,
+  spanIntersection,
+  spanGrow,
+  spanIsBefore,
+  sortSpans,
+  spanFromOffsets,
+} from './location/span.js';
+
+export {
+  positionEquals,
+  positionCompare,
+  locationLength,
+  locationContainsPosition,
+  isPositionBefore,
+  shiftLocation,
+  cloneLocation,
+} from './location/index.js';
+
+export {
+  traverseWithHooks,
+  findFirstNode,
+  hasNodeType,
+  collectNodeTypes,
+  collectCodeBlockLanguages,
+  mapParagraphValues,
+  MAMProfiler,
+} from './visitor/visitor.js';
+
+export {
+  findNodes,
+  findNodeByType,
+  findNodesByType,
+  getNodeTypes,
+  getMaxDepth,
+  collectPaths,
+  someNode,
+  everyNodeShallow,
+  collectValuesByKey,
+  countNodes,
+  collectText,
+  traverse as traverseTree,
+} from './visitor/traverser.js';
+
+export {
+  estimateJSONSize,
+  canonicalSerialize,
+  stripLocations,
+  diffAST,
+  hashAST,
+  validateRoundTrip,
+  isPlainASTObject,
+} from './serializer/json.js';
+
+export {
+  escapeYAMLString,
+  detectYAMLIndent,
+  normalizeYAMLIndent,
+  validateYAMLShape,
+  serializeFrontMatterToYAML,
+  parseFlatYAMLMap,
+  yamlHasDocumentMarkers,
+} from './serializer/yaml.js';
+
+export {
+  getSectionSummaries,
+  collectLanguages,
+  countInlineNodes,
+  astOutline,
+  roundTripClone,
+  getASTComplexity,
+} from './serializer/index.js';
+
+export {
+  hasCapabilities,
+  countCapabilities,
+  summarizeCapabilities,
+  withCapability,
+  withoutCapability,
+  cloneCapabilitiesNode,
+  mergeCapabilitiesNodes,
+} from './nodes/capabilities.js';
+
+export {
+  hasDependencies,
+  countDependenciesByType,
+  summarizeDependencies,
+  withDependency,
+  withoutDependency,
+  cloneDependenciesNode,
+  mergeDependenciesNodes,
+} from './nodes/dependencies.js';
+
+export {
+  hasExamples,
+  countExamplesByTag,
+  summarizeExamples,
+  withExample,
+  withoutExample,
+  cloneExamplesNode,
+  mergeExamplesNodes,
+} from './nodes/examples.js';
+
+export {
+  hasExports,
+  countExportsByType,
+  summarizeExports,
+  withExport,
+  withoutExport,
+  cloneExportsNode,
+  mergeExportsNodes,
+} from './nodes/exports.js';
+
+export {
+  hasImports,
+  countImportsBySource,
+  summarizeImports,
+  withImport,
+  withoutImport,
+  cloneImportsNode,
+  mergeImportsNodes,
+} from './nodes/imports.js';
+
+export {
+  hasInputs,
+  countInputs,
+  summarizeInputs,
+  withInput,
+  withoutInput,
+  cloneInputsNode,
+  mergeInputsNodes,
+} from './nodes/inputs.js';
+
+export {
+  hasMemoryIndexes,
+  countMemoryIndexes,
+  summarizeMemory,
+  withMemoryIndex,
+  withoutMemoryIndex,
+  cloneMemoryNode,
+  mergeMemoryConfigurations,
+} from './nodes/memory.js';
+
+export {
+  summarizeMermaid,
+  addMermaidParsedNode,
+  removeMermaidParsedNode,
+  cloneMermaidNode,
+  mergeMermaidNodes,
+  getMermaidAdjacency,
+  hasMermaidCycle,
+} from './nodes/mermaid.js';
+
+export {
+  hasMetadataPermissions,
+  countMetadataPermissions,
+  summarizeMetadata,
+  withMetadataPermission,
+  withoutMetadataPermission,
+  cloneMetadataNode,
+  mergeMetadataPermissions,
+} from './nodes/metadata.js';
+
+export {
+  hasOutputs,
+  countOutputs,
+  summarizeOutputs,
+  withOutput,
+  withoutOutput,
+  cloneOutputsNode,
+  mergeOutputsNodes,
+} from './nodes/outputs.js';
+
+export {
+  hasPermissions,
+  countPermissionConditions,
+  summarizePermissions,
+  withPermission,
+  withoutPermission,
+  clonePermissionsNode,
+  mergePermissionsNodes,
+} from './nodes/permissions.js';
+
+export {
+  hasPlugins,
+  countEnabledPlugins,
+  summarizePlugins,
+  withPlugin,
+  withoutPlugin,
+  clonePluginsNode,
+  mergePluginsNodes,
+} from './nodes/plugins.js';
+
+export {
+  hasPromptVariables,
+  countPromptVariables,
+  summarizePrompt,
+  withPromptVariable,
+  withoutPromptVariable,
+  clonePromptNode,
+  mergePromptNodes,
+} from './nodes/prompt.js';
+
+export {
+  hasGoals,
+  countGoals,
+  summarizeSuccessCriteria,
+  withGoal,
+  withoutGoal,
+  clonePurposeNode,
+  mergePurposeNodes,
+} from './nodes/purpose.js';
+
+export {
+  hasPythonFunctions,
+  countPythonElements,
+  summarizePython,
+  withPythonFunction,
+  withoutPythonFunction,
+  clonePythonNode,
+  mergePythonNodes,
+} from './nodes/python.js';
+
+export {
+  hasReferences,
+  countReferencesByType,
+  summarizeReferences,
+  withReference,
+  withoutReference,
+  cloneReferencesNode,
+  mergeReferencesNodes,
+} from './nodes/references.js';
+
+export {
+  hasRules,
+  countRulesByPriority,
+  summarizeRules,
+  withRule,
+  withoutRule,
+  cloneRulesNode,
+  mergeRulesNodes,
+} from './nodes/rules.js';
+
+export {
+  hasTestCases,
+  countTestCasesByStatus,
+  summarizeTestStatus,
+  withTestCase,
+  withoutTestCase,
+  cloneTestsNode,
+  mergeTestsNodes,
+} from './nodes/tests.js';
+
+export {
+  summarizeWorkflow,
+  withWorkflowStep,
+  withoutWorkflowStep,
+  cloneWorkflowNode,
+  mergeWorkflowNodes,
+  getIsolatedSteps,
+  getLongestPathLength,
+} from './nodes/workflow.js';
+
+export {
+  isV2NodeType,
+  createV2BaseNode,
+  cloneV2Node,
+  getV2NodeType,
+  isModuleTypeDefinition,
+  compareModuleTypes,
+  createModuleTypeDefinition,
+} from './nodes/v2/base.js';
+
+export {
+  isV2ModuleNode,
+  isV2AgentNode,
+  isV2ToolNode,
+  isV2WorkflowNode,
+  isV2TeamNode,
+  createV2ModuleNode,
+  V2_NODE_TYPES,
+} from './nodes/v2/nodes.js';
+
+export {
+  createPortDefinition,
+  createPermissionSet,
+  isPortDefinition,
+  isPermissionSet,
+  mergePermissionSets,
+  countPorts,
+  createMemoryReference,
+} from './nodes/v2/supporting.js';
+
+export {
+  MODULE_TYPE_COUNT,
+  isV2SectionKeyword,
+  assertModuleType,
+  suggestModuleType,
+  hasModuleTypeCapability,
+  getSectionKeywordsForModuleType,
+  findModuleTypeByAlias,
+} from './nodes/v2/keywords.js';
+
+export {
+  findSectionByName,
+  getSectionNames,
+  hasSection,
+  countContentNodes,
+  isContentNode,
+  isInlineNode,
+  createEmptyModule,
+} from './nodes/index.js';

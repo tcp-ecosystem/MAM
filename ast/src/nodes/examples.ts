@@ -202,3 +202,73 @@ export function getAllTags(node: ExamplesNode): string[] {
 export function countExamples(node: ExamplesNode): number {
   return node.examples.length;
 }
+
+export function hasExamples(node: ExamplesNode): boolean {
+  return node.examples.length > 0;
+}
+
+export function countExamplesByTag(node: ExamplesNode, tag: string): number {
+  return node.examples.filter((example) => example.tags?.includes(tag)).length;
+}
+
+export function summarizeExamples(node: ExamplesNode): string {
+  const titles = node.examples.map((example) => example.title);
+  if (titles.length === 0) {
+    return '0 examples';
+  }
+  return `${titles.length} examples: ${titles.join(', ')}`;
+}
+
+export function withExample(node: ExamplesNode, example: ExampleEntry): ExamplesNode {
+  return {
+    ...node,
+    examples: [...node.examples, example],
+  };
+}
+
+export function withoutExample(
+  node: ExamplesNode,
+  match: string | ((example: ExampleEntry) => boolean),
+): ExamplesNode {
+  const remove =
+    typeof match === 'string'
+      ? (example: ExampleEntry) => example.title === match
+      : match;
+  return {
+    ...node,
+    examples: node.examples.filter((example) => !remove(example)),
+  };
+}
+
+export function cloneExamplesNode(
+  node: ExamplesNode,
+  options: { stripLocation?: boolean } = {},
+): ExamplesNode {
+  const copy: ExamplesNode = {
+    ...node,
+    examples: node.examples.map((example) => {
+      const next: ExampleEntry = { ...example };
+      if (example.tags) {
+        next.tags = [...example.tags];
+      }
+      return next;
+    }),
+  };
+  if (options.stripLocation) {
+    delete copy.location;
+  } else if (copy.location) {
+    copy.location = {
+      source: copy.location.source,
+      start: { ...copy.location.start },
+      end: { ...copy.location.end },
+    };
+  }
+  return copy;
+}
+
+export function mergeExamplesNodes(a: ExamplesNode, b: ExamplesNode): ExamplesNode {
+  return {
+    ...a,
+    examples: [...a.examples, ...b.examples],
+  };
+}

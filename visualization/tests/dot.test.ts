@@ -1,5 +1,15 @@
 import { describe, it, expect } from 'vitest';
-import { DOTRenderer, DOTOutput } from '../src/dot.js';
+import {
+  DOTRenderer,
+  DOTOutput,
+  sanitizeDotId,
+  countDotNodes,
+  countDotEdges,
+  extractDotNodeIds,
+  hasDotNode,
+  validateDotBraces,
+  getDotRankdirLine,
+} from '../src/dot.js';
 import { GraphData } from '../src/graph.js';
 import { V2ModuleNode } from '@mam/ast';
 
@@ -178,5 +188,50 @@ describe('DOTRenderer', () => {
       // module type maps to 'box' in TYPE_SHAPES, which takes precedence
       expect(result.dot).toContain('shape=box');
     });
+  });
+});
+
+describe('dot output helpers', () => {
+  const output: DOTOutput = {
+    dot: 'digraph {\n  rankdir=LR;\n  alpha [label="Alpha"];\n  beta [label="Beta"];\n  alpha -> beta;\n}',
+    format: 'svg',
+  };
+
+  it('should sanitize ids', () => {
+    expect(sanitizeDotId('my-module')).toBe('my_module');
+    expect(sanitizeDotId('')).toBe('node');
+    expect(sanitizeDotId('9x')).toBe('n_9x');
+  });
+
+  it('should count nodes and edges', () => {
+    expect(countDotNodes(output)).toBe(2);
+    expect(countDotEdges(output)).toBe(1);
+    expect(countDotNodes({ dot: '', format: 'svg' })).toBe(0);
+  });
+
+  it('should extract node ids', () => {
+    expect(extractDotNodeIds(output)).toEqual(['alpha', 'beta']);
+  });
+
+  it('should check node presence', () => {
+    expect(hasDotNode(output, 'alpha')).toBe(true);
+    expect(hasDotNode(output, 'gamma')).toBe(false);
+  });
+
+  it('should validate braces', () => {
+    expect(validateDotBraces(output)).toBe(true);
+    expect(validateDotBraces({ dot: 'digraph {', format: 'svg' })).toBe(false);
+    expect(validateDotBraces({ dot: '}', format: 'svg' })).toBe(false);
+  });
+
+  it('should build rankdir lines', () => {
+    expect(getDotRankdirLine('LR')).toBe('rankdir=LR;');
+  });
+
+  it('should analyze real renderer output', () => {
+    const renderer = new DOTRenderer();
+    const result = renderer.generateFromModules([makeModule({ name: 'solo' })]);
+    expect(validateDotBraces(result)).toBe(true);
+    expect(hasDotNode(result, 'solo')).toBe(true);
   });
 });

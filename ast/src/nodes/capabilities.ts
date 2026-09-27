@@ -264,3 +264,79 @@ export function countPorts(node: CapabilitiesNode): number {
   }
   return total;
 }
+
+export function hasCapabilities(node: CapabilitiesNode): boolean {
+  return node.capabilities.length > 0;
+}
+
+export function countCapabilities(node: CapabilitiesNode): number {
+  return node.capabilities.length;
+}
+
+export function summarizeCapabilities(node: CapabilitiesNode): string {
+  const names = node.capabilities.map((capability) => capability.name);
+  if (names.length === 0) {
+    return '0 capabilities';
+  }
+  return `${names.length} capabilities: ${names.join(', ')}`;
+}
+
+export function withCapability(node: CapabilitiesNode, capability: Capability): CapabilitiesNode {
+  return {
+    ...node,
+    capabilities: [...node.capabilities, capability],
+  };
+}
+
+export function withoutCapability(
+  node: CapabilitiesNode,
+  match: string | ((capability: Capability) => boolean),
+): CapabilitiesNode {
+  const remove =
+    typeof match === 'string'
+      ? (capability: Capability) => capability.name === match
+      : match;
+  return {
+    ...node,
+    capabilities: node.capabilities.filter((capability) => !remove(capability)),
+  };
+}
+
+export function cloneCapabilitiesNode(
+  node: CapabilitiesNode,
+  options: { stripLocation?: boolean } = {},
+): CapabilitiesNode {
+  const copy: CapabilitiesNode = {
+    ...node,
+    capabilities: node.capabilities.map((capability) => {
+      const next: Capability = { ...capability };
+      if (capability.inputs) {
+        next.inputs = capability.inputs.map((port) => ({ ...port }));
+      }
+      if (capability.outputs) {
+        next.outputs = capability.outputs.map((port) => ({ ...port }));
+      }
+      if (capability.requirements) {
+        next.requirements = capability.requirements.map((req) => ({ ...req }));
+      }
+      return next;
+    }),
+  };
+  if (options.stripLocation) {
+    delete copy.location;
+  } else if (copy.location) {
+    copy.location = {
+      source: copy.location.source,
+      start: { ...copy.location.start },
+      end: { ...copy.location.end },
+    };
+  }
+  return copy;
+}
+
+export function mergeCapabilitiesNodes(a: CapabilitiesNode, b: CapabilitiesNode): CapabilitiesNode {
+  return {
+    ...a,
+    capabilities: [...a.capabilities, ...b.capabilities],
+  };
+}

@@ -1,5 +1,15 @@
 import { describe, it, expect } from 'vitest';
-import { JSONExporter, JSONOutput } from '../src/json.js';
+import {
+  JSONExporter,
+  JSONOutput,
+  stringifyJsonOutput,
+  getJsonOutputFormat,
+  isJsonOutputFormat,
+  minifyJsonString,
+  prettifyJsonString,
+  isValidJsonString,
+  getJsonByteLength,
+} from '../src/json.js';
 import { GraphData } from '../src/graph.js';
 import { V2ModuleNode } from '@mam/ast';
 
@@ -222,5 +232,48 @@ describe('JSONExporter', () => {
       const data = result.data as { edges: unknown[] };
       expect(data.edges).toHaveLength(0);
     });
+  });
+});
+
+describe('json output helpers', () => {
+  const exporter = new JSONExporter();
+  const output = exporter.generateFromModules([makeModule({ name: 'solo' })]);
+
+  it('should stringify outputs', () => {
+    const text = stringifyJsonOutput(output);
+    expect(isValidJsonString(text)).toBe(true);
+    expect(text).toContain('solo');
+  });
+
+  it('should report formats', () => {
+    expect(getJsonOutputFormat(output)).toBe(output.format);
+    expect(isJsonOutputFormat(output, output.format)).toBe(true);
+    expect(isJsonOutputFormat(output, 'nope')).toBe(false);
+  });
+
+  it('should minify json', () => {
+    expect(minifyJsonString('{\n  "a": 1\n}')).toBe('{"a":1}');
+  });
+
+  it('should prettify json', () => {
+    const pretty = prettifyJsonString('{"a":1}', 4);
+    expect(pretty).toContain('\n');
+    expect(isValidJsonString(pretty)).toBe(true);
+  });
+
+  it('should validate json strings', () => {
+    expect(isValidJsonString('{"a":1}')).toBe(true);
+    expect(isValidJsonString('nope')).toBe(false);
+    expect(isValidJsonString('')).toBe(false);
+  });
+
+  it('should measure byte length', () => {
+    expect(getJsonByteLength(output)).toBeGreaterThan(0);
+    expect(getJsonByteLength({ data: {}, format: 'full' })).toBe(2);
+  });
+
+  it('should round-trip through stringify', () => {
+    const text = stringifyJsonOutput(output);
+    expect(JSON.parse(text)).toEqual(output.data);
   });
 });

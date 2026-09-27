@@ -214,3 +214,78 @@ export function hasDependency(node: DependenciesNode, name: string): boolean {
 export function countDependencies(node: DependenciesNode): number {
   return node.dependencies.length;
 }
+
+export function hasDependencies(node: DependenciesNode): boolean {
+  return node.dependencies.length > 0;
+}
+
+export function countDependenciesByType(node: DependenciesNode, type: DependencyType): number {
+  return node.dependencies.filter((dependency) => dependency.type === type).length;
+}
+
+export function summarizeDependencies(node: DependenciesNode): string {
+  const names = node.dependencies.map((dependency) =>
+    dependency.version ? `${dependency.name}@${dependency.version}` : dependency.name,
+  );
+  if (names.length === 0) {
+    return '0 dependencies';
+  }
+  return `${names.length} dependencies: ${names.join(', ')}`;
+}
+
+export function withDependency(node: DependenciesNode, dependency: Dependency): DependenciesNode {
+  return {
+    ...node,
+    dependencies: [...node.dependencies, dependency],
+  };
+}
+
+export function withoutDependency(
+  node: DependenciesNode,
+  match: string | ((dependency: Dependency) => boolean),
+): DependenciesNode {
+  const remove =
+    typeof match === 'string'
+      ? (dependency: Dependency) => dependency.name === match
+      : match;
+  return {
+    ...node,
+    dependencies: node.dependencies.filter((dependency) => !remove(dependency)),
+  };
+}
+
+export function cloneDependenciesNode(
+  node: DependenciesNode,
+  options: { stripLocation?: boolean } = {},
+): DependenciesNode {
+  const copy: DependenciesNode = {
+    ...node,
+    dependencies: node.dependencies.map((dependency) => {
+      const next: Dependency = { ...dependency };
+      if (dependency.aliases) {
+        next.aliases = [...dependency.aliases];
+      }
+      if (dependency.conditions) {
+        next.conditions = [...dependency.conditions];
+      }
+      return next;
+    }),
+  };
+  if (options.stripLocation) {
+    delete copy.location;
+  } else if (copy.location) {
+    copy.location = {
+      source: copy.location.source,
+      start: { ...copy.location.start },
+      end: { ...copy.location.end },
+    };
+  }
+  return copy;
+}
+
+export function mergeDependenciesNodes(a: DependenciesNode, b: DependenciesNode): DependenciesNode {
+  return {
+    ...a,
+    dependencies: [...a.dependencies, ...b.dependencies],
+  };
+}

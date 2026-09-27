@@ -28,6 +28,24 @@ import {
   spanToString,
   spanToLineRange,
 } from '../src/location/span.js';
+import {
+  positionEquals,
+  positionCompare,
+  locationLength,
+  locationContainsPosition,
+  isPositionBefore,
+  shiftLocation,
+  cloneLocation,
+} from '../src/location/index.js';
+import {
+  isValidSpan,
+  spanContainsSpan,
+  spanIntersection,
+  spanGrow,
+  spanIsBefore,
+  sortSpans,
+  spanFromOffsets,
+} from '../src/location/span.js';
 
 describe('Position & Location', () => {
   it('should create position', () => {
@@ -338,5 +356,287 @@ describe('Span String Output', () => {
   it('should format multi-line range', () => {
     const span = createSpan(2, 0, 5, 10);
     expect(spanToLineRange(span)).toBe('lines 2-5');
+  });
+});
+
+describe('Position Equality', () => {
+  it('should detect equal positions', () => {
+    const a = createPosition(1, 2, 3);
+    const b = createPosition(1, 2, 3);
+    expect(positionEquals(a, b)).toBe(true);
+  });
+
+  it('should detect differing positions', () => {
+    const a = createPosition(1, 2, 3);
+    expect(positionEquals(a, createPosition(1, 2, 4))).toBe(false);
+    expect(positionEquals(a, createPosition(1, 3, 3))).toBe(false);
+    expect(positionEquals(a, createPosition(2, 2, 3))).toBe(false);
+  });
+});
+
+describe('Position Compare', () => {
+  it('should compare positions by offset', () => {
+    const a = createPosition(1, 0, 10);
+    const b = createPosition(1, 5, 20);
+    expect(positionCompare(a, b)).toBeLessThan(0);
+    expect(positionCompare(b, a)).toBeGreaterThan(0);
+    expect(positionCompare(a, a)).toBe(0);
+  });
+
+  it('should return zero when offsets match despite different line', () => {
+    const a = createPosition(1, 0, 5);
+    const b = createPosition(9, 9, 5);
+    expect(positionCompare(a, b)).toBe(0);
+    expect(positionEquals(a, b)).toBe(false);
+  });
+});
+
+describe('isPositionBefore', () => {
+  it('should detect strictly earlier position', () => {
+    expect(isPositionBefore(createPosition(1, 0, 1), createPosition(1, 1, 2))).toBe(true);
+    expect(isPositionBefore(createPosition(1, 1, 2), createPosition(1, 0, 1))).toBe(false);
+    expect(isPositionBefore(createPosition(1, 0, 1), createPosition(1, 0, 1))).toBe(false);
+  });
+});
+
+describe('locationLength', () => {
+  it('should return offset span', () => {
+    const loc = createLocation(1, 0, 10, 5, 0, 110, 'a.md');
+    expect(locationLength(loc)).toBe(100);
+  });
+
+  it('should return zero for zero-length location', () => {
+    const loc = createLocation(2, 3, 42, 2, 3, 42, 'a.md');
+    expect(locationLength(loc)).toBe(0);
+  });
+});
+
+describe('locationContainsPosition', () => {
+  const loc = createLocation(1, 0, 10, 5, 0, 110, 'a.md');
+
+  it('should contain positions at start, middle, and end offsets', () => {
+    expect(locationContainsPosition(loc, createPosition(1, 0, 10))).toBe(true);
+    expect(locationContainsPosition(loc, createPosition(3, 0, 60))).toBe(true);
+    expect(locationContainsPosition(loc, createPosition(5, 0, 110))).toBe(true);
+  });
+
+  it('should reject positions outside offset range', () => {
+    expect(locationContainsPosition(loc, createPosition(1, 0, 9))).toBe(false);
+    expect(locationContainsPosition(loc, createPosition(5, 0, 111))).toBe(false);
+  });
+
+  it('should rely on offset only', () => {
+    expect(locationContainsPosition(loc, createPosition(99, 99, 50))).toBe(true);
+  });
+});
+
+describe('shiftLocation', () => {
+  it('should shift start and end by deltas', () => {
+    const loc = createLocation(1, 0, 10, 5, 10, 60, 'a.md');
+    const shifted = shiftLocation(loc, 2, 3, 10);
+    expect(shifted.start).toEqual({ line: 3, column: 3, offset: 20 });
+    expect(shifted.end).toEqual({ line: 7, column: 13, offset: 70 });
+    expect(shifted.source).toBe('a.md');
+  });
+
+  it('should default offset delta to zero', () => {
+    const loc = createLocation(2, 4, 100, 3, 5, 200, 'b.md');
+    const shifted = shiftLocation(loc, 1, 2);
+    expect(shifted.start).toEqual({ line: 3, column: 6, offset: 100 });
+    expect(shifted.end).toEqual({ line: 4, column: 7, offset: 200 });
+  });
+
+  it('should not mutate the original location', () => {
+    const loc = createLocation(1, 0, 0, 2, 0, 10, 'c.md');
+    shiftLocation(loc, 5, 5, 5);
+    expect(loc.start).toEqual({ line: 1, column: 0, offset: 0 });
+    expect(loc.end).toEqual({ line: 2, column: 0, offset: 10 });
+  });
+});
+
+describe('cloneLocation', () => {
+  it('should clone equal values', () => {
+    const loc = createLocation(1, 2, 3, 4, 5, 6, 'src.md');
+    const clone = cloneLocation(loc);
+    expect(clone).toEqual(loc);
+    expect(clone).not.toBe(loc);
+  });
+
+  it('should clone nested positions', () => {
+    const loc = createLocation(1, 2, 3, 4, 5, 6, 'src.md');
+    const clone = cloneLocation(loc);
+    expect(clone.start).not.toBe(loc.start);
+    expect(clone.end).not.toBe(loc.end);
+    clone.start.line = 99;
+    expect(loc.start.line).toBe(1);
+  });
+});
+
+describe('isValidSpan', () => {
+  it('should accept well-formed spans', () => {
+    expect(isValidSpan(createSpan(1, 0, 5, 10))).toBe(true);
+    expect(isValidSpan(createSpan(3, 0, 3, 0))).toBe(true);
+  });
+
+  it('should reject non-finite values', () => {
+    expect(isValidSpan({ start: { line: Number.NaN, column: 0 }, end: { line: 1, column: 0 } })).toBe(false);
+    expect(isValidSpan({ start: { line: 1, column: 0 }, end: { line: 1, column: Number.POSITIVE_INFINITY } })).toBe(false);
+  });
+
+  it('should reject out-of-range lines and columns', () => {
+    expect(isValidSpan({ start: { line: 0, column: 0 }, end: { line: 1, column: 0 } })).toBe(false);
+    expect(isValidSpan({ start: { line: 1, column: -1 }, end: { line: 1, column: 0 } })).toBe(false);
+  });
+
+  it('should reject reversed spans', () => {
+    expect(isValidSpan({ start: { line: 5, column: 0 }, end: { line: 1, column: 0 } })).toBe(false);
+    expect(isValidSpan({ start: { line: 1, column: 10 }, end: { line: 1, column: 5 } })).toBe(false);
+  });
+});
+
+describe('spanContainsSpan', () => {
+  it('should detect fully contained span', () => {
+    const outer = createSpan(2, 5, 6, 0);
+    const inner = createSpan(3, 0, 5, 10);
+    expect(spanContainsSpan(outer, inner)).toBe(true);
+  });
+
+  it('should treat identical spans as containing each other', () => {
+    const span = createSpan(2, 5, 4, 10);
+    expect(spanContainsSpan(span, { ...span })).toBe(true);
+  });
+
+  it('should reject span starting outside', () => {
+    const outer = createSpan(2, 5, 6, 0);
+    expect(spanContainsSpan(outer, createSpan(1, 0, 3, 0))).toBe(false);
+  });
+
+  it('should reject span ending outside', () => {
+    const outer = createSpan(2, 5, 4, 10);
+    expect(spanContainsSpan(outer, createSpan(3, 0, 4, 11))).toBe(false);
+  });
+});
+
+describe('spanIntersection', () => {
+  it('should return overlapping region', () => {
+    const a = createSpan(1, 0, 4, 10);
+    const b = createSpan(2, 5, 6, 0);
+    expect(spanIntersection(a, b)).toEqual({
+      start: { line: 2, column: 5 },
+      end: { line: 4, column: 10 },
+    });
+  });
+
+  it('should return null for disjoint line ranges', () => {
+    const a = createSpan(1, 0, 2, 5);
+    const b = createSpan(3, 0, 4, 5);
+    expect(spanIntersection(a, b)).toBeNull();
+  });
+
+  it('should return null for disjoint column ranges on same line', () => {
+    const a = createSpan(1, 0, 1, 5);
+    const b = createSpan(1, 10, 1, 15);
+    expect(spanIntersection(a, b)).toBeNull();
+  });
+
+  it('should return empty span when spans touch at a point', () => {
+    const a = createSpan(1, 0, 2, 5);
+    const b = createSpan(2, 5, 3, 0);
+    expect(spanIntersection(a, b)).toEqual({
+      start: { line: 2, column: 5 },
+      end: { line: 2, column: 5 },
+    });
+  });
+
+  it('should return identical span for identical inputs', () => {
+    const span = createSpan(2, 3, 5, 8);
+    expect(spanIntersection(span, createSpan(2, 3, 5, 8))).toEqual(span);
+  });
+});
+
+describe('spanGrow', () => {
+  it('should expand span outward', () => {
+    const grown = spanGrow(createSpan(3, 5, 5, 10), 1, 2);
+    expect(grown).toEqual({
+      start: { line: 2, column: 3 },
+      end: { line: 6, column: 12 },
+    });
+  });
+
+  it('should default column delta to zero', () => {
+    const grown = spanGrow(createSpan(3, 5, 5, 10), 2);
+    expect(grown.start).toEqual({ line: 1, column: 5 });
+    expect(grown.end).toEqual({ line: 7, column: 10 });
+  });
+
+  it('should clamp start at document boundaries', () => {
+    const grown = spanGrow(createSpan(2, 5, 4, 10), 5, 10);
+    expect(grown.start).toEqual({ line: 1, column: 0 });
+    expect(grown.end).toEqual({ line: 9, column: 20 });
+  });
+});
+
+describe('spanIsBefore', () => {
+  it('should detect span ending before another starts', () => {
+    expect(spanIsBefore(createSpan(1, 0, 2, 5), createSpan(3, 0, 4, 5))).toBe(true);
+  });
+
+  it('should detect gap on a shared line', () => {
+    expect(spanIsBefore(createSpan(1, 0, 2, 5), createSpan(2, 6, 3, 0))).toBe(true);
+  });
+
+  it('should be false when spans touch or overlap', () => {
+    expect(spanIsBefore(createSpan(1, 0, 2, 5), createSpan(2, 5, 3, 0))).toBe(false);
+    expect(spanIsBefore(createSpan(1, 0, 3, 10), createSpan(3, 5, 4, 0))).toBe(false);
+  });
+
+  it('should be false when first span is after second', () => {
+    expect(spanIsBefore(createSpan(3, 0, 4, 0), createSpan(1, 0, 2, 0))).toBe(false);
+  });
+});
+
+describe('sortSpans', () => {
+  it('should sort spans by start position', () => {
+    const late = createSpan(5, 0, 6, 0);
+    const early = createSpan(1, 0, 2, 0);
+    const mid = createSpan(3, 0, 4, 0);
+    const sorted = sortSpans([late, early, mid]);
+    expect(sorted).toEqual([early, mid, late]);
+  });
+
+  it('should not mutate the input array', () => {
+    const late = createSpan(5, 0, 6, 0);
+    const early = createSpan(1, 0, 2, 0);
+    const input = [late, early];
+    const sorted = sortSpans(input);
+    expect(input[0]).toBe(late);
+    expect(input[1]).toBe(early);
+    expect(sorted[0]).toBe(early);
+  });
+});
+
+describe('spanFromOffsets', () => {
+  const text = 'hello\nworld';
+
+  it('should build span from offsets', () => {
+    expect(spanFromOffsets(text, 0, 5)).toEqual({
+      start: { line: 1, column: 0 },
+      end: { line: 1, column: 5 },
+    });
+  });
+
+  it('should normalize reversed offsets', () => {
+    expect(spanFromOffsets(text, 5, 0)).toEqual(spanFromOffsets(text, 0, 5));
+  });
+
+  it('should clamp offsets to text bounds', () => {
+    expect(spanFromOffsets(text, -5, 100)).toEqual({
+      start: { line: 1, column: 0 },
+      end: { line: 2, column: 5 },
+    });
+  });
+
+  it('should produce valid spans', () => {
+    expect(isValidSpan(spanFromOffsets(text, 6, 11))).toBe(true);
   });
 });

@@ -483,7 +483,7 @@ const BUILT_IN_RULES: LintRuleDefinition[] = [
     check: (ctx) => {
       if (Object.keys(ctx.frontmatter).length === 0) {
         const name = ctx.filePath.split(/[\\/]/).pop()?.replace(/\.mam\.md$/, '') || 'module';
-        return [{ ruleId: 'FRONT001', message: 'Module is missing YAML frontmatter', severity: 'warning', line: 1, column: 1, source: ctx.filePath, group: 'recommended', category: 'frontmatter', fix: { range: [0, 0], replacement: `---\nname: ${name}\nversion: 1.0.0\ndescription: TODO\nauthor: TODO\ntags: []\n---\n\n`, description: 'Add missing YAML frontmatter' } }];
+        return [{ ruleId: 'FRONT001', message: 'Module is missing YAML frontmatter', severity: 'warning', line: 1, column: 1, source: ctx.filePath, group: 'recommended', category: 'frontmatter', fix: { range: [0, 0], replacement: `---\nname: ${name}\nversion: 2.0.0\ndescription: TODO\nauthor: TODO\ntags: []\n---\n\n`, description: 'Add missing YAML frontmatter' } }];
       }
       return [];
     },

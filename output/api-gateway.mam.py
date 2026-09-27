@@ -10,7 +10,7 @@ Source: C:\Users\USER\LifeJiggy\Prompt_AI-Support\MAM\examples\advanced\api-gate
     Id: api-gateway
     Name: API Gateway with Rate Limiting
     Type: module
-    Version: 1.0.0
+    version: 2.0.0
     Author: MAM Team
     License: MIT
     Description: An API gateway system with rate limiting, authentication middleware, and request routing. Demonstrates tool-based architecture with network and execution permissions.

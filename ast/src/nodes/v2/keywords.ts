@@ -403,3 +403,108 @@ export function getModuleTypeCapabilities(type: ModuleType): string[] {
   const definition = getModuleTypeDefinition(type);
   return definition.capabilities;
 }
+
+// ============================================================================
+// Extended Keyword Utilities
+// ============================================================================
+
+export const MODULE_TYPE_COUNT = VALID_MODULE_TYPES.length;
+
+export function isV2SectionKeyword(value: unknown): value is string {
+  return typeof value === 'string' && V2_SECTION_KEYWORDS.has(value);
+}
+
+export function assertModuleType(value: string): ModuleType {
+  if (!isModuleType(value)) {
+    throw new Error(`Invalid module type: "${value}"`);
+  }
+  return value;
+}
+
+export function suggestModuleType(value: string): ModuleType | undefined {
+  const target = value.trim().toLowerCase();
+  if (target.length === 0) return undefined;
+  if (isModuleType(target)) return target;
+  if (target.length < 3) return undefined;
+  const prefixMatch = VALID_MODULE_TYPES.find((type) => type.startsWith(target));
+  if (prefixMatch !== undefined) return prefixMatch;
+  const distance = (a: string, b: string): number => {
+    const rows = b.length + 1;
+    let previous: number[] = [];
+    for (let j = 0; j < rows; j++) previous[j] = j;
+    for (let i = 1; i <= a.length; i++) {
+      const current: number[] = [i];
+      for (let j = 1; j < rows; j++) {
+        const cost = a[i - 1] === b[j - 1] ? 0 : 1;
+        current[j] = Math.min(previous[j] + 1, current[j - 1] + 1, previous[j - 1] + cost);
+      }
+      previous = current;
+    }
+    return previous[rows - 1];
+  };
+  let best: ModuleType | undefined;
+  let bestDistance = Number.POSITIVE_INFINITY;
+  const threshold = Math.max(2, Math.floor(target.length / 2));
+  for (const type of VALID_MODULE_TYPES) {
+    const current = distance(target, type);
+    if (current < bestDistance) {
+      bestDistance = current;
+      best = type;
+    }
+  }
+  return bestDistance <= threshold ? best : undefined;
+}
+
+export function hasModuleTypeCapability(type: ModuleType, capability: string): boolean {
+  return getModuleTypeCapabilities(type).includes(capability);
+}
+
+export function getSectionKeywordsForModuleType(type: ModuleType): string[] {
+  const required = REQUIRED_SECTIONS_PER_TYPE[type];
+  const optional = OPTIONAL_SECTIONS_PER_TYPE[type];
+  const specific = Object.entries(SECTION_TYPE_MAP)
+    .filter(([, types]) => types.includes(type))
+    .map(([keyword]) => keyword);
+  return Array.from(new Set([...required, ...optional, ...specific]));
+}
+
+export function findModuleTypeByAlias(alias: string): ModuleType | undefined {
+  const value = alias.trim().toLowerCase();
+  if (value.length === 0) return undefined;
+  if (isModuleType(value)) return value;
+  const aliases: Record<string, ModuleType> = {
+    mod: 'module',
+    ai: 'agent',
+    llm: 'agent',
+    bot: 'agent',
+    mem: 'memory',
+    store: 'memory',
+    db: 'memory',
+    wf: 'workflow',
+    flow: 'workflow',
+    pipeline: 'workflow',
+    grp: 'team',
+    group: 'team',
+    org: 'team',
+    pol: 'policy',
+    sys: 'system',
+    svc: 'service',
+    comp: 'component',
+    res: 'resource',
+    int: 'interface',
+    cont: 'contract',
+    plug: 'plugin',
+    ext: 'extension',
+    rt: 'runtime',
+    pkg: 'package',
+    repo: 'repository',
+    doc: 'documentation',
+    docs: 'documentation',
+  };
+  const mapped: ModuleType | undefined = aliases[value];
+  if (mapped !== undefined) return mapped;
+  const prefix = VALID_MODULE_TYPES.find((type) => type.startsWith(value));
+  if (prefix !== undefined) return prefix;
+  const suffix = VALID_MODULE_TYPES.find((type) => value.length >= 3 && type.endsWith(value));
+  return suffix;
+}

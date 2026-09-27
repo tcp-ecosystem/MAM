@@ -1,7 +1,7 @@
 ---
 id: metadata
 name: Metadata
-version: 1.0.0
+version: 2.0.0
 type: module
 author: MAM Team
 description: >
@@ -110,7 +110,7 @@ def describe(document: str) -> str:
 document: |
   id: hello
   name: Hello
-  version: 1.0.0
+  version: 2.0.0
   author: MAM Team
   runtime: python
 ```
@@ -123,12 +123,12 @@ valid: true
 
 ```python
 def test_parse():
-    doc = "id: a\nname: A\nversion: 1.0.0\nauthor: x\nruntime: python"
+    doc = "id: a\nname: A\nversion: 2.0.0\nauthor: x\nruntime: python"
     data = parse(doc)
     assert data["id"] == "a"
 
 def test_validate_ok():
-    doc = "id: a\nname: A\nversion: 1.0.0\nauthor: x\nruntime: python"
+    doc = "id: a\nname: A\nversion: 2.0.0\nauthor: x\nruntime: python"
     assert validate(doc)["valid"] is True
 
 def test_validate_missing():
@@ -140,7 +140,7 @@ def test_validate_missing():
 ### Basic Usage
 
 ```python
-doc = "id: hello\nname: Hello\nversion: 1.0.0\nauthor: MAM Team\nruntime: python"
+doc = "id: hello\nname: Hello\nversion: 2.0.0\nauthor: MAM Team\nruntime: python"
 print(describe(doc))
 ```
 

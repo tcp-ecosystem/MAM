@@ -332,3 +332,206 @@ export class MAMCollector<T> extends DefaultMAMVisitor<void> {
     this.results = [];
   }
 }
+
+function walkNode(
+  node: BaseNode,
+  enter: (node: BaseNode) => void,
+  leave?: (node: BaseNode) => void,
+): void {
+  enter(node);
+
+  switch (node.type) {
+    case 'MAMModule': {
+      const mod = node as MAMModule;
+      if (mod.frontmatter) walkNode(mod.frontmatter, enter, leave);
+      for (const section of mod.sections) walkNode(section, enter, leave);
+      break;
+    }
+    case 'Section': {
+      const section = node as Section;
+      for (const content of section.content) walkNode(content, enter, leave);
+      break;
+    }
+    case 'Paragraph': {
+      const paragraph = node as Paragraph;
+      for (const inline of paragraph.inlineNodes) walkNode(inline, enter, leave);
+      break;
+    }
+    case 'List': {
+      const list = node as List;
+      for (const item of list.items) {
+        for (const content of item.content) walkNode(content, enter, leave);
+      }
+      break;
+    }
+    case 'Table': {
+      const table = node as Table;
+      for (const cell of table.headers) {
+        for (const inline of cell.inlineNodes) walkNode(inline, enter, leave);
+      }
+      for (const row of table.rows) {
+        for (const cell of row) {
+          for (const inline of cell.inlineNodes) walkNode(inline, enter, leave);
+        }
+      }
+      break;
+    }
+    case 'Heading': {
+      const heading = node as Heading;
+      for (const inline of heading.content) walkNode(inline, enter, leave);
+      break;
+    }
+    case 'Blockquote': {
+      const blockquote = node as Blockquote;
+      for (const child of blockquote.children) walkNode(child, enter, leave);
+      break;
+    }
+    case 'Bold':
+    case 'Italic':
+    case 'Link': {
+      const inline = node as Bold | Italic | Link;
+      for (const child of inline.content) walkNode(child, enter, leave);
+      break;
+    }
+    case 'FrontMatter':
+    case 'CodeBlock':
+    case 'Mermaid':
+    case 'InlineText':
+    case 'InlineCode':
+    case 'Image':
+      break;
+  }
+
+  leave?.(node);
+}
+
+export function traverseWithHooks(
+  ast: MAMModule,
+  hooks: {
+    enter?: (node: BaseNode) => void;
+    leave?: (node: BaseNode) => void;
+  },
+): void {
+  walkNode(
+    ast,
+    (node) => hooks.enter?.(node),
+    (node) => hooks.leave?.(node),
+  );
+}
+
+export function findFirstNode(
+  ast: MAMModule,
+  predicate: (node: BaseNode) => boolean,
+): BaseNode | undefined {
+  let found: BaseNode | undefined;
+  walkNode(ast, (node) => {
+    if (found === undefined && predicate(node)) {
+      found = node;
+    }
+  });
+  return found;
+}
+
+export function hasNodeType(ast: MAMModule, type: BaseNode['type']): boolean {
+  let match = false;
+  walkNode(ast, (node) => {
+    if (node.type === type) {
+      match = true;
+    }
+  });
+  return match;
+}
+
+export function collectNodeTypes(ast: MAMModule): BaseNode['type'][] {
+  const seen = new Set<BaseNode['type']>();
+  walkNode(ast, (node) => {
+    seen.add(node.type);
+  });
+  return Array.from(seen);
+}
+
+export function collectCodeBlockLanguages(ast: MAMModule): string[] {
+  const languages = new Set<string>();
+  walkNode(ast, (node) => {
+    if (node.type === 'CodeBlock') {
+      languages.add((node as CodeBlock).language);
+    }
+  });
+  return Array.from(languages);
+}
+
+export function mapParagraphValues(
+  ast: MAMModule,
+  fn: (value: string, paragraph: Paragraph) => string,
+): MAMModule {
+  return {
+    ...ast,
+    sections: ast.sections.map((section) => ({
+      ...section,
+      content: section.content.map((content) => mapContentValue(content, fn)),
+    })),
+  };
+}
+
+function mapContentValue(
+  node: ContentNode,
+  fn: (value: string, paragraph: Paragraph) => string,
+): ContentNode {
+  switch (node.type) {
+    case 'Paragraph':
+      return { ...node, value: fn(node.value, node) };
+    case 'List':
+      return {
+        ...node,
+        items: node.items.map((item) => ({
+          ...item,
+          content: item.content.map((content) => mapContentValue(content, fn)),
+        })),
+      };
+    case 'Blockquote':
+      return {
+        ...node,
+        children: node.children.map((child) => mapContentValue(child, fn)),
+      };
+    default:
+      return node;
+  }
+}
+
+export class MAMProfiler {
+  private readonly counts = new Map<string, number>();
+
+  visitMAMModule(node: MAMModule): void {
+    this.profile(node);
+  }
+
+  profile(ast: MAMModule): void {
+    walkNode(ast, (node) => {
+      this.counts.set(node.type, (this.counts.get(node.type) ?? 0) + 1);
+    });
+  }
+
+  getCount(type: string): number {
+    return this.counts.get(type) ?? 0;
+  }
+
+  getCounts(): Record<string, number> {
+    const result: Record<string, number> = {};
+    for (const [type, count] of this.counts) {
+      result[type] = count;
+    }
+    return result;
+  }
+
+  getTotal(): number {
+    let total = 0;
+    for (const count of this.counts.values()) {
+      total += count;
+    }
+    return total;
+  }
+
+  reset(): void {
+    this.counts.clear();
+  }
+}

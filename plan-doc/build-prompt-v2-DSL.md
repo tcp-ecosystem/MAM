@@ -564,8 +564,6 @@ I would consider evolving the name from **Markdown as Module** to a broader iden
 For example:
 
 * **MAM — Modular Agent Model**
-* **MAM — Modular AI Model**
-* **MAM — Modular Agent Manifest**
 * **MAM — Machine Agent Modules**
 
 This preserves the familiar acronym but frees the language from being tied exclusively to Markdown. Markdown can remain the **reference syntax**, while in the future you could support other serializations (JSON, YAML, binary IR) that all compile to the same **MAM AST**.

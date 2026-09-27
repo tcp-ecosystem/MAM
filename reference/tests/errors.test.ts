@@ -9,6 +9,13 @@ import {
   PluginError,
   PackageError,
   ErrorCollector,
+  isMAMError,
+  asMAMError,
+  getErrorCode,
+  getErrorMessage,
+  isErrorCode,
+  formatUnknownError,
+  collectErrorMessages,
 } from '../src/errors.js';
 
 describe('MAMError', () => {
@@ -277,5 +284,60 @@ describe('ErrorCollector', () => {
     collector.addWarning(new ValidationError('val warn'));
     expect(collector.errorCount).toBe(2);
     expect(collector.warningCount).toBe(1);
+  });
+});
+
+describe('isMAMError', () => {
+  it('should detect MAM errors', () => {
+    expect(isMAMError(new MAMError('x'))).toBe(true);
+    expect(isMAMError(new ParseError('x'))).toBe(true);
+    expect(isMAMError(new Error('x'))).toBe(false);
+    expect(isMAMError('x')).toBe(false);
+    expect(isMAMError(null)).toBe(false);
+  });
+});
+
+describe('asMAMError', () => {
+  it('should pass through MAM errors', () => {
+    const err = new ParseError('parse');
+    expect(asMAMError(err)).toBe(err);
+  });
+
+  it('should wrap plain errors and values', () => {
+    const wrapped = asMAMError(new Error('boom'));
+    expect(wrapped).toBeInstanceOf(MAMError);
+    expect(wrapped.message).toBe('boom');
+    expect(asMAMError('str').message).toBe('str');
+  });
+});
+
+describe('getErrorCode / getErrorMessage', () => {
+  it('should read codes and messages', () => {
+    expect(getErrorCode(new ParseError('x'))).toBe('PARSE_ERROR');
+    expect(getErrorCode(new Error('x'))).toBe('UNKNOWN_ERROR');
+    expect(getErrorMessage(new Error('boom'))).toBe('boom');
+    expect(getErrorMessage(42)).toBe('42');
+  });
+});
+
+describe('isErrorCode', () => {
+  it('should match codes', () => {
+    expect(isErrorCode(new ConfigError('x'), 'CONFIG_ERROR')).toBe(true);
+    expect(isErrorCode(new ConfigError('x'), 'OTHER')).toBe(false);
+    expect(isErrorCode(new Error('x'), 'UNKNOWN_ERROR')).toBe(true);
+  });
+});
+
+describe('formatUnknownError', () => {
+  it('should format code and message', () => {
+    expect(formatUnknownError(new RegistryError('bad'))).toBe('[REGISTRY_ERROR] bad');
+    expect(formatUnknownError(new Error('boom'))).toBe('[UNKNOWN_ERROR] boom');
+  });
+});
+
+describe('collectErrorMessages', () => {
+  it('should collect messages from mixed values', () => {
+    expect(collectErrorMessages([new Error('a'), 'b', new MAMError('c')])).toEqual(['a', 'b', 'c']);
+    expect(collectErrorMessages([])).toEqual([]);
   });
 });

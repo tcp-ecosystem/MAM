@@ -229,3 +229,56 @@ export function randomHex(bytes: number = 8): string {
 export function timestamp(): string {
   return new Date().toISOString().slice(11, 23);
 }
+
+export function capitalize(text: string): string {
+  if (text.length === 0) return text;
+  return text[0]!.toUpperCase() + text.slice(1);
+}
+
+export function pluralize(count: number, singular: string, plural?: string): string {
+  if (count === 1) return singular;
+  if (plural !== undefined) return plural;
+  return `${singular}s`;
+}
+
+export function formatList(items: string[]): string {
+  if (items.length === 0) return '';
+  if (items.length === 1) return items[0]!;
+  if (items.length === 2) return `${items[0]} and ${items[1]}`;
+  const head = items.slice(0, -1).join(', ');
+  return `${head}, and ${items[items.length - 1]}`;
+}
+
+export function chunk<T>(array: T[], size: number): T[][] {
+  if (size <= 0) return [];
+  const result: T[][] = [];
+  for (let i = 0; i < array.length; i += size) {
+    result.push(array.slice(i, i + size));
+  }
+  return result;
+}
+
+export function unique<T>(array: T[]): T[] {
+  return Array.from(new Set(array));
+}
+
+export function groupBy<T>(array: T[], keyFn: (item: T) => string): Record<string, T[]> {
+  const groups: Record<string, T[]> = {};
+  for (const item of array) {
+    const key = keyFn(item);
+    if (!groups[key]) {
+      groups[key] = [];
+    }
+    groups[key]!.push(item);
+  }
+  return groups;
+}
+
+export function parseKeyValue(line: string): { key: string; value: string } | null {
+  const idx = line.indexOf('=');
+  if (idx < 0) return null;
+  const key = line.slice(0, idx).trim();
+  const value = line.slice(idx + 1).trim();
+  if (key.length === 0) return null;
+  return { key, value };
+}

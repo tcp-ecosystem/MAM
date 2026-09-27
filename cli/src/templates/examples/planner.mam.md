@@ -1,7 +1,7 @@
 ---
 name: Planner Workflow
 description: Template for task planning and decomposition
-version: 1.0.0
+version: 2.0.0
 ---
 
 # Planner Workflow

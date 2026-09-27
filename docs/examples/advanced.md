@@ -188,7 +188,7 @@ ETL pipeline with error handling:
 ```markdown
 ---
 id: data-pipeline
-version: 1.0.0
+version: 2.0.0
 name: Data Processing Pipeline
 author: LifeJiggy
 runtime: python
@@ -294,7 +294,7 @@ REST API client with retry logic:
 ```markdown
 ---
 id: api-client
-version: 1.0.0
+version: 2.0.0
 name: API Client
 author: LifeJiggy
 runtime: python

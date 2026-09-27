@@ -23,6 +23,33 @@ import {
 } from '../src/serializer/yaml.js';
 import { createLocation } from '../src/location/index.js';
 import type { MAMModule } from '../src/nodes/index.js';
+import {
+  estimateJSONSize,
+  canonicalSerialize,
+  stripLocations,
+  diffAST,
+  hashAST,
+  validateRoundTrip,
+  isPlainASTObject,
+} from '../src/serializer/json.js';
+import {
+  escapeYAMLString,
+  detectYAMLIndent,
+  normalizeYAMLIndent,
+  validateYAMLShape,
+  serializeFrontMatterToYAML,
+  parseFlatYAMLMap,
+  yamlHasDocumentMarkers,
+} from '../src/serializer/yaml.js';
+import {
+  findSectionByName,
+  getSectionSummaries,
+  collectLanguages,
+  countInlineNodes,
+  astOutline,
+  roundTripClone,
+  getASTComplexity,
+} from '../src/serializer/index.js';
 
 function loc() {
   return createLocation(1, 0, 0, 10, 5, 100, 'test.mam.md');
@@ -560,5 +587,173 @@ describe('Pretty Print Edge Cases', () => {
     const stats = getASTStats(mod);
     expect(stats.totalCodeBlocks).toBe(1);
     expect(stats.languages).toContain('javascript');
+  });
+});
+
+describe('JSON Helper Utilities', () => {
+  it('should estimate JSON size', () => {
+    const mod = createTestModule();
+    expect(estimateJSONSize(mod)).toBe(JSON.stringify(mod).length);
+    expect(estimateJSONSize(mod)).toBeGreaterThan(0);
+  });
+
+  it('should produce stable canonical serialization', () => {
+    const a = { type: 'MAMModule', frontmatter: null, sections: [] } as unknown as MAMModule;
+    const b = { sections: [], frontmatter: null, type: 'MAMModule' } as unknown as MAMModule;
+    expect(canonicalSerialize(a)).toBe(canonicalSerialize(b));
+    expect(canonicalSerialize(createTestModule())).toBe(
+      canonicalSerialize(createTestModule())
+    );
+  });
+
+  it('should hash AST deterministically', () => {
+    const hash = hashAST(createTestModule());
+    expect(hash).toMatch(/^[0-9a-f]{8}$/);
+    expect(hashAST(createTestModule())).toBe(hash);
+    expect(hashAST(createComplexModule())).not.toBe(hash);
+  });
+
+  it('should strip locations without mutating input', () => {
+    const mod = createTestModule();
+    const stripped = stripLocations(mod);
+    expect(stripped.location).toBeUndefined();
+    expect(stripped.sections[0].location).toBeUndefined();
+    expect(JSON.stringify(stripped)).not.toContain('"location"');
+    expect(mod.location).toBeDefined();
+    expect(mod.sections[0].location).toBeDefined();
+  });
+
+  it('should diff AST changes', () => {
+    const a = createTestModule();
+    const b = createTestModule();
+    b.frontmatter!.data.id = 'changed';
+    const diffs = diffAST(a, b);
+    expect(diffs.length).toBeGreaterThan(0);
+    expect(diffs.some((d) => d.kind === 'changed' && d.path.includes('id'))).toBe(true);
+    expect(diffAST(createTestModule(), createTestModule())).toEqual([]);
+  });
+
+  it('should validate round-trip fidelity', () => {
+    const result = validateRoundTrip(createTestModule());
+    expect(result.valid).toBe(true);
+    expect(result.errors).toHaveLength(0);
+    const bad = validateRoundTrip({ type: 'Wrong' } as unknown as MAMModule);
+    expect(bad.valid).toBe(false);
+    expect(bad.errors.length).toBeGreaterThan(0);
+  });
+
+  it('should detect plain AST objects', () => {
+    class Foo {}
+    expect(isPlainASTObject({})).toBe(true);
+    expect(isPlainASTObject(createTestModule())).toBe(true);
+    expect(isPlainASTObject([])).toBe(false);
+    expect(isPlainASTObject(null)).toBe(false);
+    expect(isPlainASTObject('str')).toBe(false);
+    expect(isPlainASTObject(new Foo())).toBe(false);
+  });
+});
+
+describe('YAML Helper Utilities', () => {
+  it('should escape YAML strings', () => {
+    expect(escapeYAMLString('a"b')).toBe('a\\"b');
+    expect(escapeYAMLString('line1\nline2')).toBe('line1\\nline2');
+    expect(escapeYAMLString('tab\there')).toBe('tab\\there');
+    expect(escapeYAMLString('back\\slash')).toBe('back\\\\slash');
+    expect(escapeYAMLString('plain')).toBe('plain');
+  });
+
+  it('should detect and normalize YAML indentation', () => {
+    expect(detectYAMLIndent('root:\n  child: 1')).toBe(2);
+    expect(detectYAMLIndent('root:\nchild: 1')).toBe(0);
+    expect(detectYAMLIndent('')).toBe(0);
+    expect(normalizeYAMLIndent('a:\n    b: 1', 2)).toBe('a:\n  b: 1');
+    expect(normalizeYAMLIndent('a:\nb: 1', 4)).toBe('a:\nb: 1');
+    expect(normalizeYAMLIndent('a:\n  b: 1', 2)).toBe('a:\n  b: 1');
+  });
+
+  it('should validate YAML shape', () => {
+    expect(validateYAMLShape('').valid).toBe(false);
+    expect(validateYAMLShape('a: 1\nb: 2').valid).toBe(true);
+    expect(validateYAMLShape('a: 1\n\ta: 2').valid).toBe(false);
+    const dup = validateYAMLShape('a: 1\nb: 2\na: 3');
+    expect(dup.valid).toBe(false);
+    expect(dup.errors.some((e) => e.includes('duplicate'))).toBe(true);
+  });
+
+  it('should serialize front matter to YAML and parse flat maps back', () => {
+    const yaml = serializeFrontMatterToYAML({ id: 'demo', name: 'Demo' });
+    expect(yaml).toContain('id: demo');
+    expect(yaml).toContain('name: Demo');
+    const parsed = parseFlatYAMLMap(yaml);
+    expect(parsed.id).toBe('demo');
+    expect(parsed.name).toBe('Demo');
+    const quoted = parseFlatYAMLMap('id: "demo"\nname: \'test\'\n  nested: skip');
+    expect(quoted).toEqual({ id: 'demo', name: 'test' });
+  });
+
+  it('should detect YAML document markers', () => {
+    expect(yamlHasDocumentMarkers('---\ntype: MAMModule')).toBe(true);
+    expect(yamlHasDocumentMarkers('type: MAMModule\n...')).toBe(true);
+    expect(yamlHasDocumentMarkers('type: MAMModule')).toBe(false);
+  });
+});
+
+describe('Serializer Index Utilities', () => {
+  it('should find section by name and summarize sections', () => {
+    const mod = createTestModule();
+    expect(findSectionByName(mod, 'Purpose')?.name).toBe('Purpose');
+    expect(findSectionByName(mod, 'Python')?.content).toHaveLength(1);
+    expect(findSectionByName(mod, 'Missing')).toBeUndefined();
+    const summaries = getSectionSummaries(mod);
+    expect(summaries).toHaveLength(2);
+    expect(summaries[0]).toEqual({
+      name: 'Purpose',
+      level: 2,
+      contentCount: 1,
+      types: ['Paragraph'],
+    });
+  });
+
+  it('should collect languages and count inline nodes', () => {
+    expect(collectLanguages(createTestModule())).toEqual(['python']);
+    expect(collectLanguages(createComplexModule())).toEqual([]);
+    expect(countInlineNodes(createTestModule())).toBe(0);
+    expect(countInlineNodes(createComplexModule())).toBe(4);
+  });
+
+  it('should build an AST outline', () => {
+    const outline = astOutline(createTestModule());
+    expect(outline).toEqual([
+      'MAMModule',
+      '  FrontMatter',
+      '  Section(Purpose)',
+      '    Paragraph',
+      '  Section(Python)',
+      '    CodeBlock',
+    ]);
+  });
+
+  it('should round-trip clone a module', () => {
+    const mod = createTestModule();
+    const clone = roundTripClone(mod);
+    expect(clone).not.toBe(mod);
+    expect(clone.sections).not.toBe(mod.sections);
+    expect(clone.type).toBe('MAMModule');
+    expect(clone.sections).toHaveLength(2);
+    expect(clone.sections[0].name).toBe('Purpose');
+    expect(clone.frontmatter?.data.id).toBe('test');
+  });
+
+  it('should compute AST complexity', () => {
+    const complexity = getASTComplexity(createTestModule());
+    expect(complexity.sections).toBe(2);
+    expect(complexity.depth).toBe(3);
+    expect(complexity.maxSectionContent).toBe(1);
+    expect(complexity.inlineNodes).toBe(0);
+    expect(complexity.totalNodes).toBe(6);
+    const complex = getASTComplexity(createComplexModule());
+    expect(complex.sections).toBe(3);
+    expect(complex.inlineNodes).toBe(4);
+    expect(complex.maxSectionContent).toBe(4);
   });
 });

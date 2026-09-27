@@ -241,3 +241,91 @@ export function hasPermission(node: PermissionsNode, resource: string): boolean 
 export function countPermissions(node: PermissionsNode): number {
   return node.permissions.length;
 }
+
+export function hasPermissions(node: PermissionsNode): boolean {
+  return node.permissions.length > 0;
+}
+
+export function countPermissionConditions(node: PermissionsNode): number {
+  return node.permissions.reduce(
+    (total, permission) => total + (permission.conditions?.length ?? 0),
+    0,
+  );
+}
+
+export function summarizePermissions(node: PermissionsNode): string {
+  const admin = node.permissions.filter((permission) => permission.level === 'admin').length;
+  const optional = node.permissions.filter((permission) => permission.optional === true).length;
+  const breakdown = `${optional} optional${admin > 0 ? `, ${admin} admin` : ''}`;
+  if (node.permissions.length === 0) {
+    return `0 permissions (${breakdown})`;
+  }
+  const list = node.permissions
+    .map((permission) => `${permission.resource} [${permission.level}]`)
+    .join(', ');
+  return `${node.permissions.length} permissions (${breakdown}): ${list}`;
+}
+
+export function withPermission(
+  node: PermissionsNode,
+  permission: PermissionEntry,
+): PermissionsNode {
+  return {
+    ...node,
+    permissions: [...node.permissions, permission],
+  };
+}
+
+export function withoutPermission(
+  node: PermissionsNode,
+  resourceOrPredicate: string | ((permission: PermissionEntry) => boolean),
+): PermissionsNode {
+  const predicate =
+    typeof resourceOrPredicate === 'string'
+      ? (permission: PermissionEntry) => permission.resource === resourceOrPredicate
+      : resourceOrPredicate;
+  return {
+    ...node,
+    permissions: node.permissions.filter((permission) => !predicate(permission)),
+  };
+}
+
+export function clonePermissionsNode(
+  node: PermissionsNode,
+  options?: { stripLocation?: boolean },
+): PermissionsNode {
+  const cloneEntry = (permission: PermissionEntry): PermissionEntry => {
+    const copy: PermissionEntry = { ...permission };
+    if (permission.conditions) {
+      copy.conditions = permission.conditions.map((condition) => ({ ...condition }));
+    }
+    return copy;
+  };
+  const clone: PermissionsNode = {
+    ...node,
+    permissions: node.permissions.map(cloneEntry),
+  };
+  if (options?.stripLocation) {
+    delete clone.location;
+  }
+  return clone;
+}
+
+export function mergePermissionsNodes(a: PermissionsNode, b: PermissionsNode): PermissionsNode {
+  const cloneEntry = (permission: PermissionEntry): PermissionEntry => {
+    const copy: PermissionEntry = { ...permission };
+    if (permission.conditions) {
+      copy.conditions = permission.conditions.map((condition) => ({ ...condition }));
+    }
+    return copy;
+  };
+  const permissions = a.permissions.map(cloneEntry);
+  for (const permission of b.permissions) {
+    permissions.push(cloneEntry(permission));
+  }
+  return {
+    type: 'Permissions',
+    permissions,
+    location: b.location ?? a.location,
+  };
+}

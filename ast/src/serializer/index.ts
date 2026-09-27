@@ -389,3 +389,188 @@ export interface ASTStats {
   totalLists: number;
   languages: string[];
 }
+
+export function findSectionByName(ast: MAMModule, name: string): Section | undefined {
+  return ast.sections.find((section) => section.name === name);
+}
+
+export function getSectionSummaries(
+  ast: MAMModule,
+): Array<{ name: string; level: number; contentCount: number; types: string[] }> {
+  return ast.sections.map((section) => ({
+    name: section.name,
+    level: section.level,
+    contentCount: section.content.length,
+    types: section.content.map((content) => content.type),
+  }));
+}
+
+export function collectLanguages(ast: MAMModule): string[] {
+  const languages = new Set<string>();
+  for (const section of ast.sections) {
+    forEachContent(section.content, (node) => {
+      if (node.type === 'CodeBlock') {
+        languages.add(node.language);
+      }
+    });
+  }
+  return Array.from(languages);
+}
+
+export function countInlineNodes(ast: MAMModule): number {
+  let count = 0;
+  const countInlines = (nodes: InlineNode[]): void => {
+    for (const inline of nodes) {
+      count++;
+      if (inline.type === 'Bold' || inline.type === 'Italic' || inline.type === 'Link') {
+        countInlines(inline.content);
+      }
+    }
+  };
+  for (const section of ast.sections) {
+    forEachContent(section.content, (node) => {
+      switch (node.type) {
+        case 'Paragraph':
+          countInlines(node.inlineNodes);
+          break;
+        case 'Heading':
+          countInlines(node.content);
+          break;
+        case 'Table': {
+          for (const cell of node.headers) countInlines(cell.inlineNodes);
+          for (const row of node.rows) {
+            for (const cell of row) countInlines(cell.inlineNodes);
+          }
+          break;
+        }
+        default:
+          break;
+      }
+    });
+  }
+  return count;
+}
+
+export function astOutline(ast: MAMModule): string[] {
+  const lines: string[] = ['MAMModule'];
+  if (ast.frontmatter) {
+    lines.push('  FrontMatter');
+  }
+  for (const section of ast.sections) {
+    lines.push(`  Section(${section.name})`);
+    forEachContent(section.content, (node) => {
+      lines.push(`    ${node.type}`);
+    });
+  }
+  return lines;
+}
+
+export function roundTripClone(ast: MAMModule): MAMModule {
+  return deserializeFromJSON(serializeToJSON(ast));
+}
+
+export function getASTComplexity(ast: MAMModule): {
+  depth: number;
+  totalNodes: number;
+  sections: number;
+  maxSectionContent: number;
+  inlineNodes: number;
+} {
+  const inlineDepth = (nodes: InlineNode[]): number => {
+    let max = 0;
+    for (const inline of nodes) {
+      let current = 1;
+      if (inline.type === 'Bold' || inline.type === 'Italic' || inline.type === 'Link') {
+        current += inlineDepth(inline.content);
+      }
+      if (current > max) max = current;
+    }
+    return max;
+  };
+
+  const contentDepth = (node: ContentNode): number => {
+    switch (node.type) {
+      case 'Paragraph':
+        return 1 + inlineDepth(node.inlineNodes);
+      case 'Heading':
+        return 1 + inlineDepth(node.content);
+      case 'List': {
+        let max = 1;
+        for (const item of node.items) {
+          for (const content of item.content) {
+            const depth = 2 + contentDepth(content);
+            if (depth > max) max = depth;
+          }
+        }
+        return max;
+      }
+      case 'Table': {
+        let max = 1;
+        for (const cell of node.headers) {
+          const depth = 1 + inlineDepth(cell.inlineNodes);
+          if (depth > max) max = depth;
+        }
+        for (const row of node.rows) {
+          for (const cell of row) {
+            const depth = 1 + inlineDepth(cell.inlineNodes);
+            if (depth > max) max = depth;
+          }
+        }
+        return max;
+      }
+      case 'Blockquote': {
+        let max = 1;
+        for (const child of node.children) {
+          const depth = 1 + contentDepth(child);
+          if (depth > max) max = depth;
+        }
+        return max;
+      }
+      default:
+        return 1;
+    }
+  };
+
+  let depth = ast.frontmatter ? 2 : 1;
+  let maxSectionContent = 0;
+  let contentTotal = 0;
+
+  for (const section of ast.sections) {
+    if (section.content.length > maxSectionContent) {
+      maxSectionContent = section.content.length;
+    }
+    forEachContent(section.content, () => {
+      contentTotal++;
+    });
+    let sectionDepth = 0;
+    for (const content of section.content) {
+      const current = contentDepth(content);
+      if (current > sectionDepth) sectionDepth = current;
+    }
+    const candidate = 2 + sectionDepth;
+    if (candidate > depth) depth = candidate;
+  }
+
+  const inlineNodes = countInlineNodes(ast);
+
+  return {
+    depth,
+    totalNodes: 1 + (ast.frontmatter ? 1 : 0) + ast.sections.length + contentTotal + inlineNodes,
+    sections: ast.sections.length,
+    maxSectionContent,
+    inlineNodes,
+  };
+}
+
+function forEachContent(nodes: ContentNode[], visit: (node: ContentNode) => void): void {
+  for (const node of nodes) {
+    visit(node);
+    if (node.type === 'Blockquote') {
+      forEachContent(node.children, visit);
+    } else if (node.type === 'List') {
+      for (const item of node.items) {
+        forEachContent(item.content, visit);
+      }
+    }
+  }
+}

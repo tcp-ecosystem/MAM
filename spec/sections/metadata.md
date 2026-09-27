@@ -56,7 +56,7 @@ id: has--consecutive-hyphens
 Semantic version number:
 
 ```yaml
-version: 1.0.0
+version: 2.0.0
 ```
 
 **Rules:**
@@ -68,7 +68,7 @@ version: 1.0.0
 
 **Examples:**
 ```yaml
-version: 1.0.0    # Initial release
+version: 2.0.0    # Initial release
 version: 1.1.0    # New feature
 version: 1.1.1    # Bug fix
 version: 2.0.0    # Breaking change
@@ -232,7 +232,7 @@ repository: https://github.com/user/repo
 MAM specification version:
 
 ```yaml
-mam_version: 1.0.0
+mam_version: 2.0.0
 ```
 
 **Rules:**
@@ -245,7 +245,7 @@ mam_version: 1.0.0
 ```markdown
 ---
 id: module-id
-version: 1.0.0
+version: 2.0.0
 name: Module Name
 author: Author Name
 runtime: python
@@ -259,7 +259,7 @@ permissions:
   - network
 license: MIT
 repository: https://github.com/user/repo
-mam_version: 1.0.0
+mam_version: 2.0.0
 ---
 ```
 
@@ -304,7 +304,7 @@ Simple module metadata:
 ```yaml
 ---
 id: hello-world
-version: 1.0.0
+version: 2.0.0
 name: Hello World
 author: Developer
 runtime: python
@@ -337,7 +337,7 @@ permissions:
   - filesystem
 license: MIT
 repository: https://github.com/example/auth-module
-mam_version: 1.0.0
+mam_version: 2.0.0
 ---
 ```
 
@@ -348,7 +348,7 @@ Module supporting multiple runtimes:
 ```yaml
 ---
 id: api-client
-version: 1.0.0
+version: 2.0.0
 name: API Client
 author: Team Name
 runtime: mixed
@@ -399,7 +399,7 @@ Module for data processing:
 ```yaml
 ---
 id: data-processor
-version: 1.0.0
+version: 2.0.0
 name: Data Processor
 author: Data Team
 runtime: python
@@ -427,7 +427,7 @@ Module for web scraping:
 ```yaml
 ---
 id: web-scraper
-version: 1.0.0
+version: 2.0.0
 name: Web Scraper
 author: Data Team
 runtime: python
@@ -455,7 +455,7 @@ Module for command-line tools:
 ```yaml
 ---
 id: cli-toolkit
-version: 1.0.0
+version: 2.0.0
 name: CLI Toolkit
 author: Developer
 runtime: python
@@ -481,7 +481,7 @@ Module for microservices:
 ```yaml
 ---
 id: user-service
-version: 1.0.0
+version: 2.0.0
 name: User Service
 author: Platform Team
 runtime: python
@@ -511,7 +511,7 @@ repository: https://github.com/company/user-service
 ```yaml
 ---
 id: minimal
-version: 1.0.0
+version: 2.0.0
 name: Minimal Module
 author: Author
 runtime: python
@@ -543,7 +543,7 @@ permissions:
   - environment
 license: Apache-2.0
 repository: https://github.com/example/full-featured
-mam_version: 1.0.0
+mam_version: 2.0.0
 ---
 ```
 
@@ -552,7 +552,7 @@ mam_version: 1.0.0
 ```yaml
 ---
 id: python-toolkit
-version: 1.0.0
+version: 2.0.0
 name: Python Toolkit
 author: Python Developer
 runtime: python
@@ -575,7 +575,7 @@ license: MIT
 ```yaml
 ---
 id: js-utils
-version: 1.0.0
+version: 2.0.0
 name: JavaScript Utilities
 author: JS Developer
 runtime: javascript
@@ -598,7 +598,7 @@ license: MIT
 ```yaml
 ---
 id: ts-api-client
-version: 1.0.0
+version: 2.0.0
 name: TypeScript API Client
 author: TS Developer
 runtime: typescript
@@ -621,7 +621,7 @@ license: MIT
 ```yaml
 ---
 id: rust-cli
-version: 1.0.0
+version: 2.0.0
 name: Rust CLI Tool
 author: Rust Developer
 runtime: rust
@@ -644,7 +644,7 @@ license: MIT
 ```yaml
 ---
 id: go-service
-version: 1.0.0
+version: 2.0.0
 name: Go Microservice
 author: Go Developer
 runtime: go
@@ -668,7 +668,7 @@ license: MIT
 ```yaml
 ---
 id: cross-platform
-version: 1.0.0
+version: 2.0.0
 name: Cross-Platform Module
 author: Platform Team
 runtime: mixed
@@ -714,12 +714,12 @@ When version doesn't follow semver:
 # Invalid
 version: 1.0  # Missing patch
 version: v1.0.0  # Has 'v' prefix
-version: 1.0.0-beta  # Pre-release without proper format
+version: 2.0.0-beta  # Pre-release without proper format
 
 # Valid
-version: 1.0.0
-version: 1.0.0-beta.1
-version: 1.0.0-alpha.1
+version: 2.0.0
+version: 2.0.0-beta.1
+version: 2.0.0-alpha.1
 ```
 
 ### 3. Missing Required Fields
@@ -729,7 +729,7 @@ When required fields are missing:
 ```yaml
 # Invalid - missing id
 ---
-version: 1.0.0
+version: 2.0.0
 name: Module
 author: Author
 runtime: python
@@ -841,7 +841,7 @@ When YAML is malformed:
 # Invalid
 ---
 id: module
-version: 1.0.0
+version: 2.0.0
 name: Module
   author: Author  # Wrong indentation
 runtime: python
@@ -850,7 +850,7 @@ runtime: python
 # Valid
 ---
 id: module
-version: 1.0.0
+version: 2.0.0
 name: Module
 author: Author
 runtime: python
@@ -884,7 +884,7 @@ version: 1.0
 version: v1.0.0
 
 # Good
-version: 1.0.0
+version: 2.0.0
 ```
 
 ### 3. Write Clear Descriptions
@@ -980,7 +980,7 @@ Always validate metadata before publishing.
 ```yaml
 ---
 id: minimal-module
-version: 1.0.0
+version: 2.0.0
 name: Minimal Module
 author: Author
 runtime: python
@@ -992,7 +992,7 @@ runtime: python
 ```yaml
 ---
 id: utility-library
-version: 1.0.0
+version: 2.0.0
 name: Utility Library
 author: Author
 runtime: python
@@ -1011,7 +1011,7 @@ license: MIT
 ```yaml
 ---
 id: api-service
-version: 1.0.0
+version: 2.0.0
 name: API Service
 author: Team
 runtime: python
@@ -1034,7 +1034,7 @@ license: MIT
 ```yaml
 ---
 id: cli-tool
-version: 1.0.0
+version: 2.0.0
 name: CLI Tool
 author: Author
 runtime: python
@@ -1056,7 +1056,7 @@ license: MIT
 ```yaml
 ---
 id: data-processor
-version: 1.0.0
+version: 2.0.0
 name: Data Processor
 author: Data Team
 runtime: python
@@ -1080,7 +1080,7 @@ license: MIT
 ```yaml
 ---
 id: security-tools
-version: 1.0.0
+version: 2.0.0
 name: Security Tools
 author: Security Team
 runtime: python
@@ -1103,7 +1103,7 @@ license: MIT
 ```yaml
 ---
 id: third-party-integration
-version: 1.0.0
+version: 2.0.0
 name: Third-Party Integration
 author: Integration Team
 runtime: python
@@ -1125,7 +1125,7 @@ license: MIT
 ```yaml
 ---
 id: cross-platform-module
-version: 1.0.0
+version: 2.0.0
 name: Cross-Platform Module
 author: Platform Team
 runtime: mixed
@@ -1147,7 +1147,7 @@ license: MIT
 ```yaml
 ---
 id: enterprise-module
-version: 1.0.0
+version: 2.0.0
 name: Enterprise Module
 author: Enterprise Team
 runtime: python
@@ -1173,7 +1173,7 @@ repository: https://github.com/enterprise/module
 ```yaml
 ---
 id: plugin-module
-version: 1.0.0
+version: 2.0.0
 name: Plugin Module
 author: Plugin Author
 runtime: python
@@ -1344,8 +1344,8 @@ version: MAJOR.MINOR.PATCH
 **A:** Use semver pre-release syntax:
 
 ```yaml
-version: 1.0.0-beta.1
-version: 1.0.0-alpha.1
+version: 2.0.0-beta.1
+version: 2.0.0-alpha.1
 ```
 
 ### Q: Can I have multiple runtimes?

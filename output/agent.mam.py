@@ -10,7 +10,7 @@ Source: C:\Users\USER\LifeJiggy\Prompt_AI-Support\MAM\examples\advanced\agent.ma
     Id: research-agent
     Name: Research Agent System
     Type: module
-    Version: 1.0.0
+    version: 2.0.0
     Author: MAM Team
     License: MIT
     Description: Multi-agent system that researches topics, analyzes findings, and produces reports

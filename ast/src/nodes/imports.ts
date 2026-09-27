@@ -189,3 +189,67 @@ export function hasImport(node: ImportsNode, name: string): boolean {
 export function countImports(node: ImportsNode): number {
   return node.items.length;
 }
+
+export function hasImports(node: ImportsNode): boolean {
+  return node.items.length > 0;
+}
+
+export function countImportsBySource(node: ImportsNode, source: string): number {
+  return node.items.filter((item) => item.source === source).length;
+}
+
+export function summarizeImports(node: ImportsNode): string {
+  const parts = node.items.map((item) => `${item.name} from "${item.source}"`);
+  if (parts.length === 0) {
+    return '0 imports';
+  }
+  return `${parts.length} imports: ${parts.join(', ')}`;
+}
+
+export function withImport(node: ImportsNode, item: ImportItem): ImportsNode {
+  return {
+    ...node,
+    items: [...node.items, item],
+  };
+}
+
+export function withoutImport(
+  node: ImportsNode,
+  match: string | ((item: ImportItem) => boolean),
+): ImportsNode {
+  const remove =
+    typeof match === 'string'
+      ? (item: ImportItem) => item.name === match
+      : match;
+  return {
+    ...node,
+    items: node.items.filter((item) => !remove(item)),
+  };
+}
+
+export function cloneImportsNode(
+  node: ImportsNode,
+  options: { stripLocation?: boolean } = {},
+): ImportsNode {
+  const copy: ImportsNode = {
+    ...node,
+    items: node.items.map((item) => ({ ...item })),
+  };
+  if (options.stripLocation) {
+    delete copy.location;
+  } else if (copy.location) {
+    copy.location = {
+      source: copy.location.source,
+      start: { ...copy.location.start },
+      end: { ...copy.location.end },
+    };
+  }
+  return copy;
+}
+
+export function mergeImportsNodes(a: ImportsNode, b: ImportsNode): ImportsNode {
+  return {
+    ...a,
+    items: [...a.items, ...b.items],
+  };
+}

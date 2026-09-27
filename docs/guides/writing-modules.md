@@ -17,7 +17,7 @@ Every MAM module has this structure:
 ```markdown
 ---
 id: module-name
-version: 1.0.0
+version: 2.0.0
 name: Module Name
 author: Your Name
 runtime: python
@@ -45,7 +45,7 @@ Start with YAML front matter containing module metadata:
 ```yaml
 ---
 id: authentication
-version: 1.0.0
+version: 2.0.0
 name: Authentication Module
 author: LifeJiggy
 runtime: python

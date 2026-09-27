@@ -10,7 +10,7 @@
  * Id: calculator
  * Name: Calculator
  * Type: module
- * Version: 1.0.0
+ * version: 2.0.0
  * Author: MAM Team
  * License: MIT
  * Description: Perform basic arithmetic operations with input validation and error handling

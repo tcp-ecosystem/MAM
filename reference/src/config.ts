@@ -321,3 +321,58 @@ async function ensureDir(dirPath: string): Promise<void> {
   const { mkdir } = await import('node:fs/promises');
   await mkdir(dirPath, { recursive: true }).catch(() => {});
 }
+
+export function cloneConfig(config: MAMConfig): MAMConfig {
+  return structuredClone(config);
+}
+
+export function getConfigValue(config: MAMConfig, path: string): unknown {
+  const parts = path.split('.');
+  let current: unknown = config;
+  for (const part of parts) {
+    if (typeof current !== 'object' || current === null) return undefined;
+    current = (current as Record<string, unknown>)[part];
+  }
+  return current;
+}
+
+export function setConfigValue(config: MAMConfig, path: string, value: unknown): MAMConfig {
+  const result = structuredClone(config);
+  const parts = path.split('.');
+  let current: Record<string, unknown> = result as unknown as Record<string, unknown>;
+  for (let i = 0; i < parts.length - 1; i++) {
+    const part = parts[i]!;
+    const next = current[part];
+    if (typeof next !== 'object' || next === null) {
+      current[part] = {};
+    }
+    current = current[part] as Record<string, unknown>;
+  }
+  current[parts[parts.length - 1]!] = value;
+  return result;
+}
+
+export function listConfiguredTargets(config: MAMConfig): string[] {
+  return Object.keys(config.targets ?? {});
+}
+
+export function hasTarget(config: MAMConfig, target: string): boolean {
+  return listConfiguredTargets(config).includes(target);
+}
+
+export function diffConfigKeys(a: MAMConfig, b: MAMConfig): string[] {
+  const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+  const diff: string[] = [];
+  for (const key of keys) {
+    const left = JSON.stringify((a as unknown as Record<string, unknown>)[key]);
+    const right = JSON.stringify((b as unknown as Record<string, unknown>)[key]);
+    if (left !== right) {
+      diff.push(key);
+    }
+  }
+  return diff;
+}
+
+export function isDefaultConfig(config: MAMConfig): boolean {
+  return JSON.stringify(config) === JSON.stringify(DEFAULT_CONFIG);
+}

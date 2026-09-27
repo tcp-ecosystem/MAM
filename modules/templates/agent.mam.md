@@ -2,7 +2,7 @@
 # MAM Metadata
 id: template-agent
 name: Agent Template
-version: 1.0.0
+version: 2.0.0
 type: system
 
 author: MAM Team

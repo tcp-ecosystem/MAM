@@ -83,7 +83,7 @@ from mam import Parser, Validator, Runtime
 module = """
 ---
 id: hello
-version: 1.0.0
+version: 2.0.0
 name: Hello
 author: LifeJiggy
 runtime: python
@@ -183,7 +183,7 @@ import { Parser, Validator, Runtime } from '@mam/sdk';
 const module = `
 ---
 id: hello
-version: 1.0.0
+version: 2.0.0
 name: Hello
 runtime: python
 ---

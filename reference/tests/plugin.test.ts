@@ -1,5 +1,15 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { PluginManager, createPlugin } from '../src/plugin.js';
+import {
+  PluginManager,
+  createPlugin,
+  isCLIPlugin,
+  validatePlugin,
+  getPluginCommandNames,
+  findPluginCommand,
+  hasPluginHook,
+  getLoadedPluginNames,
+  countPluginCommands,
+} from '../src/plugin.js';
 import { PluginError } from '../src/errors.js';
 import type { CLIPlugin, PluginContext, PluginHooks } from '../src/plugin.js';
 import type { MAMConfig } from '../src/types.js';
@@ -252,5 +262,75 @@ describe('createPlugin', () => {
     expect(plugin.description).toBe('my plugin');
     expect(plugin.commands).toHaveLength(1);
     expect(plugin.hooks?.beforeBuild).toBe(hook);
+  });
+});
+
+describe('isCLIPlugin', () => {
+  it('should validate plugin shapes', () => {
+    expect(isCLIPlugin(createPlugin({ name: 'a', version: '1.0.0' }))).toBe(true);
+    expect(isCLIPlugin({ name: 'a' })).toBe(false);
+    expect(isCLIPlugin(null)).toBe(false);
+    expect(isCLIPlugin('plugin')).toBe(false);
+  });
+});
+
+describe('validatePlugin', () => {
+  it('should accept valid plugins', () => {
+    expect(validatePlugin(createPlugin({ name: 'a', version: '1.0.0' }))).toEqual([]);
+  });
+
+  it('should report name, version, and duplicate commands', () => {
+    const errors = validatePlugin({
+      name: '',
+      version: 'bad',
+      commands: [
+        { name: 'dup', description: 'x', handler: async () => {} },
+        { name: 'dup', description: 'y', handler: async () => {} },
+      ],
+    });
+    expect(errors.length).toBeGreaterThanOrEqual(3);
+  });
+});
+
+describe('getPluginCommandNames / findPluginCommand', () => {
+  const plugin = createPlugin({
+    name: 'p',
+    version: '1.0.0',
+    commands: [{ name: 'lint', description: 'lint it', handler: async () => {} }],
+  });
+
+  it('should list and find commands', () => {
+    expect(getPluginCommandNames(plugin)).toEqual(['lint']);
+    expect(findPluginCommand(plugin, 'lint')?.description).toBe('lint it');
+    expect(findPluginCommand(plugin, 'missing')).toBeUndefined();
+    expect(getPluginCommandNames(createPlugin({ name: 'q', version: '1.0.0' }))).toEqual([]);
+  });
+});
+
+describe('hasPluginHook', () => {
+  it('should detect hooks', () => {
+    const plugin = createPlugin({
+      name: 'p',
+      version: '1.0.0',
+      hooks: { onInit: async () => {} },
+    });
+    expect(hasPluginHook(plugin, 'onInit')).toBe(true);
+    expect(hasPluginHook(plugin, 'onExit')).toBe(false);
+  });
+});
+
+describe('getLoadedPluginNames / countPluginCommands', () => {
+  it('should inspect the manager', () => {
+    const manager = new PluginManager();
+    manager.loadPlugin(
+      createPlugin({
+        name: 'a',
+        version: '1.0.0',
+        commands: [{ name: 'one', description: '1', handler: async () => {} }],
+      }),
+    );
+    manager.loadPlugin(createPlugin({ name: 'b', version: '1.0.0' }));
+    expect(getLoadedPluginNames(manager)).toEqual(['a', 'b']);
+    expect(countPluginCommands(manager)).toBe(1);
   });
 });

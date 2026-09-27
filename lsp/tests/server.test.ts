@@ -290,3 +290,68 @@ describe('MAMServer', () => {
     }
   });
 });
+
+describe('MAMServer document accessors', () => {
+  let server: MAMServer;
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    server = new MAMServer(mockConnection);
+  });
+
+  function openTestDoc(uri = 'file:///test.mam.md', text = '## Purpose\n\nBody.'): void {
+    const handler = mockConnection.onDidOpenTextDocument.mock.calls[0]?.[0];
+    handler({
+      textDocument: { uri, languageId: 'mam', version: 1, text },
+    });
+  }
+
+  it('getDocument() should return opened documents', () => {
+    openTestDoc();
+    expect(server.getDocument('file:///test.mam.md')?.getText()).toContain('Purpose');
+    expect(server.getDocument('file:///missing.mam.md')).toBeUndefined();
+  });
+
+  it('getCachedAST() should return parsed modules', () => {
+    openTestDoc();
+    expect(server.getCachedAST('file:///test.mam.md')).toBeDefined();
+    expect(server.getCachedAST('file:///missing.mam.md')).toBeUndefined();
+  });
+
+  it('getOpenUris() should list open documents', () => {
+    openTestDoc('file:///a.mam.md');
+    openTestDoc('file:///b.mam.md');
+    expect(server.getOpenUris()).toEqual(
+      expect.arrayContaining(['file:///a.mam.md', 'file:///b.mam.md']),
+    );
+  });
+
+  it('hasDocument() should report open state', () => {
+    openTestDoc();
+    expect(server.hasDocument('file:///test.mam.md')).toBe(true);
+    expect(server.hasDocument('file:///missing.mam.md')).toBe(false);
+  });
+
+  it('getDocumentCount() should count open documents', () => {
+    expect(server.getDocumentCount()).toBe(0);
+    openTestDoc('file:///a.mam.md');
+    openTestDoc('file:///b.mam.md');
+    expect(server.getDocumentCount()).toBe(2);
+  });
+
+  it('refreshDocument() should update text and AST', () => {
+    openTestDoc('file:///r.mam.md', '## Purpose\n\nOld.');
+    server.refreshDocument('file:///r.mam.md', '## Purpose\n\nNew.');
+    expect(server.getDocument('file:///r.mam.md')?.getText()).toContain('New.');
+    expect(server.getCachedAST('file:///r.mam.md')).toBeDefined();
+  });
+
+  it('clearCache() should drop all documents', () => {
+    openTestDoc();
+    expect(server.getDocumentCount()).toBe(1);
+    server.clearCache();
+    expect(server.getDocumentCount()).toBe(0);
+    expect(server.getOpenUris()).toEqual([]);
+    expect(server.hasDocument('file:///test.mam.md')).toBe(false);
+  });
+});

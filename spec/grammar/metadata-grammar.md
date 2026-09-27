@@ -1,5 +1,5 @@
 # MAM Metadata Grammar
-# Version: 1.0.0
+# version: 2.0.0
 # Human readable specification of the metadata / front matter layer
 
 ## Description
@@ -64,7 +64,7 @@ author, and runtime. Missing required fields produce validation errors.
 | Type | Example | Notes |
 |------|---------|-------|
 | string | `name: Hello` | Plain or quoted |
-| number | `version: 1.0.0` | Also semver strings |
+| number | `version: 2.0.0` | Also semver strings |
 | boolean | `deprecated: false` | true or false |
 | list | `tags:` then items | Dash prefixed block list |
 | object | `runtime:` then keys | Nested indented object |
@@ -78,7 +78,7 @@ author, and runtime. Missing required fields produce validation errors.
 ---
 id: hello
 name: Hello
-version: 1.0.0
+version: 2.0.0
 author: MAM Team
 runtime: python
 ---

@@ -244,3 +244,37 @@ export class ErrorCollector {
     };
   }
 }
+
+export function isMAMError(err: unknown): err is MAMError {
+  return err instanceof MAMError;
+}
+
+export function asMAMError(err: unknown): MAMError {
+  if (err instanceof MAMError) return err;
+  if (err instanceof Error) {
+    return new MAMError(err.message, { cause: err });
+  }
+  return new MAMError(String(err));
+}
+
+export function getErrorCode(err: unknown): string {
+  if (err instanceof MAMError) return err.code;
+  return 'UNKNOWN_ERROR';
+}
+
+export function getErrorMessage(err: unknown): string {
+  if (err instanceof Error) return err.message;
+  return String(err);
+}
+
+export function isErrorCode(err: unknown, code: string): boolean {
+  return getErrorCode(err) === code;
+}
+
+export function formatUnknownError(err: unknown): string {
+  return `[${getErrorCode(err)}] ${getErrorMessage(err)}`;
+}
+
+export function collectErrorMessages(errors: unknown[]): string[] {
+  return errors.map(getErrorMessage);
+}

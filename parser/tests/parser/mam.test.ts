@@ -13,7 +13,7 @@ describe('MAM Parser', () => {
     it('should parse a minimal valid MAM module', () => {
       const input = `---
 id: test-module
-version: 1.0.0
+version: 2.0.0
 name: Test Module
 author: TestAuthor
 runtime: python
@@ -118,7 +118,7 @@ def test_process():
     it('should parse metadata with all optional fields', () => {
       const input = `---
 id: complete
-version: 1.0.0
+version: 2.0.0
 name: Complete Module
 author: Test
 runtime: python
@@ -133,7 +133,7 @@ permissions:
   - network
 license: MIT
 repository: https://github.com/test/repo
-mam_version: 1.0.0
+mam_version: 2.0.0
 ---
 
 ## Purpose
@@ -173,7 +173,7 @@ Module without front matter.
     it('should handle errors for invalid ID format', () => {
       const input = `---
 id: Invalid_ID!
-version: 1.0.0
+version: 2.0.0
 name: Bad ID Module
 author: Test
 runtime: python
@@ -215,7 +215,7 @@ Test.
     it('should handle errors for invalid runtime', () => {
       const input = `---
 id: test
-version: 1.0.0
+version: 2.0.0
 name: Test
 author: Test
 runtime: invalid
@@ -253,7 +253,7 @@ Test.
     it('should parse all standard sections', () => {
       const input = `---
 id: sections-test
-version: 1.0.0
+version: 2.0.0
 name: Sections Test
 author: Test
 runtime: python
@@ -292,7 +292,7 @@ Examples content.
     it('should detect custom sections', () => {
       const input = `---
 id: custom-test
-version: 1.0.0
+version: 2.0.0
 name: Custom Test
 author: Test
 runtime: python
@@ -316,7 +316,7 @@ Custom content.
     it('should detect empty sections', () => {
       const input = `---
 id: empty-test
-version: 1.0.0
+version: 2.0.0
 name: Empty Test
 author: Test
 runtime: python
@@ -337,7 +337,7 @@ Test.
     it('should detect duplicate sections', () => {
       const input = `---
 id: dup-test
-version: 1.0.0
+version: 2.0.0
 name: Dup Test
 author: Test
 runtime: python
@@ -360,7 +360,7 @@ Second purpose.
     it('should track section attributes', () => {
       const input = `---
 id: attr-test
-version: 1.0.0
+version: 2.0.0
 name: Attr Test
 author: Test
 runtime: python
@@ -384,7 +384,7 @@ Test.
     it('should parse code blocks', () => {
       const input = `---
 id: code-test
-version: 1.0.0
+version: 2.0.0
 name: Code Test
 author: Test
 runtime: python
@@ -416,7 +416,7 @@ def hello():
     it('should parse code blocks with metadata', () => {
       const input = `---
 id: meta-test
-version: 1.0.0
+version: 2.0.0
 name: Meta Test
 author: Test
 runtime: python
@@ -446,7 +446,7 @@ def fetch():
     it('should parse lists', () => {
       const input = `---
 id: list-test
-version: 1.0.0
+version: 2.0.0
 name: List Test
 author: Test
 runtime: python
@@ -477,7 +477,7 @@ Test.
     it('should parse tables', () => {
       const input = `---
 id: table-test
-version: 1.0.0
+version: 2.0.0
 name: Table Test
 author: Test
 runtime: python
@@ -508,7 +508,7 @@ Test.
     it('should parse blockquotes', () => {
       const input = `---
 id: quote-test
-version: 1.0.0
+version: 2.0.0
 name: Quote Test
 author: Test
 runtime: python
@@ -532,7 +532,7 @@ runtime: python
     it('should parse horizontal rules', () => {
       const input = `---
 id: hr-test
-version: 1.0.0
+version: 2.0.0
 name: HR Test
 author: Test
 runtime: python
@@ -561,7 +561,7 @@ More content.
     it('should track section count', () => {
       const input = `---
 id: meta-test
-version: 1.0.0
+version: 2.0.0
 name: Meta Test
 author: Test
 runtime: python
@@ -588,7 +588,7 @@ Examples.
     it('should track code block count', () => {
       const input = `---
 id: code-count-test
-version: 1.0.0
+version: 2.0.0
 name: Code Count Test
 author: Test
 runtime: python
@@ -615,7 +615,7 @@ code2
     it('should track languages used', () => {
       const input = `---
 id: lang-test
-version: 1.0.0
+version: 2.0.0
 name: Lang Test
 author: Test
 runtime: python
@@ -645,7 +645,7 @@ code
     it('should track parse time', () => {
       const input = `---
 id: time-test
-version: 1.0.0
+version: 2.0.0
 name: Time Test
 author: Test
 runtime: python
@@ -664,7 +664,7 @@ Test.
     it('should track token count', () => {
       const input = `---
 id: token-test
-version: 1.0.0
+version: 2.0.0
 name: Token Test
 author: Test
 runtime: python
@@ -683,7 +683,7 @@ Test.
     it('should track section count', () => {
       const input = `---
 id: section-count-test
-version: 1.0.0
+version: 2.0.0
 name: Section Count Test
 author: Test
 runtime: python
@@ -708,7 +708,7 @@ Rules.
     it('should work with pre-tokenized input', () => {
       const input = `---
 id: pre-token-test
-version: 1.0.0
+version: 2.0.0
 name: Pre-Token Test
 author: Test
 runtime: python
@@ -731,7 +731,7 @@ Test.
     it('should parse inline formatting', () => {
       const input = `---
 id: inline-test
-version: 1.0.0
+version: 2.0.0
 name: Inline Test
 author: Test
 runtime: python
@@ -752,7 +752,7 @@ This has **bold** and *italic* text.
     it('should parse inline code', () => {
       const input = `---
 id: inline-code-test
-version: 1.0.0
+version: 2.0.0
 name: Inline Code Test
 author: Test
 runtime: python
@@ -771,7 +771,7 @@ Use \`console.log()\` for output.
     it('should parse links', () => {
       const input = `---
 id: link-test
-version: 1.0.0
+version: 2.0.0
 name: Link Test
 author: Test
 runtime: python

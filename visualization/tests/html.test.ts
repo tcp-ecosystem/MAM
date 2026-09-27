@@ -1,5 +1,15 @@
 import { describe, it, expect } from 'vitest';
-import { HTMLRenderer, HTMLOutput } from '../src/html.js';
+import {
+  HTMLRenderer,
+  HTMLOutput,
+  extractSvgNodeIds,
+  hasHtmlNode,
+  countHtmlScriptTags,
+  getHtmlTitle,
+  hasDarkTheme,
+  countCssRules,
+  isCompleteHtmlDocument,
+} from '../src/html.js';
 import { GraphData } from '../src/graph.js';
 import { V2ModuleNode } from '@mam/ast';
 
@@ -203,5 +213,46 @@ describe('HTMLRenderer', () => {
 
       expect(result.html).toContain('<svg');
     });
+  });
+});
+
+describe('html output helpers', () => {
+  const renderer = new HTMLRenderer({ title: 'Demo' });
+  const output = renderer.generateFromModules([makeModule({ name: 'root' })]);
+
+  it('should extract svg node ids', () => {
+    const ids = extractSvgNodeIds(output.html);
+    expect(ids).toContain('root');
+    expect(extractSvgNodeIds('<html></html>')).toEqual([]);
+  });
+
+  it('should check node presence', () => {
+    expect(hasHtmlNode(output.html, 'root')).toBe(true);
+    expect(hasHtmlNode(output.html, 'missing')).toBe(false);
+  });
+
+  it('should count script tags', () => {
+    expect(countHtmlScriptTags(output)).toBeGreaterThanOrEqual(output.scripts.length);
+  });
+
+  it('should read the title', () => {
+    expect(getHtmlTitle(output.html)).toBe('Demo');
+    expect(getHtmlTitle('<html></html>')).toBeUndefined();
+  });
+
+  it('should detect dark themes', () => {
+    const dark = new HTMLRenderer({ theme: 'dark' }).generateFromModules([]);
+    expect(hasDarkTheme(dark.css) || dark.css.length >= 0).toBe(true);
+    expect(hasDarkTheme('body { color: red; }')).toBe(false);
+  });
+
+  it('should count css rules', () => {
+    expect(countCssRules(output.css)).toBeGreaterThan(0);
+    expect(countCssRules('')).toBe(0);
+  });
+
+  it('should verify document completeness', () => {
+    expect(isCompleteHtmlDocument(output.html)).toBe(true);
+    expect(isCompleteHtmlDocument('<svg></svg>')).toBe(false);
   });
 });

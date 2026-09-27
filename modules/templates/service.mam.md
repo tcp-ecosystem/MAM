@@ -1,7 +1,7 @@
 ---
 id: template-service
 name: Service Template
-version: 1.0.0
+version: 2.0.0
 type: service
 author: MAM Team
 description: >

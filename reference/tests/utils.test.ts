@@ -19,6 +19,13 @@ import {
   ensureDir,
   readFile,
   writeFile,
+  capitalize,
+  pluralize,
+  formatList,
+  chunk,
+  unique,
+  groupBy,
+  parseKeyValue,
 } from '../src/utils.js';
 
 const TMP = join(tmpdir(), 'mam-utils-test-' + Date.now());
@@ -399,5 +406,63 @@ describe('timestamp', () => {
     const [hours] = ts.split(':').map(Number);
     expect(hours).toBeGreaterThanOrEqual(0);
     expect(hours).toBeLessThan(24);
+  });
+});
+
+describe('capitalize', () => {
+  it('should uppercase the first letter', () => {
+    expect(capitalize('hello')).toBe('Hello');
+    expect(capitalize('')).toBe('');
+    expect(capitalize('A')).toBe('A');
+  });
+});
+
+describe('pluralize', () => {
+  it('should pick singular or plural', () => {
+    expect(pluralize(1, 'item')).toBe('item');
+    expect(pluralize(2, 'item')).toBe('items');
+    expect(pluralize(0, 'child', 'children')).toBe('children');
+    expect(pluralize(1, 'child', 'children')).toBe('child');
+  });
+});
+
+describe('formatList', () => {
+  it('should join items naturally', () => {
+    expect(formatList([])).toBe('');
+    expect(formatList(['a'])).toBe('a');
+    expect(formatList(['a', 'b'])).toBe('a and b');
+    expect(formatList(['a', 'b', 'c'])).toBe('a, b, and c');
+  });
+});
+
+describe('chunk', () => {
+  it('should split arrays into chunks', () => {
+    expect(chunk([1, 2, 3, 4, 5], 2)).toEqual([[1, 2], [3, 4], [5]]);
+    expect(chunk([], 3)).toEqual([]);
+    expect(chunk([1], 0)).toEqual([]);
+  });
+});
+
+describe('unique', () => {
+  it('should remove duplicates', () => {
+    expect(unique([1, 2, 2, 3, 1])).toEqual([1, 2, 3]);
+    expect(unique(['a', 'a'])).toEqual(['a']);
+  });
+});
+
+describe('groupBy', () => {
+  it('should group items by key', () => {
+    const grouped = groupBy(['a1', 'a2', 'b1'], (item) => item[0]!);
+    expect(grouped.a).toEqual(['a1', 'a2']);
+    expect(grouped.b).toEqual(['b1']);
+  });
+});
+
+describe('parseKeyValue', () => {
+  it('should parse key=value lines', () => {
+    expect(parseKeyValue('key=value')).toEqual({ key: 'key', value: 'value' });
+    expect(parseKeyValue('  k  =  v  ')).toEqual({ key: 'k', value: 'v' });
+    expect(parseKeyValue('no-equals')).toBeNull();
+    expect(parseKeyValue('=novalue')).toBeNull();
   });
 });

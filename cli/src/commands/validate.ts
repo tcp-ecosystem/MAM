@@ -312,7 +312,7 @@ const BUILT_IN_RULES: ValidationRule[] = [
     fixable: true,
     check: (ctx) => {
       if (!ctx.frontmatter.version) {
-        return [{ ruleId: 'FM004', message: 'Frontmatter is missing "version" field', severity: 'warning', line: 1, column: 1, source: ctx.filePath, fix: { range: [0, 0], replacement: '---\nversion: 1.0.0\n', description: 'Add default version' } }];
+        return [{ ruleId: 'FM004', message: 'Frontmatter is missing "version" field', severity: 'warning', line: 1, column: 1, source: ctx.filePath, fix: { range: [0, 0], replacement: '---\nversion: 2.0.0\n', description: 'Add default version' } }];
       }
       return [];
     },

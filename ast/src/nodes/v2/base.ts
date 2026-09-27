@@ -366,3 +366,83 @@ export function isModuleTypeCompatible(source: ModuleType, target: ModuleType): 
   if (parent === target) return true;
   return false;
 }
+
+// ============================================================================
+// Extended Utilities
+// ============================================================================
+
+export function isV2NodeType(value: unknown): value is V2NodeType {
+  return typeof value === 'string' && getAllNodeTypes().includes(value as V2NodeType);
+}
+
+export function createV2BaseNode(
+  type: V2NodeType,
+  location: SourceLocation,
+  metadata?: Record<string, unknown>
+): V2BaseNode {
+  const node: V2BaseNode = { type, location };
+  if (metadata !== undefined) {
+    node.metadata = metadata;
+  }
+  return node;
+}
+
+export function cloneV2Node<T extends V2BaseNode>(node: T): T {
+  const clone = { ...node };
+  clone.location = {
+    start: { ...node.location.start },
+    end: { ...node.location.end },
+    source: node.location.source,
+  };
+  if (node.metadata !== undefined) {
+    clone.metadata = { ...node.metadata };
+  }
+  return clone;
+}
+
+export function getV2NodeType(node: V2BaseNode): V2NodeType {
+  return node.type;
+}
+
+export function isModuleTypeDefinition(value: unknown): value is ModuleTypeDefinition {
+  if (typeof value !== 'object' || value === null) return false;
+  const obj = value as Record<string, unknown>;
+  return (
+    typeof obj.type === 'string' &&
+    typeof obj.description === 'string' &&
+    Array.isArray(obj.requiredFields) &&
+    Array.isArray(obj.optionalFields) &&
+    Array.isArray(obj.capabilities)
+  );
+}
+
+export function compareModuleTypes(a: ModuleType, b: ModuleType): number {
+  const categories = Object.values(NODE_TYPE_CATEGORIES);
+  const indexA = categories.findIndex((types) => types.includes(a));
+  const indexB = categories.findIndex((types) => types.includes(b));
+  if (indexA !== indexB) return indexA - indexB;
+  return a.localeCompare(b);
+}
+
+export function createModuleTypeDefinition(
+  type: ModuleType,
+  description: string,
+  options?: {
+    requiredFields?: string[];
+    optionalFields?: string[];
+    extends?: ModuleType;
+    capabilities?: string[];
+  }
+): ModuleTypeDefinition {
+  const definition: ModuleTypeDefinition = {
+    type,
+    description,
+    requiredFields: options?.requiredFields ?? [],
+    optionalFields: options?.optionalFields ?? [],
+    capabilities: options?.capabilities ?? [],
+  };
+  if (options?.extends !== undefined) {
+    definition.extends = options.extends;
+  }
+  return definition;
+}

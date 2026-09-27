@@ -210,3 +210,65 @@ export function countTestCases(node: TestsNode): number {
 export function countCompleteTestCases(node: TestsNode): number {
   return node.cases.filter((tc) => tc.input !== undefined && tc.expected !== undefined).length;
 }
+
+export function hasTestCases(node: TestsNode): boolean {
+  return node.cases.length > 0;
+}
+
+export function countTestCasesByStatus(node: TestsNode): Record<string, number> {
+  const counts: Record<string, number> = {};
+  for (const testCase of node.cases) {
+    const key = testCase.status ?? 'pending';
+    counts[key] = (counts[key] ?? 0) + 1;
+  }
+  return counts;
+}
+
+export function summarizeTestStatus(node: TestsNode): string {
+  const counts = countTestCasesByStatus(node);
+  return `Tests: ${node.cases.length} total, ${counts.pass ?? 0} pass, ${counts.fail ?? 0} fail, ${counts.pending ?? 0} pending`;
+}
+
+export function withTestCase(node: TestsNode, testCase: TestCase): TestsNode {
+  return { ...node, cases: [...node.cases, testCase] };
+}
+
+export function withoutTestCase(
+  node: TestsNode,
+  nameOrPredicate: string | ((testCase: TestCase) => boolean),
+): TestsNode {
+  const predicate =
+    typeof nameOrPredicate === 'string'
+      ? (testCase: TestCase) => testCase.name === nameOrPredicate
+      : nameOrPredicate;
+  return { ...node, cases: node.cases.filter((testCase) => !predicate(testCase)) };
+}
+
+export function cloneTestsNode(node: TestsNode, options?: { stripLocation?: boolean }): TestsNode {
+  const cloned: TestsNode = {
+    type: 'Tests',
+    cases: node.cases.map((testCase): TestCase => ({
+      ...testCase,
+      ...(testCase.tags !== undefined ? { tags: [...testCase.tags] } : {}),
+    })),
+    location: node.location,
+  };
+  if (options?.stripLocation) {
+    delete cloned.location;
+  }
+  return cloned;
+}
+
+export function mergeTestsNodes(a: TestsNode, b: TestsNode): TestsNode {
+  const cases = [...a.cases];
+  for (const testCase of b.cases) {
+    if (!cases.some((existing) => existing.name === testCase.name)) {
+      cases.push(testCase);
+    }
+  }
+  return {
+    type: 'Tests',
+    cases,
+    location: a.location ?? b.location,
+  };
+}

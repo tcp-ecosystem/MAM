@@ -195,3 +195,42 @@ export function getDefaultLogger(): Logger {
 export function setDefaultLogger(logger: Logger): void {
   _defaultLogger = logger;
 }
+
+export const LOG_LEVELS: LogLevel[] = ['debug', 'info', 'warn', 'error', 'silent'];
+
+export function isLogLevel(value: unknown): value is LogLevel {
+  return typeof value === 'string' && (LOG_LEVELS as string[]).includes(value);
+}
+
+export function compareLogLevels(a: LogLevel, b: LogLevel): number {
+  return LEVEL_ORDER[a] - LEVEL_ORDER[b];
+}
+
+export function isLevelEnabled(current: LogLevel, level: LogLevel): boolean {
+  if (current === 'silent') return false;
+  return LEVEL_ORDER[level] >= LEVEL_ORDER[current];
+}
+
+export function formatLogMessage(level: LogLevel, message: string, prefix?: string): string {
+  const tag = level.toUpperCase().padEnd(5);
+  if (prefix) {
+    return `${tag} [${prefix}] ${message}`;
+  }
+  return `${tag} ${message}`;
+}
+
+export function createSilentLogger(): Logger {
+  return new Logger({ level: 'silent' });
+}
+
+export function createMemoryLogger(options?: LoggerOptions): { logger: Logger; lines: string[] } {
+  const lines: string[] = [];
+  const stream = {
+    write(chunk: string): boolean {
+      lines.push(String(chunk));
+      return true;
+    },
+  } as unknown as NodeJS.WriteStream;
+  const logger = new Logger({ ...options, stream });
+  return { logger, lines };
+}

@@ -2,7 +2,7 @@
 # MAM Metadata
 id: rag-module
 name: RAG Module
-version: 1.0.0
+version: 2.0.0
 type: module
 
 author: MAM Team

@@ -68,7 +68,7 @@ A production `.mam.md` should follow this general structure:
 # MAM Metadata
 id: security-recon
 name: Security Reconnaissance
-version: 1.0.0
+version: 2.0.0
 type: module
 
 author: TCP Ecosystems
@@ -186,7 +186,7 @@ Example:
 ---
 id: authentication
 name: Authentication Module
-version: 1.0.0
+version: 2.0.0
 type: module
 author: TCP Ecosystems
 description: Authentication capabilities.
@@ -576,7 +576,7 @@ A module can compose other modules into a complete system.
 ---
 id: security-platform
 name: Security Platform
-version: 1.0.0
+version: 2.0.0
 type: system
 
 dependencies:

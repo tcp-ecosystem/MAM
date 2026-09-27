@@ -195,4 +195,41 @@ export class MAMServer {
     const ast = this.astCache.get(params.textDocument.uri) || null;
     return getDiagnostics(doc, ast);
   }
+
+  getDocument(uri: string): TextDocument | undefined {
+    return this.documents.get(uri);
+  }
+
+  getCachedAST(uri: string): MAMModule | undefined {
+    return this.astCache.get(uri);
+  }
+
+  getOpenUris(): string[] {
+    return Array.from(this.documents.keys());
+  }
+
+  hasDocument(uri: string): boolean {
+    return this.documents.has(uri);
+  }
+
+  getDocumentCount(): number {
+    return this.documents.size;
+  }
+
+  refreshDocument(uri: string, text: string, version?: number, languageId?: string): void {
+    const existing = this.documents.get(uri);
+    const doc = TextDocument.create(
+      uri,
+      languageId ?? existing?.languageId ?? 'mam',
+      version ?? (existing ? existing.version + 1 : 1),
+      text,
+    );
+    this.documents.set(uri, doc);
+    this.updateAST(uri, text);
+  }
+
+  clearCache(): void {
+    this.documents.clear();
+    this.astCache.clear();
+  }
 }

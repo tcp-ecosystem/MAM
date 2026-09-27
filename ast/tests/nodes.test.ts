@@ -289,6 +289,105 @@ import {
   topologicalSort,
   countWorkflowElements,
 } from '../src/nodes/workflow.js';
+import {
+  hasCapabilities,
+  countCapabilities,
+  summarizeCapabilities,
+  withCapability,
+  withoutCapability,
+  cloneCapabilitiesNode,
+  mergeCapabilitiesNodes,
+} from '../src/nodes/capabilities.js';
+import {
+  hasDependencies,
+  countDependenciesByType,
+  summarizeDependencies,
+  withDependency,
+  withoutDependency,
+  cloneDependenciesNode,
+  mergeDependenciesNodes,
+} from '../src/nodes/dependencies.js';
+import {
+  hasExamples,
+  countExamplesByTag,
+  summarizeExamples,
+  withExample,
+  withoutExample,
+  cloneExamplesNode,
+  mergeExamplesNodes,
+} from '../src/nodes/examples.js';
+import {
+  hasExports,
+  countExportsByType,
+  summarizeExports,
+  withExport,
+  withoutExport,
+  cloneExportsNode,
+  mergeExportsNodes,
+} from '../src/nodes/exports.js';
+import {
+  hasImports,
+  countImportsBySource,
+  summarizeImports,
+  withImport,
+  withoutImport,
+  cloneImportsNode,
+  mergeImportsNodes,
+} from '../src/nodes/imports.js';
+import {
+  hasInputs,
+  countInputs,
+  summarizeInputs,
+  withInput,
+  withoutInput,
+  cloneInputsNode,
+  mergeInputsNodes,
+} from '../src/nodes/inputs.js';
+import {
+  hasMemoryIndexes,
+  countMemoryIndexes,
+  summarizeMemory,
+  withMemoryIndex,
+  withoutMemoryIndex,
+  cloneMemoryNode,
+  mergeMemoryConfigurations,
+} from '../src/nodes/memory.js';
+import {
+  hasPythonFunctions,
+  countPythonElements,
+  summarizePython,
+  withPythonFunction,
+  withoutPythonFunction,
+  clonePythonNode,
+  mergePythonNodes,
+} from '../src/nodes/python.js';
+import {
+  hasReferences,
+  countReferencesByType,
+  summarizeReferences,
+  withReference,
+  withoutReference,
+  cloneReferencesNode,
+  mergeReferencesNodes,
+} from '../src/nodes/references.js';
+import {
+  hasRules,
+  countRulesByPriority,
+  summarizeRules,
+  withRule,
+  withoutRule,
+  cloneRulesNode,
+  mergeRulesNodes,
+} from '../src/nodes/rules.js';
+import {
+  hasTestCases,
+  countTestCasesByStatus,
+  summarizeTestStatus,
+  withTestCase,
+  withoutTestCase,
+  cloneTestsNode,
+  mergeTestsNodes,
+} from '../src/nodes/tests.js';
 
 function loc() {
   return createLocation(1, 0, 0, 10, 5, 100, 'test.mam.md');
@@ -1919,5 +2018,392 @@ describe('WorkflowNode', () => {
     const counts = countWorkflowElements(node);
     expect(counts.steps).toBe(2);
     expect(counts.edges).toBe(1);
+  });
+});
+
+describe('Section Node Helper Additions', () => {
+  it('should support capabilities has/count/summarize/with/without/clone/merge immutably', () => {
+    const node = createCapabilitiesNode({
+      capabilities: [createCapability('chat')],
+      location: loc(),
+    });
+    expect(hasCapabilities(node)).toBe(true);
+    expect(hasCapabilities(createCapabilitiesNode())).toBe(false);
+    expect(countCapabilities(node)).toBe(1);
+    expect(countCapabilities(createCapabilitiesNode())).toBe(0);
+    expect(summarizeCapabilities(node)).toContain('chat');
+    expect(summarizeCapabilities(createCapabilitiesNode())).toBe('0 capabilities');
+    const added = withCapability(node, createCapability('draw'));
+    expect(countCapabilities(added)).toBe(2);
+    expect(countCapabilities(node)).toBe(1);
+    const removed = withoutCapability(added, 'chat');
+    expect(getCapabilityNames(removed)).toEqual(['draw']);
+    expect(getCapabilityNames(node)).toEqual(['chat']);
+    const cloned = cloneCapabilitiesNode(node);
+    expect(cloned).not.toBe(node);
+    expect(cloned.capabilities).not.toBe(node.capabilities);
+    cloned.capabilities[0].name = 'changed';
+    expect(node.capabilities[0].name).toBe('chat');
+    const stripped = cloneCapabilitiesNode(node, { stripLocation: true });
+    expect(stripped.location).toBeUndefined();
+    expect(node.location).toBeDefined();
+    const merged = mergeCapabilitiesNodes(
+      node,
+      createCapabilitiesNode({ capabilities: [createCapability('draw')] }),
+    );
+    expect(countCapabilities(merged)).toBe(2);
+    expect(countCapabilities(node)).toBe(1);
+  });
+
+  it('should support dependencies has/countByType/with/without/clone/merge immutably', () => {
+    const node = createDependenciesNode({
+      dependencies: [
+        createDependency('lodash', { version: '^4.0.0', type: 'runtime' }),
+        createDependency('pytest', { type: 'test', optional: true }),
+      ],
+      location: loc(),
+    });
+    expect(hasDependencies(node)).toBe(true);
+    expect(hasDependencies(createDependenciesNode())).toBe(false);
+    expect(countDependenciesByType(node, 'runtime')).toBe(1);
+    expect(countDependenciesByType(node, 'test')).toBe(1);
+    expect(countDependenciesByType(node, 'build')).toBe(0);
+    expect(summarizeDependencies(node)).toContain('lodash@^4.0.0');
+    expect(summarizeDependencies(createDependenciesNode())).toBe('0 dependencies');
+    const added = withDependency(node, createDependency('zod', { type: 'runtime' }));
+    expect(added.dependencies).toHaveLength(3);
+    expect(node.dependencies).toHaveLength(2);
+    const removed = withoutDependency(added, 'lodash');
+    expect(getDependencyNames(removed)).toEqual(['pytest', 'zod']);
+    expect(getDependencyNames(node)).toEqual(['lodash', 'pytest']);
+    const cloned = cloneDependenciesNode(node, { stripLocation: true });
+    expect(cloned.location).toBeUndefined();
+    expect(node.location).toBeDefined();
+    cloned.dependencies[0].name = 'changed';
+    expect(node.dependencies[0].name).toBe('lodash');
+    const merged = mergeDependenciesNodes(
+      createDependenciesNode({ dependencies: [createDependency('a')] }),
+      createDependenciesNode({ dependencies: [createDependency('b')] }),
+    );
+    expect(getDependencyNames(merged)).toEqual(['a', 'b']);
+  });
+
+  it('should support examples has/countByTag/with/without/clone/merge immutably', () => {
+    const node = createExamplesNode({
+      examples: [
+        createExampleEntry('Basic', 'in', { tags: ['fast'] }),
+        createExampleEntry('Slow', 'in', { tags: ['slow', 'fast'] }),
+      ],
+      location: loc(),
+    });
+    expect(hasExamples(node)).toBe(true);
+    expect(hasExamples(createExamplesNode())).toBe(false);
+    expect(countExamplesByTag(node, 'fast')).toBe(2);
+    expect(countExamplesByTag(node, 'slow')).toBe(1);
+    expect(summarizeExamples(node)).toContain('2 examples: Basic, Slow');
+    expect(summarizeExamples(createExamplesNode())).toBe('0 examples');
+    const added = withExample(node, createExampleEntry('Extra', 'in'));
+    expect(added.examples).toHaveLength(3);
+    expect(node.examples).toHaveLength(2);
+    const removed = withoutExample(added, 'Slow');
+    expect(getExampleTitles(removed)).toEqual(['Basic', 'Extra']);
+    expect(getExampleTitles(node)).toEqual(['Basic', 'Slow']);
+    const cloned = cloneExamplesNode(node, { stripLocation: true });
+    expect(cloned.location).toBeUndefined();
+    expect(node.location).toBeDefined();
+    cloned.examples[0].tags!.push('new-tag');
+    expect(node.examples[0].tags).toEqual(['fast']);
+    const merged = mergeExamplesNodes(
+      createExamplesNode({ examples: [createExampleEntry('A', 'i')] }),
+      createExamplesNode({ examples: [createExampleEntry('B', 'i')] }),
+    );
+    expect(getExampleTitles(merged)).toEqual(['A', 'B']);
+  });
+
+  it('should support exports has/countByType/summarize/with/without/clone/merge immutably', () => {
+    const node = createExportsNode({
+      items: [
+        createExportItem('run', { type: 'function' }),
+        createExportItem('Client', { type: 'class' }),
+        createExportItem('VERSION', { type: 'constant' }),
+      ],
+      location: loc(),
+    });
+    expect(hasExports(node)).toBe(true);
+    expect(hasExports(createExportsNode())).toBe(false);
+    expect(countExportsByType(node, 'function')).toBe(1);
+    expect(countExportsByType(node, 'class')).toBe(1);
+    expect(countExportsByType(node, 'enum')).toBe(0);
+    expect(summarizeExports(node)).toContain('run (function)');
+    expect(summarizeExports(createExportsNode())).toBe('0 exports');
+    const added = withExport(node, createExportItem('helper', { type: 'function' }));
+    expect(added.items).toHaveLength(4);
+    expect(node.items).toHaveLength(3);
+    const removed = withoutExport(added, 'run');
+    expect(getExportNames(removed)).toEqual(['Client', 'VERSION', 'helper']);
+    expect(getExportNames(node)).toEqual(['run', 'Client', 'VERSION']);
+    const cloned = cloneExportsNode(node, { stripLocation: true });
+    expect(cloned.location).toBeUndefined();
+    expect(node.location).toBeDefined();
+    cloned.items[0].name = 'changed';
+    expect(node.items[0].name).toBe('run');
+    const merged = mergeExportsNodes(
+      createExportsNode({ items: [createExportItem('a')] }),
+      createExportsNode({ items: [createExportItem('b')] }),
+    );
+    expect(getExportNames(merged)).toEqual(['a', 'b']);
+  });
+
+  it('should support imports has/countBySource/with/without/clone/merge immutably', () => {
+    const node = createImportsNode({
+      items: [
+        createImportItem('React', 'react'),
+        createImportItem('useState', 'react'),
+      ],
+      location: loc(),
+    });
+    expect(hasImports(node)).toBe(true);
+    expect(hasImports(createImportsNode())).toBe(false);
+    expect(countImportsBySource(node, 'react')).toBe(2);
+    expect(countImportsBySource(node, 'vue')).toBe(0);
+    expect(summarizeImports(node)).toContain('React from "react"');
+    expect(summarizeImports(createImportsNode())).toBe('0 imports');
+    const added = withImport(node, createImportItem('readFile', 'node:fs'));
+    expect(added.items).toHaveLength(3);
+    expect(node.items).toHaveLength(2);
+    const removed = withoutImport(added, 'React');
+    expect(getImportNames(removed)).toEqual(['useState', 'readFile']);
+    expect(getImportNames(node)).toEqual(['React', 'useState']);
+    const cloned = cloneImportsNode(node, { stripLocation: true });
+    expect(cloned.location).toBeUndefined();
+    expect(node.location).toBeDefined();
+    cloned.items[0].name = 'changed';
+    expect(node.items[0].name).toBe('React');
+    const merged = mergeImportsNodes(
+      createImportsNode({ items: [createImportItem('a', 's1')] }),
+      createImportsNode({ items: [createImportItem('b', 's2')] }),
+    );
+    expect(getImportNames(merged)).toEqual(['a', 'b']);
+  });
+
+  it('should support inputs has/count/summarize/with/without/clone/merge immutably', () => {
+    const node = createInputsNode({
+      ports: [
+        createInputPort('query', 'string', true),
+        createInputPort('limit', 'number'),
+      ],
+      location: loc(),
+    });
+    expect(hasInputs(node)).toBe(true);
+    expect(hasInputs(createInputsNode())).toBe(false);
+    expect(countInputs(node)).toBe(2);
+    expect(countInputs(createInputsNode())).toBe(0);
+    expect(summarizeInputs(node)).toContain('query: string (required)');
+    expect(summarizeInputs(createInputsNode())).toBe('0 inputs');
+    const added = withInput(node, createInputPort('page', 'number'));
+    expect(added.ports).toHaveLength(3);
+    expect(node.ports).toHaveLength(2);
+    const removed = withoutInput(added, 'limit');
+    expect(getInputPortNames(removed)).toEqual(['query', 'page']);
+    expect(getInputPortNames(node)).toEqual(['query', 'limit']);
+    const cloned = cloneInputsNode(node, { stripLocation: true });
+    expect(cloned.location).toBeUndefined();
+    expect(node.location).toBeDefined();
+    cloned.ports[0].name = 'changed';
+    expect(node.ports[0].name).toBe('query');
+    const merged = mergeInputsNodes(
+      createInputsNode({ ports: [createInputPort('p1', 'string')] }),
+      createInputsNode({ ports: [createInputPort('p2', 'number')] }),
+    );
+    expect(getInputPortNames(merged)).toEqual(['p1', 'p2']);
+  });
+
+  it('should support memory indexes has/count/with/without/clone/merge immutably', () => {
+    const node = createMemoryNode({
+      format: 'vector',
+      backend: 'chroma',
+      scope: 'module',
+      ttl: '7d',
+      indexes: [createMemoryIndex('by_id', ['id'])],
+      configuration: [createMemoryConfiguration('timeout', '30s')],
+      location: loc(),
+    });
+    expect(hasMemoryIndexes(node)).toBe(true);
+    expect(hasMemoryIndexes(createMemoryNode())).toBe(false);
+    expect(countMemoryIndexes(node)).toBe(1);
+    expect(countMemoryIndexes(createMemoryNode())).toBe(0);
+    expect(summarizeMemory(node)).toContain('format=vector');
+    expect(summarizeMemory(node)).toContain('1 indexes');
+    const added = withMemoryIndex(node, createMemoryIndex('by_tag', ['tag']));
+    expect(countMemoryIndexes(added)).toBe(2);
+    expect(countMemoryIndexes(node)).toBe(1);
+    const removed = withoutMemoryIndex(added, 'by_id');
+    expect(getIndexNames(removed)).toEqual(['by_tag']);
+    expect(getIndexNames(node)).toEqual(['by_id']);
+    const cloned = cloneMemoryNode(node, { stripLocation: true });
+    expect(cloned.location).toBeUndefined();
+    expect(node.location).toBeDefined();
+    cloned.indexes![0].fields.push('extra');
+    expect(node.indexes![0].fields).toEqual(['id']);
+    const merged = mergeMemoryConfigurations(
+      createMemoryNode({ configuration: [createMemoryConfiguration('a', '1')] }),
+      createMemoryNode({
+        configuration: [
+          createMemoryConfiguration('a', '2'),
+          createMemoryConfiguration('b', '3'),
+        ],
+      }),
+    );
+    expect(getConfigurationKeys(merged)).toEqual(['a', 'b']);
+    expect(merged.configuration![0].value).toBe('2');
+  });
+
+  it('should support python functions has/count/with/without/clone/merge immutably', () => {
+    const node = createPythonNode({
+      code: 'import os\ndef foo(): pass\nclass Bar: pass',
+      imports: [createPythonImport('os')],
+      functions: [createPythonFunction('foo', { parameters: ['x'] })],
+      classes: [createPythonClass('Bar')],
+      location: loc(),
+    });
+    expect(hasPythonFunctions(node)).toBe(true);
+    expect(hasPythonFunctions(createPythonNode({ code: 'x = 1' }))).toBe(false);
+    expect(countPythonElements(node)).toBe(3);
+    expect(countPythonElements(createPythonNode({ code: 'x = 1' }))).toBe(0);
+    expect(summarizePython(node)).toContain('3 lines');
+    expect(summarizePython(node)).toContain('1 functions');
+    const added = withPythonFunction(node, createPythonFunction('bar'));
+    expect(added.functions).toHaveLength(2);
+    expect(node.functions).toHaveLength(1);
+    const removed = withoutPythonFunction(added, 'foo');
+    expect(getFunctionNames(removed)).toEqual(['bar']);
+    expect(getFunctionNames(node)).toEqual(['foo']);
+    const cloned = clonePythonNode(node, { stripLocation: true });
+    expect(cloned.location).toBeUndefined();
+    expect(node.location).toBeDefined();
+    cloned.functions![0].parameters!.push('y');
+    expect(node.functions![0].parameters).toEqual(['x']);
+    const merged = mergePythonNodes(
+      createPythonNode({
+        code: 'a',
+        imports: [createPythonImport('os')],
+        functions: [createPythonFunction('shared')],
+      }),
+      createPythonNode({
+        code: 'b',
+        imports: [createPythonImport('os')],
+        functions: [createPythonFunction('shared'), createPythonFunction('extra')],
+      }),
+    );
+    expect(getFunctionNames(merged)).toEqual(['shared', 'extra']);
+    expect(getImportModuleNames(merged)).toEqual(['os']);
+    expect(merged.code).toBe('b');
+  });
+
+  it('should support references has/countByType/summarize/with/without/clone/merge immutably', () => {
+    const node = createReferencesNode({
+      references: [
+        createReference('Docs', {
+          url: 'https://example.com',
+          type: 'documentation',
+          tags: ['guide'],
+        }),
+        createReference('Paper', { type: 'paper' }),
+      ],
+      location: loc(),
+    });
+    expect(hasReferences(node)).toBe(true);
+    expect(hasReferences(createReferencesNode())).toBe(false);
+    const counts = countReferencesByType(node);
+    expect(counts.documentation).toBe(1);
+    expect(counts.paper).toBe(1);
+    expect(summarizeReferences(node)).toContain('2 total');
+    const added = withReference(node, createReference('Spec'));
+    expect(added.references).toHaveLength(3);
+    expect(node.references).toHaveLength(2);
+    const removed = withoutReference(added, 'docs');
+    expect(getReferenceTitles(removed)).toEqual(['Paper', 'Spec']);
+    expect(getReferenceTitles(node)).toEqual(['Docs', 'Paper']);
+    const cloned = cloneReferencesNode(node, { stripLocation: true });
+    expect(cloned.location).toBeUndefined();
+    expect(node.location).toBeDefined();
+    cloned.references[0].tags!.push('extra');
+    expect(node.references[0].tags).toEqual(['guide']);
+    const merged = mergeReferencesNodes(
+      createReferencesNode({ references: [createReference('A')] }),
+      createReferencesNode({ references: [createReference('a'), createReference('B')] }),
+    );
+    expect(getReferenceTitles(merged)).toEqual(['A', 'B']);
+  });
+
+  it('should support rules has/countByPriority/summarize/with/without/clone/merge immutably', () => {
+    const node = createRulesNode({
+      rules: [
+        createRule('Always validate', { priority: 'critical', tags: ['core'] }),
+        createRule('Keep it simple', { priority: 'low', active: false }),
+        createRule('Document APIs', { priority: 'medium' }),
+      ],
+      location: loc(),
+    });
+    expect(hasRules(node)).toBe(true);
+    expect(hasRules(createRulesNode())).toBe(false);
+    const counts = countRulesByPriority(node);
+    expect(counts.critical).toBe(1);
+    expect(counts.low).toBe(1);
+    expect(counts.medium).toBe(1);
+    expect(summarizeRules(node)).toContain('3 total');
+    expect(summarizeRules(node)).toContain('1 critical');
+    const added = withRule(node, createRule('New rule', { priority: 'high' }));
+    expect(added.rules).toHaveLength(4);
+    expect(node.rules).toHaveLength(3);
+    const removed = withoutRule(added, 'Keep it simple');
+    expect(removed.rules).toHaveLength(3);
+    expect(node.rules).toHaveLength(3);
+    const cloned = cloneRulesNode(node, { stripLocation: true });
+    expect(cloned.location).toBeUndefined();
+    expect(node.location).toBeDefined();
+    cloned.rules[0].tags!.push('x');
+    cloned.rules[0].text = 'changed';
+    expect(node.rules[0].text).toBe('Always validate');
+    expect(node.rules[0].tags).toEqual(['core']);
+    const merged = mergeRulesNodes(
+      createRulesNode({ rules: [createRule('One')] }),
+      createRulesNode({ rules: [createRule('One'), createRule('Two')] }),
+    );
+    expect(merged.rules.map((r) => r.text)).toEqual(['One', 'Two']);
+  });
+
+  it('should support test cases has/countByStatus/summarize/with/without/clone/merge immutably', () => {
+    const node = createTestsNode({
+      cases: [
+        createTestCase('happy', { status: 'pass', tags: ['unit'] }),
+        createTestCase('broken', { status: 'fail' }),
+        createTestCase('later', { status: 'pending' }),
+      ],
+      location: loc(),
+    });
+    expect(hasTestCases(node)).toBe(true);
+    expect(hasTestCases(createTestsNode())).toBe(false);
+    const counts = countTestCasesByStatus(node);
+    expect(counts.pass).toBe(1);
+    expect(counts.fail).toBe(1);
+    expect(counts.pending).toBe(1);
+    expect(summarizeTestStatus(node)).toBe('Tests: 3 total, 1 pass, 1 fail, 1 pending');
+    const added = withTestCase(node, createTestCase('extra'));
+    expect(added.cases).toHaveLength(4);
+    expect(node.cases).toHaveLength(3);
+    const removed = withoutTestCase(added, 'broken');
+    expect(getTestCaseNames(removed)).toEqual(['happy', 'later', 'extra']);
+    expect(getTestCaseNames(node)).toEqual(['happy', 'broken', 'later']);
+    const cloned = cloneTestsNode(node, { stripLocation: true });
+    expect(cloned.location).toBeUndefined();
+    expect(node.location).toBeDefined();
+    cloned.cases[0].tags!.push('x');
+    expect(node.cases[0].tags).toEqual(['unit']);
+    const merged = mergeTestsNodes(
+      createTestsNode({ cases: [createTestCase('a')] }),
+      createTestsNode({ cases: [createTestCase('a'), createTestCase('b')] }),
+    );
+    expect(getTestCaseNames(merged)).toEqual(['a', 'b']);
   });
 });

@@ -294,3 +294,73 @@ export function spanToLineRange(span: SourceSpan): string {
   if (span.start.line === span.end.line) return `line ${span.start.line}`;
   return `lines ${span.start.line}-${span.end.line}`;
 }
+
+export function isValidSpan(span: SourceSpan): boolean {
+  if (!Number.isFinite(span.start.line) || !Number.isFinite(span.start.column)) return false;
+  if (!Number.isFinite(span.end.line) || !Number.isFinite(span.end.column)) return false;
+  if (span.start.line < 1 || span.end.line < 1) return false;
+  if (span.start.column < 0 || span.end.column < 0) return false;
+  if (span.start.line > span.end.line) return false;
+  if (span.start.line === span.end.line && span.start.column > span.end.column) return false;
+  return true;
+}
+
+export function spanContainsSpan(outer: SourceSpan, inner: SourceSpan): boolean {
+  return (
+    spanContains(outer, inner.start.line, inner.start.column) &&
+    spanContains(outer, inner.end.line, inner.end.column)
+  );
+}
+
+export function spanIntersection(a: SourceSpan, b: SourceSpan): SourceSpan | null {
+  const start = pointMax(a.start, b.start);
+  const end = pointMin(a.end, b.end);
+  if (start.line > end.line || (start.line === end.line && start.column > end.column)) {
+    return null;
+  }
+  return {
+    start: { line: start.line, column: start.column },
+    end: { line: end.line, column: end.column },
+  };
+}
+
+export function spanGrow(span: SourceSpan, lineDelta: number, columnDelta: number = 0): SourceSpan {
+  return {
+    start: {
+      line: Math.max(1, span.start.line - lineDelta),
+      column: Math.max(0, span.start.column - columnDelta),
+    },
+    end: {
+      line: span.end.line + lineDelta,
+      column: Math.max(0, span.end.column + columnDelta),
+    },
+  };
+}
+
+export function spanIsBefore(a: SourceSpan, b: SourceSpan): boolean {
+  if (a.end.line !== b.start.line) return a.end.line < b.start.line;
+  return a.end.column < b.start.column;
+}
+
+export function sortSpans(spans: SourceSpan[]): SourceSpan[] {
+  return [...spans].sort(spanCompare);
+}
+
+export function spanFromOffsets(text: string, start: number, end: number): SourceSpan {
+  const from = Math.max(0, Math.min(Math.min(start, end), text.length));
+  const to = Math.max(0, Math.min(Math.max(start, end), text.length));
+  return {
+    start: offsetToPosition(text, from),
+    end: offsetToPosition(text, to),
+  };
+}
+
+function pointMax(p: SourcePosition, q: SourcePosition): SourcePosition {
+  if (q.line > p.line || (q.line === p.line && q.column > p.column)) return q;
+  return p;
+}
+
+function pointMin(p: SourcePosition, q: SourcePosition): SourcePosition {
+  if (q.line < p.line || (q.line === p.line && q.column < p.column)) return q;
+  return p;
+}

@@ -189,3 +189,69 @@ export function hasExport(node: ExportsNode, name: string): boolean {
 export function countExports(node: ExportsNode): number {
   return node.items.length;
 }
+
+export function hasExports(node: ExportsNode): boolean {
+  return node.items.length > 0;
+}
+
+export function countExportsByType(node: ExportsNode, type: ExportType): number {
+  return node.items.filter((item) => item.type === type).length;
+}
+
+export function summarizeExports(node: ExportsNode): string {
+  const parts = node.items.map((item) =>
+    item.type ? `${item.name} (${item.type})` : item.name,
+  );
+  if (parts.length === 0) {
+    return '0 exports';
+  }
+  return `${parts.length} exports: ${parts.join(', ')}`;
+}
+
+export function withExport(node: ExportsNode, item: ExportItem): ExportsNode {
+  return {
+    ...node,
+    items: [...node.items, item],
+  };
+}
+
+export function withoutExport(
+  node: ExportsNode,
+  match: string | ((item: ExportItem) => boolean),
+): ExportsNode {
+  const remove =
+    typeof match === 'string'
+      ? (item: ExportItem) => item.name === match
+      : match;
+  return {
+    ...node,
+    items: node.items.filter((item) => !remove(item)),
+  };
+}
+
+export function cloneExportsNode(
+  node: ExportsNode,
+  options: { stripLocation?: boolean } = {},
+): ExportsNode {
+  const copy: ExportsNode = {
+    ...node,
+    items: node.items.map((item) => ({ ...item })),
+  };
+  if (options.stripLocation) {
+    delete copy.location;
+  } else if (copy.location) {
+    copy.location = {
+      source: copy.location.source,
+      start: { ...copy.location.start },
+      end: { ...copy.location.end },
+    };
+  }
+  return copy;
+}
+
+export function mergeExportsNodes(a: ExportsNode, b: ExportsNode): ExportsNode {
+  return {
+    ...a,
+    items: [...a.items, ...b.items],
+  };
+}

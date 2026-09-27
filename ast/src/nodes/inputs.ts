@@ -235,3 +235,78 @@ export function summarizeInputPorts(node: InputsNode): string {
     .map((p) => `${p.name}: ${p.type}${p.required ? ' (required)' : ''}`)
     .join(', ');
 }
+
+export function hasInputs(node: InputsNode): boolean {
+  return node.ports.length > 0;
+}
+
+export function countInputs(node: InputsNode): number {
+  return node.ports.length;
+}
+
+export function summarizeInputs(node: InputsNode): string {
+  const parts = node.ports.map(
+    (port) => `${port.name}: ${port.type}${port.required ? ' (required)' : ''}`,
+  );
+  if (parts.length === 0) {
+    return '0 inputs';
+  }
+  return `${parts.length} inputs: ${parts.join(', ')}`;
+}
+
+export function withInput(node: InputsNode, port: InputPort): InputsNode {
+  return {
+    ...node,
+    ports: [...node.ports, port],
+  };
+}
+
+export function withoutInput(
+  node: InputsNode,
+  match: string | ((port: InputPort) => boolean),
+): InputsNode {
+  const remove =
+    typeof match === 'string'
+      ? (port: InputPort) => port.name === match
+      : match;
+  return {
+    ...node,
+    ports: node.ports.filter((port) => !remove(port)),
+  };
+}
+
+export function cloneInputsNode(
+  node: InputsNode,
+  options: { stripLocation?: boolean } = {},
+): InputsNode {
+  const copy: InputsNode = {
+    ...node,
+    ports: node.ports.map((port) => {
+      const next: InputPort = { ...port };
+      if (port.validation) {
+        next.validation = { ...port.validation };
+        if (port.validation.enum) {
+          next.validation.enum = [...port.validation.enum];
+        }
+      }
+      return next;
+    }),
+  };
+  if (options.stripLocation) {
+    delete copy.location;
+  } else if (copy.location) {
+    copy.location = {
+      source: copy.location.source,
+      start: { ...copy.location.start },
+      end: { ...copy.location.end },
+    };
+  }
+  return copy;
+}
+
+export function mergeInputsNodes(a: InputsNode, b: InputsNode): InputsNode {
+  return {
+    ...a,
+    ports: [...a.ports, ...b.ports],
+  };
+}

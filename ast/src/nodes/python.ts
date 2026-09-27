@@ -292,3 +292,127 @@ export function getRequiredPackages(node: PythonNode): string[] {
   }
   return Array.from(packages);
 }
+
+export function hasPythonFunctions(node: PythonNode): boolean {
+  return (node.functions?.length ?? 0) > 0;
+}
+
+export function countPythonElements(node: PythonNode): number {
+  return (node.imports?.length ?? 0) + (node.functions?.length ?? 0) + (node.classes?.length ?? 0);
+}
+
+export function summarizePython(node: PythonNode): string {
+  return `Python: ${countLines(node)} lines, ${node.imports?.length ?? 0} imports, ${node.functions?.length ?? 0} functions, ${node.classes?.length ?? 0} classes`;
+}
+
+export function withPythonFunction(node: PythonNode, fn: PythonFunction): PythonNode {
+  return { ...node, functions: [...(node.functions ?? []), fn] };
+}
+
+export function withoutPythonFunction(
+  node: PythonNode,
+  nameOrPredicate: string | ((fn: PythonFunction) => boolean),
+): PythonNode {
+  const predicate =
+    typeof nameOrPredicate === 'string'
+      ? (fn: PythonFunction) => fn.name === nameOrPredicate
+      : nameOrPredicate;
+  return { ...node, functions: (node.functions ?? []).filter((fn) => !predicate(fn)) };
+}
+
+export function clonePythonNode(
+  node: PythonNode,
+  options?: { stripLocation?: boolean },
+): PythonNode {
+  const cloned: PythonNode = {
+    type: 'Python',
+    code: node.code,
+    imports: node.imports?.map((imp): PythonImport => ({
+      ...imp,
+      ...(imp.names !== undefined ? { names: [...imp.names] } : {}),
+    })),
+    functions: node.functions?.map((fn): PythonFunction => ({
+      ...fn,
+      ...(fn.parameters !== undefined ? { parameters: [...fn.parameters] } : {}),
+      ...(fn.decorators !== undefined ? { decorators: [...fn.decorators] } : {}),
+    })),
+    classes: node.classes?.map((cls): PythonClass => ({
+      ...cls,
+      ...(cls.bases !== undefined ? { bases: [...cls.bases] } : {}),
+      ...(cls.methods !== undefined ? { methods: [...cls.methods] } : {}),
+      ...(cls.decorators !== undefined ? { decorators: [...cls.decorators] } : {}),
+    })),
+    execution: node.execution
+      ? {
+          ...node.execution,
+          ...(node.execution.packages !== undefined
+            ? { packages: [...node.execution.packages] }
+            : {}),
+          ...(node.execution.env !== undefined ? { env: { ...node.execution.env } } : {}),
+        }
+      : undefined,
+    fileName: node.fileName,
+    executable: node.executable,
+    location: node.location,
+  };
+  if (options?.stripLocation) {
+    delete cloned.location;
+  }
+  return cloned;
+}
+
+export function mergePythonNodes(a: PythonNode, b: PythonNode): PythonNode {
+  const imports = [...(a.imports ?? [])];
+  for (const imp of b.imports ?? []) {
+    if (
+      !imports.some(
+        (existing) =>
+          existing.module === imp.module && existing.kind === imp.kind && existing.alias === imp.alias,
+      )
+    ) {
+      imports.push(imp);
+    }
+  }
+  const functions = [...(a.functions ?? [])];
+  for (const fn of b.functions ?? []) {
+    if (!functions.some((existing) => existing.name === fn.name)) {
+      functions.push(fn);
+    }
+  }
+  const classes = [...(a.classes ?? [])];
+  for (const cls of b.classes ?? []) {
+    if (!classes.some((existing) => existing.name === cls.name)) {
+      classes.push(cls);
+    }
+  }
+  const packages =
+    a.execution?.packages !== undefined || b.execution?.packages !== undefined
+      ? Array.from(new Set([...(a.execution?.packages ?? []), ...(b.execution?.packages ?? [])]))
+      : undefined;
+  const env =
+    a.execution?.env !== undefined || b.execution?.env !== undefined
+      ? { ...a.execution?.env, ...b.execution?.env }
+      : undefined;
+  const execution: PythonExecutionConfig | undefined =
+    a.execution !== undefined || b.execution !== undefined
+      ? {
+          timeout: b.execution?.timeout ?? a.execution?.timeout,
+          memory: b.execution?.memory ?? a.execution?.memory,
+          packages,
+          env,
+          workingDir: b.execution?.workingDir ?? a.execution?.workingDir,
+          captureOutput: b.execution?.captureOutput ?? a.execution?.captureOutput,
+        }
+      : undefined;
+  return {
+    type: 'Python',
+    code: b.code,
+    imports,
+    functions,
+    classes,
+    execution,
+    fileName: b.fileName ?? a.fileName,
+    executable: b.executable ?? a.executable,
+    location: a.location ?? b.location,
+  };
+}

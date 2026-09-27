@@ -298,3 +298,92 @@ export function mergeMetadataNodes(base: MetadataNode, override: MetadataNode): 
     location: override.location ?? base.location,
   };
 }
+
+export function hasMetadataPermissions(node: MetadataNode): boolean {
+  return (node.permissions?.length ?? 0) > 0;
+}
+
+export function countMetadataPermissions(node: MetadataNode): number {
+  return node.permissions?.length ?? 0;
+}
+
+export function summarizeMetadata(node: MetadataNode): string {
+  const header = [
+    node.name ?? node.id,
+    node.version ? `v${node.version}` : undefined,
+    node.runtime,
+  ]
+    .filter((part): part is string => typeof part === 'string' && part.length > 0)
+    .join(' ');
+  const tags = (node.tags ?? []).length;
+  const permissions = (node.permissions ?? []).length;
+  const dependencies = (node.dependencies ?? []).length;
+  return `${header || 'Metadata'} (${tags} tags, ${permissions} permissions, ${dependencies} dependencies)`;
+}
+
+export function withMetadataPermission(
+  node: MetadataNode,
+  permission: MetadataPermission,
+): MetadataNode {
+  return {
+    ...node,
+    permissions: [...(node.permissions ?? []), permission],
+  };
+}
+
+export function withoutMetadataPermission(
+  node: MetadataNode,
+  resourceOrPredicate: string | ((permission: MetadataPermission) => boolean),
+): MetadataNode {
+  if (!node.permissions) {
+    return { ...node };
+  }
+  const predicate =
+    typeof resourceOrPredicate === 'string'
+      ? (permission: MetadataPermission) => permission.resource === resourceOrPredicate
+      : resourceOrPredicate;
+  return {
+    ...node,
+    permissions: node.permissions.filter((permission) => !predicate(permission)),
+  };
+}
+
+export function cloneMetadataNode(
+  node: MetadataNode,
+  options?: { stripLocation?: boolean },
+): MetadataNode {
+  const clone: MetadataNode = { ...node };
+  if (node.tags) {
+    clone.tags = [...node.tags];
+  }
+  if (node.permissions) {
+    clone.permissions = node.permissions.map((permission) => ({ ...permission }));
+  }
+  if (node.dependencies) {
+    clone.dependencies = node.dependencies.map((dependency) => ({ ...dependency }));
+  }
+  if (node.custom) {
+    clone.custom = { ...node.custom };
+  }
+  if (options?.stripLocation) {
+    delete clone.location;
+  }
+  return clone;
+}
+
+export function mergeMetadataPermissions(a: MetadataNode, b: MetadataNode): MetadataPermission[] {
+  const merged = (a.permissions ?? []).map((permission) => ({ ...permission }));
+  const index = new Map<string, number>(
+    merged.map((permission, i): [string, number] => [permission.resource, i]),
+  );
+  for (const permission of b.permissions ?? []) {
+    const existing = index.get(permission.resource);
+    if (existing !== undefined) {
+      merged[existing] = { ...permission };
+    } else {
+      index.set(permission.resource, merged.length);
+      merged.push({ ...permission });
+    }
+  }
+  return merged;
+}

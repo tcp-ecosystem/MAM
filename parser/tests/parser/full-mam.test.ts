@@ -12,7 +12,7 @@ import { parseMAM } from '../../src/index.js';
 const FULL_MAM = `---
 id: security-recon
 name: Security Reconnaissance
-version: 1.0.0
+version: 2.0.0
 type: module
 author: TCP Ecosystems
 description: >

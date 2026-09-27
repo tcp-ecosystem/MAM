@@ -342,3 +342,68 @@ function deduplicateReferences(refs: Location[]): Location[] {
 
   return result;
 }
+
+export function countReferences(
+  uri: string,
+  position: { line: number; character: number },
+  document: TextDocument,
+  ast: MAMModule | null,
+  includeDeclaration: boolean,
+): number {
+  return getReferences(uri, position, document, ast, includeDeclaration).length;
+}
+
+export function hasReferences(
+  uri: string,
+  position: { line: number; character: number },
+  document: TextDocument,
+  ast: MAMModule | null,
+  includeDeclaration: boolean,
+): boolean {
+  return countReferences(uri, position, document, ast, includeDeclaration) > 0;
+}
+
+export function findWordReferences(
+  uri: string,
+  word: string,
+  document: TextDocument,
+  ast: MAMModule | null,
+  includeDeclaration: boolean,
+): Location[] {
+  const text = document.getText();
+  const refs: Location[] = [];
+  refs.push(...findSectionReferences(uri, word, text, ast, includeDeclaration));
+  refs.push(...findModuleReferences(uri, word, text, includeDeclaration));
+  refs.push(...findFunctionReferences(uri, word, text, ast, includeDeclaration));
+  refs.push(...findVariableReferencesAll(uri, word, text, { line: -1, character: 0 }, includeDeclaration));
+  return deduplicateReferences(refs);
+}
+
+export function groupReferencesByLine(refs: Location[]): Map<number, Location[]> {
+  const groups = new Map<number, Location[]>();
+  for (const ref of refs) {
+    const line = ref.range.start.line;
+    let group = groups.get(line);
+    if (group === undefined) {
+      group = [];
+      groups.set(line, group);
+    }
+    group.push(ref);
+  }
+  return groups;
+}
+
+export function sortReferencesByPosition(refs: Location[]): Location[] {
+  return [...refs].sort((a, b) =>
+    a.range.start.line - b.range.start.line ||
+    a.range.start.character - b.range.start.character,
+  );
+}
+
+export function deduplicateLocations(refs: Location[]): Location[] {
+  return deduplicateReferences(refs);
+}
+
+export function escapeReferencePattern(str: string): string {
+  return escapeRegex(str);
+}

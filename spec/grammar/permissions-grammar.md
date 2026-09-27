@@ -1,5 +1,5 @@
 # MAM Permissions Grammar
-# Version: 1.0.0
+# version: 2.0.0
 # Human readable specification of the permissions section
 
 ## Description

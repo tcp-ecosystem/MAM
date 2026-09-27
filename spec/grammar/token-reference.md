@@ -1,5 +1,5 @@
 ﻿# MAM Token Reference
-# Version: 1.0.0
+# version: 2.0.0
 # Complete token reference with regex patterns and lexer rules
 
 # ============================================================================

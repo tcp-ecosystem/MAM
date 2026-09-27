@@ -10,7 +10,7 @@
  * Id: multi-agent-debate
  * Name: Multi-Agent Debate System
  * Type: module
- * Version: 1.0.0
+ * version: 2.0.0
  * Author: MAM Team
  * License: MIT
  * Description: A structured debate system where an Advocate argues FOR a proposition, an Opponent argues AGAINST it, and a Judge evaluates both arguments to produce a balanced verdict.

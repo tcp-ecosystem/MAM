@@ -70,7 +70,7 @@ Every MAM module MUST begin with YAML front matter:
 ```yaml
 ---
 id: authentication
-version: 1.0.0
+version: 2.0.0
 name: Authentication Module
 author: LifeJiggy
 tags:
@@ -406,7 +406,7 @@ A conformant implementation must:
 ```yaml
 ---
 version: 1.2.0
-mam_version: 1.0.0
+mam_version: 2.0.0
 ---
 ```
 

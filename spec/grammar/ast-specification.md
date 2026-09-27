@@ -1,5 +1,5 @@
 ﻿# MAM AST Specification
-# Version: 1.0.0
+# version: 2.0.0
 # Complete AST node type definitions and serialization format
 
 # ============================================================================

@@ -437,3 +437,38 @@ export function findVariableReferences(text: string): Array<{ key: string; line:
 
   return refs;
 }
+
+export function isValidSectionName(name: string): boolean {
+  return V1_SECTIONS.includes(name as any);
+}
+
+export function isValidModuleType(type: string): boolean {
+  return V2_MODULE_TYPES.includes(type as any);
+}
+
+export function isValidLanguage(lang: string): boolean {
+  return LANGUAGES.map(l => l.toLowerCase()).includes(lang.toLowerCase());
+}
+
+export function isValidRuntime(runtime: string): boolean {
+  return VALID_RUNTIMES.includes(runtime as any);
+}
+
+export function getSectionDoc(name: string): string | null {
+  return SECTION_DOCS[name] ?? null;
+}
+
+export function getModuleTypeDoc(type: string): string | null {
+  return MODULE_TYPE_DOCS[type] ?? null;
+}
+
+export function findFrontmatterRange(text: string): { start: number; end: number } | null {
+  const lines = text.split('\n');
+  if (lines[0]!.trim() !== '---') return null;
+  for (let i = 1; i < lines.length; i++) {
+    if (lines[i]!.trim() === '---') {
+      return { start: 0, end: i };
+    }
+  }
+  return null;
+}

@@ -396,3 +396,46 @@ export const TARGET_EXTENSIONS: Record<string, string> = {
 };
 
 export const SUPPORTED_TARGETS = Object.keys(TARGET_EXTENSIONS);
+
+export interface PipelineStage {
+  name: string;
+  run: (ctx: PipelineContext) => Promise<void>;
+}
+
+export interface PipelineContext {
+  cwd: string;
+  config?: MAMConfig;
+  values: Record<string, unknown>;
+}
+
+export interface PipelineResult {
+  success: boolean;
+  stagesRun: string[];
+  failedStage?: string;
+  errors: string[];
+  timeMs: number;
+}
+
+export interface PipelineOptions {
+  stopOnError?: boolean;
+  verbose?: boolean;
+}
+
+export interface DoctorCheckResult {
+  name: string;
+  status: 'pass' | 'warn' | 'fail';
+  message: string;
+}
+
+export interface DoctorReport {
+  checks: DoctorCheckResult[];
+  timeMs: number;
+}
+
+export const EXIT_CODES = {
+  SUCCESS: 0,
+  GENERAL_ERROR: 1,
+  INVALID_USAGE: 2,
+  NOT_FOUND: 3,
+  VALIDATION_FAILED: 4,
+} as const;

@@ -10,7 +10,7 @@
  * Id: knowledge-graph
  * Name: Knowledge Graph Builder
  * Type: module
- * Version: 1.0.0
+ * version: 2.0.0
  * Author: MAM Team
  * License: MIT
  * Description: A multi-step workflow that ingests text, extracts entities and relationships, builds a knowledge graph, and supports natural language queries.

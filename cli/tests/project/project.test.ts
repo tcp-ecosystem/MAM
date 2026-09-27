@@ -185,7 +185,7 @@ describe('Project loader (filesystem)', () => {
   it('discovers modules and dedupes .mam/.mam.md twins', async () => {
     const dir = await mkdtemp(join(tmpdir(), 'mam-proj-'));
     const manifest = `[project]\nname = "t"\nversion = "1.0.0"\n[build]\nentry = "system.mam"\nmodules = ["**/*.mam", "**/*.mam.md"]\n`;
-    const moduleBody = `---\nid: a\nname: A\nversion: 1.0.0\nauthor: x\nruntime: python\n---\n\n# A\n\n## Purpose\n\np\n`;
+    const moduleBody = `---\nid: a\nname: A\nversion: 2.0.0\nauthor: x\nruntime: python\n---\n\n# A\n\n## Purpose\n\np\n`;
     try {
       await mkdir(join(dir, 'modules'), { recursive: true });
       await writeFile(join(dir, 'mam.toml'), manifest, 'utf-8');
@@ -207,7 +207,7 @@ describe('Project loader (filesystem)', () => {
       await writeFile(join(dir, 'mam.toml'), manifest, 'utf-8');
       await writeFile(
         join(dir, 'system.mam'),
-        `---\nid: system\nname: Sys\nversion: 1.0.0\nauthor: x\ntype: system\nruntime: python\n---\n\n# Sys\n\n## Purpose\n\np\n`,
+        `---\nid: system\nname: Sys\nversion: 2.0.0\nauthor: x\ntype: system\nruntime: python\n---\n\n# Sys\n\n## Purpose\n\np\n`,
         'utf-8',
       );
       const project = Project.create(dir, manifest);

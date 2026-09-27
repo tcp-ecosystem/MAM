@@ -214,3 +214,83 @@ export function summarizeOutputPorts(node: OutputsNode): string {
 export function getNullableOutputPorts(node: OutputsNode): OutputPort[] {
   return node.ports.filter((p) => p.schema?.nullable === true);
 }
+
+export function hasOutputs(node: OutputsNode): boolean {
+  return node.ports.length > 0;
+}
+
+export function countOutputs(node: OutputsNode): number {
+  return node.ports.length;
+}
+
+export function summarizeOutputs(node: OutputsNode): string {
+  const nullable = node.ports.filter((port) => port.schema?.nullable === true).length;
+  const suffix = nullable > 0 ? ` (${nullable} nullable)` : '';
+  if (node.ports.length === 0) {
+    return `0 outputs${suffix}`;
+  }
+  const list = node.ports.map((port) => `${port.name}: ${port.type}`).join(', ');
+  return `${node.ports.length} outputs${suffix}: ${list}`;
+}
+
+export function withOutput(node: OutputsNode, port: OutputPort): OutputsNode {
+  return {
+    ...node,
+    ports: [...node.ports, port],
+  };
+}
+
+export function withoutOutput(
+  node: OutputsNode,
+  nameOrPredicate: string | ((port: OutputPort) => boolean),
+): OutputsNode {
+  const predicate =
+    typeof nameOrPredicate === 'string'
+      ? (port: OutputPort) => port.name === nameOrPredicate
+      : nameOrPredicate;
+  return {
+    ...node,
+    ports: node.ports.filter((port) => !predicate(port)),
+  };
+}
+
+export function cloneOutputsNode(
+  node: OutputsNode,
+  options?: { stripLocation?: boolean },
+): OutputsNode {
+  const clone: OutputsNode = {
+    ...node,
+    ports: node.ports.map((port) => {
+      const copy: OutputPort = { ...port };
+      if (port.schema) {
+        copy.schema = { ...port.schema };
+      }
+      return copy;
+    }),
+  };
+  if (options?.stripLocation) {
+    delete clone.location;
+  }
+  return clone;
+}
+
+export function mergeOutputsNodes(a: OutputsNode, b: OutputsNode): OutputsNode {
+  const ports = a.ports.map((port) => ({ ...port }));
+  const index = new Map<string, number>(
+    ports.map((port, i): [string, number] => [port.name, i]),
+  );
+  for (const port of b.ports) {
+    const existing = index.get(port.name);
+    if (existing !== undefined) {
+      ports[existing] = { ...port };
+    } else {
+      index.set(port.name, ports.length);
+      ports.push({ ...port });
+    }
+  }
+  return {
+    type: 'Outputs',
+    ports,
+    location: b.location ?? a.location,
+  };
+}

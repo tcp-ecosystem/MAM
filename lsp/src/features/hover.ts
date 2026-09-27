@@ -314,7 +314,7 @@ function getYAMLKeyType(key: string): string | null {
 function getYAMLKeyExample(key: string): string | null {
   const examples: Record<string, string> = {
     id: 'id: my-module',
-    version: 'version: 1.0.0',
+    version: 'version: 2.0.0',
     name: 'name: My Module',
     author: 'author: John Doe',
     runtime: 'runtime: python',
@@ -500,4 +500,32 @@ function getFrontmatterFieldHover(
 
   // Reuse YAML key hover
   return getYAMLKeyHover(line);
+}
+
+export function getContentTypesForSection(sectionName: string): string[] {
+  return getSupportedContentTypes(sectionName);
+}
+
+export function getRequiredSections(type: string): string[] {
+  return getRequiredSectionsForType(type);
+}
+
+export function getCommonSections(type: string): string[] {
+  return getCommonSectionsForType(type);
+}
+
+export function getValueHint(key: string): string | null {
+  return getValueHintsForKey(key);
+}
+
+export function getYAMLKeyTypeInfo(key: string): string | null {
+  return getYAMLKeyType(key);
+}
+
+export function getYAMLKeyExampleText(key: string): string | null {
+  return getYAMLKeyExample(key);
+}
+
+export function hasSectionDoc(name: string): boolean {
+  return SECTION_DOCS[name] !== undefined;
 }

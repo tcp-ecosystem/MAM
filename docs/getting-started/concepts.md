@@ -88,7 +88,7 @@ The metadata layer. Contains module identity, version, runtime, and configuratio
 ```yaml
 ---
 id: my-module
-version: 1.0.0
+version: 2.0.0
 name: My Module
 author: Your Name
 runtime: python

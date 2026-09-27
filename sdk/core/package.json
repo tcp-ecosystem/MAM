@@ -1,0 +1,6 @@
+{
+  "name": "@mam/core",
+  "private": true,
+  "type": "module",
+  "scripts": { "conformance": "pnpm --filter @mam/sdk-typescript build && node runner/index.mjs" }
+}

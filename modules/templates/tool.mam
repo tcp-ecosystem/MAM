@@ -2,7 +2,7 @@
 # MAM Metadata
 id: template-tool
 name: Tool Template
-version: 1.0.0
+version: 2.0.0
 type: tool
 author: MAM Team
 description: >

@@ -30,6 +30,8 @@ import {
   V2TagDefinition,
   V2AnnotationDefinition,
 } from './supporting.js';
+import { SourceLocation } from '../../location/index.js';
+import { V2NodeType } from './base.js';
 
 // ============================================================================
 // Module Node (v2)
@@ -587,3 +589,78 @@ export type V2AnyNode =
   | V2PackageNode
   | V2RepositoryNode
   | V2DocumentationNode;
+
+// ============================================================================
+// Node Guards and Factories
+// ============================================================================
+
+export function isV2ModuleNode(value: unknown): value is V2ModuleNode {
+  if (typeof value !== 'object' || value === null) return false;
+  const obj = value as Record<string, unknown>;
+  return obj.type === 'ModuleNode' && typeof obj.name === 'string' && typeof obj.moduleType === 'string';
+}
+
+export function isV2AgentNode(value: unknown): value is V2AgentNode {
+  if (typeof value !== 'object' || value === null) return false;
+  const obj = value as Record<string, unknown>;
+  return (
+    obj.type === 'AgentNode' &&
+    typeof obj.name === 'string' &&
+    typeof obj.role === 'string' &&
+    typeof obj.goal === 'string'
+  );
+}
+
+export function isV2ToolNode(value: unknown): value is V2ToolNode {
+  if (typeof value !== 'object' || value === null) return false;
+  const obj = value as Record<string, unknown>;
+  return obj.type === 'ToolNode' && typeof obj.name === 'string' && typeof obj.provider === 'string';
+}
+
+export function isV2WorkflowNode(value: unknown): value is V2WorkflowNode {
+  if (typeof value !== 'object' || value === null) return false;
+  const obj = value as Record<string, unknown>;
+  return (
+    obj.type === 'WorkflowNode' &&
+    typeof obj.name === 'string' &&
+    Array.isArray(obj.steps) &&
+    Array.isArray(obj.edges)
+  );
+}
+
+export function isV2TeamNode(value: unknown): value is V2TeamNode {
+  if (typeof value !== 'object' || value === null) return false;
+  const obj = value as Record<string, unknown>;
+  return obj.type === 'TeamNode' && typeof obj.name === 'string' && Array.isArray(obj.members);
+}
+
+export function createV2ModuleNode(name: string, moduleType: ModuleType, location: SourceLocation): V2ModuleNode {
+  return { type: 'ModuleNode', name, moduleType, location };
+}
+
+export const V2_NODE_TYPES: V2NodeType[] = [
+  'ModuleNode',
+  'AgentNode',
+  'ToolNode',
+  'MemoryNode',
+  'WorkflowNode',
+  'TeamNode',
+  'PolicyNode',
+  'SystemNode',
+  'EdgeNode',
+  'StepNode',
+  'InterfaceNode',
+  'ContractNode',
+  'ResourceNode',
+  'EventNode',
+  'StateNode',
+  'CapabilityNode',
+  'PermissionNode',
+  'DependencyNode',
+  'PluginNode',
+  'ExtensionNode',
+  'RuntimeNode',
+  'PackageNode',
+  'RepositoryNode',
+  'DocumentationNode',
+];

@@ -403,3 +403,69 @@ export type { ReferencesNode, Reference, ReferenceType } from './references.js';
 export type { RulesNode, Rule, RulePriority, RuleSeverity, RuleCategory } from './rules.js';
 export type { TestsNode, TestCase, TestCaseStatus } from './tests.js';
 export type { WorkflowNode, WorkflowStep, WorkflowEdge, WorkflowConfig } from './workflow.js';
+
+// ============================================================================
+// Module Helpers
+// ============================================================================
+
+export function findSectionByName(module: MAMModule, name: string): Section | undefined {
+  return module.sections.find((section) => section.name === name);
+}
+
+export function getSectionNames(module: MAMModule): string[] {
+  return module.sections.map((section) => section.name);
+}
+
+export function hasSection(module: MAMModule, name: string): boolean {
+  return module.sections.some((section) => section.name === name);
+}
+
+export function countContentNodes(module: MAMModule): number {
+  return module.sections.reduce((total, section) => total + section.content.length, 0);
+}
+
+export function isContentNode(value: unknown): value is ContentNode {
+  if (typeof value !== 'object' || value === null) return false;
+  const type = (value as { type?: unknown }).type;
+  return (
+    type === 'Paragraph' ||
+    type === 'List' ||
+    type === 'CodeBlock' ||
+    type === 'Table' ||
+    type === 'Mermaid' ||
+    type === 'Heading' ||
+    type === 'Blockquote'
+  );
+}
+
+export function isInlineNode(value: unknown): value is InlineNode {
+  if (typeof value !== 'object' || value === null) return false;
+  const type = (value as { type?: unknown }).type;
+  return (
+    type === 'InlineText' ||
+    type === 'InlineCode' ||
+    type === 'Bold' ||
+    type === 'Italic' ||
+    type === 'Link' ||
+    type === 'Image'
+  );
+}
+
+export function createEmptyModule(location?: SourceLocation): MAMModule {
+  return {
+    type: 'MAMModule',
+    location: location ?? {
+      start: { line: 1, column: 1, offset: 0 },
+      end: { line: 1, column: 1, offset: 0 },
+      source: '',
+    },
+    frontmatter: null,
+    sections: [],
+    metadata: {
+      sectionCount: 0,
+      codeBlockCount: 0,
+      languages: [],
+      customSections: [],
+    },
+  };
+}

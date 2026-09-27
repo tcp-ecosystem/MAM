@@ -11,7 +11,7 @@ The simplest MAM module:
 ```markdown
 ---
 id: hello
-version: 1.0.0
+version: 2.0.0
 name: Hello World
 author: LifeJiggy
 runtime: python
@@ -44,7 +44,7 @@ A basic calculator module:
 ```markdown
 ---
 id: calculator
-version: 1.0.0
+version: 2.0.0
 name: Calculator
 author: LifeJiggy
 runtime: python
@@ -128,7 +128,7 @@ String manipulation utilities:
 ```markdown
 ---
 id: string-utils
-version: 1.0.0
+version: 2.0.0
 name: String Utilities
 author: LifeJiggy
 runtime: python
@@ -185,7 +185,7 @@ Date formatting utilities:
 ```markdown
 ---
 id: date-formatter
-version: 1.0.0
+version: 2.0.0
 name: Date Formatter
 author: LifeJiggy
 runtime: python
@@ -251,7 +251,7 @@ JSON manipulation utilities:
 ```markdown
 ---
 id: json-utils
-version: 1.0.0
+version: 2.0.0
 name: JSON Utilities
 author: LifeJiggy
 runtime: python

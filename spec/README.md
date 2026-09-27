@@ -45,7 +45,7 @@ module-name.mam.md
 ```yaml
 ---
 name: my-module
-version: 1.0.0
+version: 2.0.0
 description: Module description
 author: Author Name
 tags: [ai, agents]

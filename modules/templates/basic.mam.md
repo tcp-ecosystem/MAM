@@ -2,7 +2,7 @@
 # MAM Metadata
 id: template-basic
 name: Basic Module Template
-version: 1.0.0
+version: 2.0.0
 type: module
 
 author: MAM Team

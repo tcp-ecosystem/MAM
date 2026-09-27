@@ -47,3 +47,52 @@ export function mergeLocations(a: SourceLocation, b: SourceLocation): SourceLoca
 export function locationToString(loc: SourceLocation): string {
   return `${loc.source}:${loc.start.line}:${loc.start.column}`;
 }
+
+export function positionEquals(a: Position, b: Position): boolean {
+  return a.line === b.line && a.column === b.column && a.offset === b.offset;
+}
+
+export function positionCompare(a: Position, b: Position): number {
+  return a.offset - b.offset;
+}
+
+export function locationLength(loc: SourceLocation): number {
+  return loc.end.offset - loc.start.offset;
+}
+
+export function locationContainsPosition(loc: SourceLocation, pos: Position): boolean {
+  return pos.offset >= loc.start.offset && pos.offset <= loc.end.offset;
+}
+
+export function isPositionBefore(a: Position, b: Position): boolean {
+  return positionCompare(a, b) < 0;
+}
+
+export function shiftLocation(
+  loc: SourceLocation,
+  lineDelta: number,
+  columnDelta: number,
+  offsetDelta: number = 0,
+): SourceLocation {
+  return {
+    start: {
+      line: loc.start.line + lineDelta,
+      column: loc.start.column + columnDelta,
+      offset: loc.start.offset + offsetDelta,
+    },
+    end: {
+      line: loc.end.line + lineDelta,
+      column: loc.end.column + columnDelta,
+      offset: loc.end.offset + offsetDelta,
+    },
+    source: loc.source,
+  };
+}
+
+export function cloneLocation(loc: SourceLocation): SourceLocation {
+  return {
+    start: { line: loc.start.line, column: loc.start.column, offset: loc.start.offset },
+    end: { line: loc.end.line, column: loc.end.column, offset: loc.end.offset },
+    source: loc.source,
+  };
+}

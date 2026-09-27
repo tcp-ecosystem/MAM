@@ -74,7 +74,7 @@ mam templates                # list all 13 available templates
 ---
 id: hello
 name: Hello
-version: 1.0.0
+version: 2.0.0
 type: module
 author: MAM Team
 license: MIT
@@ -150,7 +150,7 @@ mam run modules/hello.mam.py  # run a compiled target with its runtime (python)
 ---
 id: module-name
 name: Module Name
-version: 1.0.0
+version: 2.0.0
 type: module            # module|agent|tool|memory|workflow|team|policy|system|...
 author: Author Name
 license: MIT
@@ -534,7 +534,7 @@ mam search "authentication"
 ```mam
 ---
 id: hello
-version: 1.0.0
+version: 2.0.0
 name: Hello Module
 author: Author
 runtime: python
@@ -566,7 +566,7 @@ print(result)  # Hello, World!
 ```mam
 ---
 id: researcher
-version: 1.0.0
+version: 2.0.0
 name: Research Agent
 author: Author
 runtime: python
@@ -616,7 +616,7 @@ def research(topic: str) -> dict:
 ```mam
 ---
 id: security-team
-version: 1.0.0
+version: 2.0.0
 name: Security Team
 author: Author
 runtime: python

@@ -1,5 +1,15 @@
 import { describe, it, expect } from 'vitest';
-import { ASCIIArt, ASCIIOutput } from '../src/ascii.js';
+import {
+  ASCIIArt,
+  ASCIIOutput,
+  countAsciiLines,
+  getAsciiDimensions,
+  hasAsciiContent,
+  getAsciiLine,
+  sliceAsciiLines,
+  joinAsciiOutputs,
+  getAsciiLineWidths,
+} from '../src/ascii.js';
 import { GraphData } from '../src/graph.js';
 import { V2ModuleNode } from '@mam/ast';
 
@@ -201,5 +211,44 @@ describe('ASCIIArt', () => {
 
       expect(result.art).toContain('MAM System Graph');
     });
+  });
+});
+
+describe('ascii output helpers', () => {
+  const output: ASCIIOutput = { art: 'ab\ncdef\ngh', width: 4, height: 3 };
+
+  it('should count lines', () => {
+    expect(countAsciiLines(output)).toBe(3);
+    expect(countAsciiLines({ art: '', width: 0, height: 0 })).toBe(0);
+  });
+
+  it('should report dimensions', () => {
+    expect(getAsciiDimensions(output)).toEqual({ width: 4, height: 3 });
+  });
+
+  it('should detect content', () => {
+    expect(hasAsciiContent(output)).toBe(true);
+    expect(hasAsciiContent({ art: '  \n ', width: 2, height: 2 })).toBe(false);
+  });
+
+  it('should get lines by index', () => {
+    expect(getAsciiLine(output, 0)).toBe('ab');
+    expect(getAsciiLine(output, 9)).toBeUndefined();
+  });
+
+  it('should slice lines', () => {
+    expect(sliceAsciiLines(output, 0, 2)).toBe('ab\ncdef');
+  });
+
+  it('should join outputs', () => {
+    const joined = joinAsciiOutputs([output, { art: 'xy', width: 2, height: 1 }]);
+    expect(joined.height).toBe(4);
+    expect(joined.width).toBe(4);
+    expect(joinAsciiOutputs([])).toEqual({ art: '', width: 0, height: 0 });
+  });
+
+  it('should measure line widths', () => {
+    expect(getAsciiLineWidths(output)).toEqual([2, 4, 2]);
+    expect(getAsciiLineWidths({ art: '', width: 0, height: 0 })).toEqual([]);
   });
 });

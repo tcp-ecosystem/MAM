@@ -260,3 +260,35 @@ export class GraphVisualizer {
     return maxDepth;
   }
 }
+
+export function createGraphNode(id: string, label: string, type: string): GraphNode {
+  return { id, label, type };
+}
+
+export function createGraphEdge(
+  from: string,
+  to: string,
+  type: GraphEdge['type'] = 'direct',
+): GraphEdge {
+  return { from, to, type };
+}
+
+export function createEmptyGraph(): GraphData {
+  return { nodes: [], edges: [], metadata: { nodeCount: 0, edgeCount: 0, depth: 0 } };
+}
+
+export function getNodeIds(graph: GraphData): string[] {
+  return graph.nodes.map((node) => node.id);
+}
+
+export function findNodeById(graph: GraphData, id: string): GraphNode | undefined {
+  return graph.nodes.find((node) => node.id === id);
+}
+
+export function getSuccessors(graph: GraphData, id: string): string[] {
+  return graph.edges.filter((edge) => edge.from === id).map((edge) => edge.to);
+}
+
+export function getPredecessors(graph: GraphData, id: string): string[] {
+  return graph.edges.filter((edge) => edge.to === id).map((edge) => edge.from);
+}

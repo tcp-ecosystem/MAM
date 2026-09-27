@@ -281,3 +281,95 @@ export function isEncrypted(node: MemoryNode): boolean {
 export function countIndexes(node: MemoryNode): number {
   return node.indexes?.length ?? 0;
 }
+
+export function hasMemoryIndexes(node: MemoryNode): boolean {
+  return (node.indexes?.length ?? 0) > 0;
+}
+
+export function countMemoryIndexes(node: MemoryNode): number {
+  return node.indexes?.length ?? 0;
+}
+
+export function summarizeMemory(node: MemoryNode): string {
+  const parts: string[] = [];
+  if (node.format) {
+    parts.push(`format=${node.format}`);
+  }
+  if (node.backend) {
+    parts.push(`backend=${node.backend}`);
+  }
+  if (node.scope) {
+    parts.push(`scope=${node.scope}`);
+  }
+  if (node.ttl) {
+    parts.push(`ttl=${node.ttl}`);
+  }
+  parts.push(`${node.indexes?.length ?? 0} indexes`);
+  parts.push(`${node.configuration?.length ?? 0} configurations`);
+  return `Memory: ${parts.join(', ')}`;
+}
+
+export function withMemoryIndex(node: MemoryNode, index: MemoryIndex): MemoryNode {
+  return {
+    ...node,
+    indexes: [...(node.indexes ?? []), index],
+  };
+}
+
+export function withoutMemoryIndex(
+  node: MemoryNode,
+  match: string | ((index: MemoryIndex) => boolean),
+): MemoryNode {
+  if (!node.indexes) {
+    return { ...node };
+  }
+  const remove =
+    typeof match === 'string'
+      ? (index: MemoryIndex) => index.name === match
+      : match;
+  return {
+    ...node,
+    indexes: node.indexes.filter((index) => !remove(index)),
+  };
+}
+
+export function cloneMemoryNode(
+  node: MemoryNode,
+  options: { stripLocation?: boolean } = {},
+): MemoryNode {
+  const copy: MemoryNode = { ...node };
+  if (node.indexes) {
+    copy.indexes = node.indexes.map((index) => ({
+      ...index,
+      fields: [...index.fields],
+    }));
+  }
+  if (node.configuration) {
+    copy.configuration = node.configuration.map((entry) => ({ ...entry }));
+  }
+  if (options.stripLocation) {
+    delete copy.location;
+  } else if (copy.location) {
+    copy.location = {
+      source: copy.location.source,
+      start: { ...copy.location.start },
+      end: { ...copy.location.end },
+    };
+  }
+  return copy;
+}
+
+export function mergeMemoryConfigurations(a: MemoryNode, b: MemoryNode): MemoryNode {
+  const merged: MemoryNode = { ...a };
+  if (a.configuration || b.configuration) {
+    const byKey = new Map<string, MemoryConfiguration>();
+    for (const entry of a.configuration ?? []) {
+      byKey.set(entry.key, entry);
+    }
+    for (const entry of b.configuration ?? []) {
+      byKey.set(entry.key, entry);
+    }
+    merged.configuration = Array.from(byKey.values());
+  }
+  return merged;
+}

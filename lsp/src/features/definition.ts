@@ -269,3 +269,72 @@ function findVariableDefinition(
 function escapeRegex(str: string): string {
   return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
+
+export function getDefinitionAtWord(
+  uri: string,
+  word: string,
+  document: TextDocument,
+  ast: MAMModule | null,
+): Location | null {
+  const text = document.getText();
+  const lines = text.split('\n');
+  const sectionDef = findSectionDefinition(uri, word, text, ast);
+  if (sectionDef) return sectionDef;
+  const moduleDef = findModuleDefinition(uri, word, text, ast);
+  if (moduleDef) return moduleDef;
+  const funcDef = findFunctionDefinition(uri, word, text, ast);
+  if (funcDef) return funcDef;
+  for (let i = 0; i < lines.length; i++) {
+    const varDef = findVariableDefinition(uri, word, text, { line: -1, character: 0 });
+    if (varDef) return varDef;
+  }
+  return null;
+}
+
+export function findAllSectionDefinitions(document: TextDocument): Location[] {
+  const uri = document.uri;
+  const text = document.getText();
+  return findSections(text).map(section => createLocation(uri, section.range));
+}
+
+export function findAllModuleDefinitions(document: TextDocument): Location[] {
+  const uri = document.uri;
+  const text = document.getText();
+  return findModuleDeclarations(text).map(decl => createLocation(uri, decl.range));
+}
+
+export function hasDefinition(
+  uri: string,
+  position: { line: number; character: number },
+  document: TextDocument,
+  ast: MAMModule | null,
+): boolean {
+  return getDefinition(uri, position, document, ast) !== null;
+}
+
+export function getDefinitionKind(
+  uri: string,
+  position: { line: number; character: number },
+  document: TextDocument,
+  ast: MAMModule | null,
+): 'section' | 'module' | 'function' | 'variable' | null {
+  const text = document.getText();
+  const lines = text.split('\n');
+  const line = lines[position.line];
+  if (!line) return null;
+  const word = getWordAtPosition(line, position.character);
+  if (!word) return null;
+  if (findSectionDefinition(uri, word, text, ast)) return 'section';
+  if (findModuleDefinition(uri, word, text, ast)) return 'module';
+  if (findFunctionDefinition(uri, word, text, ast)) return 'function';
+  if (findVariableDefinition(uri, word, text, position)) return 'variable';
+  return null;
+}
+
+export function escapeDefinitionPattern(str: string): string {
+  return escapeRegex(str);
+}
+
+export function collectDefinitionTargets(document: TextDocument): Location[] {
+  return [...findAllSectionDefinitions(document), ...findAllModuleDefinitions(document)];
+}

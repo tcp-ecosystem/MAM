@@ -318,3 +318,180 @@ export function countMermaidElements(node: MermaidNode): { nodes: number; edges:
     edges: node.parsedEdges?.length ?? 0,
   };
 }
+
+export function summarizeMermaid(node: MermaidNode): string {
+  const nodes = node.parsedNodes?.length ?? 0;
+  const edges = node.parsedEdges?.length ?? 0;
+  return `${node.diagramType} diagram: ${nodes} nodes, ${edges} edges`;
+}
+
+export function addMermaidParsedNode(
+  node: MermaidNode,
+  parsedNode: MermaidParsedNode,
+): MermaidNode {
+  const parsedNodes = [...(node.parsedNodes ?? []), parsedNode];
+  const next: MermaidNode = { ...node, parsedNodes };
+  if (node.metadata) {
+    next.metadata = { ...node.metadata, nodeCount: parsedNodes.length };
+  }
+  return next;
+}
+
+export function removeMermaidParsedNode(
+  node: MermaidNode,
+  idOrPredicate: string | ((parsed: MermaidParsedNode) => boolean),
+): MermaidNode {
+  const predicate =
+    typeof idOrPredicate === 'string'
+      ? (parsed: MermaidParsedNode) => parsed.id === idOrPredicate
+      : idOrPredicate;
+  const removedIds = new Set(
+    (node.parsedNodes ?? []).filter(predicate).map((parsed) => parsed.id),
+  );
+  const next: MermaidNode = { ...node };
+  if (node.parsedNodes) {
+    next.parsedNodes = node.parsedNodes.filter((parsed) => !predicate(parsed));
+  }
+  if (node.parsedEdges) {
+    next.parsedEdges = node.parsedEdges.filter(
+      (edge) => !removedIds.has(edge.from) && !removedIds.has(edge.to),
+    );
+  }
+  if (node.metadata) {
+    next.metadata = {
+      ...node.metadata,
+      nodeCount: next.parsedNodes ? next.parsedNodes.length : node.metadata.nodeCount,
+      edgeCount: next.parsedEdges ? next.parsedEdges.length : node.metadata.edgeCount,
+    };
+  }
+  return next;
+}
+
+export function cloneMermaidNode(
+  node: MermaidNode,
+  options?: { stripLocation?: boolean },
+): MermaidNode {
+  const clone: MermaidNode = { ...node };
+  if (node.parsedNodes) {
+    clone.parsedNodes = node.parsedNodes.map((parsed) => ({ ...parsed }));
+  }
+  if (node.parsedEdges) {
+    clone.parsedEdges = node.parsedEdges.map((edge) => ({ ...edge }));
+  }
+  if (node.metadata) {
+    clone.metadata = { ...node.metadata };
+  }
+  if (options?.stripLocation) {
+    delete clone.location;
+  }
+  return clone;
+}
+
+export function mergeMermaidNodes(a: MermaidNode, b: MermaidNode): MermaidNode {
+  const parsedNodes = [...(a.parsedNodes ?? [])];
+  const nodeIndex = new Map<string, number>(
+    parsedNodes.map((parsed, i): [string, number] => [parsed.id, i]),
+  );
+  for (const parsed of b.parsedNodes ?? []) {
+    const existing = nodeIndex.get(parsed.id);
+    if (existing !== undefined) {
+      parsedNodes[existing] = { ...parsed };
+    } else {
+      nodeIndex.set(parsed.id, parsedNodes.length);
+      parsedNodes.push({ ...parsed });
+    }
+  }
+
+  const parsedEdges = [...(a.parsedEdges ?? [])];
+  const edgeKey = (edge: MermaidParsedEdge): string =>
+    JSON.stringify([edge.from, edge.to, edge.label ?? '', edge.style ?? '']);
+  const edgeIndex = new Map<string, number>(
+    parsedEdges.map((edge, i): [string, number] => [edgeKey(edge), i]),
+  );
+  for (const edge of b.parsedEdges ?? []) {
+    const key = edgeKey(edge);
+    const existing = edgeIndex.get(key);
+    if (existing !== undefined) {
+      parsedEdges[existing] = { ...edge };
+    } else {
+      edgeIndex.set(key, parsedEdges.length);
+      parsedEdges.push({ ...edge });
+    }
+  }
+
+  const merged: MermaidNode = {
+    type: 'Mermaid',
+    diagramType: b.diagramType,
+    content: b.content,
+    location: b.location ?? a.location,
+  };
+  if (a.parsedNodes || b.parsedNodes) {
+    merged.parsedNodes = parsedNodes;
+  }
+  if (a.parsedEdges || b.parsedEdges) {
+    merged.parsedEdges = parsedEdges;
+  }
+  if (a.metadata || b.metadata) {
+    const fallbackNodeCount = b.metadata?.nodeCount ?? a.metadata?.nodeCount ?? 0;
+    const fallbackEdgeCount = b.metadata?.edgeCount ?? a.metadata?.edgeCount ?? 0;
+    merged.metadata = {
+      nodeCount: (a.parsedNodes || b.parsedNodes) ? parsedNodes.length : fallbackNodeCount,
+      edgeCount: (a.parsedEdges || b.parsedEdges) ? parsedEdges.length : fallbackEdgeCount,
+      direction: b.metadata?.direction ?? a.metadata?.direction,
+      hasSyntaxIssues: b.metadata?.hasSyntaxIssues ?? a.metadata?.hasSyntaxIssues,
+    };
+  }
+  return merged;
+}
+
+export function getMermaidAdjacency(node: MermaidNode): Map<string, string[]> {
+  const adjacency = new Map<string, string[]>();
+  const ensure = (id: string): string[] => {
+    let targets = adjacency.get(id);
+    if (targets === undefined) {
+      targets = [];
+      adjacency.set(id, targets);
+    }
+    return targets;
+  };
+  for (const parsed of node.parsedNodes ?? []) {
+    ensure(parsed.id);
+  }
+  for (const edge of node.parsedEdges ?? []) {
+    ensure(edge.to);
+    ensure(edge.from).push(edge.to);
+  }
+  return adjacency;
+}
+
+export function hasMermaidCycle(node: MermaidNode): boolean {
+  const adjacency = getMermaidAdjacency(node);
+  const inDegree = new Map<string, number>();
+  for (const id of adjacency.keys()) {
+    inDegree.set(id, 0);
+  }
+  for (const targets of adjacency.values()) {
+    for (const target of targets) {
+      inDegree.set(target, (inDegree.get(target) ?? 0) + 1);
+    }
+  }
+  const queue: string[] = [];
+  for (const [id, degree] of inDegree) {
+    if (degree === 0) {
+      queue.push(id);
+    }
+  }
+  let head = 0;
+  while (head < queue.length) {
+    const id = queue[head];
+    head++;
+    for (const target of adjacency.get(id) ?? []) {
+      const degree = (inDegree.get(target) ?? 0) - 1;
+      inDegree.set(target, degree);
+      if (degree === 0) {
+        queue.push(target);
+      }
+    }
+  }
+  return queue.length < adjacency.size;
+}

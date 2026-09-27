@@ -1,7 +1,7 @@
 ---
 id: template-component
 name: Component Template
-version: 1.0.0
+version: 2.0.0
 type: component
 author: MAM Team
 description: >

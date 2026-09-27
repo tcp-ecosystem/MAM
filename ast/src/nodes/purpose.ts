@@ -244,3 +244,119 @@ export function summarizePurpose(node: PurposeNode): string {
   }
   return parts.join(' | ');
 }
+
+export function hasGoals(node: PurposeNode): boolean {
+  return (node.goals?.length ?? 0) > 0;
+}
+
+export function countGoals(node: PurposeNode): number {
+  return node.goals?.length ?? 0;
+}
+
+export function summarizeSuccessCriteria(node: PurposeNode): string {
+  const criteria = node.successCriteria ?? [];
+  const list = criteria
+    .map((criterion) => (criterion.target ? `${criterion.id}: ${criterion.target}` : criterion.id))
+    .join(', ');
+  return list.length > 0 ? `${criteria.length} criteria: ${list}` : `${criteria.length} criteria`;
+}
+
+export function withGoal(node: PurposeNode, goal: PurposeGoal): PurposeNode {
+  return {
+    ...node,
+    goals: [...(node.goals ?? []), goal],
+  };
+}
+
+export function withoutGoal(
+  node: PurposeNode,
+  idOrPredicate: string | ((goal: PurposeGoal) => boolean),
+): PurposeNode {
+  if (!node.goals) {
+    return { ...node };
+  }
+  const predicate =
+    typeof idOrPredicate === 'string'
+      ? (goal: PurposeGoal) => goal.id === idOrPredicate
+      : idOrPredicate;
+  return {
+    ...node,
+    goals: node.goals.filter((goal) => !predicate(goal)),
+  };
+}
+
+export function clonePurposeNode(
+  node: PurposeNode,
+  options?: { stripLocation?: boolean },
+): PurposeNode {
+  const clone: PurposeNode = { ...node };
+  if (node.goals) {
+    clone.goals = node.goals.map((goal) => ({ ...goal }));
+  }
+  if (node.successCriteria) {
+    clone.successCriteria = node.successCriteria.map((criterion) => ({ ...criterion }));
+  }
+  if (node.constraints) {
+    clone.constraints = [...node.constraints];
+  }
+  if (node.nonGoals) {
+    clone.nonGoals = [...node.nonGoals];
+  }
+  if (options?.stripLocation) {
+    delete clone.location;
+  }
+  return clone;
+}
+
+export function mergePurposeNodes(a: PurposeNode, b: PurposeNode): PurposeNode {
+  const goals = (a.goals ?? []).map((goal) => ({ ...goal }));
+  const goalIndex = new Map<string, number>(
+    goals.map((goal, i): [string, number] => [goal.id, i]),
+  );
+  for (const goal of b.goals ?? []) {
+    const existing = goalIndex.get(goal.id);
+    if (existing !== undefined) {
+      goals[existing] = { ...goal };
+    } else {
+      goalIndex.set(goal.id, goals.length);
+      goals.push({ ...goal });
+    }
+  }
+
+  const successCriteria = (a.successCriteria ?? []).map((criterion) => ({ ...criterion }));
+  const criterionIndex = new Map<string, number>(
+    successCriteria.map((criterion, i): [string, number] => [criterion.id, i]),
+  );
+  for (const criterion of b.successCriteria ?? []) {
+    const existing = criterionIndex.get(criterion.id);
+    if (existing !== undefined) {
+      successCriteria[existing] = { ...criterion };
+    } else {
+      criterionIndex.set(criterion.id, successCriteria.length);
+      successCriteria.push({ ...criterion });
+    }
+  }
+
+  const constraints = [...(a.constraints ?? []), ...(b.constraints ?? [])];
+  const nonGoals = [...(a.nonGoals ?? []), ...(b.nonGoals ?? [])];
+
+  const merged: PurposeNode = {
+    type: 'Purpose',
+    content: b.content || a.content,
+    audience: b.audience ?? a.audience,
+    location: b.location ?? a.location,
+  };
+  if (goals.length > 0) {
+    merged.goals = goals;
+  }
+  if (successCriteria.length > 0) {
+    merged.successCriteria = successCriteria;
+  }
+  if (constraints.length > 0) {
+    merged.constraints = constraints;
+  }
+  if (nonGoals.length > 0) {
+    merged.nonGoals = nonGoals;
+  }
+  return merged;
+}
