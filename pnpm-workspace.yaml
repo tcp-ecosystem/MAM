@@ -14,6 +14,7 @@ packages:
   - "package-manager"
   - "memory-engine"
   - "knowledge-engine"
+  - "observability"
   - "reference"
   - "testing"
   - "registry/*"
