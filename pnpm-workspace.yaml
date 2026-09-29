@@ -17,6 +17,7 @@ packages:
   - "observability"
   - "context-engine"
   - "security"
+  - "tool-engine"
   - "reference"
   - "testing"
   - "registry/*"
