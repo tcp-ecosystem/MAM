@@ -1,6 +1,31 @@
+# Dependencies and build artifacts
 node_modules
 dist
-build
+.turbo
 *.tsbuildinfo
+*.tgz
+
+# VCS / tooling
+.git
+.gitignore
+
+# Local caches and scratch
+.mam-cache
+.kilo
+Temp
+.temp
+evidence
+
+# Lockfiles (never formatted)
 pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# Generated / third-party content
 coverage
+build
+.idea
+.vscode
+
+# Shell tooling with no Prettier parser
+*.ps1

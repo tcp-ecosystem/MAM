@@ -8,12 +8,12 @@ echo "Formatting MAM monorepo..."
 
 cd "$REPO_ROOT"
 
-if command -v pnpm &>/dev/null; then
+if command -v pnpm &>/dev/null && pnpm run -s format >/dev/null 2>&1; then
   pnpm run format
-elif command -v npm &>/dev/null; then
-  npm run format
+elif command -v npx &>/dev/null; then
+  npx prettier --write .
 else
-  echo "Error: No package manager found. Install pnpm or npm." >&2
+  echo "Error: prettier not found. Run 'pnpm install' first." >&2
   exit 1
 fi
 

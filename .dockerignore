@@ -1,0 +1,29 @@
+# VCS
+.git
+.gitignore
+
+# Dependencies and build output
+node_modules
+**/node_modules
+dist
+**/dist
+.turbo
+*.tsbuildinfo
+*.tgz
+
+# Local caches and scratch
+.mam-cache
+.kilo
+Temp
+.temp
+evidence
+plan-doc
+docs
+
+# Tooling output
+coverage
+build
+
+# IDE
+.idea
+.vscode

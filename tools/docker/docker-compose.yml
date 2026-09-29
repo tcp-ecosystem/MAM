@@ -1,7 +1,5 @@
-version: "3.8"
-
 services:
-  mam:
+  cli:
     build:
       context: ../../
       dockerfile: tools/docker/Dockerfile.dev
@@ -12,9 +10,10 @@ services:
       - /app/node_modules
     environment:
       - NODE_ENV=development
-    working_dir: /app
+    working_dir: /app/cli
+    command: ["pnpm", "run", "dev"]
 
-  cli:
+  mcp:
     build:
       context: ../../
       dockerfile: tools/docker/Dockerfile.dev
@@ -25,5 +24,19 @@ services:
       - /app/node_modules
     environment:
       - NODE_ENV=development
-    working_dir: /app/cli
+    working_dir: /app/mcp
+    command: ["pnpm", "run", "dev"]
+
+  runtime:
+    build:
+      context: ../../
+      dockerfile: tools/docker/Dockerfile.dev
+    ports:
+      - "3002:3000"
+    volumes:
+      - ../../:/app
+      - /app/node_modules
+    environment:
+      - NODE_ENV=development
+    working_dir: /app/runtime
     command: ["pnpm", "run", "dev"]
