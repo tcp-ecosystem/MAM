@@ -20,6 +20,7 @@ packages:
   - "tool-engine"
   - "mcp"
   - "token-optimization"
+  - "intelligence-layer"
   - "reference"
   - "testing"
   - "registry/*"
