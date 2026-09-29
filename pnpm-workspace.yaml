@@ -19,6 +19,7 @@ packages:
   - "security"
   - "tool-engine"
   - "mcp"
+  - "token-optimization"
   - "reference"
   - "testing"
   - "registry/*"
