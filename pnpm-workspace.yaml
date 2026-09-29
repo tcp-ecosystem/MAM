@@ -15,6 +15,7 @@ packages:
   - "memory-engine"
   - "knowledge-engine"
   - "observability"
+  - "context-engine"
   - "reference"
   - "testing"
   - "registry/*"
