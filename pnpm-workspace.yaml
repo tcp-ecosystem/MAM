@@ -16,6 +16,7 @@ packages:
   - "knowledge-engine"
   - "observability"
   - "context-engine"
+  - "security"
   - "reference"
   - "testing"
   - "registry/*"
