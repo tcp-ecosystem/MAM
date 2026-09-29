@@ -18,6 +18,7 @@ packages:
   - "context-engine"
   - "security"
   - "tool-engine"
+  - "mcp"
   - "reference"
   - "testing"
   - "registry/*"
