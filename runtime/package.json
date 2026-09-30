@@ -33,6 +33,15 @@
   },
   "dependencies": {
     "@mam/ast": "workspace:*",
+    "@mam/context-engine": "workspace:*",
+    "@mam/intelligence-layer": "workspace:*",
+    "@mam/knowledge-engine": "workspace:*",
+    "@mam/mcp": "workspace:*",
+    "@mam/memory-engine": "workspace:*",
+    "@mam/observability": "workspace:*",
+    "@mam/security": "workspace:*",
+    "@mam/token-optimization": "workspace:*",
+    "@mam/tool-engine": "workspace:*",
     "@mam/validator": "workspace:*"
   },
   "devDependencies": {
