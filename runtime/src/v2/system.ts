@@ -32,6 +32,14 @@ import * as mcp from '@mam/mcp';
 import * as tokenOptimization from '@mam/token-optimization';
 import * as intelligence from '@mam/intelligence-layer';
 
+import * as ast from '@mam/ast';
+import * as parser from '@mam/parser';
+import * as compiler from '@mam/compiler';
+import * as validator from '@mam/validator';
+import * as visualization from '@mam/visualization';
+import * as packageManager from '@mam/package-manager';
+import * as testing from '@mam/testing';
+
 import { createV2Runtime, MAMV2Runtime } from './runtime.js';
 
 /**
@@ -57,6 +65,22 @@ export interface MAMSystemModules {
   readonly tokenOptimization: typeof tokenOptimization;
   /** intelligence-layer package namespace. */
   readonly intelligence: typeof intelligence;
+
+  // --- Language toolchain ---------------------------------------------------
+  /** ast package namespace. */
+  readonly ast: typeof ast;
+  /** parser package namespace. */
+  readonly parser: typeof parser;
+  /** compiler package namespace. */
+  readonly compiler: typeof compiler;
+  /** validator package namespace. */
+  readonly validator: typeof validator;
+  /** visualization package namespace. */
+  readonly visualization: typeof visualization;
+  /** package-manager package namespace. */
+  readonly packageManager: typeof packageManager;
+  /** testing package namespace. */
+  readonly testing: typeof testing;
 }
 
 /**
@@ -103,6 +127,13 @@ export class MAMSystem {
       mcp,
       tokenOptimization,
       intelligence,
+      ast,
+      parser,
+      compiler,
+      validator,
+      visualization,
+      packageManager,
+      testing,
     };
     this.runtime = createV2Runtime(options.runtimeConfig);
     this.register('runtime', this.runtime);
@@ -181,6 +212,14 @@ export class MAMSystem {
     this.register('answerSynthesizer', new intelligence.AnswerSynthesizer());
     this.register('graphEngine', new intelligence.GraphEngine());
     this.register('consolidator', new intelligence.Consolidator());
+
+    // Language toolchain engines
+    this.register('parse', parser.parseMAM);
+    this.register('validate', validator.validate);
+    this.register('compiler', new compiler.MAMCompiler());
+    this.register('validator', new validator.MAMValidator());
+    this.register('visualizer', new visualization.GraphVisualizer());
+    this.register('matcher', new testing.MAMMatcher());
     return this;
   }
 
@@ -314,6 +353,50 @@ export class MAMSystem {
   /** Pre-wired knowledge consolidator. */
   get consolidator(): intelligence.Consolidator | undefined {
     return this.get('consolidator');
+  }
+
+  // --- Toolchain accessors --------------------------------------------------
+
+  /** Pre-wired MAM parser (`parseMAM`). */
+  get parse(): typeof parser.parseMAM | undefined {
+    return this.get('parse');
+  }
+
+  /** Pre-wired MAM validator (`validate`). */
+  get validate(): typeof validator.validate | undefined {
+    return this.get('validate');
+  }
+
+  /** Pre-wired MAM compiler instance. */
+  get compiler(): compiler.MAMCompiler | undefined {
+    return this.get('compiler');
+  }
+
+  /** Pre-wired MAM validator instance. */
+  get validator(): validator.MAMValidator | undefined {
+    return this.get('validator');
+  }
+
+  /** Pre-wired graph visualizer. */
+  get visualizer(): visualization.GraphVisualizer | undefined {
+    return this.get('visualizer');
+  }
+
+  /** Pre-wired test matcher. */
+  get matcher(): testing.MAMMatcher | undefined {
+    return this.get('matcher');
+  }
+
+  /**
+   * LSP server metadata. Loaded lazily because `@mam/lsp`'s entry point
+   * starts a server connection on import, so it must only be loaded in an
+   * actual LSP context.
+   *
+   * @returns server name + version.
+   */
+  async getLspInfo(): Promise<{ name: string; version: string }> {
+    const lsp = await import('@mam/lsp');
+    return lsp.getMAMServerInfo();
   }
 }
 

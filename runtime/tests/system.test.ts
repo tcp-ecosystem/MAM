@@ -14,6 +14,13 @@ describe('mam system wiring', () => {
     expect(system.modules.mcp).toBeDefined();
     expect(system.modules.tokenOptimization).toBeDefined();
     expect(system.modules.intelligence).toBeDefined();
+    expect(system.modules.ast).toBeDefined();
+    expect(system.modules.parser).toBeDefined();
+    expect(system.modules.compiler).toBeDefined();
+    expect(system.modules.validator).toBeDefined();
+    expect(system.modules.visualization).toBeDefined();
+    expect(system.modules.packageManager).toBeDefined();
+    expect(system.modules.testing).toBeDefined();
   });
 
   it('auto-wires default engines under canonical names', () => {
@@ -33,6 +40,12 @@ describe('mam system wiring', () => {
     expect(names).toContain('mcpServer');
     expect(names).toContain('promptOptimizer');
     expect(names).toContain('queryAnalyzer');
+    expect(names).toContain('parse');
+    expect(names).toContain('validate');
+    expect(names).toContain('compiler');
+    expect(names).toContain('validator');
+    expect(names).toContain('visualizer');
+    expect(names).toContain('matcher');
   });
 
   it('exposes typed getters for default engines', () => {
@@ -89,5 +102,16 @@ describe('mam system wiring', () => {
       [{ id: 'e1', text: 'MAM is a language for modules.' }],
     );
     expect(grounded).toBeDefined();
+  });
+
+  it('wires the language toolchain end-to-end', async () => {
+    const system = createMAMSystem();
+    const source = '---\nname: demo\n---\n# Demo\n\nHello MAM.';
+    const parsed = system.parse!(source);
+    expect(parsed.ast).toBeDefined();
+    const result = system.validate!(parsed.ast as never);
+    expect(result).toBeDefined();
+    const info = await system.getLspInfo();
+    expect(info.name).toBe('mam-lsp');
   });
 });
