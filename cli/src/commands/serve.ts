@@ -8,10 +8,22 @@
 import { createServer, IncomingMessage, ServerResponse, Server } from 'node:http';
 import { createServer as createHttpsServer } from 'node:https';
 import { readFile, readdir, stat, access, writeFile, mkdir } from 'node:fs/promises';
+import { createInterface } from 'node:readline';
 import { join, extname, resolve, relative } from 'node:path';
 import { createHash } from 'node:crypto';
 import chalk from 'chalk';
 import ora from 'ora';
+import { createMcpServer } from '@mam/mcp';
+import {
+  createToolDiscovery,
+  createToolInvoker,
+  type DiscoveryToolDefinition,
+  type ToolHandler,
+} from '@mam/tool-engine';
+import { parseMAM } from '@mam/parser';
+import { validate } from '@mam/validator';
+import { PromptOptimizer } from '@mam/token-optimization';
+import { buildSections } from './optimize.js';
 
 // ============================================================================
 // Types
@@ -31,6 +43,7 @@ export interface ServeOptions {
   cache?: boolean;
   verbose?: boolean;
   noHMR?: boolean;
+  mcp?: boolean;
 }
 
 interface Route {
@@ -987,10 +1000,171 @@ async function handleProxy(req: IncomingMessage, res: ServerResponse, target: st
 }
 
 // ============================================================================
+// MCP Server (--mcp)
+// ============================================================================
+
+interface McpToolListing {
+  name: string;
+  description?: string;
+  inputSchema: Record<string, unknown>;
+}
+
+function toMcpToolListing(tool: DiscoveryToolDefinition): McpToolListing {
+  const properties: Record<string, unknown> = {};
+  const required: string[] = [];
+  for (const p of tool.parameters ?? []) {
+    properties[p.name] = { type: p.type, description: p.description };
+    if (p.required) required.push(p.name);
+  }
+  return {
+    name: tool.name,
+    description: tool.description,
+    inputSchema: {
+      type: 'object',
+      properties,
+      ...(required.length > 0 ? { required } : {}),
+    },
+  };
+}
+
+function defineCliTools(basePath: string): DiscoveryToolDefinition[] {
+  return [
+    {
+name: 'mam.parse',
+      description: 'Parse a MAM module file and report section/code-block statistics',
+      tags: ['mam', 'cli'],
+      capabilities: ['mam.parse'],
+      parameters: [{ name: 'file', type: 'string', required: true, description: 'Path to the .mam / .mam.md file' }],
+      handler: async (params: unknown) => {
+        const { file } = (params ?? {}) as { file?: string };
+        const content = await readFile(resolve(basePath, file || ''), 'utf-8');
+        const result = parseMAM(content, { source: file });
+        if (result.errors.length > 0) {
+          return { success: false, errors: result.errors.map((e) => e.toFormattedString()) };
+        }
+        return {
+          success: true,
+          module: result.ast.frontmatter?.data?.name,
+          sections: result.ast.sections.length,
+          codeBlocks: result.ast.metadata.codeBlockCount,
+          tokens: result.stats.totalTokens,
+        };
+      },
+    },
+    {
+name: 'mam.validate',
+      description: 'Validate a MAM module file against the MAM specification',
+      tags: ['mam', 'cli'],
+      capabilities: ['mam.validate'],
+      parameters: [{ name: 'file', type: 'string', required: true, description: 'Path to the .mam / .mam.md file' }],
+      handler: async (params: unknown) => {
+        const { file } = (params ?? {}) as { file?: string };
+        const content = await readFile(resolve(basePath, file || ''), 'utf-8');
+        const result = parseMAM(content, { source: file });
+        if (result.errors.length > 0) {
+          return { valid: false, errors: result.errors.map((e) => e.toFormattedString()), warnings: [] };
+        }
+        const report = validate(result.ast as any);
+        return { valid: report.valid, errors: report.errors, warnings: report.warnings };
+      },
+    },
+    {
+name: 'mam.ast',
+      description: 'Dump the section structure (AST) of a MAM module file',
+      tags: ['mam', 'cli'],
+      capabilities: ['mam.ast'],
+      parameters: [{ name: 'file', type: 'string', required: true, description: 'Path to the .mam / .mam.md file' }],
+      handler: async (params: unknown) => {
+        const { file } = (params ?? {}) as { file?: string };
+        const content = await readFile(resolve(basePath, file || ''), 'utf-8');
+        const result = parseMAM(content, { source: file });
+        if (result.errors.length > 0) {
+          return { success: false, errors: result.errors.map((e) => e.toFormattedString()) };
+        }
+        return {
+          success: true,
+          sections: result.ast.sections.map((s) => ({ name: s.name, items: (s.content || []).length })),
+        };
+      },
+    },
+    {
+name: 'mam.optimize',
+      description: 'Report token savings (originalTokens/optimizedTokens/savedPercent) for a prompt file',
+      tags: ['mam', 'cli'],
+      capabilities: ['mam.optimize'],
+      parameters: [{ name: 'file', type: 'string', required: true, description: 'Path to the prompt file to optimize' }],
+      handler: async (params: unknown) => {
+        const { file } = (params ?? {}) as { file?: string };
+        const content = await readFile(resolve(basePath, file || ''), 'utf-8');
+        const optimizer = new PromptOptimizer();
+        const result = optimizer.optimize(buildSections(content));
+        return {
+          originalTokens: result.originalTokens,
+          optimizedTokens: result.optimizedTokens,
+          savedTokens: result.savedTokens,
+          savedPercent: result.savedPercent,
+          applied: result.applied,
+        };
+      },
+    },
+  ];
+}
+
+export async function startMcpServer(options: ServeOptions): Promise<void> {
+  const basePath = resolve(options.dir || process.cwd());
+  const discovery = createToolDiscovery();
+  const invoker = createToolInvoker();
+  const server = createMcpServer({
+    config: {
+      serverInfo: { name: 'mam-cli', version: '0.1.0' },
+      instructions: 'MAM CLI tools exposed over the Model Context Protocol.',
+    },
+  });
+
+  const tools = defineCliTools(basePath);
+  for (const tool of tools) {
+    discovery.register(tool);
+    server.registerToolHandler(tool.name, async (args) => {
+      const result = await invoker.invoke({ tool: tool.name, params: args }, tool.handler as ToolHandler);
+      if (!result.ok) {
+        throw new Error(result.error ?? `Tool "${tool.name}" failed`);
+      }
+      return result.value;
+    });
+  }
+  server.registerToolListings(() => discovery.list().map(toMcpToolListing));
+  server.start();
+
+  console.log(chalk.cyan('\n  MAM MCP Server (stdio)'));
+  console.log(chalk.gray(`  ${tools.length} tool(s) registered via @mam/tool-engine + @mam/mcp`));
+  console.log(chalk.gray('  Send JSON-RPC lines on stdin; responses go to stdout. Ctrl+C to stop.\n'));
+
+  const rl = createInterface({ input: process.stdin });
+  rl.on('line', async (line) => {
+    const trimmed = line.trim();
+    if (!trimmed) return;
+    try {
+      const response = await server.handleRawMessage(trimmed);
+      if (response !== null) {
+        process.stdout.write(`${response}\n`);
+      }
+    } catch (err) {
+      const message = (err as Error).message;
+      process.stdout.write(`${JSON.stringify({ jsonrpc: '2.0', id: null, error: { code: -32000, message } })}\n`);
+    }
+  });
+}
+
+// ============================================================================
 // Main Command
 // ============================================================================
 
 export async function serveCommand(options: ServeOptions): Promise<void> {
+  if (options.mcp) {
+    await startMcpServer(options);
+    return;
+  }
+
   const port = options.port || 3000;
   const host = options.host || '0.0.0.0';
   const basePath = resolve(options.dir || process.cwd());
@@ -1186,3 +1360,4 @@ export async function serveCommand(options: ServeOptions): Promise<void> {
     process.exit(0);
   });
 }
+

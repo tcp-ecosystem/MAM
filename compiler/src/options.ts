@@ -64,6 +64,7 @@ export function defaultCompilerConfig(): CompilerConfig {
     includeComments: false,
     includeMetadata: true,
     optimize: false,
+    optimizeTokens: false,
   };
 }
 
@@ -76,6 +77,7 @@ export function normalizeCompilerConfig(config?: CompilerConfig): CompilerConfig
     includeComments: config?.includeComments ?? defaults.includeComments,
     includeMetadata: config?.includeMetadata ?? defaults.includeMetadata,
     optimize: config?.optimize ?? defaults.optimize,
+    optimizeTokens: config?.optimizeTokens ?? defaults.optimizeTokens,
   };
 }
 

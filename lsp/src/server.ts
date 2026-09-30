@@ -9,7 +9,9 @@
 import { Connection, InitializeParams, InitializeResult, TextDocumentSyncKind } from 'vscode-languageserver';
 import { TextDocument } from 'vscode-languageserver-textdocument';
 import { parseMAM } from '@mam/parser';
-import { CompletionItem, Diagnostic, Hover, TextEdit, CodeAction, Command } from 'vscode-languageserver-protocol';
+import { CompletionItem, Diagnostic, DiagnosticSeverity, Hover, TextEdit, CodeAction, Command } from 'vscode-languageserver-protocol';
+import { createEvaluator, createMetricsRegistry, createTracer } from '@mam/observability';
+import type { Evaluator, EvaluationResult, MetricsRegistry, TraceSpan, Tracer } from '@mam/observability';
 import { getCompletions } from './features/completion.js';
 import { getHover } from './features/hover.js';
 import { getDefinition } from './features/definition.js';
@@ -23,13 +25,35 @@ import type { MAMModule } from '@mam/parser';
 // Server
 // ============================================================================
 
+export interface MAMServerOptions {
+  telemetry?: boolean;
+}
+
+export interface MAMTelemetrySnapshot {
+  spans: TraceSpan[];
+  counters: Record<string, number>;
+  evaluations: EvaluationResult[];
+}
+
 export class MAMServer {
   private connection: Connection;
   private documents: Map<string, TextDocument> = new Map();
   private astCache: Map<string, MAMModule> = new Map();
 
-  constructor(connection: Connection) {
+  private readonly telemetryEnabled: boolean;
+  private tracer: Tracer | undefined;
+  private metrics: MetricsRegistry | undefined;
+  private evaluator: Evaluator | undefined;
+  private readonly evaluations: EvaluationResult[] = [];
+
+  constructor(connection: Connection, options: MAMServerOptions = {}) {
     this.connection = connection;
+    this.telemetryEnabled = options.telemetry ?? false;
+    if (this.telemetryEnabled) {
+      this.tracer = createTracer();
+      this.metrics = createMetricsRegistry();
+      this.evaluator = createEvaluator();
+    }
     this.setupEventHandlers();
   }
 
@@ -193,7 +217,44 @@ export class MAMServer {
     if (!doc) return [];
 
     const ast = this.astCache.get(params.textDocument.uri) || null;
-    return getDiagnostics(doc, ast);
+
+    if (!this.telemetryEnabled || !this.tracer || !this.metrics || !this.evaluator) {
+      return getDiagnostics(doc, ast);
+    }
+
+    const started = Date.now();
+    const result = this.tracer.traceSync(
+      () => getDiagnostics(doc, ast),
+      'mam.lsp.validate',
+      { attributes: { 'lsp.document.uri': params.textDocument.uri } },
+    );
+    const latencyMs = Date.now() - started;
+
+    this.metrics.counter('diagnostics').increment();
+    this.metrics.histogram('validate_latency_ms').observe(latencyMs);
+
+    const hasErrors = result.some(d => d.severity === DiagnosticSeverity.Error);
+    const score = hasErrors ? 0 : 1;
+    this.evaluations.push(this.evaluator.evaluate('lsp.diagnostics', score));
+
+    return result;
+  }
+
+  getTelemetry(): MAMTelemetrySnapshot | undefined {
+    if (!this.telemetryEnabled || !this.tracer || !this.metrics) {
+      return undefined;
+    }
+
+    const spans = this.tracer.query().search(() => true, Number.MAX_SAFE_INTEGER);
+    const counters: Record<string, number> = {};
+    for (const metric of this.metrics.collect()) {
+      if (metric.type === 'counter') {
+        const latest = metric.samples[metric.samples.length - 1];
+        counters[metric.name] = latest?.value ?? 0;
+      }
+    }
+
+    return { spans, counters, evaluations: [...this.evaluations] };
   }
 
   getDocument(uri: string): TextDocument | undefined {

@@ -15,6 +15,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
+    "@mam/observability": "workspace:*",
     "@mam/parser": "workspace:*",
     "@mam/validator": "workspace:*",
     "vscode-languageserver": "^9.0.1",

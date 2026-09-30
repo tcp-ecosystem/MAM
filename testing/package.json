@@ -21,7 +21,9 @@
     "@mam/ast": "workspace:*",
     "@mam/parser": "workspace:*",
     "@mam/validator": "workspace:*",
-    "@mam/compiler": "workspace:*"
+    "@mam/compiler": "workspace:*",
+    "@mam/observability": "workspace:*",
+    "@mam/intelligence-layer": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.3.0",

@@ -20,6 +20,13 @@ export interface CompilerConfig {
   includeComments?: boolean;
   includeMetadata?: boolean;
   optimize?: boolean;
+  /**
+   * When `true`, AI SDK targets run the emitted prompt content through
+   * `@mam/token-optimization`'s `PromptOptimizer` before emitting it, and
+   * surface the token savings on the `CompileResult.tokenOptimization` field.
+   * Defaults to `false` (existing behavior unchanged).
+   */
+  optimizeTokens?: boolean;
 }
 
 export interface CompileResult {
@@ -29,6 +36,11 @@ export interface CompileResult {
   warnings: string[];
   errors: string[];
   stats: CompileStats;
+  /**
+   * Present only when a target ran with `optimizeTokens: true` and the
+   * optimizer produced savings. Lets callers report the token reduction.
+   */
+  tokenOptimization?: TokenOptimization;
 }
 
 export interface CompileStats {
@@ -37,13 +49,38 @@ export interface CompileStats {
   timeMs: number;
 }
 
+/**
+ * Token savings reported by a token-optimizing target. Mirrors the fields of
+ * `@mam/token-optimization`'s `OptimizeResult` so callers can render a report
+ * without importing the engine directly.
+ */
+export interface TokenOptimization {
+  /** Total estimated tokens in the original prompt content. */
+  originalTokens: number;
+  /** Total estimated tokens after optimization. */
+  optimizedTokens: number;
+  /** `originalTokens - optimizedTokens` (>= 0). */
+  savedTokens: number;
+  /** `savedTokens / originalTokens * 100`, clamped to 0..100. */
+  savedPercent: number;
+}
+
+/**
+ * A target may return either a plain compiled string or an object carrying
+ * the compiled output plus optional token-optimization metadata.
+ */
+export interface TargetHandlerOutput {
+  output: string;
+  tokenOptimization?: TokenOptimization;
+}
+
 // ============================================================================
 // Target Interface
 // ============================================================================
 
 export interface CompileTargetHandler {
   name: string;
-  compile(modules: V2ModuleNode[], config: CompilerConfig): string;
+  compile(modules: V2ModuleNode[], config: CompilerConfig): string | TargetHandlerOutput;
 }
 
 // ============================================================================
@@ -97,7 +134,9 @@ export class MAMCompiler {
       }
 
       // Compile
-      const output = handler.compile(modules, config);
+      const compiled = handler.compile(modules, config);
+      const output = typeof compiled === 'string' ? compiled : compiled.output;
+      const tokenOptimization = typeof compiled === 'string' ? undefined : compiled.tokenOptimization;
 
       const lines = output.split('\n').length;
 
@@ -107,6 +146,7 @@ export class MAMCompiler {
         target: config.target,
         warnings,
         errors,
+        ...(tokenOptimization ? { tokenOptimization } : {}),
         stats: {
           modulesCompiled: modules.length,
           linesGenerated: lines,

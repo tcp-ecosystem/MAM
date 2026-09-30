@@ -7,6 +7,7 @@
  */
 
 import type { TestResult, TestSuite, TestCase } from './runner.js';
+import { getEvaluationStats } from './engines.js';
 
 // ============================================================================
 // Types
@@ -62,6 +63,18 @@ export class ConsoleReporter implements Reporter {
     }
 
     lines.push('');
+
+    const evalStats = getEvaluationStats();
+    if (evalStats.total > 0) {
+      lines.push('Evaluations:');
+      lines.push(
+        `  ${evalStats.total} total, ${evalStats.passed} passed, ` +
+          `${(evalStats.passRate * 100).toFixed(1)}% pass rate, ` +
+          `average score ${evalStats.averageScore.toFixed(4)}`
+      );
+      lines.push('');
+    }
+
     lines.push(result.success ? 'SUCCESS' : 'FAILURE');
     return lines.join('\n');
   }

@@ -5,6 +5,19 @@
  * detailed error messages including source locations.
  */
 
+import {
+  createEvaluator,
+  type EvalOptions,
+  type EvaluationResult,
+  type EvaluationThreshold,
+} from '@mam/observability';
+import {
+  DEFAULT_GROUNDING_CONFIG,
+  GroundednessScorer,
+  type EvidenceChunk,
+  type GroundedClaim,
+} from '@mam/intelligence-layer';
+import { evaluationEngine } from './engines.js';
 import { MAMMatcher, type PatternDefinition, type SectionQuery, type MatchableAST } from './matcher.js';
 
 // ============================================================================
@@ -788,6 +801,89 @@ export class MAMAssert {
   }
 
   // --------------------------------------------------------------------------
+  // Engine-backed assertions
+  // --------------------------------------------------------------------------
+
+  /**
+   * Score an assertion with an observability {@link Evaluator} and record the
+   * result into the shared {@link EvaluationEngine} so a suite summary is
+   * available. Throws a {@link MAMAssertionError} when the evaluation does not
+   * pass its threshold.
+   *
+   * @param name Evaluation name.
+   * @param score Raw score in ratio space (0-1).
+   * @param threshold Optional threshold override. When omitted the evaluator
+   *   falls back to the configured/named threshold, then the default accuracy
+   *   threshold (0.6).
+   * @param message Optional custom message.
+   * @param location Optional source location.
+   * @returns The evaluation result, also recorded into the shared engine.
+   */
+  evaluate(
+    name: string,
+    score: number,
+    threshold?: EvaluationThreshold,
+    message?: string,
+    location?: SourceLocation
+  ): EvaluationResult {
+    const opts: EvalOptions = threshold !== undefined ? { threshold } : {};
+    const result = createEvaluator().evaluate(name, score, opts);
+    evaluationEngine.add(result);
+
+    const passed = result.passed;
+    const msg = message ?? `Evaluation "${name}" ${passed ? 'passed' : 'failed'} with score ${result.score}`;
+    const assertion: AssertionResult = {
+      passed,
+      name: `evaluate:${name}`,
+      message: this.prefix(msg),
+      expected: true,
+      actual: result.passed,
+      location,
+    };
+    this.record(assertion);
+    if (!passed) this.throwAssertion(assertion);
+    return result;
+  }
+
+  /**
+   * Assert that a claim is grounded in the provided evidence using the
+   * intelligence layer's {@link GroundednessScorer}. Fails when the claim's
+   * score is below `minScore` (default `DEFAULT_GROUNDING_CONFIG.minScore`).
+   *
+   * @param claim The claim to evaluate.
+   * @param evidence The candidate evidence pool.
+   * @param minScore Optional minimum score; defaults to the grounding config.
+   * @param message Optional custom message.
+   * @param location Optional source location.
+   * @returns The grounded claim verdict.
+   */
+  assertGrounded(
+    claim: string,
+    evidence: readonly EvidenceChunk[],
+    minScore?: number,
+    message?: string,
+    location?: SourceLocation
+  ): GroundedClaim {
+    const verdict = new GroundednessScorer().ground(claim, evidence);
+    const bar = minScore ?? DEFAULT_GROUNDING_CONFIG.minScore;
+    const passed = verdict.score >= bar;
+    const msg = message ?? (passed
+      ? `Claim "${claim}" grounded with score ${verdict.score.toFixed(3)}`
+      : `Claim "${claim}" not grounded: score ${verdict.score.toFixed(3)} below minScore ${bar}`);
+    const assertion: AssertionResult = {
+      passed,
+      name: 'assertGrounded',
+      message: this.prefix(msg),
+      expected: bar,
+      actual: verdict.score,
+      location,
+    };
+    this.record(assertion);
+    if (!passed) this.throwAssertion(assertion);
+    return verdict;
+  }
+
+  // --------------------------------------------------------------------------
   // Utility
   // --------------------------------------------------------------------------
 
@@ -795,17 +891,21 @@ export class MAMAssert {
     this.results.push(result);
 
     if (!result.passed && this.config.throwOnFail) {
-      const loc = result.location
-        ? ` at ${result.location.file ?? '?'}:${result.location.line ?? '?'}:${result.location.column ?? '?'}`
-        : '';
-      throw new MAMAssertionError(
-        `[${result.name}]${loc} ${result.message}`,
-        result.name,
-        result.expected,
-        result.actual,
-        result.location
-      );
+      this.throwAssertion(result);
     }
+  }
+
+  private throwAssertion(result: AssertionResult): never {
+    const loc = result.location
+      ? ` at ${result.location.file ?? '?'}:${result.location.line ?? '?'}:${result.location.column ?? '?'}`
+      : '';
+    throw new MAMAssertionError(
+      `[${result.name}]${loc} ${result.message}`,
+      result.name,
+      result.expected,
+      result.actual,
+      result.location
+    );
   }
 
   private prefix(msg: string): string {

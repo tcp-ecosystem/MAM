@@ -5,7 +5,7 @@
  * MAM never executes. MAM compiles.
  */
 
-export { MAMCompiler, type CompilerConfig, type CompileResult, type CompileTarget } from './compiler.js';
+export { MAMCompiler, type CompilerConfig, type CompileResult, type CompileTarget, type CompileTargetHandler, type TokenOptimization, type TargetHandlerOutput } from './compiler.js';
 export { generateModuleContext, type CompileTargetName } from './context.js';
 export { PythonTarget } from './targets/python.js';
 export { JavaScriptTarget } from './targets/javascript.js';

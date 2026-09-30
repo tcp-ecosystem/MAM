@@ -594,9 +594,29 @@ program
   .option('-p, --port <port>', 'Server port', '3000')
   .option('-d, --dir <dir>', 'Module directory', '.')
   .option('--open', 'Open browser')
+  .option('--mcp', 'Start an MCP server over stdio (tools/list + tools/call) instead of the HTTP dev server')
   .action(async (options) => {
     const { serveCommand } = await import('./commands/serve.js');
     await serveCommand({ port: parseInt(options.port), ...options });
+  });
+
+// ─── WIRED ENGINES ─────────────────────────────────────────────────────────
+
+program
+  .command('optimize')
+  .description('Optimize token usage of a prompt file (via @mam/token-optimization)')
+  .argument('<file>', 'Prompt file to optimize')
+  .action(async (file) => {
+    const { optimizeCommand } = await import('./commands/optimize.js');
+    await optimizeCommand({ file });
+  });
+
+program
+  .command('system')
+  .description('Show wired MAM engines (direct package wiring, no runtime facade)')
+  .action(async () => {
+    const { systemCommand } = await import('./commands/system.js');
+    await systemCommand();
   });
 
 program

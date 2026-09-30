@@ -22,7 +22,8 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@mam/ast": "workspace:*"
+    "@mam/ast": "workspace:*",
+    "@mam/token-optimization": "workspace:*"
   },
   "devDependencies": {
     "typescript": "^5.3.0",

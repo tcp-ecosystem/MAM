@@ -24,6 +24,7 @@ import {
 } from '@mam/runtime/v2';
 import chalk from 'chalk';
 import ora from 'ora';
+import { createTracer, createMetricsRegistry, createEvaluator } from '@mam/observability';
 
 // ---------------------------------------------------------------------------
 // Types & Interfaces
@@ -1498,8 +1499,17 @@ export async function runCommand(options: RunOptions): Promise<void> {
 
     // Single execution
     spinner.text = 'Executing module...';
-    const result = await executeRun(options);
+    const tracer = createTracer();
+    const metrics = createMetricsRegistry();
+    const evaluator = createEvaluator();
+    const executions = metrics.counter('mam.cli.executions');
+    const result = await tracer.trace(() => executeRun(options), 'mam.run.execute');
     spinner.stop();
+    executions.increment();
+    const evaluation = evaluator.evaluate('run.success', result.success ? 1 : 0);
+    console.log(chalk.gray(
+      `  [observability] span=mam.run.execute ${result.success ? 'ok' : 'error'} · executions=${executions.get()} · eval=run.success ${evaluation.passed ? 'PASS' : 'FAIL'} (${evaluation.score.toFixed(2)})`,
+    ));
 
     // Compiled target artifacts stream their own program output.
     if (result.metadata && result.metadata.targetRuntime) {

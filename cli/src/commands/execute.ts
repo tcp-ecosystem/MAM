@@ -10,6 +10,7 @@ import { readFile, writeFile, readdir, access, mkdir } from 'node:fs/promises';
 import { resolve, join, basename } from 'node:path';
 import { parseMAM } from '@mam/parser';
 import { executeModule } from '@mam/runtime';
+import { createTracer, createMetricsRegistry, createEvaluator } from '@mam/observability';
 import chalk from 'chalk';
 import ora from 'ora';
 
@@ -788,26 +789,38 @@ export async function executeCommand(options: ExecuteOptions): Promise<void> {
 
     spinner.text = 'Executing module...';
 
+    // MAM observability instrumentation (direct engine wiring)
+    const tracer = createTracer();
+    const metrics = createMetricsRegistry();
+    const evaluator = createEvaluator();
+    const executions = metrics.counter('mam.cli.executions');
+
     let result: ExecutionResult;
 
     if (options.step || options.breakpoints) {
       // Section-by-section execution with step/breakpoint support
-      result = await executeSectionBySection(ast, {
-        inputs,
-        timeout,
-        sandbox,
-        breakpoints: breakpointManager,
-        monitor,
-        stepMode: options.step || false,
-        verbose: options.verbose || false,
-      });
+      result = await tracer.trace(
+        () => executeSectionBySection(ast, {
+          inputs,
+          timeout,
+          sandbox,
+          breakpoints: breakpointManager,
+          monitor,
+          stepMode: options.step || false,
+          verbose: options.verbose || false,
+        }),
+        'mam.execute.sections',
+      );
     } else {
       // Standard execution
-      result = await executeWithSandbox(ast, {
-        inputs,
-        timeout,
-        sandbox,
-      });
+      result = await tracer.trace(
+        () => executeWithSandbox(ast, {
+          inputs,
+          timeout,
+          sandbox,
+        }),
+        'mam.execute',
+      );
     }
 
     // Stop resource monitor
@@ -817,6 +830,12 @@ export async function executeCommand(options: ExecuteOptions): Promise<void> {
     }
 
     spinner.stop();
+
+    executions.increment();
+    const evaluation = evaluator.evaluate('execute.success', result.success ? 1 : 0);
+    console.log(chalk.gray(
+      `  [observability] span=mam.execute ${result.success ? 'ok' : 'error'} · executions=${executions.get()} · eval=execute.success ${evaluation.passed ? 'PASS' : 'FAIL'} (${evaluation.score.toFixed(2)})`,
+    ));
 
     // Save execution history
     const history = await loadHistory();
