@@ -16,6 +16,15 @@ export { MarkdownReporter, type MarkdownConfig, type MarkdownOutput, formatMarkd
 export { TimelineGenerator, type TimelineConfig, type TimelineOutput, scaleTimeToColumns, formatDurationLabel, clampTimelineRange } from './timeline.js';
 export { type StatsConfig, type StatsOutput, computeGraphStats, getInDegrees, getOutDegrees, findIsolatedNodes, getGraphDensity } from './stats.js';
 export { createGraphNode, createGraphEdge, createEmptyGraph, getNodeIds, findNodeById, getSuccessors, getPredecessors } from './graph.js';
+export {
+  type KnowledgeGraphConfig,
+  graphDataFromKnowledge,
+  knowledgeGraphToMermaid,
+  knowledgeGraphToDot,
+  knowledgeGraphToSvg,
+  computeMetadata,
+  summarizeKnowledgeGraph,
+} from './knowledge-graph.js';
 export type { V2ModuleNode, V2EdgeNode } from '@mam/ast';
 export { sanitizeMermaidId, countMermaidCodeLines, extractMermaidNodeIds, extractMermaidEdgePairs, hasMermaidNodeId, getMermaidDiagramHeader, isFlowchartCode } from './mermaid.js';
 export { countAsciiLines, getAsciiDimensions, hasAsciiContent, getAsciiLine, sliceAsciiLines, joinAsciiOutputs, getAsciiLineWidths } from './ascii.js';

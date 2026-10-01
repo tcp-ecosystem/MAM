@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@mam/ast": "workspace:*",
+    "@mam/intelligence-layer": "workspace:*",
     "@mam/parser": "workspace:*"
   },
   "devDependencies": {
