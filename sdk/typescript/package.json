@@ -7,7 +7,17 @@
   "types": "./dist/index.d.ts",
   "exports": { ".": { "import": "./dist/index.js", "types": "./dist/index.d.ts" } },
   "scripts": { "build": "tsc", "typecheck": "tsc --noEmit", "test": "vitest run" },
-  "dependencies": {},
+  "dependencies": {
+    "@mam/context-engine": "workspace:*",
+    "@mam/intelligence-layer": "workspace:*",
+    "@mam/knowledge-engine": "workspace:*",
+    "@mam/mcp": "workspace:*",
+    "@mam/memory-engine": "workspace:*",
+    "@mam/observability": "workspace:*",
+    "@mam/security": "workspace:*",
+    "@mam/token-optimization": "workspace:*",
+    "@mam/tool-engine": "workspace:*"
+  },
   "devDependencies": { "typescript": "^5.3.0", "vitest": "^1.2.0" },
   "files": ["dist"],
   "keywords": ["mam", "sdk", "typescript"],

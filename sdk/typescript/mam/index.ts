@@ -11,6 +11,7 @@ export * from './format.js';
 export * from './graph.js';
 export * from './template.js';
 export * from './doctor.js';
+export * from './engines.js';
 
 /** Semantic version of this SDK. */
 export const VERSION = '0.1.0';
@@ -45,7 +46,7 @@ export function countModuleSections(module: { sections?: unknown[] }): number {
 
 /** Returns a stable contract feature inventory. */
 export function contractFeatures(): string[] {
-  return ['ast', 'parser', 'validator', 'runtime', 'plugins', 'config', 'cache', 'format', 'graph', 'template', 'doctor'];
+  return ['ast', 'parser', 'validator', 'runtime', 'plugins', 'config', 'cache', 'format', 'graph', 'template', 'doctor', 'engines'];
 }
 
 /** Returns whether a feature name is part of this package. */
