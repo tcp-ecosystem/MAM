@@ -1,4 +1,5 @@
 ---
+# MAM Metadata
 id: template-resource
 name: Resource Template
 version: 2.0.0

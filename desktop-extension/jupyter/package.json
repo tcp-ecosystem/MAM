@@ -1,7 +1,7 @@
 {
   "name": "mam-jupyterlab",
   "version": "0.1.0",
-  "description": "Syntax highlighting and file-type support for MAM (Markdown as Module) in JupyterLab",
+  "description": "Syntax highlighting and file-type support for MAM (Machine Agent Modules) in JupyterLab",
   "author": "tcp-ecosystems",
   "license": "MIT",
   "keywords": [

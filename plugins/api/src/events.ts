@@ -294,4 +294,52 @@ export class PluginEventBus {
     this.pausedEvents = [];
     this.isPaused = false;
   }
+
+  // ─── Introspection ──────────────────────────────────────────────
+
+  /** Emits several events in order, awaiting each one. */
+  async emitBatch(events: Array<{ event: string; data?: unknown }>): Promise<void> {
+    for (const { event, data } of events) {
+      await this.emit(event, data);
+    }
+  }
+
+  /** Returns the handlers that would run for an event, in priority order. */
+  getSubscribers(event: string): EventHandler[] {
+    const wildcard = this.wildcardHandlers.map((s) => s.handler);
+    const direct = (this.handlers.get(event) || []).map((s) => s.handler);
+    return [...wildcard, ...direct];
+  }
+
+  /** Returns true when at least one handler is registered for the event. */
+  hasSubscribers(event: string): boolean {
+    return this.wildcardHandlers.length > 0 || (this.handlers.get(event)?.length || 0) > 0;
+  }
+
+  /** Returns the logged events emitted strictly after `date`. */
+  getEventsSince(date: Date): EmittedEvent[] {
+    const cutoff = date.getTime();
+    return this.eventLog.filter((e) => e.timestamp.getTime() > cutoff);
+  }
+
+  /** Returns the logged events matching a predicate. */
+  filterLog(predicate: (event: EmittedEvent) => boolean): EmittedEvent[] {
+    return this.eventLog.filter(predicate);
+  }
+
+  /** Returns the mean handler dispatch time for an event, in milliseconds. */
+  getAverageDuration(event: string): number {
+    const entries = this.eventLog.filter((e) => e.event === event);
+    if (entries.length === 0) return 0;
+    const total = entries.reduce((sum, e) => sum + e.durationMs, 0);
+    return total / entries.length;
+  }
+
+  /** Returns the most frequently emitted events, most common first. */
+  getTopEvents(count: number = 10): Array<{ event: string; count: number }> {
+    return [...this.eventCounts.entries()]
+      .map(([event, total]) => ({ event, count: total }))
+      .sort((a, b) => b.count - a.count || a.event.localeCompare(b.event))
+      .slice(0, count);
+  }
 }

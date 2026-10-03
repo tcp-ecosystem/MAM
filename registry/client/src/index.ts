@@ -33,4 +33,10 @@ export {
 
 // ── Errors ──────────────────────────────────────────────────────────────────
 
-export { RegistryError } from './errors.js';
+export {
+  RegistryError,
+  RETRYABLE_STATUS_CODES,
+  isTimeoutError,
+  isRetryableError,
+  toRegistryError,
+} from './errors.js';

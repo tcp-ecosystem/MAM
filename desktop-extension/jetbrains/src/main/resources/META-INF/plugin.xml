@@ -4,7 +4,7 @@
   <vendor url="https://github.com/tcp-ecosystems">MAM Contributors</vendor>
   <description><![CDATA[
     <p>Syntax highlighting, color settings and inline validation for MAM modules
-    (<i>Markdown as Module</i>).</p>
+    (<i>Machine Agent Modules</i>).</p>
     <p>Supports <code>*.mam</code> and <code>*.mam.md</code> files with YAML front
     matter, <code>##</code> sections, mermaid diagrams and fenced code blocks.
     Errors reported by <code>mam validate</code> are highlighted in the editor.</p>

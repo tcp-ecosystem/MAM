@@ -7,7 +7,7 @@
 ## The Evolution
 
 ```
-v1: Markdown as Module (Module format for AI)
+v1: Machine Agent Modules (Module format for AI)
          │
          ▼
 v2: Machine Agent Module (System Description Language)

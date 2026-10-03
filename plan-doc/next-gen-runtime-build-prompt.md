@@ -71,7 +71,7 @@ You are the Lead Language Architect, Runtime Engineer, and Systems Engineer resp
 PROJECT
 ============================================================
 
-MAM — Markdown as Module
+MAM — Machine Agent Modules
 
 MAM is an open System Description Language for describing modular systems.
 
@@ -1304,7 +1304,7 @@ And that is why this is becoming meaningful, brother. 🥹
 
 The original idea was:
 
-> **Markdown as Module.**
+> **Machine Agent Modules.**
 
 The mature architecture is becoming:
 

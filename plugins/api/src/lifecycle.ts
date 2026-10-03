@@ -241,6 +241,111 @@ export class PluginLifecycleManager {
     return VALID_TRANSITIONS[from]?.includes(to) ?? false;
   }
 
+  // ─── Introspection ──────────────────────────────────────────────
+
+  /** Returns the states a plugin can legally move to from its current state. */
+  getAvailableTransitions(name: string): PluginState[] {
+    const from = this.getState(name);
+    if (!from) return [];
+    return [...(VALID_TRANSITIONS[from] || [])];
+  }
+
+  /** Returns how long a plugin has been in its current state, in milliseconds. */
+  getTimeInState(name: string): number | undefined {
+    const entry = this.entries.get(name);
+    if (!entry) return undefined;
+    return Date.now() - entry.lastStateChange.getTime();
+  }
+
+  /** Returns the total load duration across every attempt, in milliseconds. */
+  getTotalLoadTime(name: string): number | undefined {
+    const entry = this.entries.get(name);
+    if (!entry) return undefined;
+    return entry.loadedAt ? entry.loadedAt.getTime() - entry.registeredAt.getTime() : undefined;
+  }
+
+  /** Counts the plugins currently in each state. */
+  getStateSummary(): Record<PluginState, number> {
+    const summary = {} as Record<PluginState, number>;
+    for (const state of Object.keys(VALID_TRANSITIONS) as PluginState[]) {
+      summary[state] = 0;
+    }
+    for (const entry of this.entries.values()) {
+      summary[entry.state]++;
+    }
+    return summary;
+  }
+
+  /**
+   * Returns the plugins that have sat in one state for longer than `maxMs`.
+   *
+   * A plugin lingering in `loading` or `enabling` usually means a load callback
+   * never resolved, so this is the first thing to check on a stuck startup.
+   */
+  getStuckPlugins(maxMsInState: number): PluginLifecycleEntry[] {
+    return this.getAllEntries().filter(
+      (e) => Date.now() - e.lastStateChange.getTime() > maxMsInState,
+    );
+  }
+
+  /**
+   * Resolves once a plugin reaches `state`, or rejects after `timeoutMs`.
+   *
+   * Resolves immediately when the plugin is already in the state, so callers
+   * can await it without checking first.
+   */
+  waitForState(name: string, state: PluginState, timeoutMs = 5000): Promise<void> {
+    return new Promise((resolve, reject) => {
+      const current = this.getState(name);
+      if (!current) {
+        reject(new Error(`Plugin not registered: "${name}"`));
+        return;
+      }
+      if (current === state) {
+        resolve();
+        return;
+      }
+
+      const timer = setTimeout(() => {
+        stop();
+        reject(new Error(`Timed out after ${timeoutMs}ms waiting for "${name}" to reach "${state}"`));
+      }, timeoutMs);
+      if (typeof timer === 'object' && timer && 'unref' in timer) {
+        (timer as { unref: () => void }).unref();
+      }
+
+      const stop = this.onEvent((event) => {
+        if (event.plugin === name && event.to === state) {
+          clearTimeout(timer);
+          stop();
+          resolve();
+        }
+      });
+    });
+  }
+
+  /**
+   * Applies `operation` to several plugins, collecting per-plugin outcomes.
+   *
+   * One plugin throwing does not stop the others; the failure is reported in
+   * that plugin's slot instead.
+   */
+  batchTransition(
+    names: string[],
+    operation: (name: string) => void | Promise<void>,
+  ): Promise<Array<{ name: string; ok: boolean; error?: string }>> {
+    return Promise.all(
+      names.map(async (name) => {
+        try {
+          await operation(name);
+          return { name, ok: true };
+        } catch (error) {
+          return { name, ok: false, error: (error as Error).message };
+        }
+      }),
+    );
+  }
+
   // ─── Listeners ──────────────────────────────────────────────────
 
   onEvent(listener: (event: LifecycleEvent) => void): () => void {

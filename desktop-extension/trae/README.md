@@ -1,6 +1,6 @@
 # MAM for Trae
 
-Language support for MAM (Markdown as Module) in [Trae](https://www.trae.ai):
+Language support for MAM (Machine Agent Modules) in [Trae](https://www.trae.ai):
 syntax highlighting for `.mam` and `.mam.md` files, plus a `rules/mam.md` file
 that teaches Trae's AI assistant the MAM spec and CLI workflow.
 
@@ -26,7 +26,7 @@ trae --install-extension /path/to/mam-language-0.1.0.vsix
 ### Option B — VS Code Marketplace
 
 Trae supports the VS Code Marketplace. In the Extensions panel
-(Ctrl/Cmd+Shift+X) search for **MAM - Markdown as Module** (publisher
+(Ctrl/Cmd+Shift+X) search for **MAM - Machine Agent Modules** (publisher
 `tcp-ecosystems`) and install.
 
 ### Option C — copy into Trae's extension directory

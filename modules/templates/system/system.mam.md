@@ -1,4 +1,5 @@
 ---
+# MAM Metadata
 id: template-system
 name: System Template
 version: 2.0.0

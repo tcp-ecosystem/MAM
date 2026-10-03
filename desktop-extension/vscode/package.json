@@ -1,6 +1,6 @@
 {
   "name": "mam-language",
-  "displayName": "MAM - Markdown as Module",
+  "displayName": "MAM - Machine Agent Modules",
   "description": "First-class language support for MAM modules (.mam/.mam.md): syntax highlighting, snippets, CLI-based diagnostics, commands, formatting, folding, symbols, hover, and status bar.",
   "version": "1.0.0",
   "publisher": "tcp-ecosystems",

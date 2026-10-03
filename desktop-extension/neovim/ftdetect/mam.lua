@@ -1,4 +1,4 @@
--- ftdetect/mam.lua - Filetype detection for MAM (Markdown as Module) in Neovim
+-- ftdetect/mam.lua - Filetype detection for MAM (Machine Agent Modules) in Neovim
 -- Description: Auto-detect MAM files by extension (.mam, .mam.md) and set
 --              filetype=mam so the syntax file and plugin load.
 

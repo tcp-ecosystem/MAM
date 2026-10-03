@@ -243,6 +243,73 @@ export class PluginContextProvider {
 
   clearLogs(): void { this.logs = []; }
 
+  // ─── Introspection ──────────────────────────────────────────────
+
+  /** Returns the plugins that own at least one namespaced value, sorted. */
+  getNamespaces(): string[] {
+    return [...this.namespacedData.keys()].filter((ns) => this.namespacedData.get(ns)!.size > 0).sort();
+  }
+
+  /** Returns a plugin's namespaced keys, sorted. */
+  getNamespacedKeys(plugin: string): string[] {
+    return [...(this.namespacedData.get(plugin)?.keys() || [])].sort();
+  }
+
+  /** Removes a single namespaced value. Returns false when absent. */
+  deleteNamespaced(plugin: string, key: string): boolean {
+    const ns = this.namespacedData.get(plugin);
+    if (!ns) return false;
+    const deleted = ns.delete(key);
+    if (ns.size === 0) this.namespacedData.delete(plugin);
+    return deleted;
+  }
+
+  /** Returns one execution record by its generated id. */
+  getExecutionById(id: string): ExecutionRecord | undefined {
+    return this.executionHistory.find((r) => r.id === id);
+  }
+
+  /** Returns the failed executions, newest first. */
+  getFailedExecutions(plugin?: string): ExecutionRecord[] {
+    return this.executionHistory
+      .filter((r) => !r.success && (!plugin || r.plugin === plugin))
+      .slice()
+      .reverse();
+  }
+
+  /**
+   * Returns the executions with the longest durations, slowest first.
+   *
+   * A plugin's own callbacks are excluded when `plugin` is given, so this
+   * measures the time the plugin spent waiting on everything else.
+   */
+  getSlowestExecutions(count: number, plugin?: string): ExecutionRecord[] {
+    return this.executionHistory
+      .filter((r) => !plugin || r.plugin === plugin)
+      .map((r) => ({ ...r, durationMs: r.endMs - r.startMs }))
+      .sort((a, b) => b.durationMs - a.durationMs)
+      .slice(0, count);
+  }
+
+  /**
+   * Runs `fn` with a temporary execution context and always cleans it up.
+   *
+   * The context is removed even when `fn` throws, so a failed execution cannot
+   * leak an entry and leave `getActiveContextCount` permanently inflated.
+   */
+  async withContext<T>(
+    plugin: MAMPlugin,
+    inputs: Record<string, unknown>,
+    fn: (context: ExecutionContext) => Promise<T>,
+  ): Promise<T> {
+    const context = this.createExecutionContext(plugin, inputs);
+    try {
+      return await fn(context);
+    } finally {
+      this.removeActiveContext(plugin.manifest.name);
+    }
+  }
+
   private shouldLog(level: string): boolean {
     const levels = ['debug', 'info', 'warn', 'error'];
     const currentIdx = levels.indexOf(this.options.logLevel);

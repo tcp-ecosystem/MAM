@@ -1,6 +1,6 @@
 # MAM C SDK
 
-A dependency-free C11 SDK for [MAM (Markdown as Module)](../../spec/SPEC.md).
+A dependency-free C11 SDK for [MAM (Machine Agent Modules)](../../spec/SPEC.md).
 
 It parses a `.mam.md` document into a tree you can walk, validates that tree
 against the specification, and executes its code blocks. Nothing outside the C

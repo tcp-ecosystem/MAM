@@ -7,7 +7,7 @@
 ## 1. Plan-Doc Summaries
 
 ### build-prompt.md
-Original v1 build prompt. Positions MAM as "Markdown as Module" — a universal module format for AI agents. Defines 10 development phases (Specification → Registry), core principles (Markdown First, Human First, Deterministic, Runtime Agnostic), and required components (Parser, AST, Validator, Runtime, CLI, SDK, Plugin API, LSP, Registry). Serves as the initial architectural blueprint.
+Original v1 build prompt. Positions MAM as "Machine Agent Modules" — a universal module format for AI agents. Defines 10 development phases (Specification → Registry), core principles (Markdown First, Human First, Deterministic, Runtime Agnostic), and required components (Parser, AST, Validator, Runtime, CLI, SDK, Plugin API, LSP, Registry). Serves as the initial architectural blueprint.
 
 ### build-prompt-v2-DSL.md
 DSL architect design document. Claims 90% implemented. Defines MAM as an "AI Architecture DSL" with 14 build phases. Lists ecosystem components (20 items, 17 checked, 3 future: VS Code Extension, Runtime SDK, Version Manager, Migration Tool). Includes the full "MAM DSL Architect" system prompt for language design guidance. Proposes renaming to "Modular Agent Model" or similar.
@@ -19,7 +19,7 @@ System architect design document. Claims 90% implemented. Positions MAM as a "Sy
 Original brainstorming document. Contains the initial MAM concept: Markdown + YAML + Metadata + Python + Mermaid as layered architecture. Defines module structure (Metadata, YAML, Purpose, Inputs, Outputs, Rules, Workflow, Mermaid, Python, Prompt, Memory, Examples, Tests, References). Includes marketing tweets and README draft.
 
 ### personl-v2.md
-v2 evolution document. Four sections tracing MAM's evolution from "Markdown as Module" to "System Description Language." Defines the MAM Stack (7 layers), 25+ core objects, DSL syntax examples (module, agent, tool, memory, workflow, team, policy, system), compiler targets, and the "Universal System Model." Proposes dual identity: Human (Markdown as Module) + System (Machine Agent Modules).
+v2 evolution document. Four sections tracing MAM's evolution from "Machine Agent Modules" to "System Description Language." Defines the MAM Stack (7 layers), 25+ core objects, DSL syntax examples (module, agent, tool, memory, workflow, team, policy, system), compiler targets, and the "Universal System Model." Proposes dual identity: Human (Machine Agent Modules) + System (Machine Agent Modules).
 
 ### plan-v2.md
 v2 development plan. Defines 14 phases (all marked complete). Lists file types (.mam, .mam.md, .mamlib, .mampkg, .mamlock), DSL syntax examples, 25+ module types, compiler architecture (17 targets in diagram, 9 implemented), 18 CLI commands, and MAM tool names (MAMC, MAMP, MAM Hub, etc.). Claims all phases done as of 2026-07-24.

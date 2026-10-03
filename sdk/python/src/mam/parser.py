@@ -1,7 +1,7 @@
 """
 MAM Parser for Python.
 
-Full-featured parser for MAM (Markdown as Module) documents. Parses YAML front
+Full-featured parser for MAM (Machine Agent Modules) documents. Parses YAML front
 matter, Markdown sections, code blocks, tables, lists, blockquotes, and inline
 elements into a structured AST with source location tracking and error recovery.
 """

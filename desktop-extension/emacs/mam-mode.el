@@ -1,18 +1,18 @@
-;;; mam-mode.el --- Major mode for editing MAM (Markdown as Module) -*- lexical-binding: t; -*-
+;;; mam-mode.el --- Major mode for editing MAM (Machine Agent Modules) -*- lexical-binding: t; -*-
 
 ;; Copyright (C) 2026 MAM Desktop Extensions <tcp-ecosystems>
 
 ;; Author: MAM Desktop Extensions <tcp-ecosystems>
 ;; URL: https://github.com/tcp-ecosystems/MAM
-;; Version: 0.1.0
+;; version: 2.0.0
 ;; Package-Requires: ((emacs "26.1"))
 ;; Keywords: languages, markdown, convenience
 
-;; This file is part of the MAM (Markdown as Module) desktop extensions.
+;; This file is part of the MAM (Machine Agent Modules) desktop extensions.
 
 ;;; Commentary:
 
-;; MAM (Markdown as Module) is a markdown-based module format with YAML
+;; MAM (Machine Agent Modules) is a markdown-based module format with YAML
 ;; front matter (delimited by `---' fences), `##' section headings, fenced
 ;; code blocks (including mermaid diagram blocks), tables, blockquotes,
 ;; lists and inline formatting.
@@ -175,7 +175,7 @@ fence).  An unclosed block matches up to LIMIT."
 ;; ---------------------------------------------------------------------------
 
 (defgroup mam-mode nil
-  "Major mode for editing MAM (Markdown as Module) files."
+  "Major mode for editing MAM (Machine Agent Modules) files."
   :group 'languages
   :prefix "mam-")
 
@@ -290,7 +290,7 @@ and reachable on `exec-path'."
 
 ;;;###autoload
 (define-derived-mode mam-mode text-mode "MAM"
-  "Major mode for editing MAM (Markdown as Module) files.
+  "Major mode for editing MAM (Machine Agent Modules) files.
 
 MAM is markdown-based, with YAML front matter delimited by `---'
 fences, `##' section headings, fenced code blocks (including mermaid

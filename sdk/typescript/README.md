@@ -1,7 +1,7 @@
 # MAM TypeScript SDK
 
 `@mam/sdk-typescript` is the idiomatic ESM TypeScript implementation of the
-MAM SDK contract. It parses Markdown as Module files, validates them, executes
+MAM SDK contract. It parses Machine Agent Modules files, validates them, executes
 configured code blocks, and includes the six SDK support modules.
 
 ## Quick start

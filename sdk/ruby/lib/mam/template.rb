@@ -97,7 +97,7 @@ module Mam
       header = <<~MARKDOWN
         ---
         name: {{name}}
-        version: 0.1.0
+        version: 2.0.0
         authors: [{{author}}]
         description: {{description}}
         schema_version: 1

@@ -198,3 +198,90 @@ describe('HookManager', () => {
     expect(names).toEqual(expect.arrayContaining(['p1', 'p2']));
   });
 });
+describe('HookManager introspection', () => {
+  let manager: HookManager;
+
+  beforeEach(() => {
+    manager = new HookManager();
+  });
+
+  it('getHookNames() should list only hooks with registrations', () => {
+    expect(manager.getHookNames()).toEqual([]);
+    manager.register('beforeParse', makePlugin('p1'), vi.fn());
+    manager.register('onError', makePlugin('p2'), vi.fn());
+    expect(manager.getHookNames().sort()).toEqual(['beforeParse', 'onError']);
+  });
+
+  it('getHookCounts() should count enabled registrations per hook', () => {
+    const a = manager.register('beforeParse', makePlugin('p1'), vi.fn());
+    manager.register('beforeParse', makePlugin('p2'), vi.fn());
+    manager.register('afterParse', makePlugin('p3'), vi.fn());
+    manager.disable(a);
+    const counts = manager.getHookCounts();
+    expect(counts.beforeParse).toBe(1);
+    expect(counts.afterParse).toBe(1);
+    expect(counts.onError).toBe(0);
+  });
+
+  it('getPriorityBounds() should return min and max, or undefined when empty', () => {
+    expect(manager.getPriorityBounds('beforeParse')).toBeUndefined();
+    manager.register('beforeParse', makePlugin('p1'), vi.fn(), 50);
+    manager.register('beforeParse', makePlugin('p2'), vi.fn(), 200);
+    manager.register('beforeParse', makePlugin('p3'), vi.fn(), 10);
+    expect(manager.getPriorityBounds('beforeParse')).toEqual({ min: 10, max: 200 });
+  });
+
+  it('getRegistrationsCreatedBefore() should filter by timestamp', async () => {
+    manager.register('beforeParse', makePlugin('old'), vi.fn());
+    const cutoff = new Date(Date.now() + 5);
+    await new Promise((r) => setTimeout(r, 10));
+    manager.register('afterParse', makePlugin('new'), vi.fn());
+
+    const before = manager.getRegistrationsCreatedBefore(cutoff);
+    expect(before).toHaveLength(1);
+    expect(before[0]!.plugin.manifest.name).toBe('old');
+  });
+
+  it('reprioritize() should change priority and re-sort the chain', async () => {
+    const order: string[] = [];
+    const a = manager.register('beforeParse', makePlugin('a'), () => { order.push('a'); }, 10);
+    manager.register('beforeParse', makePlugin('b'), () => { order.push('b'); }, 20);
+
+    expect(manager.reprioritize(a, 999)).toBe(true);
+    await manager.execute('beforeParse', {});
+    expect(order).toEqual(['b', 'a']);
+  });
+
+  it('reprioritize() should return false for an unknown id', () => {
+    expect(manager.reprioritize('nope', 1)).toBe(false);
+  });
+
+  it('executeWithTimeout() should report a timeout instead of throwing', async () => {
+    const slow = () => new Promise((r) => setTimeout(r, 200));
+    manager.register('beforeParse', makePlugin('slow'), slow);
+
+    const result = await manager.executeWithTimeout('beforeParse', { a: 1 }, 20);
+    expect(result.executed).toBe(0);
+    expect(result.errors).toHaveLength(1);
+    expect(result.errors[0]!.error.message).toMatch(/timed out after 20ms/);
+  });
+
+  it('executeWithTimeout() should run normally when the hook is fast', async () => {
+    const handler = vi.fn();
+    manager.register('beforeParse', makePlugin('fast'), handler);
+    const result = await manager.executeWithTimeout('beforeParse', { a: 1 }, 500);
+    expect(result.executed).toBe(1);
+    expect(result.errors).toHaveLength(0);
+    expect(handler).toHaveBeenCalled();
+  });
+
+  it('getEnabledPluginNames() should list distinct enabled plugins', () => {
+    const a = manager.register('beforeParse', makePlugin('p1'), vi.fn());
+    manager.register('afterParse', makePlugin('p1'), vi.fn());
+    const b = manager.register('onError', makePlugin('p2'), vi.fn());
+    manager.disable(b);
+    expect(manager.getEnabledPluginNames()).toEqual(['p1']);
+    manager.enable(a);
+    expect(manager.getEnabledPluginNames()).toEqual(['p1']);
+  });
+});

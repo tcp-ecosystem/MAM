@@ -6,7 +6,7 @@
 
 ## Overview
 
-MAM (Markdown as Module) is a System Description Language (SDL) whose reference syntax is Markdown. It describes intelligent systems — agents, tools, workflows, teams, policies — and compiles them to 16 target languages.
+MAM (Machine Agent Modules) is a System Description Language (SDL) whose reference syntax is Markdown. It describes intelligent systems — agents, tools, workflows, teams, policies — and compiles them to 16 target languages.
 
 **Status: Beta-ready.** All packages build, 2222 tests pass, full pipeline works end-to-end. V2 Runtime: 100% complete (22/22 engines). `.mam` executes standalone.
 

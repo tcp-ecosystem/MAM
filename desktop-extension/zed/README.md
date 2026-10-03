@@ -1,6 +1,6 @@
 # MAM for Zed
 
-Language support for MAM (Markdown as Module) in the [Zed](https://zed.dev)
+Language support for MAM (Machine Agent Modules) in the [Zed](https://zed.dev)
 editor: syntax highlighting for `.mam` and `.mam.md` files.
 
 ## Files

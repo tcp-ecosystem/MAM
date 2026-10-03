@@ -1,4 +1,5 @@
 ---
+# MAM Metadata
 id: template-plugin
 name: Plugin Template
 version: 2.0.0
@@ -182,11 +183,35 @@ def test_lifecycle():
 ## Examples
 
 ```python
+# A minimal host: on_load only needs something to record itself against.
+class Host:
+    def __init__(self):
+        self.loaded = []
+
+    def execute(self, *args, **kwargs):
+        return "host handled"
+
+
+host = Host()
+
+
+def handle(payload):
+    return f"extension saw {payload}"
+
+
+def observe(*args, **kwargs):
+    return "observed"
+
+
 plugin = Plugin({"name": "example"})
 plugin.on_load(host)
 plugin.register_extension("ExampleExtension", "processor", handle)
 plugin.add_pointcut("example_pointcut", "host.execute", observe)
 plugin.on_activate()
+
+print(plugin.on_event("processor", "data"))   # extension saw data
+
+plugin.on_deactivate()
 ```
 
 ## References

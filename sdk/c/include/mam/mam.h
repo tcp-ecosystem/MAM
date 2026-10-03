@@ -2,7 +2,7 @@
  * @file mam.h
  * @brief Public API for the MAM C SDK.
  *
- * MAM (Markdown as Module) turns a Markdown document with YAML front matter
+ * MAM (Machine Agent Modules) turns a Markdown document with YAML front matter
  * into a structured, executable module. This SDK parses that document into an
  * AST, validates it against the specification, and optionally executes its
  * code blocks.

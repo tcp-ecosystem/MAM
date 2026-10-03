@@ -17,7 +17,7 @@ cmake_minimum_required(VERSION 3.16)
 
 project(mam-sdk-cpp
         VERSION 0.1.0
-        DESCRIPTION "C++17 SDK for MAM (Markdown as Module)"
+        DESCRIPTION "C++17 SDK for MAM (Machine Agent Modules)"
         LANGUAGES C CXX)
 
 set(CMAKE_C_STANDARD 11)

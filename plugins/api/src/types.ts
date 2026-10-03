@@ -376,6 +376,24 @@ export type PluginEvent =
   | 'module:loaded'
   | 'module:saved';
 
+/** Every {@link PluginEvent}, as a runtime value. */
+export const ALL_PLUGIN_EVENTS: PluginEvent[] = [
+  'plugin:loaded', 'plugin:unloaded', 'plugin:error',
+  'plugin:enabled', 'plugin:disabled',
+  'plugin:dependency-added', 'plugin:dependency-removed',
+  'parse:before', 'parse:after',
+  'validate:before', 'validate:after',
+  'execute:before', 'execute:after',
+  'export:before', 'export:after',
+  'config:changed', 'module:loaded', 'module:saved',
+];
+
+/** Every {@link PluginCategory}, as a runtime value. */
+export const ALL_PLUGIN_CATEGORIES: PluginCategory[] = [
+  'language', 'renderer', 'validator', 'exporter', 'runtime',
+  'storage', 'testing', 'tooling', 'integration', 'theme',
+];
+
 export interface PluginEventData {
   event: PluginEvent;
   plugin?: string;
@@ -457,6 +475,61 @@ export function isTransformer(value: unknown): value is Transformer {
     'name' in value &&
     typeof (value as Transformer).transform === 'function' &&
     typeof (value as Transformer).canTransform === 'function'
+  );
+}
+
+export function isPluginManifest(value: unknown): value is PluginManifest {
+  if (typeof value !== 'object' || value === null) return false;
+  const candidate = value as PluginManifest;
+  return (
+    typeof candidate.name === 'string' &&
+    typeof candidate.version === 'string' &&
+    typeof candidate.main === 'string'
+  );
+}
+
+export function isHookName(value: unknown): value is HookName {
+  return typeof value === 'string' && ALL_HOOK_NAMES.includes(value as HookName);
+}
+
+export function isPluginEvent(value: unknown): value is PluginEvent {
+  return typeof value === 'string' && ALL_PLUGIN_EVENTS.includes(value as PluginEvent);
+}
+
+export function isPluginCategory(value: unknown): value is PluginCategory {
+  return (
+    typeof value === 'string' &&
+    (ALL_PLUGIN_CATEGORIES as string[]).includes(value)
+  );
+}
+
+export function isSectionDefinition(value: unknown): value is SectionDefinition {
+  if (typeof value !== 'object' || value === null) return false;
+  const candidate = value as SectionDefinition;
+  return (
+    typeof candidate.name === 'string' &&
+    typeof candidate.description === 'string' &&
+    Array.isArray(candidate.contentTypes)
+  );
+}
+
+export function isValidationRule(value: unknown): value is ValidationRule {
+  if (typeof value !== 'object' || value === null) return false;
+  const candidate = value as ValidationRule;
+  return (
+    typeof candidate.name === 'string' &&
+    typeof candidate.check === 'function' &&
+    typeof candidate.severity === 'string'
+  );
+}
+
+export function isPluginMiddleware(value: unknown): value is PluginMiddleware {
+  if (typeof value !== 'object' || value === null) return false;
+  const candidate = value as PluginMiddleware;
+  return (
+    typeof candidate.name === 'string' &&
+    typeof candidate.phase === 'string' &&
+    typeof candidate.handler === 'function'
   );
 }
 

@@ -712,7 +712,7 @@ That leads to an architecture like this:
 
 ```text
           MAM
-(Markdown as Module)
+(Machine Agent Modules)
                │
                ▼
         MAM Specification
@@ -740,7 +740,7 @@ This is exactly how HTML has the DOM, or Protocol Buffers have a schema and mult
 
 I actually think **yes**.
 
-**Markdown as Module** is what makes people stop and think.
+**Machine Agent Modules** is what makes people stop and think.
 
 It's memorable.
 
@@ -756,7 +756,7 @@ For example:
 
 > **MAM**
 >
-> **Markdown as Module**
+> **Machine Agent Modules**
 >
 > *The reference syntax for the Machine Agent Module Specification.*
 
@@ -770,7 +770,7 @@ Now MAM has two identities.
 
 ### Human Identity
 
-> Markdown as Module
+> Machine Agent Modules
 
 This is what users write.
 
@@ -782,7 +782,7 @@ This is what the compiler understands.
 
 That means your documentation can naturally say:
 
-> MAM uses **Markdown as Module** as its canonical authoring format. Every MAM document is compiled into the **Machine Agent Module** intermediate representation (MAM AST), which any compliant runtime can execute.
+> MAM uses **Machine Agent Modules** as its canonical authoring format. Every MAM document is compiled into the **Machine Agent Module** intermediate representation (MAM AST), which any compliant runtime can execute.
 
 I really like that because it avoids choosing one interpretation over the other—they reinforce each other.
 
@@ -790,7 +790,7 @@ I really like that because it avoids choosing one interpretation over the other�
 
 Today:
 
-> **MAM = Markdown as Module**
+> **MAM = Machine Agent Modules**
 
 Compiler:
 

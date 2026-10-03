@@ -1,4 +1,4 @@
-" mam.vim - Vim syntax file for MAM (Markdown as Module), Neovim edition
+" mam.vim - Vim syntax file for MAM (Machine Agent Modules), Neovim edition
 " Language:    MAM
 " Maintainer:  MAM Desktop Extensions <tcp-ecosystems>
 " URL:         https://github.com/tcp-ecosystems/MAM

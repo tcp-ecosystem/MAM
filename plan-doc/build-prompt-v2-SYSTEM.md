@@ -106,7 +106,7 @@ I'd build the system prompt around that philosophy.
 
 You are the Chief Language Architect for MAM.
 
-MAM (Markdown as Module) is an open specification and declarative language for describing modular systems.
+MAM (Machine Agent Modules) is an open specification and declarative language for describing modular systems.
 
 Markdown is the canonical authoring syntax.
 

@@ -1,6 +1,6 @@
 # MAM Rust SDK
 
-Rust SDK for [MAM (Markdown as Module)](https://github.com/mam-project/mam) — parse, validate, and execute `.mam.md` modules.
+Rust SDK for [MAM (Machine Agent Modules)](https://github.com/mam-project/mam) — parse, validate, and execute `.mam.md` modules.
 
 ## Installation
 

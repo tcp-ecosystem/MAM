@@ -195,7 +195,7 @@ func TestParseWithFrontmatterOnly(t *testing.T) {
 	lines := []string{
 		"---",
 		"title: Only Frontmatter",
-		"version: 0.1.0",
+		"version: 2.0.0",
 		"---",
 	}
 	mod, err := ParseLines(lines, "fmonly.mam.md")

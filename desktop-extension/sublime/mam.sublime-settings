@@ -1,7 +1,7 @@
 // MAM settings for Sublime Text.
 //
 // These settings pair with `mam.sublime-syntax` and teach Sublime Text to
-// treat `.mam` and `.mam.md` files as MAM (Markdown as Module) documents.
+// treat `.mam` and `.mam.md` files as MAM (Machine Agent Modules) documents.
 //
 // Install:
 //   Copy this file next to `mam.sublime-syntax` into

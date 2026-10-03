@@ -1,7 +1,7 @@
 ---
 # MAM Metadata
-id: template-basic
-name: Basic Module Template
+id: template-module
+name: Module Template
 version: 2.0.0
 type: module
 
@@ -37,7 +37,7 @@ permissions:
     - internet
 ---
 
-# Basic Module Template
+# Module Template
 
 ## Purpose
 

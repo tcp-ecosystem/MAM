@@ -1,6 +1,6 @@
 # MAM for Sublime Text
 
-Syntax highlighting and file-type detection for MAM (Markdown as Module)
+Syntax highlighting and file-type detection for MAM (Machine Agent Modules)
 `.mam` and `.mam.md` files.
 
 ## Files

@@ -1,6 +1,6 @@
 # @mam/parser
 
-MAM (Markdown as Module) parser — lexer, parser, and AST generator for `.mam.md` documents.
+MAM (Machine Agent Modules) parser — lexer, parser, and AST generator for `.mam.md` documents.
 
 ## Installation
 

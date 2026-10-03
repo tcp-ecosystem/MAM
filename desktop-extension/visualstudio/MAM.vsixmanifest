@@ -2,7 +2,7 @@
 <VSIX xmlns="http://schemas.microsoft.com/developer/vsx-schema/2010">
   <Identifier Id="MAMLanguage" Version="0.1.0" LanguageId="en-US" Publisher="tcp-ecosystems">
     <Name>MAM Language</Name>
-    <Description>MAM (Markdown as Module) language support: TextMate grammar and language definition for Visual Studio.</Description>
+    <Description>MAM (Machine Agent Modules) language support: TextMate grammar and language definition for Visual Studio.</Description>
     <MoreInfoUrl>https://github.com/tcp-ecosystems/mam</MoreInfoUrl>
     <InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[17.0,18.0)" />
   </Identifier>

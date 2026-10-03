@@ -109,3 +109,87 @@ describe('PluginEventBus', () => {
     expect(goodHandler).toHaveBeenCalled();
   });
 });
+describe('PluginEventBus introspection', () => {
+  let bus: PluginEventBus;
+
+  beforeEach(() => {
+    bus = new PluginEventBus();
+  });
+
+  it('getSubscribers() should include wildcard handlers before direct ones', () => {
+    const order: string[] = [];
+    bus.on('x', () => { order.push('direct'); }, { priority: 1 });
+    bus.onAny(() => { order.push('wildcard'); });
+
+    const subs = bus.getSubscribers('x');
+    expect(subs).toHaveLength(2);
+    subs.forEach((h) => h('x', undefined));
+    expect(order).toEqual(['wildcard', 'direct']);
+  });
+
+  it('hasSubscribers() should reflect direct and wildcard registrations', () => {
+    expect(bus.hasSubscribers('x')).toBe(false);
+    bus.on('x', vi.fn());
+    expect(bus.hasSubscribers('x')).toBe(true);
+    expect(bus.hasSubscribers('y')).toBe(false);
+
+    const bus2 = new PluginEventBus();
+    bus2.onAny(vi.fn());
+    expect(bus2.hasSubscribers('anything')).toBe(true);
+  });
+
+  it('emitBatch() should emit events in order', async () => {
+    const seen: string[] = [];
+    bus.on('a', () => { seen.push('a'); });
+    bus.on('b', () => { seen.push('b'); });
+
+    await bus.emitBatch([{ event: 'a' }, { event: 'b' }, { event: 'a' }]);
+    expect(seen).toEqual(['a', 'b', 'a']);
+  });
+
+  it('emitBatch() should handle an empty list', async () => {
+    const handler = vi.fn();
+    bus.on('a', handler);
+    await bus.emitBatch([]);
+    expect(handler).not.toHaveBeenCalled();
+  });
+
+  it('filterLog() should return only matching logged events', async () => {
+    await bus.emit('keep', { n: 1 });
+    await bus.emit('drop', { n: 2 });
+    await bus.emit('keep', { n: 3 });
+
+    const kept = bus.filterLog((e) => e.event === 'keep');
+    expect(kept).toHaveLength(2);
+    expect(kept.map((e) => (e.data as { n: number }).n)).toEqual([1, 3]);
+  });
+
+  it('getEventsSince() should exclude events at or before the cutoff', async () => {
+    await bus.emit('first');
+    const cutoff = new Date(Date.now() + 5);
+    await new Promise((r) => setTimeout(r, 15));
+    await bus.emit('second');
+
+    const since = bus.getEventsSince(cutoff);
+    expect(since.map((e) => e.event)).toEqual(['second']);
+  });
+
+  it('getAverageDuration() should average per event and return 0 when unseen', async () => {
+    expect(bus.getAverageDuration('never')).toBe(0);
+    await bus.emit('x');
+    await bus.emit('x');
+    expect(bus.getAverageDuration('x')).toBeGreaterThan(0);
+  });
+
+  it('getTopEvents() should rank events by frequency, most common first', async () => {
+    await bus.emit('a');
+    await bus.emit('b');
+    await bus.emit('b');
+    await bus.emit('c');
+    await bus.emit('c');
+    await bus.emit('c');
+
+    const top = bus.getTopEvents(2);
+    expect(top).toEqual([{ event: 'c', count: 3 }, { event: 'b', count: 2 }]);
+  });
+});

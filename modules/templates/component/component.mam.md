@@ -1,4 +1,5 @@
 ---
+# MAM Metadata
 id: template-component
 name: Component Template
 version: 2.0.0

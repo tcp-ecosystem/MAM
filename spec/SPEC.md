@@ -1,6 +1,6 @@
 # MAM Specification v1.0.0
 
-> **Markdown as Module — The Universal Intermediate Representation for AI Systems**
+> **Machine Agent Modules — The Universal Intermediate Representation for AI Systems**
 
 ---
 
@@ -8,7 +8,7 @@
 
 ### 1.1 Purpose
 
-MAM (Markdown as Module) defines a specification for transforming Markdown documents into structured, executable modules. A MAM module is a self-contained unit that combines human-readable documentation with machine-parseable metadata, executable code, workflow definitions, and agent instructions.
+MAM (Machine Agent Modules) defines a specification for transforming Markdown documents into structured, executable modules. A MAM module is a self-contained unit that combines human-readable documentation with machine-parseable metadata, executable code, workflow definitions, and agent instructions.
 
 ### 1.2 Design Goals
 

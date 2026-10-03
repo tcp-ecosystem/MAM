@@ -329,3 +329,158 @@ export function formatIntegrityReport(report: PluginIntegrityReport): string {
 
   return lines.join('\n');
 }
+
+// ─── Compatibility ─────────────────────────────────────────────────
+
+export interface CompatibilityResult {
+  compatible: boolean;
+  errors: string[];
+  warnings: string[];
+}
+
+/**
+ * Checks a plugin against a host MAM version.
+ *
+ * The manifest's `mamVersion` is treated as a minimum, so a plugin asking for
+ * `>=0.1.0` still loads on a newer host. An unparsable requirement is an
+ * error rather than a silent pass, since guessing here means loading a plugin
+ * that may call APIs the host does not have.
+ */
+export function validatePluginCompatibility(
+  manifest: PluginManifest,
+  hostVersion: string,
+): CompatibilityResult {
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  const required = manifest.mamVersion;
+
+  if (!required) {
+    return { compatible: true, errors, warnings: ['Manifest declares no mamVersion requirement'] };
+  }
+  if (!isValidSemver(hostVersion)) {
+    errors.push(`Host version "${hostVersion}" is not valid semver`);
+  }
+  if (!isValidSemver(required)) {
+    errors.push(`Required mamVersion "${required}" is not valid semver`);
+    return { compatible: false, errors, warnings };
+  }
+  if (compareVersions(hostVersion, required) < 0) {
+    errors.push(`Plugin requires MAM ${required} but host is ${hostVersion}`);
+  } else if (/\^|~/.test(required)) {
+    warnings.push(`Plugin pins a range ("${required}"); upper bounds are not enforced`);
+  }
+  return { compatible: errors.length === 0, errors, warnings };
+}
+
+function isValidSemver(version: string): boolean {
+  return /^\d+\.\d+\.\d+(-[a-zA-Z0-9.]+)?$/.test(version.trim());
+}
+
+/**
+ * Orders two validated semver strings: negative if `a < b`, positive if `a > b`.
+ *
+ * A prerelease ranks below its own release, matching the semver spec. Only
+ * numeric components participate, which is enough for the minimum-version
+ * check above and keeps this module free of a dependency on the loader.
+ */
+function compareVersions(a: string, b: string): number {
+  const parse = (v: string): { nums: number[]; pre: boolean } => {
+    const [core, pre] = v.trim().split('-');
+    return { nums: core.split('.').map(Number), pre: pre !== undefined };
+  };
+  const left = parse(a);
+  const right = parse(b);
+  for (let i = 0; i < 3; i++) {
+    const diff = (left.nums[i] || 0) - (right.nums[i] || 0);
+    if (diff !== 0) return diff;
+  }
+  if (left.pre === right.pre) return 0;
+  return left.pre ? -1 : 1;
+}
+
+// ─── Capabilities ──────────────────────────────────────────────────
+
+/** Returns which optional plugin surfaces are populated. */
+export function getCapabilityMatrix(plugin: MAMPlugin): Record<string, boolean> {
+  return {
+    sections: (plugin.sections?.length || 0) > 0,
+    rules: (plugin.rules?.length || 0) > 0,
+    contexts: (plugin.contexts?.length || 0) > 0,
+    renderers: (plugin.renderers?.length || 0) > 0,
+    exporters: (plugin.exporters?.length || 0) > 0,
+    transformers: (plugin.transformers?.length || 0) > 0,
+    hooks: getPluginStats(plugin).hooks > 0,
+    middleware: (plugin.middleware?.length || 0) > 0,
+  };
+}
+
+/** Returns the capability names a plugin actually provides, sorted. */
+export function listCapabilities(plugin: MAMPlugin): string[] {
+  const matrix = getCapabilityMatrix(plugin);
+  return Object.keys(matrix).filter((k) => matrix[k]).sort();
+}
+
+/**
+ * Returns duplicate definition names across a plugin's surfaces.
+ *
+ * Same-named sections or rules in one plugin are usually a copy-paste slip, and
+ * they make which one wins depend on iteration order.
+ */
+export function findDuplicateNames(plugin: MAMPlugin): Array<{ surface: string; name: string }> {
+  const duplicates: Array<{ surface: string; name: string }> = [];
+  const surfaces: Array<[string, Array<{ name: string }> | undefined]> = [
+    ['sections', plugin.sections],
+    ['rules', plugin.rules],
+    ['contexts', plugin.contexts],
+    ['renderers', plugin.renderers],
+    ['exporters', plugin.exporters],
+    ['transformers', plugin.transformers],
+  ];
+
+  for (const [surface, items] of surfaces) {
+    if (!items) continue;
+    const seen = new Set<string>();
+    const reported = new Set<string>();
+    for (const item of items) {
+      if (seen.has(item.name) && !reported.has(item.name)) {
+        reported.add(item.name);
+        duplicates.push({ surface, name: item.name });
+      }
+      seen.add(item.name);
+    }
+  }
+  return duplicates;
+}
+
+/** Returns the manifest fields that are set but not recognised by the schema. */
+export function findUnknownManifestFields(manifest: PluginManifest): string[] {
+  const known = new Set([
+    'name', 'version', 'description', 'author', 'license', 'main',
+    'mamVersion', 'keywords', 'dependencies', 'engines', 'homepage',
+    'repository', 'icon', 'category',
+  ]);
+  return Object.keys(manifest).filter((key) => !known.has(key));
+}
+
+/** Returns a single-line integrity summary, e.g. `demo: invalid (2 errors)`. */
+export function summarizeIntegrity(report: PluginIntegrityReport): string {
+  const status = report.valid ? 'valid' : 'invalid';
+  const parts: string[] = [];
+  if (report.errors.length > 0) parts.push(`${report.errors.length} errors`);
+  if (report.warnings.length > 0) parts.push(`${report.warnings.length} warnings`);
+  const detail = parts.length > 0 ? ` (${parts.join(', ')})` : '';
+  return `${report.pluginName}: ${status}${detail}`;
+}
+
+/**
+ * Ranks two plugins so the more complete one sorts first.
+ *
+ * `validatePluginIntegrity` re-runs every validator, so callers comparing many
+ * plugins should build each report once and pass it in.
+ */
+export function compareIntegrity(a: PluginIntegrityReport, b: PluginIntegrityReport): number {
+  if (a.valid !== b.valid) return a.valid ? -1 : 1;
+  if (a.errors.length !== b.errors.length) return a.errors.length - b.errors.length;
+  if (a.warnings.length !== b.warnings.length) return a.warnings.length - b.warnings.length;
+  return a.pluginName.localeCompare(b.pluginName);
+}

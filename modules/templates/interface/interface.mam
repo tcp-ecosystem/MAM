@@ -1,9 +1,9 @@
 ---
 # MAM Metadata
-id: template-api
-name: API Module Template
+id: template-interface
+name: Interface Template
 version: 2.0.0
-type: system
+type: interface
 
 author: MAM Team
 description: >
@@ -287,7 +287,8 @@ class APIModule:
                          limit: int, window: int = 60) -> bool:
         key = f"{client_id}:{endpoint_path}"
         now = time.time()
-        self._rate_counters[key] = [t for t in self._rate_counters[key] if t > now - window]
+        # .get, not [], so the first request from a client does not KeyError.
+        self._rate_counters[key] = [t for t in self._rate_counters.get(key, []) if t > now - window]
 
         if len(self._rate_counters[key]) >= limit:
             return False

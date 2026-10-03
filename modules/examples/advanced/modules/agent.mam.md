@@ -289,7 +289,7 @@ def test_research() -> None:
 ## Examples
 
 ```python
-result = research("Markdown as Module", depth=2)
+result = research("Machine Agent Modules", depth=2)
 print(result["report"])
 ```
 

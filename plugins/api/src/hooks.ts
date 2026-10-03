@@ -287,4 +287,97 @@ export class HookManager {
     clone.errorHandlers = [...this.errorHandlers];
     return clone;
   }
+
+  // ─── Introspection ──────────────────────────────────────────────
+
+  /** Returns the hook names that have at least one registration. */
+  getHookNames(): HookName[] {
+    return ALL_HOOK_NAMES.filter((name) => (this.registrations.get(name) || []).length > 0);
+  }
+
+  /** Returns the registration count for every hook, enabled only. */
+  getHookCounts(): Record<HookName, number> {
+    const counts = {} as Record<HookName, number>;
+    for (const hookName of ALL_HOOK_NAMES) {
+      const regs = this.registrations.get(hookName) || [];
+      counts[hookName] = regs.filter((r) => r.enabled).length;
+    }
+    return counts;
+  }
+
+  /** Returns the lowest and highest priority registered for a hook. */
+  getPriorityBounds(hook: HookName): { min: number; max: number } | undefined {
+    const regs = this.registrations.get(hook) || [];
+    if (regs.length === 0) return undefined;
+    const priorities = regs.map((r) => r.priority);
+    return { min: Math.min(...priorities), max: Math.max(...priorities) };
+  }
+
+  /** Returns the registrations created strictly before `date`. */
+  getRegistrationsCreatedBefore(date: Date): HookRegistration[] {
+    return this.getAllRegistrations().filter((r) => r.createdAt.getTime() < date.getTime());
+  }
+
+  /** Re-sorts a hook's registrations after a priority change. */
+  reprioritize(id: string, priority: number): boolean {
+    for (const regs of this.registrations.values()) {
+      const reg = regs.find((r) => r.id === id);
+      if (!reg) continue;
+      reg.priority = priority;
+      regs.sort((a, b) => a.priority - b.priority);
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Executes a hook, giving up after `timeoutMs`.
+   *
+   * A timeout is reported through `errors` rather than thrown, so a slow hook
+   * degrades the chain instead of aborting it.
+   */
+  async executeWithTimeout<T>(
+    hook: HookName,
+    data: T,
+    timeoutMs: number,
+  ): Promise<HookExecutionResult<T>> {
+    if (timeoutMs <= 0) return this.execute(hook, data);
+
+    const result = await Promise.race([
+      this.execute(hook, data),
+      new Promise<HookExecutionResult<T>>((resolve) => {
+        const timer = setTimeout(
+          () =>
+            resolve({
+              data,
+              executed: 0,
+              errors: [
+                {
+                  plugin: '(timeout)',
+                  error: new Error(`Hook "${hook}" timed out after ${timeoutMs}ms`),
+                },
+              ],
+              durationMs: timeoutMs,
+            }),
+          timeoutMs,
+        );
+        if (typeof timer === 'object' && timer && 'unref' in timer) {
+          (timer as { unref: () => void }).unref();
+        }
+      }),
+    ]);
+
+    return result;
+  }
+
+  /** Returns the names of plugins with at least one enabled registration. */
+  getEnabledPluginNames(): string[] {
+    const names = new Set<string>();
+    for (const regs of this.registrations.values()) {
+      for (const reg of regs) {
+        if (reg.enabled) names.add(reg.plugin.manifest.name);
+      }
+    }
+    return [...names].sort();
+  }
 }

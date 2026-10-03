@@ -1,4 +1,4 @@
--- plugin/mam.lua - MAM (Markdown as Module) plugin for Neovim
+-- plugin/mam.lua - MAM (Machine Agent Modules) plugin for Neovim
 -- Description: Buffer-local options and a `:MamValidate` command for MAM
 --              files. Loaded automatically when filetype=mam is active
 --              because it lives in plugin/ (runtime path).

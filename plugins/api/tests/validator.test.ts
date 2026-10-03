@@ -1,5 +1,17 @@
 import { describe, it, expect } from 'vitest';
-import { validatePluginManifest, validatePluginIntegrity, getPluginStats, formatIntegrityReport } from '../src/validator.js';
+import {
+  validatePluginManifest,
+  validatePluginIntegrity,
+  validatePluginCompatibility,
+  getPluginStats,
+  formatIntegrityReport,
+  getCapabilityMatrix,
+  listCapabilities,
+  findDuplicateNames,
+  findUnknownManifestFields,
+  summarizeIntegrity,
+  compareIntegrity,
+} from '../src/validator.js';
 import type { MAMPlugin } from '../src/types.js';
 
 function makePlugin(overrides?: Partial<MAMPlugin>): MAMPlugin {
@@ -161,5 +173,104 @@ describe('Plugin Stats', () => {
     expect(stats.contexts).toBe(1);
     expect(stats.renderers).toBe(1);
     expect(stats.exporters).toBe(0);
+  });
+});
+describe('validatePluginCompatibility', () => {
+  const manifest = (mamVersion?: string) => ({
+    name: 'demo', version: '1.0.0', description: 'd',
+    author: 'a', license: 'MIT', main: 'index.js',
+    ...(mamVersion ? { mamVersion } : {}),
+  });
+
+  it('should be compatible when the host meets the minimum', () => {
+    expect(validatePluginCompatibility(manifest('0.1.0'), '0.2.0').compatible).toBe(true);
+    expect(validatePluginCompatibility(manifest('0.1.0'), '0.1.0').compatible).toBe(true);
+  });
+
+  it('should be incompatible when the host is too old', () => {
+    const result = validatePluginCompatibility(manifest('0.2.0'), '0.1.0');
+    expect(result.compatible).toBe(false);
+    expect(result.errors[0]).toMatch(/requires MAM 0.2.0/);
+  });
+
+  it('should warn when no requirement is declared', () => {
+    const result = validatePluginCompatibility(manifest(), '0.1.0');
+    expect(result.compatible).toBe(true);
+    expect(result.warnings[0]).toMatch(/no mamVersion/);
+  });
+
+  it('should error on a malformed requirement', () => {
+    const result = validatePluginCompatibility(manifest('^oops'), '0.1.0');
+    expect(result.compatible).toBe(false);
+    expect(result.errors[0]).toMatch(/not valid semver/);
+  });
+
+  it('should error on a malformed host version', () => {
+    expect(validatePluginCompatibility(manifest('0.1.0'), 'nope').compatible).toBe(false);
+  });
+});
+
+describe('Capabilities and integrity helpers', () => {
+  it('getCapabilityMatrix() should reflect which surfaces are populated', () => {
+    const matrix = getCapabilityMatrix(makePlugin({ renderers: [{ name: 'r', target: 'html', render: () => '' }] }));
+    expect(matrix.renderers).toBe(true);
+    expect(matrix.rules).toBe(false);
+    expect(matrix.hooks).toBe(false);
+  });
+
+  it('listCapabilities() should return populated surfaces sorted', () => {
+    const plugin = makePlugin({ transformers: [{ name: 't', transform: () => '', canTransform: () => true }] });
+    expect(listCapabilities(plugin)).toEqual(['transformers']);
+  });
+
+  it('findDuplicateNames() should report repeats within one surface', () => {
+    const plugin = makePlugin({
+      sections: [
+        { name: 'dup', description: 'a', contentTypes: ['text'] },
+        { name: 'dup', description: 'b', contentTypes: ['text'] },
+      ],
+    });
+    expect(findDuplicateNames(plugin)).toEqual([{ surface: 'sections', name: 'dup' }]);
+  });
+
+  it('findDuplicateNames() should not report the same name across surfaces', () => {
+    const plugin = makePlugin({
+      sections: [{ name: 'shared', description: 'a', contentTypes: ['text'] }],
+      exporters: [{ name: 'shared', format: 'json', export: () => ({}) }],
+    });
+    expect(findDuplicateNames(plugin)).toEqual([]);
+  });
+
+  it('findUnknownManifestFields() should list unrecognised manifest keys', () => {
+    const plugin = makePlugin();
+    (plugin.manifest as Record<string, unknown>).surprise = true;
+    (plugin.manifest as Record<string, unknown>).another = 1;
+    expect(findUnknownManifestFields(plugin.manifest).sort()).toEqual(['another', 'surprise']);
+  });
+
+  it('findUnknownManifestFields() should be empty for a known manifest', () => {
+    expect(findUnknownManifestFields(makePlugin().manifest)).toEqual([]);
+  });
+
+  it('summarizeIntegrity() should describe valid and invalid reports', () => {
+    const good = validatePluginIntegrity(makePlugin());
+    expect(summarizeIntegrity(good)).toBe('test-plugin: valid');
+
+    const bad = validatePluginIntegrity(makePlugin({ rules: [{ name: 'r', check: 'nope' as never, severity: 'error' }] }));
+    expect(summarizeIntegrity(bad)).toMatch(/^test-plugin: invalid \(\d+ errors\)$/);
+  });
+
+  it('compareIntegrity() should rank valid plugins ahead of invalid ones', () => {
+    const good = validatePluginIntegrity(makePlugin());
+    const bad = validatePluginIntegrity(makePlugin({ rules: [{ name: 'r', check: 'nope' as never, severity: 'error' }] }));
+    expect(compareIntegrity(good, bad)).toBeLessThan(0);
+    expect(compareIntegrity(bad, good)).toBeGreaterThan(0);
+    expect(compareIntegrity(good, good)).toBe(0);
+  });
+
+  it('compareIntegrity() should break ties on plugin name', () => {
+    const a = validatePluginIntegrity(makePlugin());
+    const b = { ...validatePluginIntegrity(makePlugin()), pluginName: 'zzz' };
+    expect(compareIntegrity(a, b)).toBeLessThan(0);
   });
 });

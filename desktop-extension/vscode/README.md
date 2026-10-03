@@ -1,6 +1,6 @@
 # MAM Language Support for VS Code
 
-First-class language support for **MAM** (Markdown as Module) — `.mam` / `.mam.md`
+First-class language support for **MAM** (Machine Agent Modules) — `.mam` / `.mam.md`
 files — with the same richness you expect from `.py` or `.js`: rich syntax
 highlighting, snippets, real CLI-based diagnostics, commands, formatting,
 folding, symbols, hover, and a status bar.

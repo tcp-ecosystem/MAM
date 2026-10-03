@@ -11,7 +11,7 @@ const MAM_MIME = 'text/x-mam';
 /**
  * Minimal line-based tokenizer for MAM modules.
  *
- * MAM is "Markdown as Module": frontmatter between `---` fences, headings,
+ * MAM is "Machine Agent Modules": frontmatter between `---` fences, headings,
  * code fences, and inline markdown constructs. This mirrors the canonical
  * TextMate grammar in `vscode/syntaxes/mam.tmLanguage.json` (scopeName
  * `source.mam`) so highlighting stays consistent across editors.

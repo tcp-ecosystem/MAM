@@ -2,7 +2,7 @@
   "name": "mam-monorepo",
   "version": "0.1.0",
   "private": true,
-  "description": "MAM - Markdown as Module: System Description Language",
+  "description": "MAM - Machine Agent Modules: System Description Language",
   "scripts": {
     "build": "pnpm -r build",
     "test": "pnpm -r test",

@@ -1,4 +1,4 @@
-// Package mam provides a Go SDK for the MAM (Markdown as Module) specification.
+// Package mam provides a Go SDK for the MAM (Machine Agent Modules) specification.
 //
 // MAM transforms Markdown files into an executable intermediate representation
 // that both humans and AI agents can understand.  A typical .mam.md file

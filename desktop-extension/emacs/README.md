@@ -1,6 +1,6 @@
 # MAM for Emacs
 
-A complete major mode for editing **MAM** (Markdown as Module) files in
+A complete major mode for editing **MAM** (Machine Agent Modules) files in
 Emacs, covering `.mam` and `.mam.md` extensions.
 
 ## What's included

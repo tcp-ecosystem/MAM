@@ -1,4 +1,4 @@
-# MAM — Markdown as Module
+# MAM — Machine Agent Modules
 
 > **Describe Systems. Compile Anywhere.**
 
@@ -41,7 +41,7 @@ Human Intent (Markdown) → MAM Parser → AST → Transformer → V2ModuleNode
 
 ## What is MAM?
 
-MAM (Markdown as Module) is not another programming language. It is a **declarative language for describing modular systems** with built-in context preservation.
+MAM (Machine Agent Modules) is not another programming language. It is a **declarative language for describing modular systems** with built-in context preservation.
 
 Just as:
 - SQL describes **data**

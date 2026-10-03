@@ -88,11 +88,11 @@ Overall, I think you're moving toward treating **Markdown as the universal inter
 
 ## SECTION 2
 
-I actually like the name. **Markdown as Module (MAM)** is short, memorable, and immediately communicates the idea.
+I actually like the name. **Machine Agent Modules (MAM)** is short, memorable, and immediately communicates the idea.
 
 I would define it like this:
 
-# MAM — Markdown as Module
+# MAM — Machine Agent Modules
 
 > **Write once. Read by humans. Execute by agents.**
 
@@ -225,7 +225,7 @@ I think this idea could become more than just a personal convention. If you defi
 
 A concise slogan could be:
 
-> **MAM — Markdown as Module**  
+> **MAM — Machine Agent Modules**  
 > *The universal module format for humans, LLMs, and autonomous agents.*
 ```
 
@@ -233,11 +233,11 @@ A concise slogan could be:
 
 ## README.md
 
-# MAM — Markdown as Module
+# MAM — Machine Agent Modules
 
 > **Write once. Read by humans. Execute by agents.**
 
-MAM (Markdown as Module) is a specification for building portable, reusable, and agent-native modules using Markdown as the primary interface.
+MAM (Machine Agent Modules) is a specification for building portable, reusable, and agent-native modules using Markdown as the primary interface.
 
 Instead of treating Markdown as documentation, MAM treats it as an executable knowledge module that can be understood by both humans and AI agents.
 
@@ -430,7 +430,7 @@ What if Markdown wasn't documentation...
 
 What if it was the module?
 
-Introducing **MAM (Markdown as Module)**
+Introducing **MAM (Machine Agent Modules)**
 
 📖 Human readable
 🤖 LLM native
@@ -462,7 +462,7 @@ Markdown + Python
 
 Markdown + Mermaid
 
-Together they become **MAM — Markdown as Module.**
+Together they become **MAM — Machine Agent Modules.**
 
 One file.
 Many agents.
@@ -482,7 +482,7 @@ It's becoming the interface between:
 🧠 Memory
 📊 Workflows
 
-MAM (Markdown as Module) explores that idea.
+MAM (Machine Agent Modules) explores that idea.
 
 ---
 
@@ -494,7 +494,7 @@ OpenAPI standardized APIs.
 
 Could Markdown standardize AI modules?
 
-**MAM — Markdown as Module**
+**MAM — Machine Agent Modules**
 
 A portable specification where every `.md` file becomes:
 
@@ -510,7 +510,7 @@ A portable specification where every `.md` file becomes:
 
 ### Tweet 5 (Launch)
 
-🚀 Introducing **MAM (Markdown as Module)**
+🚀 Introducing **MAM (Machine Agent Modules)**
 
 A new way to build agent-native modules using Markdown as the foundation.
 

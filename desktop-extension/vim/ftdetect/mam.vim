@@ -1,4 +1,4 @@
-" ftdetect/mam.vim - Filetype detection for MAM (Markdown as Module)
+" ftdetect/mam.vim - Filetype detection for MAM (Machine Agent Modules)
 " Language:    MAM
 " Description: Auto-detect MAM files by extension (.mam, .mam.md) and set
 "              filetype=mam so syntax/mam.vim loads automatically.

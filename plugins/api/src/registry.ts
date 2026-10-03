@@ -318,4 +318,108 @@ export class PluginRegistry {
     this.plugins.clear();
     this.loadErrors = [];
   }
+
+  // ─── Introspection ──────────────────────────────────────────────
+
+  /** Returns the loaded plugin names, sorted. */
+  getPluginNames(): string[] {
+    return [...this.plugins.keys()].sort();
+  }
+
+  /** Increments a plugin's load counter. Returns false when not loaded. */
+  recordLoad(name: string): boolean {
+    const entry = this.plugins.get(name);
+    if (!entry) return false;
+    entry.loadCount++;
+    return true;
+  }
+
+  /** Returns the plugins whose name starts with `prefix`, sorted by name. */
+  getPluginsByPrefix(prefix: string): PluginRegistryEntry[] {
+    return this.getAllPlugins()
+      .filter((p) => p.manifest.name.startsWith(prefix))
+      .sort((a, b) => a.manifest.name.localeCompare(b.manifest.name));
+  }
+
+  /** Returns the direct dependency edges as an adjacency map. */
+  getDependencyGraph(): Map<string, string[]> {
+    const graph = new Map<string, string[]>();
+    for (const [name, entry] of this.plugins) {
+      graph.set(name, [...entry.dependencies]);
+    }
+    return graph;
+  }
+
+  /**
+   * Returns the dependencies each plugin declares that are not loaded.
+   *
+   * A load can succeed with `enableDependencyResolution: false`, so this is
+   * the check for a registry that is missing something it declared.
+   */
+  getMissingDependencies(): Array<{ plugin: string; missing: string[] }> {
+    const missing: Array<{ plugin: string; missing: string[] }> = [];
+    for (const entry of this.getAllPlugins()) {
+      const absent = entry.dependencies.filter((dep) => !this.plugins.has(dep));
+      if (absent.length > 0) {
+        missing.push({ plugin: entry.manifest.name, missing: absent });
+      }
+    }
+    return missing;
+  }
+
+  /**
+   * Returns every dependency cycle among the loaded plugins.
+   *
+   * Uses an explicit visiting path rather than a visited set so a node reached
+   * by two routes is still explored from each, which is what surfaces cycles in
+   * a diamond-shaped graph.
+   */
+  findDependencyCycles(): string[][] {
+    const cycles: string[][] = [];
+    const seen = new Set<string>();
+
+    const walk = (name: string, path: string[]): void => {
+      const entry = this.plugins.get(name);
+      if (!entry) return;
+      const index = path.indexOf(name);
+      if (index !== -1) {
+        const cycle = [...path.slice(index), name];
+        const key = [...cycle].sort().join('>');
+        if (!seen.has(key)) {
+          seen.add(key);
+          cycles.push(cycle);
+        }
+        return;
+      }
+      const next = [...path, name];
+      for (const dep of entry.dependencies) {
+        walk(dep, next);
+      }
+    };
+
+    for (const name of this.plugins.keys()) {
+      walk(name, []);
+    }
+    return cycles;
+  }
+
+  /** Returns true when the loaded plugins contain a dependency cycle. */
+  hasCircularDependencies(): boolean {
+    return this.findDependencyCycles().length > 0;
+  }
+
+  /** Unloads every plugin, in reverse dependency order. */
+  async unloadAll(): Promise<string[]> {
+    const unloaded: string[] = [];
+    for (const name of this.getLoadOrder().reverse()) {
+      if (!this.plugins.has(name)) continue;
+      try {
+        await this.unloadPlugin(name);
+        unloaded.push(name);
+      } catch (error) {
+        this.loadErrors.push({ path: name, error: (error as Error).message });
+      }
+    }
+    return unloaded;
+  }
 }

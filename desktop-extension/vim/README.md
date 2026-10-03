@@ -1,6 +1,6 @@
 # MAM for Vim
 
-Syntax highlighting and file-type detection for **MAM** (Markdown as Module)
+Syntax highlighting and file-type detection for **MAM** (Machine Agent Modules)
 in Vim. MAM files use the `.mam` and `.mam.md` extensions.
 
 ## What's included

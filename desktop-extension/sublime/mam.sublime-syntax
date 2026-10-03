@@ -1,6 +1,6 @@
 # MAM syntax definition for Sublime Text.
 #
-# MAM (Markdown as Module) files are markdown-based documents that carry
+# MAM (Machine Agent Modules) files are markdown-based documents that carry
 # YAML front matter, `##` sections, mermaid diagrams, and fenced code blocks.
 # This grammar mirrors the canonical TextMate grammar shipped with the VS Code
 # extension (`desktop-extension/vscode/syntaxes/mam.tmLanguage.json`) and

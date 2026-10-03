@@ -1,6 +1,6 @@
 # MAM — The Complete System
 
-> **Markdown as Module**
+> **Machine Agent Modules**
 > *The reference syntax for the Machine Agent Module Specification.*
 
 ---

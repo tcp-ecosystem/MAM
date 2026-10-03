@@ -1,6 +1,6 @@
 # MAM Go SDK
 
-Go SDK for the **MAM (Markdown as Module)** specification.
+Go SDK for the **MAM (Machine Agent Modules)** specification.
 
 > **Write once. Read by humans. Execute by agents.**
 

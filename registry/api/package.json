@@ -1,0 +1,46 @@
+{
+  "name": "@mam/registry-api",
+  "version": "0.1.0",
+  "description": "MAM Registry API - OpenAPI and GraphQL contract for the module registry",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./openapi.yaml": "./openapi.yaml",
+    "./graphql": "./graphql/schema.graphql"
+  },
+  "files": [
+    "dist",
+    "openapi.yaml",
+    "graphql/schema.graphql"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@mam/registry-server": "workspace:*"
+  },
+  "devDependencies": {
+    "@mam/plugin-yaml": "workspace:*",
+    "graphql": "^17.0.0",
+    "@types/node": "^20.11.0",
+    "typescript": "^5.3.0",
+    "vitest": "^1.2.0"
+  },
+  "keywords": [
+    "mam",
+    "registry",
+    "api",
+    "openapi",
+    "graphql"
+  ],
+  "author": "MAM Team",
+  "license": "MIT"
+}

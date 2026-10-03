@@ -44,7 +44,7 @@ public final class Template {
 
     private static String canonical(String kind) { String value = kind == null ? "" : kind.trim().toLowerCase(Locale.ROOT); return switch (value) { case "mod" -> "module"; case "bot", "assistant" -> "agent"; case "cli", "utility" -> "tool"; default -> value; }; }
     private static String lookup(Map<String, String> values, String key) { if (values == null) return null; String direct = values.get(key); if (direct != null) return direct; for (Map.Entry<String, String> entry : values.entrySet()) if (key.equalsIgnoreCase(entry.getKey())) return entry.getValue(); return null; }
-    private static String starter(String kind) { StringBuilder output = new StringBuilder("---\nname: {{name}}\nversion: 0.1.0\nauthors: [{{author}}]\ndescription: {{description}}\nschema_version: 1\nlicense: MIT\ntags: [").append(kind).append("]\ndependencies: []\nmetadata: {}\n---\n"); for (String section : VALUES.get(kind).split("\\|")) output.append("\n## ").append(section).append("\n\nDescribe the ").append(section.toLowerCase(Locale.ROOT)).append(".\n"); return output.toString(); }
+    private static String starter(String kind) { StringBuilder output = new StringBuilder("---\nname: {{name}}\nversion: 2.0.0\nauthors: [{{author}}]\ndescription: {{description}}\nschema_version: 1\nlicense: MIT\ntags: [").append(kind).append("]\ndependencies: []\nmetadata: {}\n---\n"); for (String section : VALUES.get(kind).split("\\|")) output.append("\n## ").append(section).append("\n\nDescribe the ").append(section.toLowerCase(Locale.ROOT)).append(".\n"); return output.toString(); }
 }
 
     private static final class TextSupport_Template {

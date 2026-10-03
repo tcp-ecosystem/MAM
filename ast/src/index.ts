@@ -1,7 +1,7 @@
 /**
  * MAM AST
  * 
- * Abstract Syntax Tree for Markdown as Module (MAM) documents.
+ * Abstract Syntax Tree for Machine Agent Modules (MAM) documents.
  * Provides node definitions, visitor pattern, and serialization.
  */
 

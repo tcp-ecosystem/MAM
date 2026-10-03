@@ -1,4 +1,5 @@
 ---
+# MAM Metadata
 id: template-service
 name: Service Template
 version: 2.0.0

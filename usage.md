@@ -1,6 +1,6 @@
 # MAM Usage Guide
 
-> **Complete guide to using MAM (Markdown as Module)**
+> **Complete guide to using MAM (Machine Agent Modules)**
 
 ---
 

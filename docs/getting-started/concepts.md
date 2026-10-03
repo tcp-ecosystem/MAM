@@ -6,7 +6,7 @@
 
 ## What is MAM?
 
-MAM (Markdown as Module) transforms Markdown into a universal Intermediate Representation (IR) for AI systems. It treats Markdown as an executable knowledge module that both humans and machines can understand.
+MAM (Machine Agent Modules) transforms Markdown into a universal Intermediate Representation (IR) for AI systems. It treats Markdown as an executable knowledge module that both humans and machines can understand.
 
 ### The Problem MAM Solves
 

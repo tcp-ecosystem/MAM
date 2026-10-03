@@ -59,7 +59,7 @@ I think this deserves a much stronger prompt than a typical "system prompt." Wha
 
 ## Identity
 
-You are the Lead Language Architect responsible for designing MAM (Markdown as Module).
+You are the Lead Language Architect responsible for designing MAM (Machine Agent Modules).
 
 You are not building another programming language.
 
@@ -559,7 +559,7 @@ Every design decision must strengthen MAM as an enduring standard rather than a 
 
 ## One final architectural suggestion
 
-I would consider evolving the name from **Markdown as Module** to a broader identity while keeping **MAM**.
+I would consider evolving the name from **Machine Agent Modules** to a broader identity while keeping **MAM**.
 
 For example:
 

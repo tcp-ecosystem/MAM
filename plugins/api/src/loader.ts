@@ -270,3 +270,170 @@ export function getPluginScope(name: string): string | null {
   }
   return null;
 }
+
+// ─── Semver ─────────────────────────────────────────────────────────
+
+interface ParsedVersion {
+  major: number;
+  minor: number;
+  patch: number;
+  prerelease: string[];
+}
+
+/** Parses a `major.minor.patch[-prerelease]` version, or null when malformed. */
+function parseVersion(version: string): ParsedVersion | null {
+  const match = /^(\d+)\.(\d+)\.(\d+)(?:-([a-zA-Z0-9.]+))?$/.exec(version.trim());
+  if (!match) return null;
+  return {
+    major: Number(match[1]),
+    minor: Number(match[2]),
+    patch: Number(match[3]),
+    prerelease: match[4] ? match[4].split('.') : [],
+  };
+}
+
+/**
+ * Compares two semver strings: negative if `a < b`, 0 if equal, positive if `a > b`.
+ *
+ * A prerelease ranks below its own release (`1.0.0-rc.1` < `1.0.0`), matching
+ * the semver spec. Returns NaN when either version is malformed.
+ */
+export function compareSemver(a: string, b: string): number {
+  const left = parseVersion(a);
+  const right = parseVersion(b);
+  if (!left || !right) return NaN;
+
+  if (left.major !== right.major) return left.major - right.major;
+  if (left.minor !== right.minor) return left.minor - right.minor;
+  if (left.patch !== right.patch) return left.patch - right.patch;
+
+  if (left.prerelease.length === 0 && right.prerelease.length === 0) return 0;
+  if (left.prerelease.length === 0) return 1;
+  if (right.prerelease.length === 0) return -1;
+
+  const length = Math.max(left.prerelease.length, right.prerelease.length);
+  for (let i = 0; i < length; i++) {
+    const l = left.prerelease[i];
+    const r = right.prerelease[i];
+    if (l === undefined) return -1;
+    if (r === undefined) return 1;
+    if (l === r) continue;
+    const lNum = /^\d+$/.test(l);
+    const rNum = /^\d+$/.test(r);
+    if (lNum && rNum) return Number(l) - Number(r);
+    if (lNum) return -1;
+    if (rNum) return 1;
+    return l < r ? -1 : 1;
+  }
+  return 0;
+}
+
+/**
+ * Checks a version against a caret/tilde/exact/comparator range.
+ *
+ * Supports `^1.2.3`, `~1.2.3`, exact `1.2.3`, and space-separated comparators
+ * such as `>=1.0.0 <2.0.0`. Returns false for ranges that cannot be parsed.
+ */
+export function satisfiesSemver(version: string, range: string): boolean {
+  const trimmed = range.trim();
+  if (trimmed === '' || trimmed === '*' || trimmed === 'latest') return true;
+
+  const current = parseVersion(version);
+  if (!current) return false;
+
+  const test = (clause: string): boolean | null => {
+    const m = /^(\^|~|>=|<=|>|<|=)?\s*v?(.+)$/.exec(clause.trim());
+    if (!m) return null;
+    const operator = m[1] || '=';
+    const target = parseVersion(m[2]!);
+    if (!target) return null;
+    const cmp = compareSemver(version, m[2]!);
+    if (Number.isNaN(cmp)) return null;
+
+    switch (operator) {
+      case '=': return cmp === 0;
+      case '>': return cmp > 0;
+      case '>=': return cmp >= 0;
+      case '<': return cmp < 0;
+      case '<=': return cmp <= 0;
+      case '^': {
+        if (cmp < 0) return false;
+        // A 0.x release pins the minor as well.
+        if (target.major === 0) return current.minor === target.minor && cmp <= 0;
+        return current.major === target.major;
+      }
+      case '~': {
+        if (cmp < 0) return false;
+        return current.major === target.major && current.minor === target.minor;
+      }
+    }
+    return null;
+  };
+
+  return trimmed.split(/\s+/).every((clause) => test(clause) !== false);
+}
+
+// ─── Manifest Utilities ────────────────────────────────────────────
+
+/** Reads and parses a plugin's `plugin.json`, or null when unreadable. */
+export async function readPluginManifest(
+  pluginPath: string,
+): Promise<PluginManifest | null> {
+  try {
+    const content = await readFile(join(pluginPath, 'plugin.json'), 'utf-8');
+    return JSON.parse(content) as PluginManifest;
+  } catch {
+    return null;
+  }
+}
+
+/** Returns a one-line human summary of a manifest. */
+export function formatManifestSummary(manifest: PluginManifest): string {
+  const scope = getPluginScope(manifest.name);
+  const scopeLabel = scope ? `${scope} ` : '';
+  const deps = manifest.dependencies?.length ? ` (${manifest.dependencies.length} deps)` : '';
+  return `${scopeLabel}${manifest.name}@${manifest.version} — ${manifest.description}${deps}`;
+}
+
+/** Returns the distinct plugin names declared by a set of manifests. */
+export function getManifestDependencyNames(manifests: PluginManifest[]): string[] {
+  const names = new Set<string>();
+  for (const manifest of manifests) {
+    for (const dep of manifest.dependencies || []) names.add(dep);
+  }
+  return [...names].sort();
+}
+
+/** Returns the manifests that no other manifest depends on. */
+export function findRootManifests(manifests: PluginManifest[]): PluginManifest[] {
+  const dependedOn = new Set(getManifestDependencyNames(manifests));
+  return manifests.filter((m) => !dependedOn.has(m.name));
+}
+
+/**
+ * Orders manifests so every plugin comes after the plugins it depends on.
+ *
+ * Dependencies that are not in `manifests` are ignored, and a cycle leaves the
+ * remaining members in input order rather than looping forever. The input is
+ * not mutated.
+ */
+export function sortManifestsForLoad(manifests: PluginManifest[]): PluginManifest[] {
+  const byName = new Map(manifests.map((m) => [m.name, m]));
+  const ordered: PluginManifest[] = [];
+  const state = new Map<string, 'visiting' | 'done'>();
+
+  const visit = (manifest: PluginManifest): void => {
+    const mark = state.get(manifest.name);
+    if (mark === 'done' || mark === 'visiting') return;
+    state.set(manifest.name, 'visiting');
+    for (const dep of manifest.dependencies || []) {
+      const target = byName.get(dep);
+      if (target) visit(target);
+    }
+    state.set(manifest.name, 'done');
+    ordered.push(manifest);
+  };
+
+  for (const manifest of manifests) visit(manifest);
+  return ordered;
+}

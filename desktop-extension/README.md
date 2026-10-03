@@ -1,7 +1,7 @@
 # MAM Desktop Extensions
 
 Syntax highlighting, language support, and IDE integrations for MAM
-(Markdown as Module) across editors and IDEs.
+(Machine Agent Modules) across editors and IDEs.
 
 ## Supported editors
 

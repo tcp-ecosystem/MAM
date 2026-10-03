@@ -1,6 +1,6 @@
 # MAM Jupyter Kernel
 
-A minimal Jupyter kernel that executes MAM (Markdown as Module) modules.
+A minimal Jupyter kernel that executes MAM (Machine Agent Modules) modules.
 Each cell is written to a temporary `.mam` file and run through the
 [`@mam/cli`](../../../cli) `mam run <file> --format json` command; the JSON
 result (or the command's stderr on failure) is streamed back as an execution

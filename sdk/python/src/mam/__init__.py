@@ -1,7 +1,7 @@
 """
 MAM Python Package.
 
-Provides Python bindings for MAM (Markdown as Module) parsing, validation,
+Provides Python bindings for MAM (Machine Agent Modules) parsing, validation,
 execution, and plugin management.
 
 Example::

@@ -1,7 +1,7 @@
 # MAM for Neovim
 
 Syntax highlighting, file-type detection, buffer options, and a `mam
-validate` integration for **MAM** (Markdown as Module) in Neovim.
+validate` integration for **MAM** (Machine Agent Modules) in Neovim.
 
 ## What's included
 

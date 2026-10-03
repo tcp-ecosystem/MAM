@@ -2,7 +2,7 @@
   "$schema": "http://json-schema.org/draft-07/schema#",
   "$id": "https://mam.dev/schema/v2.0.0/mam.schema.json",
   "title": "MAM Module Schema",
-  "description": "JSON Schema for validating MAM (Markdown as Module) documents. Supports v1 and v2 DSL with module declarations, edge syntax, and enhanced section validation.",
+  "description": "JSON Schema for validating MAM (Machine Agent Modules) documents. Supports v1 and v2 DSL with module declarations, edge syntax, and enhanced section validation.",
   "type": "object",
   "required": ["frontmatter", "sections"],
   "properties": {

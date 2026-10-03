@@ -1,6 +1,6 @@
 # Contributing to MAM
 
-Thank you for your interest in contributing to MAM (Markdown as Module)!
+Thank you for your interest in contributing to MAM (Machine Agent Modules)!
 
 ## Getting Started
 

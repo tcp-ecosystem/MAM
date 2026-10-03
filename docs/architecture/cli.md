@@ -90,7 +90,7 @@ const program = new Command();
 
 program
   .name('mam')
-  .description('MAM — Markdown as Module CLI')
+  .description('MAM — Machine Agent Modules CLI')
   .version(pkg.version);
 
 // Register commands

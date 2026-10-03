@@ -6,7 +6,7 @@
 
 ## Project Overview
 
-MAM (Markdown as Module) is a specification-first project that transforms Markdown into a universal Intermediate Representation (IR) for AI systems. Unlike traditional Markdown parsers, MAM treats Markdown as an executable knowledge module that can be understood by both humans and autonomous agents.
+MAM (Machine Agent Modules) is a specification-first project that transforms Markdown into a universal Intermediate Representation (IR) for AI systems. Unlike traditional Markdown parsers, MAM treats Markdown as an executable knowledge module that can be understood by both humans and autonomous agents.
 
 ### Core Philosophy
 

@@ -1,6 +1,6 @@
 # MAM Python SDK
 
-Python SDK for MAM (Markdown as Module).
+Python SDK for MAM (Machine Agent Modules).
 
 ## Installation
 

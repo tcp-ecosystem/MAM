@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Minimal Jupyter kernel for MAM (Markdown as Module).
+"""Minimal Jupyter kernel for MAM (Machine Agent Modules).
 
 On execute_request, writes the cell source to a temporary ``.mam`` file and
 shells out to ``mam run <file> --format json`` (from @mam/cli), streaming the
@@ -38,7 +38,7 @@ class MamKernel(Kernel):
         "codemirror_mode": {"name": "mam", "mime": "text/x-mam"},
         "pygments_lexer": "markdown",
     }
-    banner = "MAM kernel - Markdown as Module"
+    banner = "MAM kernel - Machine Agent Modules"
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)

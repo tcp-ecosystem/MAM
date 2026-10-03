@@ -1,7 +1,7 @@
 /**
  * MAM Parser
  * 
- * Complete parser for Markdown as Module (MAM) documents.
+ * Complete parser for Machine Agent Modules (MAM) documents.
  * Provides lexing, parsing, and AST generation capabilities.
  */
 

@@ -1,18 +1,109 @@
+# MAM Registry GraphQL schema.
+#
+# Every operation here is backed by a resolver in `src/resolvers.ts`. The two
+# must stay in step: `tests/schema.test.ts` fails if a resolver is not declared
+# here, or if an operation is declared without an implementation.
+#
+# This header is a comment, not a description. A `"""` block here would attach
+# itself to the next definition as that type's description, and the description
+# on `Module` below would then be a second one, which is a syntax error.
+
+"A published module, summarised at its latest version."
 type Module {
   name: String!
+  "Latest published version."
   version: String!
   description: String
-  author: String
-  tags: [String]
-  downloads: Int
-  publishedAt: String
+  author: String!
+  tags: [String!]!
+  "Download count. Always 0 until the store tracks downloads."
+  downloads: Int!
+  "ISO timestamp of the last publish or metadata change."
+  publishedAt: String!
+  "True when the module has been archived. Archived modules stay resolvable."
+  archived: Boolean!
+  "How many versions have been published."
+  versionCount: Int!
+  "Every published version, newest first."
+  versions: [Version!]!
 }
 
+"A single published version of a module."
+type Version {
+  version: String!
+  "The manifest exactly as it was published."
+  manifest: JSON
+  tarball: String!
+  "Integrity hash of the published files."
+  integrity: String!
+  publishedAt: String!
+  publishedBy: String!
+  fileCount: Int!
+}
+
+"Aggregate counts across the registry."
+type RegistryStats {
+  "Modules published in the registry."
+  modules: Int!
+  totalVersions: Int!
+  "Modules currently marked archived."
+  archived: Int!
+  "Downloaded modules. The store does not count downloads yet, so this is zero."
+  totalDownloads: Int
+  "When the registry last changed."
+  lastUpdated: String
+}
+
+"Scalars that need no schema definition but are not in the GraphQL built-ins."
+scalar JSON
+
 type Query {
-  modules(query: String): [Module]
+  "List modules, newest first is not guaranteed; order is store order."
+  modules(
+    "Free-text match against name, description and tags."
+    query: String
+    "Exact tag match, case-insensitive."
+    tag: String
+    "Exact author match, case-insensitive."
+    author: String
+    "Page size, clamped to 1..100. Defaults to 20."
+    limit: Int
+    offset: Int
+    "Include archived modules. Defaults to false."
+    includeArchived: Boolean
+  ): [Module!]!
+
+  "Fetch one module, or null when it does not exist."
   module(name: String!): Module
+
+  "Free-text search across name, description and tags. Excludes archived."
+  searchModules(q: String!, limit: Int): [Module!]!
+
+  "Every published version of a module, newest first."
+  moduleVersions(name: String!): [Version!]!
+
+  "One specific version, or null."
+  moduleVersion(name: String!, version: String!): Version
+
+  "Aggregate registry counts."
+  registryStats: RegistryStats!
 }
 
 type Mutation {
-  publishModule(name: String!, version: String!, description: String): Module
+  "Publish a new version of a module, creating it if absent."
+  publishModule(
+    name: String!
+    version: String!
+    description: String
+    author: String
+    tags: [String!]
+    "Path to content. Values are file contents as text."
+    files: JSON
+  ): Module!
+
+  "Remove a module and all of its versions."
+  deleteModule(name: String!): Boolean!
+
+  "Mark a module archived, or unarchive it."
+  archiveModule(name: String!, archived: Boolean = true): Module!
 }

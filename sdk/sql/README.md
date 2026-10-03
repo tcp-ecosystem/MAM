@@ -1,7 +1,7 @@
 # MAM SQL SDK
 
 Relational schemas and queries for storing and querying parsed
-[MAM (Markdown as Module)](../../spec/SPEC.md) documents.
+[MAM (Machine Agent Modules)](../../spec/SPEC.md) documents.
 
 Unlike the other SDKs in this series, this one is not a host-language binding.
 It defines the storage layer: how a module's AST maps onto tables, how to

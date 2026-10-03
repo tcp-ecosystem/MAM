@@ -5,7 +5,7 @@
  * Uses native `fetch` – zero external dependencies.
  */
 
-import { RegistryError } from './errors.js';
+import { RegistryError, isTimeoutError, toRegistryError } from './errors.js';
 import { RegistryAuth, type AuthConfig } from './auth.js';
 
 // ============================================================================
@@ -96,6 +96,8 @@ export interface PublishModuleInput {
   description?: string;
   author?: string;
   tags?: string[];
+  /** Dependencies recorded in the published manifest. */
+  dependencies?: ModuleDependency[];
   files: Record<string, string>;
 }
 
@@ -114,7 +116,6 @@ export interface ResponseInterceptor {
 const DEFAULT_TIMEOUT = 30_000;
 const DEFAULT_RETRIES = 2;
 const DEFAULT_RETRY_DELAY = 500;
-const RETRYABLE_STATUS_CODES = new Set([408, 429, 500, 502, 503, 504]);
 
 // ============================================================================
 // RegistryClient
@@ -125,22 +126,27 @@ export class RegistryClient {
     Omit<RegistryConfig, 'timeout' | 'retries' | 'retryDelay'>;
   private auth: RegistryAuth | null;
   private _fetch: typeof globalThis.fetch;
+  /** baseUrl with surrounding whitespace and trailing slashes removed */
+  private _baseUrl: string;
   private requestInterceptors: RequestInterceptor[] = [];
   private responseInterceptors: ResponseInterceptor[] = [];
 
   constructor(config: RegistryConfig) {
+    // defaults last: a caller spreading `{ timeout: undefined }` must not
+    // clobber them
     this.config = {
-      timeout: config.timeout ?? DEFAULT_TIMEOUT,
-      retries: config.retries ?? DEFAULT_RETRIES,
-      retryDelay: config.retryDelay ?? DEFAULT_RETRY_DELAY,
       ...config,
+      timeout: config.timeout ?? DEFAULT_TIMEOUT,
+      retries: Math.max(0, config.retries ?? DEFAULT_RETRIES),
+      retryDelay: config.retryDelay ?? DEFAULT_RETRY_DELAY,
     };
+    this._baseUrl = normalizeBaseUrl(config.baseUrl);
     this._fetch = config.fetch ?? globalThis.fetch;
 
     if (config.auth) {
       this.auth = new RegistryAuth({
         ...config.auth,
-        baseUrl: config.baseUrl,
+        baseUrl: this._baseUrl,
         fetch: this._fetch,
       });
     } else {
@@ -177,12 +183,13 @@ export class RegistryClient {
   setAuthToken(token: string): void {
     if (!this.auth) {
       this.auth = new RegistryAuth({
-        baseUrl: this.config.baseUrl,
+        baseUrl: this._baseUrl,
         token,
         fetch: this._fetch,
       });
     } else {
-      this.auth.setToken(token);
+      // fire-and-forget: storage failures must not surface as a sync throw
+      void this.auth.setToken(token).catch(() => undefined);
     }
   }
 
@@ -190,7 +197,7 @@ export class RegistryClient {
    * Remove any stored authentication state.
    */
   clearAuthToken(): void {
-    this.auth?.clearTokens();
+    void this.auth?.clearTokens().catch(() => undefined);
   }
 
   // -------------------------------------------------------------------------
@@ -288,6 +295,9 @@ export class RegistryClient {
 
   /**
    * Low-level request method with retry, timeout, auth and interceptor support.
+   *
+   * Only network failures, timeouts and transient status codes are retried;
+   * anything else is thrown on the first attempt.
    */
   async request<T>(method: string, path: string, body?: unknown): Promise<T> {
     let lastError: RegistryError | null = null;
@@ -296,14 +306,10 @@ export class RegistryClient {
       try {
         return await this.doRequest<T>(method, path, body);
       } catch (err) {
-        lastError = err instanceof RegistryError ? err : new RegistryError(String(err));
+        lastError = toRegistryError(err, `${method} ${path}`);
 
         // don't retry on non-retryable errors
-        if (
-          !lastError.isNetworkError &&
-          lastError.statusCode !== undefined &&
-          !RETRYABLE_STATUS_CODES.has(lastError.statusCode)
-        ) {
+        if (!lastError.isRetryable) {
           throw lastError;
         }
 
@@ -324,8 +330,13 @@ export class RegistryClient {
   // Private helpers
   // -------------------------------------------------------------------------
 
-  private async doRequest<T>(method: string, path: string, body?: unknown): Promise<T> {
-    const url = `${this.config.baseUrl.replace(/\/+$/, '')}${path}`;
+  private async doRequest<T>(
+    method: string,
+    path: string,
+    body?: unknown,
+    allowAuthRetry = true,
+  ): Promise<T> {
+    const url = `${this._baseUrl}${path}`;
 
     let init: RequestInit & { url: string } = {
       url,
@@ -355,14 +366,7 @@ export class RegistryClient {
     try {
       response = await this._fetch(init.url, init);
     } catch (err) {
-      if (err instanceof DOMException && err.name === 'TimeoutError') {
-        throw new RegistryError(`Request to ${path} timed out after ${this.config.timeout}ms`, {
-          isNetworkError: true,
-        });
-      }
-      throw new RegistryError(`Network error: ${(err as Error).message}`, {
-        isNetworkError: true,
-      });
+      throw this.toRequestError(err, path, init.signal as AbortSignal | null);
     }
 
     // run response interceptors
@@ -386,6 +390,15 @@ export class RegistryClient {
         (parsed as { error?: string } | null)?.error ??
         (parsed as { message?: string } | null)?.message ??
         `Request failed with status ${response.status}`;
+
+      // the token may simply have lapsed since it was minted: refresh once and
+      // replay the request. `allowAuthRetry` keeps that from looping.
+      if (allowAuthRetry && response.status === 401 && this.auth?.canRefresh()) {
+        if (await this.renewSession()) {
+          return this.doRequest<T>(method, path, body, false);
+        }
+      }
+
       throw new RegistryError(message, {
         statusCode: response.status,
         body: parsed,
@@ -393,6 +406,33 @@ export class RegistryClient {
     }
 
     return parsed as T;
+  }
+
+  /** Exchange the session for a new token; false when it could not be renewed. */
+  private async renewSession(): Promise<boolean> {
+    if (!this.auth) return false;
+    try {
+      await this.auth.refreshToken();
+      return true;
+    } catch {
+      // the caller gets the original 401 – a failed refresh is not the
+      // interesting error
+      return false;
+    }
+  }
+
+  private toRequestError(
+    err: unknown,
+    path: string,
+    signal: AbortSignal | null,
+  ): RegistryError {
+    if (isTimeoutError(err, signal)) {
+      return new RegistryError(`Request to ${path} timed out after ${this.config.timeout}ms`, {
+        isTimeout: true,
+      });
+    }
+    const message = err instanceof Error ? err.message : String(err);
+    return new RegistryError(`Network error: ${message}`, { isNetworkError: true });
   }
 
   private toQueryParams(obj?: Record<string, unknown>): string {
@@ -419,4 +459,17 @@ export class RegistryClient {
 /** Percent-encode a path segment */
 function enc(s: string): string {
   return encodeURIComponent(s);
+}
+
+/**
+ * Reject a missing / empty baseUrl up front instead of letting the request
+ * pipeline fail with a cryptic `TypeError` on `undefined.replace(...)`.
+ */
+function normalizeBaseUrl(baseUrl: unknown): string {
+  if (typeof baseUrl !== 'string' || baseUrl.trim() === '') {
+    throw new RegistryError(
+      'RegistryClient: `baseUrl` is required and must be a non-empty URL, e.g. "https://registry.example.com"',
+    );
+  }
+  return baseUrl.trim().replace(/\/+$/, '');
 }

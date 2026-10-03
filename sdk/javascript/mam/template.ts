@@ -2,7 +2,7 @@ const STARTER_TEMPLATES: Record<string, string> = {
   module: [
     '---',
     'title: {{name}}',
-    'version: 0.1.0',
+    'version: 2.0.0',
     'author: {{author}}',
     '---',
     '',
@@ -47,7 +47,7 @@ const STARTER_TEMPLATES: Record<string, string> = {
   agent: [
     '---',
     'title: {{name}}',
-    'version: 0.1.0',
+    'version: 2.0.0',
     'author: {{author}}',
     '---',
     '',
@@ -96,7 +96,7 @@ const STARTER_TEMPLATES: Record<string, string> = {
   tool: [
     '---',
     'title: {{name}}',
-    'version: 0.1.0',
+    'version: 2.0.0',
     'author: {{author}}',
     '---',
     '',

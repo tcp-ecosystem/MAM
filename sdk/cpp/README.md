@@ -1,6 +1,6 @@
 # MAM C++ SDK
 
-A C++17 SDK for [MAM (Markdown as Module)](../../spec/SPEC.md), implemented as
+A C++17 SDK for [MAM (Machine Agent Modules)](../../spec/SPEC.md), implemented as
 an RAII wrapper over the [C SDK](../c).
 
 ## Status

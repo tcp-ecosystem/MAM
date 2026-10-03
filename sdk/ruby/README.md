@@ -1,6 +1,6 @@
 # MAM Ruby SDK
 
-A dependency-free SDK for parsing, validating, inspecting, and executing Markdown as Module (MAM) files.
+A dependency-free SDK for parsing, validating, inspecting, and executing Machine Agent Modules (MAM) files.
 
 ## Build
 

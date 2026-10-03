@@ -1,6 +1,6 @@
 # MAM Language Support — Visual Studio (full IDE)
 
-Syntax highlighting and language support for MAM (Markdown as Module) files
+Syntax highlighting and language support for MAM (Machine Agent Modules) files
 (`*.mam` and `*.mam.md`) in the full Visual Studio IDE on Windows.
 
 Visual Studio colorizes files through **TextMate grammars** (the same grammar

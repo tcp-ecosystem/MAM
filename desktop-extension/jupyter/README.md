@@ -1,6 +1,6 @@
 # MAM for Jupyter
 
-Syntax highlighting and execution support for MAM (Markdown as Module) in
+Syntax highlighting and execution support for MAM (Machine Agent Modules) in
 [JupyterLab](https://jupyterlab.readthedocs.io/), consisting of:
 
 | Component | Folder | What it does |

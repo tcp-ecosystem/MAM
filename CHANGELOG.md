@@ -47,7 +47,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.0] - 2025-01-01
 
 ### Added
-- Initial release of MAM (Markdown as Module)
+- Initial release of MAM (Machine Agent Modules)
 - Core parser for Markdown-as-module format
 - AST representation
 - Compiler pipeline

@@ -1,7 +1,7 @@
 {
   "name": "@mam/ast",
   "version": "0.1.0",
-  "description": "MAM AST — Abstract Syntax Tree for Markdown as Module",
+  "description": "MAM AST — Abstract Syntax Tree for Machine Agent Modules",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

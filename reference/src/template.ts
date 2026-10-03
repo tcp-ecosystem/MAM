@@ -53,7 +53,7 @@ export function getTemplateDescription(kind: StarterTemplateKind): string {
 
 const MODULE_TEMPLATE = `---
 id: {{slug}}
-version: 0.1.0
+version: 2.0.0
 name: {{name}}
 author: ""
 runtime: python
@@ -85,7 +85,7 @@ Created on {{date}}.
 
 const AGENT_TEMPLATE = `---
 id: {{slug}}
-version: 0.1.0
+version: 2.0.0
 name: {{name}}
 author: ""
 runtime: python
@@ -121,7 +121,7 @@ You are {{name}}, a helpful assistant created on {{date}}.
 
 const TOOL_TEMPLATE = `---
 id: {{slug}}
-version: 0.1.0
+version: 2.0.0
 name: {{name}}
 author: ""
 runtime: python

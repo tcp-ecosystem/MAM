@@ -1,6 +1,6 @@
 # MAM Documentation Index
 
-> **Complete documentation for MAM (Markdown as Module)**
+> **Complete documentation for MAM (Machine Agent Modules)**
 
 ---
 

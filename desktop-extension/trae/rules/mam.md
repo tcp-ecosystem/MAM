@@ -1,6 +1,6 @@
-# MAM — Markdown as Module
+# MAM — Machine Agent Modules
 
-This repository uses **MAM** ("Markdown as Module"): AI-native modules written
+This repository uses **MAM** ("Machine Agent Modules"): AI-native modules written
 as Markdown files with YAML frontmatter and structured sections. When you
 create, edit, or reason about `.mam` / `.mam.md` files, follow this spec.
 

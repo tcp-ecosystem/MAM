@@ -1,6 +1,6 @@
 # MAM for Windsurf
 
-Language support for MAM (Markdown as Module) in
+Language support for MAM (Machine Agent Modules) in
 [Windsurf](https://windsurf.com): syntax highlighting for `.mam` and `.mam.md`
 files, plus a `.windsurfrules` file that teaches Windsurf's Cascade AI assistant
 the MAM spec and CLI workflow.
@@ -27,7 +27,7 @@ windsurf --install-extension /path/to/mam-language-0.1.0.vsix
 ### Option B — VS Code Marketplace
 
 Windsurf supports the VS Code Marketplace. In the Extensions panel
-(Ctrl/Cmd+Shift+X) search for **MAM - Markdown as Module** (publisher
+(Ctrl/Cmd+Shift+X) search for **MAM - Machine Agent Modules** (publisher
 `tcp-ecosystems`) and install.
 
 ### Option C — copy into Windsurf's extension directory

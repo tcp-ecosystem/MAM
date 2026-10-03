@@ -1,7 +1,7 @@
 /**
  * MAM Parser for JavaScript
  *
- * Full-featured parser for MAM (Markdown as Module) documents.
+ * Full-featured parser for MAM (Machine Agent Modules) documents.
  * Produces a structured AST from raw Markdown content.
  */
 

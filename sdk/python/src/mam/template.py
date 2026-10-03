@@ -59,7 +59,7 @@ STARTER_TEMPLATES: Dict[str, str] = {
     "module": """---
 id: {{id}}
 name: {{name}}
-version: 0.1.0
+version: 2.0.0
 author: {{author}}
 runtime: {{runtime}}
 description: {{description}}
@@ -111,7 +111,7 @@ def test_process():
     "agent": """---
 id: {{id}}
 name: {{name}}
-version: 0.1.0
+version: 2.0.0
 author: {{author}}
 runtime: python
 description: {{description}}
@@ -167,7 +167,7 @@ You are {{name}}. Respond to the user's request using the rules above.
     "tool": """---
 id: {{id}}
 name: {{name}}
-version: 0.1.0
+version: 2.0.0
 author: {{author}}
 runtime: {{runtime}}
 description: {{description}}

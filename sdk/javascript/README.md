@@ -1,6 +1,6 @@
 # MAM JavaScript SDK
 
-JavaScript/TypeScript SDK for MAM (Markdown as Module).
+JavaScript/TypeScript SDK for MAM (Machine Agent Modules).
 
 ## Installation
 

@@ -1,7 +1,7 @@
 {
   "name": "@mam/parser",
   "version": "0.1.0",
-  "description": "MAM Parser — Lexer and parser for Markdown as Module",
+  "description": "MAM Parser — Lexer and parser for Machine Agent Modules",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",

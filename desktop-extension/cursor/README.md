@@ -1,6 +1,6 @@
 # MAM for Cursor
 
-Language support for MAM (Markdown as Module) in [Cursor](https://cursor.com):
+Language support for MAM (Machine Agent Modules) in [Cursor](https://cursor.com):
 syntax highlighting for `.mam` and `.mam.md` files, plus a Cursor Rules file
 (`.cursor/rules/mam.mdc`) that teaches Cursor's AI assistant the MAM spec and
 CLI workflow.
@@ -29,7 +29,7 @@ cursor --install-extension /path/to/mam-language-0.1.0.vsix
 ### Option B — VS Code Marketplace
 
 Cursor ships with Marketplace support. In the Extensions panel (Ctrl/Cmd+Shift+X)
-search for **MAM - Markdown as Module** (publisher `tcp-ecosystems`) and install.
+search for **MAM - Machine Agent Modules** (publisher `tcp-ecosystems`) and install.
 
 ### Option C — copy into Cursor's extension directory
 

@@ -1,6 +1,6 @@
 # @mam/ast
 
-Abstract Syntax Tree for Markdown as Module (MAM) documents. Provides node definitions, visitor pattern, traverser utilities, and serialization for MAM v1 and v2 (SDL) ASTs.
+Abstract Syntax Tree for Machine Agent Modules (MAM) documents. Provides node definitions, visitor pattern, traverser utilities, and serialization for MAM v1 and v2 (SDL) ASTs.
 
 ## Installation
 
