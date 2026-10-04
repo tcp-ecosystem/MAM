@@ -203,8 +203,11 @@ The purpose is now backed by a working implementation:
 | **Compilation** | 16 targets: Python, JS, Go, Rust, C#, Java, Wasm, K8s, Terraform, Docker, OpenAI, LangGraph, CrewAI, Gemini, AutoGen, Claude |
 | **Target routing** | `hello.mam.py` → python, `hello.mam.js` → node, etc. |
 | **Runtime engines** | Core, State, Events, Permissions, Plugins, Security, Resource, Policy, Workflow, Registry, Resolver, Context, Token Budget, Memory, Knowledge, Model, Tool, Agent, Evaluation, Observability, Sandbox, CLI |
-| **CLI** | 39 commands |
-| **Examples & templates** | 5 complete example projects + 9 modules in `modules/examples/`; 13 templates in `modules/templates/` |
+| **Registry (MAM Hub)** | Production service: real HTTP + GraphQL, persistent auth, atomic storage, inverted search, real tarballs, typed client; 654 tests (400 server + 123 api + 131 client) plus an 11-test client↔server integration suite |
+| **Registry packages** | `@mam/registry-api` (contract), `@mam/registry-server` (service), `@mam/registry-client` (typed client with token persistence) |
+| **CLI** | 45 commands (+ aliases) |
+| **Examples & templates** | 5 example suites + one folder per module type in `modules/examples/`; 19 type folders (basic + advanced) in `modules/templates/` |
+| **Tests** | 7,000+ across 264 test files, all passing |
 
 **Principle kept intact:** MAM describes. The runtime executes. The compiler translates.
 

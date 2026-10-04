@@ -4,7 +4,7 @@
 
 MAM is a **System Description Language (SDL)** whose reference syntax is Markdown. It transforms Markdown into a universal Intermediate Representation (IR) for AI systems, enabling developers to describe intelligent systems once, **execute them natively**, and compile them to any compliant runtime.
 
-Today MAM ships a working implementation: a full parser/AST/transformer/compiler, a **native `.mam` runtime with 22 engines**, **project composition** via `mam.toml`, and compilation to **16 targets** — all from a single, human-readable source.
+Today MAM ships a working implementation: a full parser/AST/transformer/compiler, a **native `.mam` runtime with 22 engines**, **project composition** via `mam.toml`, compilation to **16 targets**, and a **production-grade module registry (MAM Hub)** with a real HTTP service, GraphQL API, and typed client — all from a single, human-readable source.
 
 ---
 
@@ -212,7 +212,7 @@ mam new basic hello          # minimal module (writes hello.mam + hello.mam.md)
 mam new agent researcher     # agent module
 mam new workflow pipeline    # workflow module
 mam new system platform      # system module
-mam templates                # list all 13 templates
+mam templates                # list all 19 type templates
 ```
 
 ### Run It Natively
@@ -295,6 +295,45 @@ def login(username: str, password: str) -> dict:
 
 ---
 
+## Complete Module Examples
+
+One runnable example per type (`modules/examples/<type>/<type>.mam`, each with
+a `.mam.md` twin), plus five composed suites. Every example has Purpose, Inputs,
+Outputs, Capabilities, Rules, Workflow, Python, Mermaid, Tests and References —
+the auth module above is the smallest; the agent and workflow run to hundreds
+of lines.
+
+| Type | Example | What it demonstrates |
+|------|---------|----------------------|
+| `agent` | Support Triage Agent | Autonomous ticket classification, urgency scoring, escalation, stop reasons |
+| `component` | Circuit Breaker | Three-state guard for flaky dependencies, failure thresholds |
+| `contract` | List-API Contract | Cursor encoding, producer/consumer agreement |
+| `documentation` | API Reference | Documentation as a module: audience, organization |
+| `extension` | Report Formats | Host extension point for new formats |
+| `interface` | Search Contract | Versioned public contract, opaque cursors, compatibility |
+| `memory` | Conversation Memory | Per-session persistent memory, TTL, history |
+| `module` | Text Statistics | Generic module: text stats computation |
+| `package` | Distributable Unit | File manifest, dependency ranges |
+| `plugin` | Formatter Plugin | Host formatter extension, interception |
+| `policy` | Allow/Deny Policy | Pre-execution policy evaluation |
+| `repository` | Document Collection | Content-addressed storage |
+| `resource` | Queue Resource | External broker sync |
+| `runtime` | Step Engine | Untrusted step execution model |
+| `service` | Background Service | Lifecycle, health endpoint, graceful shutdown |
+| `system` | Order Processing | Three cooperating modules (validate, charge, …) |
+| `team` | Research Team | Planner + researchers, handoffs |
+| `tool` | URL Fetcher | Rate-limited, bounded side-effecting tool |
+| `workflow` | Ledger ETL | Three-step pipeline, retry-safe loads |
+
+**Composed suites** (`modules/examples/{core,basic,advanced,plugins,security-system}/`,
+each with its own `mam.toml`): multi-module projects that `mam build`, `mam run`,
+`mam validate` and `mam test` operate on whole.
+
+**Templates** (`modules/templates/<type>/`, basic + advanced per type): `mam new
+<type> <name>` scaffolds from these.
+
+---
+
 ## Native Execution & Project Composition
 
 ### Native `.mam` Execution
@@ -313,19 +352,41 @@ mam run hello.mam.js                    # compiled target routes to node
 
 ### Project Composition (`mam.toml`)
 
-Multi-file projects compose modules into a system:
+Multi-file projects compose modules into a system. A complete manifest
+(`modules/examples/security-system/mam.toml`):
 
 ```toml
+# MAM Project Manifest
+# A multi-file MAM system composed from modules/.
+
 [project]
 name = "security-system"
-version = "1.0.0"
+version = "2.0.0"
+description = "Authorized security reconnaissance system composed from modules"
+license = "MIT"
+authors = ["TCP Ecosystems"]
 
 [build]
 entry = "system.mam"
-modules = ["modules/**/*.mam", "modules/**/*.mam.md"]
+modules = [
+  "modules/**/*.mam",
+  "modules/**/*.mam.md",
+]
 outDir = "dist"
 targets = ["python"]
+
+[dependencies]
 ```
+
+| Section | Fields | Meaning |
+|---------|--------|---------|
+| `[project]` | `name`, `version`, `description`, `license`, `authors` | Project identity |
+| `[build]` | `entry` | The system module composed and run |
+| | `modules` | Globs for member modules (`.mam` + `.mam.md` twins) |
+| | `outDir` | Compiled output directory |
+| | `targets` | Compiler targets (`python`, `javascript`, `go`, … — 16 total) |
+| `[dependencies]` | versioned entries | External modules from MAM Hub |
+
 
 ```text
 my-project/
@@ -351,48 +412,89 @@ mam test          # run tests across all modules
 mam info          # project summary
 ```
 
-Ready-made example projects: `modules/examples/{core,basic,advanced,plugins,security-system}`.
-Reusable templates: `modules/templates/` (13 templates).
+Ready-made example projects: `modules/examples/{core,basic,advanced,plugins,security-system}` plus one folder per module type.
+Reusable templates: `modules/templates/` (19 type folders, basic + advanced).
+
+---
+
+## Module Registry (MAM Hub)
+
+MAM Hub is a **production-grade registry service**, not a stub. Three packages:
+
+| Package | Role | Tests |
+|---------|------|-------|
+| `@mam/registry-api` | OpenAPI contract, GraphQL SDL, resolvers | 123 |
+| `@mam/registry-server` | Handlers, store, auth, search, HTTP service, GraphQL execution | 400 |
+| `@mam/registry-client` | Typed client with auth, retry, token persistence | 131 |
+
+```bash
+# Start a registry (from registry/server)
+node -e "import('./dist/index.js').then(async ({ RegistryServer, RegistryHttpServer }) => {
+  const server = new RegistryServer({ port: 3000, dataDir: './data', authRequired: true,
+    rateLimit: 100, maxUploadSize: 5e6, corsOrigins: [],
+    auth: { bootstrapAdmin: { username: 'admin', email: 'a@x.test', password: '...' } } });
+  await server.start();
+  await new RegistryHttpServer({ server, port: 3000 }).listen();
+})"
+```
+
+```bash
+mam publish hello.mam         # publish to the registry
+mam search authentication     # search modules
+mam install                   # install dependencies
+```
+
+**Production properties:** persistent users and sessions (survive restart), atomic
+writes with per-module locking, path-traversal-safe storage, inverted-index
+search, salted scrypt auth with lockout, CORS, security headers, body limits,
+rate limiting, graceful shutdown, real gzip tarballs with integrity hashes,
+and a client↔server integration suite that proves the wire contract end to end.
 
 ---
 
 ## CLI Commands
 
-All 39 commands are implemented and working:
+The complete catalogue (`mam help` prints this; `mam help <topic>` goes deeper).
+Aliases: `eco` → `ecosystem`, `viz` → `visualize`, `fmt` → `format`.
 
 ### Project & Module Management
 
 | Command | Description |
 |---------|-------------|
-| `mam init` | Initialize a project (`mam.toml` + `modules/` + `system.mam`); `mam init <name>` creates a module |
+| `mam init [name]` | Initialize a project (`mam.toml` + `modules/` + `system.mam`); with a name, creates a module |
 | `mam new <type> <name>` | Create a module from a template (`.mam` + `.mam.md`) |
+| `mam create <kind> <name>` | Scaffold a module, agent, workflow or project |
 | `mam build [file]` | Build a module, or the whole project when no file |
 | `mam compile <file> -t <target>` | Compile to target language |
-| `mam run [file]` | Run a module or the project entry natively |
+| `mam run [file]` | Run a `.mam` module or the project entry natively |
 | `mam execute <file>` | Execute module (v1 compat) |
 | `mam validate [file]` | Validate a module, or the whole project |
-| `mam lint <file>` | Lint module for issues |
-| `mam format <file>` | Format module |
+| `mam lint <file>` | Lint module for style and best practices |
+| `mam format <file>` | Format module with consistent style |
 | `mam test [file]` | Run module tests, or all project tests |
+| `mam smoke <file>` | Smoke-test a module end to end (parse, validate, compile, run) |
 | `mam info [file]` | Show module info, or project summary |
+| `mam inspect <file>` | Deeply inspect a module and print a full report |
 | `mam graph` | Show dependency graph (project-aware) |
-| `mam snapshot <file>` | Create module snapshot |
+| `mam snapshot <file>` | Create module snapshot for testing |
 | `mam benchmark <file>` | Benchmark parsing and execution |
+| `mam migrate <file>` | Migrate v1 module to v2 format |
+| `mam project` | Project-scoped operations |
 
-### Development
+### Development & Inspection
 
 | Command | Description |
 |---------|-------------|
 | `mam ast <file>` | Display AST |
 | `mam diff <file1> <file2>` | Diff two modules |
-| `mam graph` | Show dependency graph |
-| `mam viz <file>` | Visualize module structure |
+| `mam visualize <file>` | Visualize module structure |
 | `mam audit <file>` | Security audit |
 | `mam check <file>` | Check against spec |
-| `mam doctor` | Check environment |
-| `mam schema` | Generate JSON schema |
-| `mam explain <concept>` | Explain MAM concepts |
+| `mam doctor` | Check environment and dependencies |
+| `mam schema` | Generate JSON schema for modules |
+| `mam explain <concept>` | Explain a MAM concept or section |
 | `mam stats [path]` | Show statistics |
+| `mam harmony` | Check that a module set is internally consistent |
 
 ### Documentation & Export
 
@@ -400,35 +502,40 @@ All 39 commands are implemented and working:
 |---------|-------------|
 | `mam docs <file>` | Generate documentation |
 | `mam export <file>` | Export to various formats |
-| `mam info <file>` | Show module information |
 
-### Package Management
+### Package Management & Registry
 
 | Command | Description |
 |---------|-------------|
 | `mam install` | Install dependencies |
+| `mam uninstall` | Remove package dependencies |
+| `mam update` | Update MAM packages |
 | `mam publish <file>` | Publish to registry |
 | `mam search <query>` | Search module registry |
-| `mam eco` | List ecosystem modules |
+| `mam ecosystem` | List available ecosystem modules |
 
-### Configuration & Plugins
+### Configuration, Plugins & Memory
 
 | Command | Description |
 |---------|-------------|
 | `mam config` | Manage configuration |
+| `mam global` | Manage the global MAM installation |
 | `mam plugin` | Manage plugins |
-| `mam templates` | List templates |
-| `mam examples [topic]` | Show examples |
+| `mam memory` | Inspect and manage working memory |
+| `mam templates` | List available templates |
+| `mam examples [topic]` | Show example modules |
 | `mam cache` | Manage cache |
 
-### Development Server
+### Development Server & Runtime
 
 | Command | Description |
 |---------|-------------|
 | `mam dev` | Start dev server with hot reload |
 | `mam serve` | Start development server |
 | `mam watch <file>` | Watch modules for changes |
-| `mam migrate <file>` | Migrate v1 to v2 |
+| `mam system` | Show wired MAM engines |
+| `mam optimize <file>` | Optimize token usage of a prompt file |
+| `mam version` | Show or update MAM version |
 
 ---
 
@@ -602,7 +709,7 @@ MAM/
 │       ├── evaluation-engine.ts #   Evaluation
 │       ├── observability.ts     #   Observability
 │       └── sandbox.ts           #   Sandboxing
-├── cli/                     # Command-line interface (39 commands)
+├── cli/                     # Command-line interface (45 commands + aliases)
 │   └── src/project/         #   mam.toml project composition (TOML, loader, graph)
 ├── plugins/                 # Plugin system
 │   ├── api/                 # Plugin API
@@ -612,9 +719,10 @@ MAM/
 │   └── yaml/                # YAML support
 ├── lsp/                     # Language Server (65 tests)
 ├── package-manager/         # Package management - MAMP (45 tests)
-├── registry/                # Module registry - MAM Hub
-│   ├── client/              # Registry client
-│   └── server/              # Registry server
+├── registry/                # Module registry - MAM Hub (production service)
+│   ├── api/                 #   OpenAPI + GraphQL contract + resolvers (123 tests)
+│   ├── client/              #   Typed registry client (131 tests)
+│   └── server/              #   Registry server + HTTP + GraphQL (400 tests)
 ├── testing/                 # Testing framework (60+ tests)
 ├── visualization/           # Graph visualization (95 tests)
 ├── reference/               # Reference implementation (238 tests)
@@ -624,8 +732,8 @@ MAM/
 │   ├── go/                  # Go SDK
 │   └── rust/                # Rust SDK
 ├── modules/                 # Modules
-│   ├── examples/            # Example projects (core, basic, advanced, plugins, security-system)
-│   └── templates/           # 13 reusable templates
+│   ├── examples/            # Example projects (core, basic, advanced, plugins, security-system + per-type folders)
+│   └── templates/           # 19 reusable type templates (basic + advanced)
 ├── tests/                   # E2E tests (65 tests)
 ├── tools/                   # Development tools
 ├── docs/                    # Documentation
@@ -636,25 +744,26 @@ MAM/
 
 ## Development Phases
 
-| Phase | Status | Description |
-|-------|--------|-------------|
-| 1 | ✅ | Language Philosophy |
-| 2 | ✅ | Specification (v2) |
-| 3 | ✅ | Grammar (v2) |
-| 4 | ✅ | Parser (v2) |
-| 5 | ✅ | AST (v2) |
-| 6 | ✅ | Semantic Analyzer |
-| 7 | ✅ | Compiler (16 targets) |
-| 8 | ✅ | Runtime Specification |
-| 9 | ✅ | Package Manager (MAMP) |
-| 10 | ✅ | Registry (MAM Hub) |
-| 11 | ✅ | Language Server (v2) |
-| 12 | ✅ | Testing Framework |
-| 13 | ✅ | Visualization Engine |
-| 14 | ✅ | Reference Implementation |
-| 15 | ✅ | SDK (Python, JavaScript, Go, Rust) |
-| 16 | ✅ | Native `.mam` execution + V2 runtime (22 engines) |
-| 17 | ✅ | Project composition (`mam.toml`) + full MAM spec |
+| Phase | Status | Delivered |
+|-------|--------|-----------|
+| 1 | ✅ | Language Philosophy — context-first, Markdown source of truth |
+| 2 | ✅ | Specification v2 — full MAM spec (runtime, permissions, capabilities) |
+| 3 | ✅ | Grammar v2 — module, agent, workflow, system declarations |
+| 4 | ✅ | Parser v2 — 176 tests, deterministic Markdown→AST |
+| 5 | ✅ | AST v2 — 480+ tests, V2ModuleNode via transformer |
+| 6 | ✅ | Semantic Analyzer — validators, 130+ tests |
+| 7 | ✅ | Compiler — 16 targets, 72 tests |
+| 8 | ✅ | Runtime Specification — 22-engine architecture |
+| 9 | ✅ | Package Manager (MAMP) — 45+ tests, `mam install/publish` |
+| 10 | ✅ | Registry (MAM Hub) — production HTTP + GraphQL service, 654 tests |
+| 11 | ✅ | Language Server v2 — 65 tests, IDE support |
+| 12 | ✅ | Testing Framework — 60+ tests, `mam test/smoke/snapshot` |
+| 13 | ✅ | Visualization Engine — 95 tests, graphs, Mermaid |
+| 14 | ✅ | Reference Implementation — 238 tests |
+| 15 | ✅ | SDKs — Python, JavaScript, Go, Rust (+ C, C++, C#, Java, Ruby, SQL, TypeScript) |
+| 16 | ✅ | Native `.mam` execution — 22/22 engines, ~11,000 lines, `mam run system.mam` |
+| 17 | ✅ | Project composition — `mam.toml`, project-aware commands, full MAM spec |
+
 
 ---
 
@@ -678,17 +787,18 @@ MAM/
 
 | Metric | Value |
 |--------|-------|
-| Total Packages | 19 |
-| Source TypeScript Files | 225 |
-| Test TypeScript Files | 74 |
-| Total Tests | 2,000+ |
-| CLI Commands | 39 |
+| Workspace Packages | 58 (+ root) |
+| Source TypeScript Files | 225+ |
+| Test TypeScript Files | 264 |
+| Total Tests | 7,000+ (all passing) |
+| CLI Commands | 45 (+ `help`, `version`, aliases) |
 | Compiler Targets | 16 |
 | V2 Runtime Engines | 22/22 |
 | V2 Runtime Lines | ~11,000 |
 | Module Types | 19 |
-| Templates | 13 |
-| Example Projects | 5 (core, basic, advanced, plugins, security-system) |
+| Templates | 19 type folders |
+| Example Projects | 5 suites + per-type folders |
+| Registry Tests | 654 (400 server + 123 api + 131 client) |
 | Native Execution | ✅ `mam run system.mam` |
 | Development Phases | 17/17 complete |
 

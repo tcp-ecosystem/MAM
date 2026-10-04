@@ -322,19 +322,23 @@ Human Intent
 | Transformer | ✅ Complete | Included in compiler |
 | Runtime (V1) | ✅ Complete | 487 tests |
 | **V2 Runtime** | ✅ Complete | **22/22 engines, ~11,000 lines** |
-| CLI | ✅ Complete | 39 commands |
+| CLI | ✅ Complete | 45 commands (+ aliases) |
 | Validator | ✅ Complete | 130+ tests |
 | LSP | ✅ Complete | 65 tests |
 | Package Manager | ✅ Complete | 45+ tests |
-| Registry | ✅ Complete | 60+ tests |
-| SDKs | ✅ Complete | 96+ tests |
+| Registry API | ✅ Complete | 123 tests (OpenAPI + GraphQL SDL + resolvers) |
+| Registry Server | ✅ Complete | 400 tests (handlers, store, auth, search, HTTP, GraphQL, e2e) |
+| Registry Client | ✅ Complete | 131 tests (auth, retry, hydration) |
+| SDKs | ✅ Complete | 96+ tests (JS) + Python/Go/Rust/C/C++/C#/Java/Ruby/SQL/TS |
 | Testing Framework | ✅ Complete | 60+ tests |
 | Visualization | ✅ Complete | 95 tests |
-| Plugins | ✅ Complete | 83+ tests |
+| Plugins API | ✅ Complete | 174 tests |
+| Plugins (memory/mermaid/yaml/python) | ✅ Complete | 160 / 140 / 160 / 106 tests |
 | **Native Execution** | ✅ Complete | `mam run system.mam` (no compiler) |
 | **Project Composition** | ✅ Complete | `mam.toml` + project-aware commands |
+| **Templates / Examples** | ✅ Complete | 19 type folders each |
 
-**Total: 19 packages, 2,000+ tests, all passing**
+**Total: 58 workspace packages, 7,000+ tests across 264 files, all passing**
 
 ### V2 Runtime Engines (22/22)
 

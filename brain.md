@@ -226,7 +226,8 @@ stateDiagram-v2
 | Parse Speed | Tokens per millisecond | ~80 | >100 |
 | Compile Speed | Lines per millisecond | ~40 | >50 |
 | AST Determinism | Same input → same output | 100% | 100% |
-| Test Coverage | Tests passing | 2,000+ | >2500 |
+| Test Coverage | Tests passing | 7,000+ | >7500 |
+| Registry Tests | Service + contract + client + e2e | 654 + 11 | — |
 | V2 Runtime Engines | Native execution engines | 22/22 | 22/22 |
 | Runtime Code | V2 runtime lines | ~11,000 | — |
 | Error Recovery | Success rate after errors | >90% | >95% |
@@ -272,16 +273,39 @@ graph LR
 | 3 | AST (480+ tests) | ✅ |
 | 4 | Compiler (72 tests, 16 targets) | ✅ |
 | 5 | Runtime (487 tests) | ✅ |
-| 6 | SDKs (Python, JS, Go, Rust) | ✅ |
+| 6 | SDKs (Python, JS, Go, Rust + more) | ✅ |
 | 7 | Intelligence Runtime (22/22 engines) | ✅ |
 | 8 | Native Execution + Project Composition | ✅ |
+| 9 | Registry service (400 + 123 + 131 + 11 e2e tests) | ✅ |
 
 ### Future Phases
 
 | Phase | Component | Status |
 |-------|-----------|--------|
-| 9 | Cloud Execution | ⏳ |
-| 10 | Enterprise Features | ⏳ |
+| 10 | Cloud Execution | ⏳ |
+| 11 | Enterprise Features | ⏳ |
+
+---
+
+## Distribution Intelligence
+
+Intelligence is not only execution — it is also how modules find each other.
+The production registry (MAM Hub) is the Brain's distribution layer:
+
+```mermaid
+graph TB
+    A[Module Published] --> B[Registry Store]
+    B --> C[Inverted Search Index]
+    C --> D[Discovery Query]
+    D --> E[Dependency Resolution]
+    E --> F[Versioned Download]
+    F --> G[Integrity Verified Install]
+```
+
+- **Discovery:** n-gram indexed search over names, descriptions, tags and authors
+- **Resolution:** manifests declare versioned dependencies; the client resolves them
+- **Integrity:** every download carries a SHA-256 over the stored files
+- **Contract:** OpenAPI for REST, SDL for GraphQL, typed client — all three tested against a live server
 
 ---
 

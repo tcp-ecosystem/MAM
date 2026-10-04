@@ -124,7 +124,8 @@ graph TB
 | Parse Speed | >100 tokens/ms | ~80 tokens/ms |
 | Compile Speed | >50 lines/ms | ~40 lines/ms |
 | AST Determinism | 100% | 100% |
-| Test Coverage | >80% | 2,000+ tests, all passing |
+| Test Coverage | >80% | 7,000+ tests across 264 files, all passing |
+| Registry Tests | — | 654 (400 server + 123 api + 131 client) + 11-test client↔server integration |
 | Native Runtime Engines | 22/22 | 22/22 (~11,000 lines) |
 | CLI Startup | <50ms | ~80ms |
 | CLI Commands | — | 39 |
@@ -135,10 +136,11 @@ graph TB
 | Metric | Target | Current |
 |--------|--------|---------|
 | GitHub Stars | 1000+ | 0 |
-| Community Modules | 100+ | 9 example modules + 5 example projects |
-| Templates | — | 13 |
+| Community Modules | 100+ | 5 example suites + per-type folders (24 dirs) |
+| Templates | — | 19 type folders (basic + advanced) |
 | Plugin Authors | 50+ | 0 |
 | Framework Integrations | 10+ | 16 compiler targets |
+| Registry Packages | — | 3 (`api`, `server`, `client`) |
 | Documentation Coverage | >90% | ~70% |
 
 ### Adoption Metrics
@@ -232,7 +234,9 @@ graph LR
     E --> I
 ```
 
-**Status:** ⏳ Pending
+**Status:** ⏳ Pending — the registry *service* is production-ready (HTTP +
+GraphQL, 654 tests); launch means deployment, community seeding, and
+enterprise support, not more code.
 
 ---
 
@@ -285,13 +289,15 @@ gantt
 - [x] Project composition (`mam.toml` + project-aware commands)
 - [x] Full MAM spec (structured runtime, permissions, capabilities, exports)
 - [x] Parser bugs fixed (hyphen, indented lists, edge syntax)
+- [x] Registry production service (HTTP + GraphQL + typed client, 654 tests)
+- [x] 19 type templates + per-type examples
 - [ ] VS Code Extension published
 - [ ] Documentation complete
 - [ ] 50+ example modules
 
 ### Q4 2026
 
-- [ ] MAM Hub registry launched
+- [x] MAM Hub registry service built (production-grade; launch = deploy + seed)
 - [ ] 100+ community modules
 - [ ] 10+ plugin authors
 - [ ] Enterprise pilot program
