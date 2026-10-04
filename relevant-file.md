@@ -8,13 +8,14 @@
 
 | Metric | Value |
 |--------|-------|
-| Total Packages | 19 |
-| Source TypeScript Files | 225 |
-| Test TypeScript Files | 74 |
-| Total Tests | 2300+ |
-| CLI Commands | 34 |
+| Workspace Packages | 58 (+ root) |
+| Source TypeScript Files | 225+ |
+| Test TypeScript Files | 264 |
+| Total Tests | 7,000+ (all passing) |
+| CLI Commands | 45 (+ `help`, `version`, aliases) |
 | Compiler Targets | 16 |
-| Module Types | 25+ |
+| Module Types | 19 |
+| Registry Tests | 654 (400 server + 123 api + 131 client) + 11 e2e |
 
 ---
 
@@ -22,17 +23,17 @@
 
 | File | Size | Description |
 |------|------|-------------|
-| `README.md` | 8.7KB | Project introduction |
+| `README.md` | 30KB+ | Project introduction |
 | `MAM.md` | 8.7KB | Complete system overview |
 | `ARCHITECTURE.md` | 6.5KB | System architecture |
+| `purpose.md` / `goal.md` / `scope.md` / `brain.md` | 7–8KB ea | Purpose, goals, scope, intelligence layer |
+| `usage.md` | 25KB+ | Complete usage guide |
+| `relevant-file.md` | — | This file listing |
+| `SECURITY.md` | — | Security policy |
+| `CONTRIBUTING.md` | — | Contributor guide |
 | `plan.md` | 45KB | Project plan (v1) |
-| `build-prompt.md` | 6.9KB | Build prompt |
-| `personal.md` | 9.8KB | Design notes |
-| `talk.md` | - | Presentation notes |
 | `package.json` | 1.2KB | Workspace config |
-| `pnpm-workspace.yaml` | 200B | pnpm config |
-| `turbo.json` | 500B | Turbo config |
-| `tsconfig.json` | 700B | TypeScript config |
+| `pnpm-workspace.yaml` | 1KB+ | pnpm config (25 workspace globs) |
 
 ---
 
@@ -159,36 +160,37 @@
 
 ## CLI Files
 
-| File | Size | Description |
-|------|------|-------------|
-| `cli/src/index.ts` | 7.3KB | CLI entry point |
-| `cli/src/commands/init.ts` | 4.6KB | Init command |
-| `cli/src/commands/build.ts` | 1.9KB | Build command |
-| `cli/src/commands/validate.ts` | 2.5KB | Validate command |
-| `cli/src/commands/lint.ts` | 2KB | Lint command |
-| `cli/src/commands/format.ts` | 1.8KB | Format command |
-| `cli/src/commands/fmt.ts` | 1.8KB | Format (alias) |
-| `cli/src/commands/graph.ts` | 3KB | Graph command |
-| `cli/src/commands/ast.ts` | 2.1KB | AST command |
-| `cli/src/commands/execute.ts` | 2.6KB | Execute command |
-| `cli/src/commands/run.ts` | 2.1KB | Run command |
-| `cli/src/commands/compile.ts` | 3KB | Compile command |
-| `cli/src/commands/export.ts` | 3.1KB | Export command |
-| `cli/src/commands/doctor.ts` | 1.9KB | Doctor command |
-| `cli/src/commands/docs.ts` | 2.2KB | Docs command |
-| `cli/src/commands/test.ts` | 3KB | Test command |
-| `cli/src/commands/serve.ts` | 3.9KB | Serve command |
-| `cli/src/commands/install.ts` | 2.2KB | Install command |
-| `cli/src/commands/publish.ts` | 1.7KB | Publish command |
-| `cli/src/commands/migrate.ts` | 4.1KB | Migrate command |
-| `cli/src/utils/config.ts` | 3.7KB | Config manager |
-| `cli/src/utils/logger.ts` | 4KB | Logger |
-| `cli/src/utils/spinner.ts` | 3.3KB | Spinner |
-| `cli/src/utils/formatter.ts` | 6KB | Formatter |
-| `cli/src/utils/linter.ts` | 10.7KB | Linter |
-| `cli/src/utils/docs.ts` | 9KB | Docs generator |
-| `cli/tests/commands/*.test.ts` | 3 files | Command tests |
-| `cli/package.json` | 1KB | Package config |
+| File | Description |
+|------|-------------|
+| `cli/src/index.ts` | CLI entry point (all 45 commands registered) |
+| `cli/src/cli.ts` | Alternate entry |
+| `cli/src/commands/init.ts` | Init command |
+| `cli/src/commands/new.ts` | New-from-template command |
+| `cli/src/commands/create.ts` | Scaffold command |
+| `cli/src/commands/build.ts` | Build command |
+| `cli/src/commands/compile.ts` | Compile command |
+| `cli/src/commands/run.ts` | Native run command |
+| `cli/src/commands/execute.ts` | Execute command (v1 compat) |
+| `cli/src/commands/validate.ts` | Validate command |
+| `cli/src/commands/lint.ts` | Lint command |
+| `cli/src/commands/format.ts` / `fmt.ts` | Format command + alias |
+| `cli/src/commands/test.ts` / `smoke.ts` | Test + end-to-end smoke |
+| `cli/src/commands/inspect.ts` | Deep module inspection |
+| `cli/src/commands/harmony.ts` | Module-set consistency |
+| `cli/src/commands/graph.ts` | Dependency graph |
+| `cli/src/commands/ast.ts` | AST dump |
+| `cli/src/commands/docs.ts` / `export.ts` | Docs + export |
+| `cli/src/commands/doctor.ts` | Environment check |
+| `cli/src/commands/serve.ts` | Dev server |
+| `cli/src/commands/install.ts` / `uninstall.ts` / `update.ts` | Package management |
+| `cli/src/commands/publish.ts` | Registry publish |
+| `cli/src/commands/migrate.ts` | v1→v2 migration |
+| `cli/src/commands/memory.ts` | Working memory |
+| `cli/src/commands/global.ts` | Global installation |
+| `cli/src/commands/system.ts` / `optimize.ts` | Engines + token optimization |
+| `cli/src/project/` | `mam.toml` loading, graphs |
+| `cli/src/templates/init/` | `agent.mam.md`, `basic.mam.md`, `full.mam.md` |
+| `cli/package.json` | Package config |
 
 ---
 
@@ -267,16 +269,30 @@
 
 ---
 
-## Registry Files
+## Registry Files (MAM Hub — production service, 654 + 11 tests)
 
-| File | Size | Description |
-|------|------|-------------|
-| `registry/server/src/index.ts` | 478B | Registry exports |
-| `registry/server/src/server.ts` | 5.7KB | Registry server |
-| `registry/server/src/store.ts` | 5.9KB | Module store |
-| `registry/server/src/auth.ts` | 4.4KB | Authentication |
-| `registry/server/src/search.ts` | 6.5KB | Search engine |
-| `registry/server/package.json` | 1KB | Package config |
+| File | Description |
+|------|-------------|
+| `registry/api/openapi.yaml` | REST contract |
+| `registry/api/graphql/schema.graphql` | GraphQL SDL (reference-parsed in tests) |
+| `registry/api/src/index.ts` | Contract exports, `readOpenAPI`, `readGraphQLSchema`, parity checker |
+| `registry/api/src/resolvers.ts` | Query/Mutation/Module resolvers against the shared store |
+| `registry/api/tests/contract.test.ts` | Contract + SDL validity (42 tests) |
+| `registry/api/tests/resolvers.test.ts` | Resolver behavior (81 tests) |
+| `registry/server/src/server.ts` | `RegistryServer`: handlers, gating, rate limiting, CORS |
+| `registry/server/src/http.ts` | `RegistryHttpServer`: node:http routing, middleware, shutdown |
+| `registry/server/src/graphql.ts` | Schema build, JSON scalar, execution |
+| `registry/server/src/store.ts` | Atomic flat-file store, per-module locks, path safety |
+| `registry/server/src/auth.ts` | scrypt auth, lockout, persistent users/tokens |
+| `registry/server/src/search.ts` | N-gram inverted index + scoring |
+| `registry/server/tests/http.test.ts` | Live-socket HTTP suite (58 tests) |
+| `registry/server/tests/graphql.test.ts` | Live GraphQL execution (24 tests) |
+| `registry/server/tests/client-integration.test.ts` | Published client vs live server (11 tests) |
+| `registry/server/tests/auth/store/search/server.test.ts` | Unit suites (307 tests) |
+| `registry/client/src/client.ts` | Typed client: retry, timeout, 401 replay, pagination |
+| `registry/client/src/auth.ts` | Login, refresh lock, tokenStorage hydration |
+| `registry/client/src/errors.ts` | `RegistryError`, retry classification |
+| `registry/client/tests/auth.test.ts` / `client.test.ts` | 67 + 64 tests |
 
 ---
 
@@ -285,9 +301,13 @@
 | Directory | Files | Description |
 |-----------|-------|-------------|
 | `sdk/javascript/` | 9 TS files | JavaScript SDK (96 tests) |
+| `sdk/typescript/` | TS files | TypeScript SDK |
 | `sdk/python/` | Python files | Python SDK |
 | `sdk/go/` | Go files | Go SDK |
 | `sdk/rust/` | Rust files | Rust SDK |
+| `sdk/c/` / `sdk/cpp/` | C headers / CMake | C / C++ SDKs |
+| `sdk/csharp/` / `sdk/java/` | C# / Java sources | C# / Java SDKs |
+| `sdk/ruby/` / `sdk/sql/` | Ruby / SQL | Ruby / SQL SDKs |
 
 ---
 
@@ -327,38 +347,16 @@
 
 ## Example Modules
 
-### Basic Examples (6)
+One runnable example per type (`modules/examples/<type>/<type>.mam` + `.mam.md`
+twin), plus five composed `mam.toml` suites:
 
-| File | Description |
-|------|-------------|
-| `examples/basic/hello.mam.md` | Simple greeting module |
-| `examples/basic/calculator.mam.md` | Calculator with inputs/outputs |
-| `examples/basic/password-gen.mam.md` | Password generator |
-| `examples/basic/string-utils.mam.md` | String utilities |
-| `examples/basic/temperature.mam.md` | Temperature converter |
-| `examples/basic/text-transform.mam.md` | Text transformations |
+| Location | Contents |
+|----------|----------|
+| `modules/examples/{agent,component,contract,documentation,extension,interface,memory,module,package}/` | One full example each |
+| `modules/examples/{plugin,policy,repository,resource,runtime,service,system,team,tool,workflow}/` | One full example each |
+| `modules/examples/{core,basic,advanced,plugins,security-system}/` | Composed suites, each a full `mam.toml` project |
+| `modules/templates/<19 types>/` | Basic + advanced scaffolds per type (`mam new <type> <name>`) |
 
-### Advanced Examples (7)
-
-| File | Description |
-|------|-------------|
-| `examples/advanced/agent.mam.md` | AI agent with tools |
-| `examples/advanced/api-gateway.mam.md` | API gateway system |
-| `examples/advanced/data-pipeline.mam.md` | Data processing pipeline |
-| `examples/advanced/knowledge-graph.mam.md` | Knowledge graph system |
-| `examples/advanced/monitoring-agent.mam.md` | Monitoring agent |
-| `examples/advanced/multi-agent-debate.mam.md` | Multi-agent debate system |
-| `examples/advanced/workflow.mam.md` | Complex workflow |
-
-### Plugin Examples (5)
-
-| File | Description |
-|------|-------------|
-| `examples/plugins/custom-section/custom-section.mam.md` | Custom section plugin |
-| `examples/plugins/export-plugin/export-plugin.mam.md` | Export plugin |
-| `examples/plugins/memory-plugin/memory-plugin.mam.md` | Memory plugin |
-| `examples/plugins/runtime-plugin/runtime-plugin.mam.md` | Runtime plugin |
-| `examples/plugins/validation-plugin/validation-plugin.mam.md` | Validation plugin |
 
 ---
 
@@ -375,6 +373,6 @@
 
 ---
 
-**Last Updated:** 2026-09-14
-**Total Packages:** 19
-**Total Tests:** 2300+
+**Last Updated:** 2026-10-03
+**Workspace Packages:** 58 (+ root)
+**Total Tests:** 7,000+ across 264 files

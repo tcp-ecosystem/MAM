@@ -23,8 +23,8 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/mam.git
-cd mam
+git clone https://github.com/tcp-ecosystems/MAM.git
+cd MAM
 
 # Install dependencies
 pnpm install
@@ -65,7 +65,7 @@ mam new workflow pipeline    # workflow module
 mam new tool scraper         # tool module
 mam new memory store         # memory module
 mam new system platform      # system module
-mam templates                # list all 13 available templates
+mam templates                # list all 19 type templates
 ```
 
 ### 3. Edit the Module (full MAM spec)
@@ -202,14 +202,16 @@ permissions:
 
 ## CLI Commands
 
-All 39 commands are implemented and working.
+The complete catalogue (45 commands; `mam help` prints this).
+Aliases: `eco` → `ecosystem`, `viz` → `visualize`, `fmt` → `format`.
 
 ### Project & Module Management
 
 | Command | Description |
 |---------|-------------|
-| `mam init` | Initialize a project (`mam.toml` + `modules/` + `system.mam`); `mam init <name>` creates a module |
+| `mam init [name]` | Initialize a project; with a name, creates a module |
 | `mam new <type> <name>` | Create a module from a template (`.mam` + `.mam.md`) |
+| `mam create <kind> <name>` | Scaffold a module, agent, workflow or project |
 | `mam build [file]` | Build a module, or the whole project when no file |
 | `mam compile <file> -t <target>` | Compile to a target language |
 | `mam run [file]` | Run a module or the project entry natively (no compiler) |
@@ -218,25 +220,29 @@ All 39 commands are implemented and working.
 | `mam lint <file>` | Lint module for issues |
 | `mam format <file>` | Format module |
 | `mam test [file]` | Run module tests, or all project tests |
+| `mam smoke <file>` | Smoke-test end to end (parse, validate, compile, run) |
 | `mam info [file]` | Show module info, or project summary |
+| `mam inspect <file>` | Deep inspection report |
 | `mam graph` | Show dependency graph (project-aware) |
 | `mam snapshot <file>` | Create module snapshot |
 | `mam benchmark <file>` | Benchmark parsing and execution |
+| `mam migrate <file>` | Migrate v1 to v2 |
+| `mam project` | Project-scoped operations |
 
-### Development
+### Development & Inspection
 
 | Command | Description |
 |---------|-------------|
 | `mam ast <file>` | Display AST |
 | `mam diff <file1> <file2>` | Diff two modules |
-| `mam graph` | Show dependency graph |
-| `mam viz <file>` | Visualize module structure |
+| `mam visualize <file>` | Visualize module structure |
 | `mam audit <file>` | Security audit |
 | `mam check <file>` | Check against spec |
 | `mam doctor` | Check environment |
 | `mam schema` | Generate JSON schema |
 | `mam explain <concept>` | Explain MAM concepts |
 | `mam stats [path]` | Show statistics |
+| `mam harmony` | Check module-set consistency |
 
 ### Documentation & Export
 
@@ -244,35 +250,40 @@ All 39 commands are implemented and working.
 |---------|-------------|
 | `mam docs <file>` | Generate documentation |
 | `mam export <file>` | Export to various formats |
-| `mam info <file>` | Show module information |
 
-### Package Management
+### Package Management & Registry
 
 | Command | Description |
 |---------|-------------|
 | `mam install` | Install dependencies |
+| `mam uninstall` | Remove dependencies |
+| `mam update` | Update packages |
 | `mam publish <file>` | Publish to registry |
 | `mam search <query>` | Search module registry |
-| `mam eco` | List ecosystem modules |
+| `mam ecosystem` | List ecosystem modules |
 
-### Configuration & Plugins
+### Configuration, Plugins & Memory
 
 | Command | Description |
 |---------|-------------|
 | `mam config` | Manage configuration |
+| `mam global` | Manage global installation |
 | `mam plugin` | Manage plugins |
+| `mam memory` | Inspect and manage working memory |
 | `mam templates` | List templates |
 | `mam examples [topic]` | Show examples |
 | `mam cache` | Manage cache |
 
-### Development Server
+### Server & Runtime
 
 | Command | Description |
 |---------|-------------|
 | `mam dev` | Start dev server with hot reload |
 | `mam serve` | Start development server |
 | `mam watch <file>` | Watch modules for changes |
-| `mam migrate <file>` | Migrate v1 to v2 |
+| `mam system` | Show wired engines |
+| `mam optimize <file>` | Optimize prompt token usage |
+| `mam version` | Show or update version |
 
 ---
 
@@ -737,8 +748,37 @@ my-project/
 
 Ready-made example projects live in `modules/examples/`: `core`, `basic`,
 `advanced`, `plugins` and `security-system` (each a full `mam.toml` project),
-plus 9 standalone full-spec modules. 13 reusable templates live in
+plus one runnable example per module type. 19 reusable type templates live in
 `modules/templates/`.
+
+---
+
+## Module Registry (MAM Hub)
+
+The registry is a production service (`registry/`): `@mam/registry-api`
+(contract), `@mam/registry-server` (HTTP + GraphQL service), `@mam/registry-client`
+(typed client).
+
+```bash
+# Publish and discover
+mam publish modules/hello.mam
+mam search "authentication"
+mam install
+
+# Run your own registry (from registry/server)
+node -e "import('./dist/index.js').then(async ({ RegistryServer, RegistryHttpServer }) => {
+  const server = new RegistryServer({ port: 3000, dataDir: './data',
+    authRequired: true, rateLimit: 100, maxUploadSize: 5e6, corsOrigins: [],
+    auth: { bootstrapAdmin: { username: 'admin', email: 'a@x.test', password: '...' } } });
+  await server.start();
+  await new RegistryHttpServer({ server, port: 3000 }).listen();
+})"
+```
+
+Service properties: persistent users/sessions, atomic writes, per-module locks,
+path-traversal-safe storage, inverted-index search, scrypt auth with lockout,
+CORS, security headers, body limits, rate limiting, graceful shutdown, real
+gzip tarballs with SHA-256 integrity, GraphQL at `/graphql`.
 
 ---
 
