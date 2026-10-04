@@ -2,6 +2,7 @@
   "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
   "name": "MAM",
   "scopeName": "source.mam",
+  "fileTypes": ["mam", "mam.md"],
   "patterns": [
     { "include": "#frontmatter" },
     { "include": "#headings" },

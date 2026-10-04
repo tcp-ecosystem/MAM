@@ -1,7 +1,20 @@
 # Auto detect text files and perform LF normalization
 * text=auto
 
-# Explicitly declare text files
+# MAM source files: text, LF-normalized, shown in diffs.
+# (A `linguist-language=MAM` override is NOT set: that attribute only accepts
+# languages Linguist already knows, and MAM is not among them yet. Claiming it
+# now would be silently ignored. This changes the day MAM is accepted into
+# github-linguist — until then these count as Markdown/Other by content.)
+*.mam text eol=lf diff
+*.mam.md text eol=lf diff
+
+# Compiled outputs are generated, not authored: keep them out of language
+# statistics and collapse them in diffs so review stays readable.
+output/** linguist-generated
+dist/** linguist-generated
+*.mam.py linguist-generated
+*.mam.js linguist-generated
 *.ts text eol=lf
 *.tsx text eol=lf
 *.js text eol=lf
