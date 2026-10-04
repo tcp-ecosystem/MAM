@@ -8,6 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Production MAM Hub registry service (`registry/`, 654 + 11 tests)
+  - `RegistryHttpServer` (`node:http`, no framework): routing, CORS, security
+    headers, body limits, rate-limit headers, graceful shutdown, `/healthz`
+  - GraphQL execution via reference `graphql-js` against the shared store
+  - Persistent auth (scrypt, lockout, surviving restart), atomic writes,
+    per-module locks, path-traversal-safe storage, inverted-index search
+  - Real gzip tarballs with SHA-256 integrity; typed client with token hydration
+  - Client↔server integration suite (published client vs live server, 11 tests)
+  - `registry/server/DEPLOY.md`: production deployment guide
+  - `plan-doc/language-recognition.md`: GitHub Linguist roadmap
+- TextMate `fileTypes` (`mam`, `mam.md`) in vscode/zed/visualstudio grammars
+- `.gitattributes`: `.mam` as text, compiled outputs as `linguist-generated`
 - Full MAMModule → V2ModuleNode transformer (`compiler/src/transformer.ts`)
   - Type inference from sections (role+goal → agent, provider → tool, etc.)
   - Type-specific field extraction (agent, tool, memory, workflow, team, policy, system)
