@@ -22,7 +22,10 @@ const host = process.env.HOST ?? '127.0.0.1';
 const server = new RegistryServer({
   port,
   dataDir: process.env.MAM_DATA_DIR ?? './data',
-  authRequired: true,
+  // Public registries read open, write gated: anyone may search, fetch and
+  // download; publishing, deleting and archiving always need a token (the
+  // server enforces that regardless of this flag). Default stays closed.
+  authRequired: (process.env.MAM_AUTH_REQUIRED ?? 'true') !== 'false',
   rateLimit: Number(process.env.MAM_RATE_LIMIT ?? 100),
   rateLimitWindowMs: 60_000,
   maxUploadSize: 5 * 1024 * 1024,
