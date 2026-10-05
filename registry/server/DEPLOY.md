@@ -26,6 +26,38 @@ pnpm build
 node launcher.mjs   # see below
 ```
 
+## Fly.io (free tier — start here)
+
+The repo ships `Dockerfile` + `fly.toml` + `launcher.mjs`, all validated.
+Docker is not needed locally; Fly builds remotely.
+
+```bash
+# One-time setup
+fly auth login
+cd registry/server
+fly launch --no-deploy          # accept defaults; app name mam-hub
+fly volumes create mam_data --size 1 --region iad   # persistent /data
+fly secrets set MAM_ADMIN_PASSWORD=$(node -e "console.log(require('crypto').randomBytes(24).toString('hex'))")
+# Optional: fly secrets set MAM_ADMIN_USER=admin MAM_ADMIN_EMAIL=you@x.test MAM_CORS=https://yoursite.dev
+
+# Ship it
+fly deploy
+fly status                      # check the /healthz check goes green
+fly logs                        # watch startup: "MAM Hub listening…"
+```
+
+Notes:
+- `fly.toml` pins `min_machines_running = 1` with a 1 GB volume so `auth.json`
+  and `modules/` survive restarts. Free-tier machines sleep when idle and wake
+  on request (`auto_start_machines`); the first request after sleep is slow.
+- `force_https = true` terminates TLS at Fly — no Caddy needed here.
+- The health check hits `/healthz`, which is auth-exempt and rate-limit-exempt
+  by design, so Fly's prober never gets a 429.
+- **Moving to a VPS later:** same `Dockerfile`/`launcher.mjs` run anywhere —
+  only the host changes. See below.
+
+## VPS (later — Hetzner/DO, ~$5/mo)
+
 ## Production Launcher (`launcher.mjs`)
 
 ```js

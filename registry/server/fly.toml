@@ -1,0 +1,48 @@
+# Fly.io — MAM Hub (free-tier friendly).
+#
+# Usage:
+#   fly launch              # first time (creates the app)
+#   fly volumes create mam_data --size 1 --region iad   # persistent dataDir
+#   fly secrets set MAM_ADMIN_PASSWORD=$(node -e "console.log(require('crypto').randomBytes(24).toString('hex'))")
+#   fly deploy
+#
+# When money arrives: same image runs on a VPS (see DEPLOY.md) — nothing
+# about the service changes, only the host.
+
+app = 'mam-hub'
+primary_region = 'iad'
+
+[build]
+  dockerfile = 'Dockerfile'
+
+[env]
+  PORT = '3000'
+  HOST = '0.0.0.0'
+  MAM_DATA_DIR = '/data'
+  MAM_RATE_LIMIT = '100'
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = 'stop'
+  auto_start_machines = true
+  min_machines_running = 1
+  [http_service.concurrency]
+    type = 'requests'
+    soft_limit = 100
+    hard_limit = 150
+
+[[http_service.checks]]
+  grace_period = '15s'
+  interval = '30s'
+  method = 'GET'
+  path = '/healthz'
+  timeout = '5s'
+
+[[mounts]]
+  source = 'mam_data'
+  destination = '/data'
+
+# Secrets (never in this file):
+#   fly secrets set MAM_ADMIN_PASSWORD=...
+#   fly secrets set MAM_ADMIN_USER=... MAM_ADMIN_EMAIL=... MAM_CORS=...
