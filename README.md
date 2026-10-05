@@ -1,5 +1,7 @@
 # MAM — Machine Agent Modules
 
+![MAM](https://img.shields.io/badge/language-MAM-blue) ![Registry](https://img.shields.io/badge/registry-live-green) ![Tests](https://img.shields.io/badge/tests-7000%2B-brightgreen) ![License](https://img.shields.io/badge/license-MIT-green)
+
 > **Describe Systems. Compile Anywhere.**
 
 MAM is a **System Description Language (SDL)** whose reference syntax is Markdown. It transforms Markdown into a universal Intermediate Representation (IR) for AI systems, enabling developers to describe intelligent systems once, **execute them natively**, and compile them to any compliant runtime.
