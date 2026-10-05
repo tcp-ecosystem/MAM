@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
 /**
- * MAM — Markdown as Module
+ * MAM — Machine Agent Modules
  * Machine Agent Modules
  *
- * Human Identity: Markdown as Module (what users write)
+ * Human Identity: Machine Agent Modules (what users write)
  * System Identity: Machine Agent Modules (what the compiler understands)
  *
  * v2: Full-featured CLI with 35+ commands
@@ -35,7 +35,7 @@ ${chalk.cyan('║')}${chalk.white.bold('    | |\\/| | / _ \\ | |_) |  \\  / |  _
 ${chalk.cyan('║')}${chalk.white.bold('    | |  | |/ ___ \\|  _ <    )  | |___                ')}${chalk.cyan('║')}
 ${chalk.cyan('║')}${chalk.white.bold('    |_|  |_/_/   \\_\\_| \\_\\  /_/  |_____|              ')}${chalk.cyan('║')}
 ${chalk.cyan('║')}${chalk.white.bold('                                                       ')}${chalk.cyan('║')}
-${chalk.cyan('║')}${chalk.gray('       Markdown as Module — Machine Agent Modules')}   ${chalk.cyan('║')}
+${chalk.cyan('║')}${chalk.gray('       Machine Agent Modules — Machine Agent Modules')}   ${chalk.cyan('║')}
 ${chalk.cyan('║')}${chalk.gray(`       v${VERSION} · markdown-as-module.org`)}${' '.repeat(Math.max(0, 19 - VERSION.length))}${chalk.cyan('║')}
 ${chalk.cyan('║')}${chalk.white.bold('                                                       ')}${chalk.cyan('║')}
 ${chalk.cyan('╚═══════════════════════════════════════════════════════╝')}
@@ -45,7 +45,7 @@ const program = new Command();
 
 program
   .name('mam')
-  .description(`${chalk.cyan('MAM')} — ${chalk.white('Markdown as Module')}\n${chalk.gray('Machine Agent Modules · System Description Language')}`)
+  .description(`${chalk.cyan('MAM')} — ${chalk.white('Machine Agent Modules')}\n${chalk.gray('Machine Agent Modules · System Description Language')}`)
   .version(VERSION)
   .argument('[file]', 'MAM module file to process')
   .addHelpText('before', BANNER);
@@ -955,6 +955,144 @@ program
     }
   });
 
+// ── MODULE INTELLIGENCE ─────────────────────────────────────────────────────
+
+program
+  .command('inspect')
+  .description('Deeply inspect a module and print a full report')
+  .argument('<file>', 'MAM module file to inspect')
+  .option('--json', 'Emit the report as JSON')
+  .option('-v, --verbose', 'Include verbose extras')
+  .action(async (file, options) => {
+    const { inspectCommand } = await import('./commands/inspect.js');
+    await inspectCommand({ file, json: options.json, verbose: options.verbose });
+  });
+
+program
+  .command('smoke')
+  .description('Smoke-test a module end to end (parse, validate, compile, run)')
+  .argument('<file>', 'MAM module file to smoke test')
+  .option('-t, --target <target>', 'Compiler target for the compile stage', 'python')
+  .option('--strict', 'Run strict validation')
+  .option('--no-cache', 'Bypass the smoke cache')
+  .action(async (file, options) => {
+    const { smokeCommand } = await import('./commands/smoke.js');
+    await smokeCommand({
+      file,
+      target: options.target,
+      strict: options.strict,
+      noCache: options.cache === false,
+    });
+  });
+
+program
+  .command('harmony')
+  .description('Check that a module set is internally consistent')
+  .argument('[path]', 'Project root or module file', '.')
+  .option('--json', 'Emit the report as JSON')
+  .option('-v, --verbose', 'Include informational findings')
+  .option('--max-files <n>', 'Maximum modules to analyse', '40')
+  .option('--timeout <ms>', 'Per-module analysis budget in ms', '10000')
+  .action(async (path, options) => {
+    const { harmonyCommand } = await import('./commands/harmony.js');
+    const report = await harmonyCommand({
+      path,
+      json: options.json,
+      verbose: options.verbose,
+      maxFiles: options.maxFiles ? Number(options.maxFiles) : undefined,
+      timeoutMs: options.timeout ? Number(options.timeout) : undefined,
+    });
+    if (report.verdict === 'discordant') process.exitCode = 1;
+  });
+
+program
+  .command('create')
+  .description('Scaffold a module, agent, workflow or project')
+  .argument('[name]', 'Artefact name')
+  .option('-k, --kind <kind>', 'module | agent | workflow | project', 'module')
+  .option('-t, --template <template>', 'minimal | standard | full', 'standard')
+  .option('-d, --dir <dir>', 'Target directory')
+  .option('-f, --force', 'Overwrite existing files')
+  .action(async (name, options) => {
+    const { createCommand } = await import('./commands/create.js');
+    const result = await createCommand({
+      name,
+      kind: options.kind,
+      template: options.template,
+      dir: options.dir,
+      force: options.force,
+    });
+    if (!result.success) process.exitCode = 1;
+  });
+
+// ── MEMORY, PACKAGES AND HELP ───────────────────────────────────────────────
+
+program
+  .command('memory')
+  .description('Inspect and manage the working memory')
+  .argument('[action]', 'add | get | list | clear | search', 'list')
+  .argument('[value]', 'Content (for add) or query (for get/search)')
+  .option('-k, --key <key>', 'Memory key')
+  .option('--json', 'Emit JSON')
+  .action(async (action, value, options) => {
+    const { memoryCommand } = await import('./commands/memory.js');
+    await memoryCommand({
+      action,
+      content: value,
+      key: options.key,
+      query: action === 'search' ? value : undefined,
+      json: options.json,
+    });
+  });
+
+program
+  .command('update')
+  .description('Update MAM packages')
+  .argument('[package]', 'Package to update')
+  .option('-a, --all', 'Update all @mam packages')
+  .option('-c, --check', 'Only report available updates')
+  .option('--registry <url>', 'Registry URL')
+  .action(async (pkg, options) => {
+    const { updateCommand } = await import('./commands/update.js');
+    await updateCommand({
+      package: pkg,
+      all: options.all,
+      check: options.check,
+      registry: options.registry,
+    });
+  });
+
+program
+  .command('uninstall')
+  .description('Remove MAM package dependencies')
+  .argument('<packages...>', 'Packages to uninstall')
+  .option('--save-dev', 'Remove from devDependencies')
+  .option('--json', 'Emit JSON')
+  .action(async (packages, options) => {
+    const { uninstallCommand } = await import('./commands/uninstall.js');
+    await uninstallCommand({ packages, saveDev: options.saveDev, json: options.json });
+  });
+
+program
+  .command('global')
+  .description('Manage the global MAM installation')
+  .argument('[action]', 'info | link | unlink | list', 'info')
+  .option('-d, --dir <dir>', 'Global install directory')
+  .option('--registry <url>', 'Registry URL')
+  .action(async (action, options) => {
+    const { globalCommand } = await import('./commands/global.js');
+    await globalCommand({ action, dir: options.dir, registry: options.registry });
+  });
+
+program
+  .command('help')
+  .description('Show the command catalogue or help for a topic')
+  .argument('[topic]', 'Topic or command name')
+  .option('-s, --search <term>', 'Search commands')
+  .action(async (topic, options) => {
+    const { showTopic } = await import('./commands/help.js');
+    showTopic(topic ?? '', { search: options.search });
+  });
 // ─── DEFAULT ACTION ──────────────────────────────────────────────
 
 program.action(async (file) => {

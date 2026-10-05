@@ -138,7 +138,11 @@ export function parseSections(
       sections.push(result.section);
       errors.push(...result.errors);
       warnings.push(...result.warnings);
-      pos = result.endIndex;
+      // Guarantee forward progress. `parseSection` returns the cursor it
+      // stopped on; if a section body consumed nothing and the next token is
+      // another heading of the same level, that cursor can equal `pos`, which
+      // would spin this loop forever. Always advance by at least one token.
+      pos = result.endIndex > pos ? result.endIndex : pos + 1;
     } else {
       // Skip unexpected tokens
       pos++;
@@ -272,7 +276,11 @@ function parseSectionContent(
     if (result.node) {
       nodes.push(result.node);
     }
-    pos = result.endIndex;
+    // Guarantee forward progress. A content node that recognises nothing can
+    // return the cursor unchanged, which would spin this loop forever (this
+    // is reachable with tokens such as an unmatched inline link). Always
+    // advance by at least one token.
+    pos = result.endIndex > pos ? result.endIndex : pos + 1;
   }
 
   return { nodes, endIndex: pos };
@@ -812,8 +820,11 @@ function parseInlineContent(text: string): InlineNode[] {
 
     // Link [text](url)
     if (text[pos] === '[') {
-      const closeBracket = text.indexOf('](');
-      if (closeBracket !== -1) {
+      // Anchor the search at the current position. Searching from index 0 can
+      // match a `](` that lies *before* `pos`, which made `pos` jump backwards
+      // and spun this loop forever (e.g. "[x](y) and [z").
+      const closeBracket = text.indexOf('](', pos + 1);
+      if (closeBracket > pos + 1) {
         const closeParen = text.indexOf(')', closeBracket + 2);
         if (closeParen !== -1) {
           const linkText = text.slice(pos + 1, closeBracket);
