@@ -6,6 +6,7 @@
  */
 
 import { V2ModuleNode } from '@mam/ast';
+import { MAM_VERSION } from '@mam/ast';
 
 // ============================================================================
 // Comment Syntax Map
@@ -66,7 +67,7 @@ function buildContextLines(mod: V2ModuleNode): string[] {
   lines.push(`Id: ${na(meta?.id) || mod.name.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`);
   lines.push(`Name: ${na(mod.name)}`);
   lines.push(`Type: ${na(mod.moduleType)}`);
-  lines.push(`Version: ${na(meta?.version) || '1.0.0'}`);
+  lines.push(`Version: ${na(meta?.version) || MAM_VERSION}`);
   lines.push(`Author: ${na(meta?.author) || 'MAM User'}`);
   lines.push(`License: ${na(meta?.license) || 'MIT'}`);
   lines.push(`Description: ${na(mod.description)}`);
@@ -230,7 +231,7 @@ function formatAsJSON(mod: V2ModuleNode): string {
       id: meta?.id || mod.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
       name: mod.name,
       type: mod.moduleType,
-      version: meta?.version || '1.0.0',
+      version: meta?.version || MAM_VERSION,
       author: meta?.author || 'MAM User',
       license: meta?.license || 'MIT',
       description: mod.description || 'N/A',

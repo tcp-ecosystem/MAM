@@ -9,6 +9,7 @@ import { readFile, writeFile, access, mkdir } from 'node:fs/promises';
 import { resolve, dirname, relative, join } from 'node:path';
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import { parseMAM } from '@mam/parser';
+import { MAM_VERSION } from '@mam/ast';
 import chalk from 'chalk';
 import ora from 'ora';
 import { loadConfig, type MAMConfig } from '../utils/config.js';
@@ -1049,7 +1050,7 @@ function formatSARIF(result: ValidationResult): string {
       tool: {
         driver: {
           name: 'mam-validate',
-          version: '1.0.0',
+          version: MAM_VERSION,
           rules: [...new Set(result.diagnostics.map(d => d.ruleId))].map(id => ({
             id,
             name: id,

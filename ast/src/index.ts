@@ -446,3 +446,15 @@ export {
   isInlineNode,
   createEmptyModule,
 } from './nodes/index.js';
+
+// Version constants (single source of truth for the MAM language version)
+export {
+  MAM_VERSION,
+  MAM_LEGACY_VERSION,
+  MAM_MAJOR_VERSION,
+  MAM_SCHEMA_VERSION,
+  MAM_VERSION_RANGE,
+  isLegacyMamVersion,
+  isCurrentMamVersion,
+  normalizeMamVersion,
+} from './constants/version.js';

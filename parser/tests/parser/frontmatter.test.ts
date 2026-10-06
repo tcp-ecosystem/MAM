@@ -3,6 +3,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import { MAM_VERSION } from '@mam/ast';
 import { tokenize } from '../../src/lexer/index.js';
 import { parseFrontMatter } from '../../src/parser/frontmatter.js';
 
@@ -23,7 +24,7 @@ describe('Front Matter Parser', () => {
 
       expect(result.data).not.toBeNull();
       expect(result.data?.id).toBe('test');
-      expect(result.data?.version).toBe('1.0.0');
+      expect(result.data?.version).toBe(MAM_VERSION);
       expect(result.data?.name).toBe('Test');
       expect(result.data?.author).toBe('Author');
       expect(result.data?.runtime).toBe('python');

@@ -5,6 +5,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import { MAM_VERSION } from '@mam/ast';
 import { parseMAM, parse } from '../../src/index.js';
 import { tokenize } from '../../src/lexer/index.js';
 
@@ -29,7 +30,7 @@ Test module purpose.
       expect(result.errors).toHaveLength(0);
       expect(result.ast.frontmatter).not.toBeNull();
       expect(result.ast.frontmatter?.data.id).toBe('test-module');
-      expect(result.ast.frontmatter?.data.version).toBe('1.0.0');
+      expect(result.ast.frontmatter?.data.version).toBe(MAM_VERSION);
       expect(result.ast.frontmatter?.data.name).toBe('Test Module');
       expect(result.ast.frontmatter?.data.author).toBe('TestAuthor');
       expect(result.ast.frontmatter?.data.runtime).toBe('python');
@@ -150,7 +151,7 @@ Test.
       expect(result.ast.frontmatter?.data.permissions).toEqual(['network']);
       expect(result.ast.frontmatter?.data.license).toBe('MIT');
       expect(result.ast.frontmatter?.data.repository).toBe('https://github.com/test/repo');
-      expect(result.ast.frontmatter?.data.mam_version).toBe('1.0.0');
+      expect(result.ast.frontmatter?.data.mam_version).toBe(MAM_VERSION);
     });
   });
 

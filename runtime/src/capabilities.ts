@@ -1,4 +1,4 @@
-import { V2ModuleNode } from '@mam/ast';
+import { MAM_VERSION, V2ModuleNode } from '@mam/ast';
 
 export interface Capability {
   name: string;
@@ -492,7 +492,7 @@ export class CapabilityEngine {
     const entries: CapabilityExportEntry[] = [];
     for (const [key, cap] of this.capabilities) {
       const perms = this.permissionRequirements.find(p => p.capabilityKey === key);
-      let version = '1.0.0';
+      let version = MAM_VERSION;
       let deprecated = false;
       const versionList = this.versions.get(key);
       if (versionList && versionList.length > 0) {
@@ -509,7 +509,7 @@ export class CapabilityEngine {
       });
     }
     return {
-      version: '1.0.0',
+      version: MAM_VERSION,
       exportedAt: Date.now(),
       entries,
     };

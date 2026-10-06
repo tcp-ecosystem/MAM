@@ -8,6 +8,7 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { join, resolve, relative, basename } from 'node:path';
 import chalk from 'chalk';
+import { MAM_VERSION } from '@mam/ast';
 import { Project } from '../project/loader.js';
 import { graphToMermaid, graphToText } from '../project/graph.js';
 import { renderManifest, DEFAULT_MODULE_GLOBS } from '../project/manifest.js';
@@ -143,7 +144,7 @@ tags:
   - system
 dependencies:
   - name: hello
-    version: ">=1.0.0"
+    version: ">=2.0.0"
 capabilities:
   - orchestrate
 permissions:
@@ -189,7 +190,7 @@ export async function projectInitCommand(options: ProjectOptions): Promise<void>
 
   const name = basename(root);
   const manifest = renderManifest(
-    { name, version: '1.0.0', description: `${name} MAM project`, license: 'MIT' },
+    { name, version: MAM_VERSION, description: `${name} MAM project`, license: 'MIT' },
     { entry: 'system.mam', modules: DEFAULT_MODULE_GLOBS, outDir: 'dist', targets: ['python'] },
   );
 

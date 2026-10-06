@@ -26,7 +26,7 @@ import {
 import { watch as fsWatch, type FSWatcher } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { parseMAM } from '@mam/parser';
-import { serializeToJSON, getASTStats } from '@mam/ast';
+import { MAM_VERSION, serializeToJSON, getASTStats } from '@mam/ast';
 import chalk from 'chalk';
 import ora from 'ora';
 
@@ -371,7 +371,7 @@ async function buildSingleFile(
       case 'combined': {
         const jsonData = serializeToJSON(parseResult.ast as any, compact ? 'compact' : 'json');
         output = JSON.stringify({
-          version: '1.0.0',
+          version: MAM_VERSION,
           source: entry.relativePath,
           ast: JSON.parse(jsonData),
           metadata: {
@@ -411,7 +411,7 @@ async function buildSingleFile(
     buildInfo[entry.path] = {
       fileHash: entry.hash,
       builtAt: new Date().toISOString(),
-      version: '1.0.0',
+      version: MAM_VERSION,
       dependencies: [],
     };
 

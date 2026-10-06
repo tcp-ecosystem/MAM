@@ -6,6 +6,7 @@
  */
 
 import { readFile, writeFile, readdir, stat, access, mkdir, copyFile } from 'node:fs/promises';
+import { MAM_VERSION, MAM_LEGACY_VERSION } from '@mam/ast';
 import { resolve, join, relative, dirname, basename, extname } from 'node:path';
 import { createHash } from 'node:crypto';
 import chalk from 'chalk';
@@ -104,8 +105,8 @@ export interface MigrationRule {
 // Constants
 // ============================================================================
 
-const MAM_V1_VERSION = '1.0.0';
-const MAM_V2_VERSION = '2.0.0';
+const MAM_V1_VERSION = MAM_LEGACY_VERSION;
+const MAM_V2_VERSION = MAM_VERSION;
 
 const V1_TO_V2_FRONTMATTER_RENAMES: Record<string, string> = {
   title: 'name',

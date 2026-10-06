@@ -9,7 +9,7 @@
  *   - a Service routing to the deployment
  */
 
-import { V2ModuleNode, V2AgentNode, V2ToolNode, V2MemoryNode, V2WorkflowNode, V2TeamNode, V2PolicyNode, V2SystemNode } from '@mam/ast';
+import { MAM_VERSION, V2ModuleNode, V2AgentNode, V2ToolNode, V2MemoryNode, V2WorkflowNode, V2TeamNode, V2PolicyNode, V2SystemNode } from '@mam/ast';
 import { CompileTargetHandler, CompilerConfig } from '../compiler.js';
 import { generateModuleContext } from '../context.js';
 
@@ -60,7 +60,7 @@ export class KubernetesTarget implements CompileTargetHandler {
     const lines: string[] = [
       `name: ${mod.name}`,
       `type: ${mod.moduleType}`,
-      `version: ${(meta?.version as string) || '1.0.0'}`,
+      `version: ${(meta?.version as string) || MAM_VERSION}`,
       `author: ${(meta?.author as string) || 'MAM User'}`,
       `license: ${(meta?.license as string) || 'MIT'}`,
     ];
@@ -149,7 +149,7 @@ export class KubernetesTarget implements CompileTargetHandler {
     const data: Array<[string, string]> = [
       ['module-name', mod.name],
       ['module-type', mod.moduleType],
-      ['version', (meta?.version as string) || '1.0.0'],
+      ['version', (meta?.version as string) || MAM_VERSION],
       ['author', (meta?.author as string) || 'MAM User'],
       ['license', (meta?.license as string) || 'MIT'],
       ['runtime', this.runtimeOf(mod)],

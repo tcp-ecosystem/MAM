@@ -5,6 +5,7 @@
  * module discovery globs, build targets, and cross-project dependencies.
  */
 
+import { MAM_VERSION } from '@mam/ast';
 import { parseToml, type TomlTable } from './toml.js';
 
 export interface ProjectInfo {
@@ -54,7 +55,7 @@ export const DEFAULT_BUILD: ProjectBuildConfig = {
 
 const DEFAULT_PROJECT: ProjectInfo = {
   name: 'mam-project',
-  version: '1.0.0',
+  version: MAM_VERSION,
 };
 
 function asString(value: unknown, fallback = ''): string {
