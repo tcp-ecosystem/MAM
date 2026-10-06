@@ -104,3 +104,7 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 
+# VS Code extension build output (desktop-extension/vscode)
+desktop-extension/vscode/out/
+desktop-extension/vscode/*.vsix
+
