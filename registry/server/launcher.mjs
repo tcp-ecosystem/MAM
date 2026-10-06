@@ -31,6 +31,9 @@ const server = new RegistryServer({
   maxUploadSize: 5 * 1024 * 1024,
   corsOrigins: (process.env.MAM_CORS ?? '').split(',').map((s) => s.trim()).filter(Boolean),
   auth: {
+    // dataDir turns on auth persistence (users + tokens in auth.json).
+    // Without it every restart wipes all accounts and sessions.
+    dataDir: process.env.MAM_DATA_DIR ?? './data',
     bootstrapAdmin: {
       username: process.env.MAM_ADMIN_USER ?? 'admin',
       email: process.env.MAM_ADMIN_EMAIL ?? 'admin@example.com',
