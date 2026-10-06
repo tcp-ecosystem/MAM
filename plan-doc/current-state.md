@@ -1,6 +1,6 @@
 # MAM Current State
 
-> **Last Updated: 2026-09-19**
+> **Last Updated: 2026-10-05**
 
 ---
 
@@ -8,7 +8,7 @@
 
 MAM (Machine Agent Modules) is a System Description Language (SDL) whose reference syntax is Markdown. It describes intelligent systems — agents, tools, workflows, teams, policies — and compiles them to 16 target languages.
 
-**Status: Beta-ready.** All packages build, 2222 tests pass, full pipeline works end-to-end. V2 Runtime: 100% complete (22/22 engines). `.mam` executes standalone.
+**Status: Launched.** All packages build, 7,000+ tests pass, full pipeline works end-to-end. V2 Runtime: 100% complete (22/22 engines). `.mam` executes standalone. **MAM Hub registry is live publicly** with 20 founding modules (see [achievement.md](achievement.md)).
 
 ---
 
@@ -26,7 +26,9 @@ MAM (Machine Agent Modules) is a System Description Language (SDL) whose referen
 | plugins/ | ✅ | Clean | Passing |
 | lsp/ | ✅ | Clean | Passing |
 | package-manager/ | ✅ | Clean | Passing |
-| registry/ | ✅ | Clean | Passing |
+| registry/api/ | ✅ | Clean | 123 tests (contract + SDL validity + resolvers) |
+| registry/server/ | ✅ | Clean | 400 tests (handlers, HTTP, GraphQL, e2e) |
+| registry/client/ | ✅ | Clean | 131 tests (auth, retry, hydration) |
 | testing/ | ✅ | Clean | Passing |
 | visualization/ | ✅ | Clean | Passing |
 | reference/ | ✅ | Clean | Passing |
@@ -35,7 +37,7 @@ MAM (Machine Agent Modules) is a System Description Language (SDL) whose referen
 | sdk/rust/ | ✅ | Clean | N/A |
 | sdk/go/ | ✅ | Clean | Passing |
 
-**All 19 packages build successfully. 2222 tests pass across 74 test files.**
+**58 workspace packages (+ root) build successfully. 7,000+ tests pass across 264 test files. MAM Hub is live with 20 modules.**
 
 ---
 
@@ -91,13 +93,12 @@ The parser and transformer support the canonical MAM specification:
 Canonical modules ship in **both** `.mam` (canonical) and `.mam.md` (source)
 form with identical content:
 
-- **Examples** (`modules/examples/`): `authentication`, `bug-hunter`,
-  `data_pipeline`, `memory`, `planner`, `prompt`, `rag`, `security`, `workflow`,
-  plus complete projects `core`, `basic`, `advanced`, `plugins`,
-  `security-system`
-- **Templates** (`modules/templates/`): `basic`, `agent`, `api`, `workflow`,
-  `tool`, `memory`, `team`, `policy`, `system`, `plugin`, `service`,
-  `component`, `resource`
+- **Examples** (`modules/examples/`): one runnable example per type
+  (`agent`, `component`, `contract`, `documentation`, `extension`, `interface`,
+  `memory`, `module`, `package`, `plugin`, `policy`, `repository`, `resource`,
+  `runtime`, `service`, `system`, `team`, `tool`, `workflow`), plus complete
+  projects `core`, `basic`, `advanced`, `plugins`, `security-system`
+- **Templates** (`modules/templates/`): 19 type folders (basic + advanced)
 
 ### Project Composition (`mam.toml`)
 
@@ -182,13 +183,13 @@ Sample project: `modules/examples/security-system/`.
 | Plugins | 13 | Passing |
 | LSP | 2 | Passing |
 | Package Manager | 4 | Passing |
-| Registry | 6 | Passing |
+| Registry | 11 | Passing (400 server + 123 api + 131 client + 11 e2e) |
 | Testing | 2 | Passing |
 | Visualization | 6 | Passing |
 | Reference | 6 | Passing |
 | SDKs | 20 | Passing |
 | E2E | 1 | 65 tests ✅ |
-| **Total** | **74 files** | **2222 tests** |
+| **Total** | **264 files** | **7,000+ tests** |
 
 ---
 
@@ -261,13 +262,16 @@ Target routing by extension: `.mam.py` → python, `.mam.js`/`.mam.mjs`/`.mam.cj
 
 ## Known Issues
 
-1. **Parser hyphen bug**: Text containing hyphens (`well-sourced`) triggers `UNEXPECTED_CHARACTER` error. Workaround: avoid hyphens in prose.
+1. **Windows forced-exit assertion**: `UV_HANDLE_CLOSING` fires when a Node
+   process is force-killed mid-shutdown. Cosmetic; graceful `close()` is clean.
+   Workaround: always shut down via SIGINT/SIGTERM, not `Stop-Process -Force`.
 
-2. **V2ModuleNode interface**: Has NO `rules` or `prompts` fields. Rules go into `documentation`. Prompts are skipped.
+2. **PowerShell mangles `curl.exe` payloads**: `-d` JSON gets re-encoded, so
+   the server correctly reports "not valid JSON". Workaround: use
+   `Invoke-RestMethod` (handles JSON properly) or Node `fetch`.
 
-3. **Runtime execution**: Compiled output hasn't been executed in a real runtime.
-
-4. **Package resolution**: `mam install` and dependency resolution may not work without a running registry.
+3. **Tunnel URLs are temporary**: trycloudflare addresses rotate on restart.
+   Tracked fix: free Cloudflare account + named tunnel for a stable address.
 
 ---
 
@@ -284,8 +288,11 @@ Target routing by extension: `.mam.py` → python, `.mam.js`/`.mam.mjs`/`.mam.cj
 | Evaluation Engine | Medium | ✅ Complete (~450 lines, quality scoring, benchmarks) |
 | Standalone `.mam` execution | High | ✅ Complete (`mam run file.mam`, native runtime) |
 | Observability System | Low | Basic metrics in each engine |
-| Registry deployment | Medium | Local only |
-| VS Code Extension | Low | Future |
+| Registry deployment | High | ✅ Live publicly (tunnel; VPS when funded) |
+| Registry seeding | High | ✅ 20 founding modules live |
+| VS Code Extension | Medium | ✅ Live on OpenVSX; Marketplace queued on account fix |
+| Linguist recognition | Medium | Groundwork done; gated on ~200 public repos |
+| Permanent URL | Medium | Named tunnel (free) or VPS; trycloudflare rotates |
 | Runtime SDK | Low | Future |
 
 ---
@@ -294,8 +301,8 @@ Target routing by extension: `.mam.py` → python, `.mam.js`/`.mam.mjs`/`.mam.cj
 
 | Hash | Description |
 |------|-------------|
-| 720f227 | Fix build errors across all packages |
-| 57c72a0 | Add transformer, fix parser table bugs, create test fixtures |
-| a040afe | Add E2E tests, LICENSE, plan-doc updates |
+| live | Production registry launch (654 + 11 tests, 20 modules seeded) |
+| live | OpenVSX extension published, namespace granted |
+| live | Docs refresh (README, purpose/goal/scope/brain, usage, SECURITY, CONTRIBUTING) |
 
-**All pushed to `https://github.com/tcp-ecosystems/MAM.git` on `main` branch.**
+**All pushed to `https://github.com/tcp-ecosystem/MAM.git` on `main` branch.**
