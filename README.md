@@ -332,7 +332,8 @@ each with its own `mam.toml`): multi-module projects that `mam build`, `mam run`
 `mam validate` and `mam test` operate on whole.
 
 **Templates** (`modules/templates/<type>/`, basic + advanced per type): `mam new
-<type> <name>` scaffolds from these.
+<type> <name>` scaffolds from these. Community modules are curated at
+[awesome-mam](https://github.com/tcp-ecosystem/awesome-mam).
 
 ---
 
@@ -852,6 +853,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 - [Purpose](purpose.md) · [Goal](goal.md) · [Scope](scope.md) · [Brain](brain.md)
 - [Examples](modules/examples/)
 - [Templates](modules/templates/)
+- [Awesome MAM](https://github.com/tcp-ecosystem/awesome-mam)
 - [Plan](plan.md)
 - [v2 Plan](plan-doc/plan-v2.md)
 - [Changelog](CHANGELOG.md)
