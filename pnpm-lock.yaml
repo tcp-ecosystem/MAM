@@ -441,6 +441,9 @@ importers:
       '@mam/registry-client':
         specifier: workspace:*
         version: link:../client
+      '@types/node':
+        specifier: ^20.11.0
+        version: 20.19.43
       typescript:
         specifier: ^5.3.0
         version: 5.9.3
