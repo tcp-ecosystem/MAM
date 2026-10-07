@@ -55,8 +55,29 @@
     "vitest": "^1.2.0",
     "@types/node": "^20.11.0"
   },
-  "files": ["dist", "README.md"],
-  "keywords": ["mam", "markdown", "runtime", "ai", "agents"],
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "keywords": [
+    "mam",
+    "markdown",
+    "runtime",
+    "ai",
+    "agents"
+  ],
   "author": "LifeJiggy",
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tcp-ecosystems/MAM.git",
+    "directory": "runtime/"
+  },
+  "homepage": "https://github.com/tcp-ecosystems/MAM/tree/main/runtime",
+  "bugs": {
+    "url": "https://github.com/tcp-ecosystems/MAM/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
 }

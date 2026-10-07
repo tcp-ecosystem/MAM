@@ -1,0 +1,33 @@
+# Render blueprint — MAM Hub on the free tier (no card required).
+#
+# Usage: dashboard.render.com → New → Blueprint → point at this repo.
+# Then set MAM_ADMIN_PASSWORD in the dashboard (Environment → Secret File
+# or env var). Everything else has working defaults below.
+#
+# Free-tier notes: the service sleeps after 15 min idle (~30-60s cold start
+# on wake) and the disk is ephemeral — both harmless here, because the
+# launcher self-seeds all founding modules from git on every cold boot.
+
+services:
+  - type: web
+    name: mam-hub
+    runtime: docker
+    dockerfilePath: ./registry/server/Dockerfile
+    dockerContext: .
+    plan: free
+    healthCheckPath: /healthz
+    envVars:
+      - key: PORT
+        value: 3000
+      - key: HOST
+        value: 0.0.0.0
+      - key: MAM_DATA_DIR
+        value: /data
+      - key: MAM_AUTH_REQUIRED
+        value: 'false'
+      - key: MAM_RATE_LIMIT
+        value: '100'
+      - key: MAM_ADMIN_USER
+        value: admin
+      - key: MAM_ADMIN_PASSWORD
+        sync: false # <-- set in dashboard; never commit a value here

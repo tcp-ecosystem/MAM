@@ -22,8 +22,31 @@
     "vitest": "^1.2.0",
     "@types/node": "^20.11.0"
   },
-  "files": ["dist", "README.md"],
-  "keywords": ["mam", "memory", "short-term", "long-term", "episodic", "semantic", "agents"],
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "keywords": [
+    "mam",
+    "memory",
+    "short-term",
+    "long-term",
+    "episodic",
+    "semantic",
+    "agents"
+  ],
   "author": "MAM Team",
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tcp-ecosystems/MAM.git",
+    "directory": "memory-engine/"
+  },
+  "homepage": "https://github.com/tcp-ecosystems/MAM/tree/main/memory-engine",
+  "bugs": {
+    "url": "https://github.com/tcp-ecosystems/MAM/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
 }

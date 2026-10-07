@@ -59,8 +59,10 @@ COPY --from=build /app/parser/dist parser/dist/
 COPY --from=build /app/ast/dist ast/dist/
 COPY --from=build /app/package-manager/dist package-manager/dist/
 COPY registry/server/launcher.mjs registry/server/
+# Founding modules for self-seeding (verbatim copies, see seed/README.md).
+COPY registry/server/seed/*.mam /app/seed/
 
-ENV HOST=0.0.0.0 PORT=3000 MAM_DATA_DIR=/data
+ENV HOST=0.0.0.0 PORT=3000 MAM_DATA_DIR=/data MAM_SEED_DIR=/app/seed
 EXPOSE 3000
 VOLUME ["/data"]
 WORKDIR /app/registry/server

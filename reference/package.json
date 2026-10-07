@@ -34,8 +34,26 @@
     "typescript": "^5.3.0",
     "vitest": "^1.2.0"
   },
-  "files": ["dist"],
-  "keywords": ["mam", "reference", "implementation"],
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "mam",
+    "reference",
+    "implementation"
+  ],
   "author": "MAM Team",
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tcp-ecosystems/MAM.git",
+    "directory": "reference/"
+  },
+  "homepage": "https://github.com/tcp-ecosystems/MAM/tree/main/reference",
+  "bugs": {
+    "url": "https://github.com/tcp-ecosystems/MAM/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
 }

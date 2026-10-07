@@ -32,6 +32,18 @@
   ],
   "author": "MAM Team",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tcp-ecosystems/MAM.git",
+    "directory": "registry/server/"
+  },
+  "homepage": "https://github.com/tcp-ecosystems/MAM/tree/main/registry/server",
+  "bugs": {
+    "url": "https://github.com/tcp-ecosystems/MAM/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
   "peerDependencies": {
     "@mam/registry-api": "workspace:*"
   },

@@ -30,5 +30,17 @@
     "runtime"
   ],
   "author": "MAM Team",
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tcp-ecosystems/MAM.git",
+    "directory": "plugins/core/python/"
+  },
+  "homepage": "https://github.com/tcp-ecosystems/MAM/tree/main/plugins/core/python",
+  "bugs": {
+    "url": "https://github.com/tcp-ecosystems/MAM/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
 }

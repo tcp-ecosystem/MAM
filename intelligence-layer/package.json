@@ -22,8 +22,32 @@
     "typescript": "^5.3.0",
     "vitest": "^1.2.0"
   },
-  "files": ["dist", "README.md"],
-  "keywords": ["mam", "intelligence", "query", "grounding", "synthesis", "knowledge graph", "integration", "prompt"],
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "keywords": [
+    "mam",
+    "intelligence",
+    "query",
+    "grounding",
+    "synthesis",
+    "knowledge graph",
+    "integration",
+    "prompt"
+  ],
   "author": "LifeJiggy",
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tcp-ecosystems/MAM.git",
+    "directory": "intelligence-layer/"
+  },
+  "homepage": "https://github.com/tcp-ecosystems/MAM/tree/main/intelligence-layer",
+  "bugs": {
+    "url": "https://github.com/tcp-ecosystems/MAM/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
 }

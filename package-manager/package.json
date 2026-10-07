@@ -26,8 +26,26 @@
     "typescript": "^5.3.0",
     "vitest": "^1.2.0"
   },
-  "files": ["dist"],
-  "keywords": ["mam", "package-manager", "mamp"],
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "mam",
+    "package-manager",
+    "mamp"
+  ],
   "author": "MAM Team",
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tcp-ecosystems/MAM.git",
+    "directory": "package-manager/"
+  },
+  "homepage": "https://github.com/tcp-ecosystems/MAM/tree/main/package-manager",
+  "bugs": {
+    "url": "https://github.com/tcp-ecosystems/MAM/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
 }

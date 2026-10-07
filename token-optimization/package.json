@@ -22,8 +22,32 @@
     "typescript": "^5.3.0",
     "vitest": "^1.2.0"
   },
-  "files": ["dist", "README.md"],
-  "keywords": ["mam", "token", "optimization", "estimation", "budgeting", "compression", "caching", "prompt"],
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "keywords": [
+    "mam",
+    "token",
+    "optimization",
+    "estimation",
+    "budgeting",
+    "compression",
+    "caching",
+    "prompt"
+  ],
   "author": "LifeJiggy",
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tcp-ecosystems/MAM.git",
+    "directory": "token-optimization/"
+  },
+  "homepage": "https://github.com/tcp-ecosystems/MAM/tree/main/token-optimization",
+  "bugs": {
+    "url": "https://github.com/tcp-ecosystems/MAM/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
 }

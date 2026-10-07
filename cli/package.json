@@ -5,7 +5,7 @@
   "type": "module",
   "main": "./dist/index.js",
   "bin": {
-    "mam": "./dist/index.js"
+    "mam": "dist/index.js"
   },
   "exports": {
     ".": {
@@ -47,11 +47,29 @@
     "vitest": "^1.2.0",
     "@types/node": "^20.11.0"
   },
-  "files": ["dist", "README.md"],
-  "repository": { "type": "git", "url": "https://github.com/tcp-ecosystems/MAM.git" },
-  "keywords": ["mam", "markdown", "module", "sdl", "compiler"],
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tcp-ecosystems/MAM.git",
+    "directory": "cli/"
+  },
+  "keywords": [
+    "mam",
+    "markdown",
+    "module",
+    "sdl",
+    "compiler"
+  ],
   "author": "LifeJiggy",
   "license": "MIT",
-  "bugs": { "url": "https://github.com/tcp-ecosystems/MAM/issues" },
-  "homepage": "https://github.com/tcp-ecosystems/MAM#readme"
+  "homepage": "https://github.com/tcp-ecosystems/MAM#readme",
+  "bugs": {
+    "url": "https://github.com/tcp-ecosystems/MAM/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
 }

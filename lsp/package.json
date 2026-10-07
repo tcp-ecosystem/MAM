@@ -36,5 +36,17 @@
     "vscode"
   ],
   "author": "MAM Team",
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tcp-ecosystems/MAM.git",
+    "directory": "lsp/"
+  },
+  "homepage": "https://github.com/tcp-ecosystems/MAM/tree/main/lsp",
+  "bugs": {
+    "url": "https://github.com/tcp-ecosystems/MAM/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
 }

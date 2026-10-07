@@ -42,5 +42,17 @@
     "graphql"
   ],
   "author": "MAM Team",
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tcp-ecosystems/MAM.git",
+    "directory": "registry/api/"
+  },
+  "homepage": "https://github.com/tcp-ecosystems/MAM/tree/main/registry/api",
+  "bugs": {
+    "url": "https://github.com/tcp-ecosystems/MAM/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
 }

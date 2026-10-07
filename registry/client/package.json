@@ -22,8 +22,26 @@
     "vitest": "^1.2.0",
     "@types/node": "^20.11.0"
   },
-  "files": ["dist"],
-  "keywords": ["mam", "registry", "client"],
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "mam",
+    "registry",
+    "client"
+  ],
   "author": "MAM Team",
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tcp-ecosystems/MAM.git",
+    "directory": "registry/client/"
+  },
+  "homepage": "https://github.com/tcp-ecosystems/MAM/tree/main/registry/client",
+  "bugs": {
+    "url": "https://github.com/tcp-ecosystems/MAM/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
 }

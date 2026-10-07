@@ -35,5 +35,17 @@
     "api"
   ],
   "author": "MAM Team",
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tcp-ecosystems/MAM.git",
+    "directory": "plugins/api/"
+  },
+  "homepage": "https://github.com/tcp-ecosystems/MAM/tree/main/plugins/api",
+  "bugs": {
+    "url": "https://github.com/tcp-ecosystems/MAM/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
 }

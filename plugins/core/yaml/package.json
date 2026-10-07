@@ -20,8 +20,26 @@
     "typescript": "^5.3.0",
     "vitest": "^1.2.0"
   },
-  "files": ["dist"],
-  "keywords": ["mam", "plugin", "yaml"],
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "mam",
+    "plugin",
+    "yaml"
+  ],
   "author": "MAM Team",
-  "license": "MIT"
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tcp-ecosystems/MAM.git",
+    "directory": "plugins/core/yaml/"
+  },
+  "homepage": "https://github.com/tcp-ecosystems/MAM/tree/main/plugins/core/yaml",
+  "bugs": {
+    "url": "https://github.com/tcp-ecosystems/MAM/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
 }
