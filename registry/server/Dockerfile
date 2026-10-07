@@ -33,8 +33,14 @@ COPY ast/tsconfig.json ast/
 COPY package-manager/src package-manager/src/
 COPY package-manager/tsconfig.json package-manager/
 
-# Build dependencies first, then the server (tsc per package)
-RUN pnpm --filter @mam/ast --filter @mam/parser --filter @mam/package-manager --filter @mam/registry-api --filter @mam/registry-client --filter @mam/registry-server build
+# Build in dependency order. `@mam/registry-api` statically imports
+# `@mam/registry-server` types, while the server only imports the api
+# dynamically at runtime — so the server (and everything else) must build
+# FIRST, and the api second once the server dist exists. A single combined
+# build fails from clean because pnpm cannot order the cycle; locally this
+# hides behind prebuilt dist/ dirs.
+RUN pnpm --filter @mam/ast --filter @mam/parser --filter @mam/package-manager --filter @mam/registry-client --filter @mam/registry-server build
+RUN pnpm --filter @mam/registry-api build
 
 # --- runtime ---
 FROM node:20-slim AS runtime
