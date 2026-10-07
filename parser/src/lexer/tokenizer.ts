@@ -691,7 +691,11 @@ export class Tokenizer {
   // ==========================================================================
 
   private isListMarker(remaining: string): boolean {
-    return /^[-*+]\s/.test(remaining) || /^\d+\.\s/.test(remaining);
+    // A marker must be followed by a space or tab. Using \s here would also
+    // match the newline itself, so a line holding only "-" would be accepted
+    // as a list marker, yet readListItem (which matches against the line text)
+    // would then consume nothing and emit no token, hanging the tokenizer.
+    return /^[-*+][ \t]/.test(remaining) || /^\d+\.[ \t]/.test(remaining);
   }
 
   private readListItem(): void {
@@ -751,6 +755,12 @@ export class Tokenizer {
 
       // Read list item text
       this.readListItemText();
+    }
+
+    // Defense in depth: never return without consuming input, otherwise the
+    // tokenizer loop cannot make progress and would spin forever.
+    if (this.pos === startOffset && !this.isEOF()) {
+      this.consumeChar();
     }
   }
 
@@ -1141,7 +1151,15 @@ export class Tokenizer {
         const isWordBoundary = (prevChar === ' ' || prevChar === '\t' || prevChar === '\n' || prevChar === '\r' || end === 0) ||
                                (nextChar === ' ' || nextChar === '\t' || nextChar === '\n' || nextChar === '\r' || end + 1 >= this.input.length);
         if (isWordBoundary) {
-          break;
+          // A standalone hyphen inside running text is an ordinary dash or
+          // minus sign ("a - b", "value -5"), so consume it as text. Breaking
+          // here would re-lex the '-' on its own where nothing matches it,
+          // producing a spurious UNEXPECTED_CHARACTER. Genuine MAM constructs
+          // are unaffected because they are handled by higher-priority rules
+          // before readText runs: "- item" (list marker), "---" (horizontal
+          // rule) and "->" (edge syntax, handled just above).
+          end++;
+          continue;
         }
       }
       
