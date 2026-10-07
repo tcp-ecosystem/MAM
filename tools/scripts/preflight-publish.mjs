@@ -111,6 +111,18 @@ if (whoami.code !== 0) {
   ok(`logged in as ${whoami.out.trim()}`);
 }
 
+// npm refuses publishing to an org that enforces 2FA unless the request
+// carries a granular access token with bypass-2FA enabled. An interactive
+// `npm login` session is not enough, and the failure only surfaces as a 403
+// part way through a publish, so surface it here instead.
+if (!process.env.NPM_TOKEN) {
+  warn(
+    'NPM_TOKEN is not set. If the @mam org enforces 2FA, publishing will fail with ' +
+      'E403 "Two-factor authentication or granular access token with bypass 2fa enabled is required". ' +
+      'Create a granular access token (read/write packages, scope @mam, bypass 2FA) and set NPM_TOKEN.'
+  );
+}
+
 // 3. Scope ownership
 console.log(`\nscope ${SCOPE}`);
 if (whoami.code === 0) {
