@@ -58,7 +58,8 @@ tmp/
 # Package managers
 package-lock.json
 yarn.lock
-pnpm-lock.yaml
+# pnpm-lock.yaml is COMMITTED (reproducible installs + Docker builds)
+# pnpm-lock.yaml
 .mam-cache/
 *.lint-baseline.json
 
