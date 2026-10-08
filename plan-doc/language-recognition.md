@@ -65,15 +65,13 @@ with evidence.
 
 The registry service code is complete (654 + 11 tests). Launch means:
 
-- [ ] Deploy public instance (host, TLS, `127.0.0.1` bind behind proxy)
-- [ ] Set explicit `bootstrapAdmin` (never ship a known password)
-- [ ] Persistent `dataDir` + backup story for `auth.json` / `meta.json`
-- [ ] Configure `corsOrigins`, `rateLimit`, `maxUploadSize` for public traffic
-- [ ] Point `mam publish/search/install` defaults at the public instance
-- [ ] Seed: publish the 19 type examples + 5 suites as the founding modules
-- [ ] Publish VS Code extension (3a) in the same window
-- [ ] Announce: README badge, `awesome-mam`, changelog entry
+- [x] Deploy public instance → **LIVE at `https://mam-hub.onrender.com`** (Render free tier, verified 2026-10-07: health, GraphQL 19/19, anonymous search)
+- [x] Self-seeding image (cold boots rebuild all founding modules from git)
+- [ ] Seed: 19 founding modules live; grow toward 100+ community modules
+- [ ] Publish VS Code extension (3a) in the same window → done (OpenVSX)
+- [ ] Announce: README badge, `awesome-mam`, changelog entry → badges + awesome-mam done
 - [ ] Monitor: registry logs, download counts → feed the Linguist evidence file
+
 
 ---
 

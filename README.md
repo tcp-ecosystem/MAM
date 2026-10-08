@@ -447,6 +447,9 @@ mam search authentication     # search modules
 mam install                   # install dependencies
 ```
 
+**Live instance:** `https://mam-hub.onrender.com` (free tier: sleeps when idle,
+self-seeds on cold boot).
+
 **Production properties:** persistent users and sessions (survive restart), atomic
 writes with per-module locking, path-traversal-safe storage, inverted-index
 search, salted scrypt auth with lockout, CORS, security headers, body limits,
