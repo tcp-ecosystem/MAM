@@ -44,7 +44,10 @@ with evidence.
 - [ ] Seed 100+ community modules, each linked to its GitHub repo
 - [ ] Track repo URLs per module: "N modules, M linked repos" is the PR story
 
-### 3d. The PR — once, with evidence
+### 3d. The PR — once, with evidence (accumulating 2026-10-07)
+
+- [x] Production registry live: `https://mam-hub.onrender.com` (20 modules)
+- [x] Editor distribution: OpenVSX v2.0.0 (**324 downloads**), VS Code Marketplace live
 - [ ] `languages.yml` entry (type: programming, color, extensions `.mam`)
 - [ ] `script/add-grammar` with the vscode `mam.tmLanguage.json`
 - [ ] 2+ real-world samples from `modules/examples/`

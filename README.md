@@ -450,6 +450,20 @@ mam install                   # install dependencies
 **Live instance:** `https://mam-hub.onrender.com` (free tier: sleeps when idle,
 self-seeds on cold boot).
 
+---
+
+## Editor Support
+
+First-class `.mam` language support — syntax highlighting, snippets,
+diagnostics, commands — v2.0.0:
+
+- [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=ArkhAngelLifeJiggy.mam-language)
+- [OpenVSX](https://open-vsx.org/extension/arkhangellifejiggy/mam-language) (Cursor, Windsurf, VSCodium)
+
+Plus 13 more editors in [`desktop-extension/`](desktop-extension/).
+
+---
+
 **Production properties:** persistent users and sessions (survive restart), atomic
 writes with per-module locking, path-traversal-safe storage, inverted-index
 search, salted scrypt auth with lockout, CORS, security headers, body limits,

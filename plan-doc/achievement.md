@@ -38,12 +38,21 @@ Bugs the integration suite caught that unit suites missed: tagless-publish
 500, stale client token after logout, JSON scalar pass-through, SDL/contract
 mismatches, missing `dependencies` publish field.
 
-## 🏆 2026-10-05 — Editor Distribution
+## 🏆 2026-10-07 — Permanent Registry + Editor Distribution Complete
 
-- VS Code extension (`arkhangellifejiggy.mam-language` 1.0.0) **live on OpenVSX**,
-  namespace ownership granted.
+- **Render live:** `https://mam-hub.onrender.com` — self-seeding image (19/19 on
+  cold boot), verified health + GraphQL + anonymous search from outside.
+  Tunnels retired; Docker builds fixed clean (lockfile committed, ordered
+  builds, declared `@types/node`).
+- **OpenVSX v2.0.0 live** (`arkhangellifejiggy.mam-language`), **324 downloads**
+  and climbing — namespace ownership granted.
+- **VS Code Marketplace LIVE:** `ArkhAngelLifeJiggy.mam-language` (fixed
+  invalid `Syntax Highlighting` category + v2.0.0).
+
+## 🏆 2026-10-05 — Editor Distribution (day one)
+
+- VS Code extension 1.0.0 published on OpenVSX, namespace ownership granted.
 - TextMate `fileTypes` fixed in vscode/zed/visualstudio grammars.
-- Marketplace upload queued behind account verification (same `.vsix`).
 
 ## 🏆 2026-10-03/04 — Documentation Catch-Up
 
@@ -70,7 +79,7 @@ mismatches, missing `dependencies` publish field.
 
 ## Open Threads (not ours to close today)
 
-- VS Code Marketplace upload → account verification, then re-upload same `.vsix`
-- Linguist adoption → 200 public repos (registry + templates working on it)
-- Permanent URL + VPS → when funded (tunnel + autostart hold the launch now)
+- Linguist adoption → 200 public repos (registry + templates + 324 extension
+  downloads working on it; evidence file: `language-recognition.md`)
+- VPS + custom domain → when funded (Render free holds the launch now)
 - Multi-process store locking, `getRecent` ranking → accepted limitations
