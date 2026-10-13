@@ -1,6 +1,10 @@
 # MAM Current State
 
 > **Last Updated: 2026-10-07**
+>
+> Totals in this document were verified by running the suites on 2026-10-07.
+> Earlier "7,000+ tests / 58 packages / 45 commands" figures were carried over
+> from earlier drafts and never re-measured; see the corrected totals below.
 
 ---
 
@@ -8,7 +12,7 @@
 
 MAM (Machine Agent Modules) is a System Description Language (SDL) whose reference syntax is Markdown. It describes intelligent systems — agents, tools, workflows, teams, policies — and compiles them to 16 target languages.
 
-**Status: Launched.** All packages build, 7,000+ tests pass, full pipeline works end-to-end. V2 Runtime: 100% complete (22/22 engines). `.mam` executes standalone. **MAM Hub registry is live publicly** with 20 founding modules (see [achievement.md](achievement.md)).
+**Status: Launched.** All packages build, **4,039 tests pass** across 30 packages, full pipeline works end-to-end. V2 Runtime: 100% complete (22/22 engines). `.mam` executes standalone. **MAM Hub registry is live publicly** with 20 founding modules (see [achievement.md](achievement.md)). All 30 publishable packages are at **2.0.0**, matching `MAM_VERSION`.
 
 ---
 
@@ -37,7 +41,7 @@ MAM (Machine Agent Modules) is a System Description Language (SDL) whose referen
 | sdk/rust/ | ✅ | Clean | N/A |
 | sdk/go/ | ✅ | Clean | Passing |
 
-**58 workspace packages (+ root) build successfully. 7,000+ tests pass across 264 test files. MAM Hub is live with 20 modules.**
+**31 leaf workspace packages (30 publishable + 1 private) build successfully. 4,039 tests pass. MAM Hub is live with 20 modules.**
 
 ---
 
@@ -55,7 +59,10 @@ The full `.mam.md → .mam.<target>` pipeline works:
    - Frontmatter (YAML) → metadata, rules
    - Sections → content blocks
    - Tables, lists, code blocks supported
-   - Known bug: hyphens in text trigger UNEXPECTED_CHARACTER error
+   - ✅ Fixed: standalone hyphens in prose (`a - b`, `value -5`) no longer
+     raise `UNEXPECTED_CHARACTER`; a line containing only `-` no longer hangs
+     the tokenizer. Regression coverage in
+     `parser/tests/lexer/hyphen-regression.test.ts`.
 
 2. **Transformer** (`compiler/src/transformer.ts`): Converts `MAMModule → V2ModuleNode`
    - Infers module type from sections (role+goal → agent, provider → tool, etc.)
@@ -189,7 +196,7 @@ Sample project: `modules/examples/security-system/`.
 | Reference | 6 | Passing |
 | SDKs | 20 | Passing |
 | E2E | 1 | 65 tests ✅ |
-| **Total** | **264 files** | **7,000+ tests** |
+| **Total** | — | **4,039 tests passing (30 packages)** |
 
 ---
 
@@ -279,7 +286,8 @@ Target routing by extension: `.mam.py` → python, `.mam.js`/`.mam.mjs`/`.mam.cj
 
 | Item | Priority | Status |
 |------|----------|--------|
-| Parser hyphen fix | High | Known bug, workaround exists |
+| Parser hyphen fix | High | ✅ Complete (standalone hyphens + dash-only-line hang) |
+| `.mam` document coverage | High | ✅ Complete (LSP selector + testing/cli/package-manager/reference) |
 | Workflow Engine (standalone) | Medium | ✅ Complete (~500 lines) |
 | Module Registry (runtime-level) | Medium | ✅ Complete (349 lines) |
 | Dependency Resolver (runtime-level) | Medium | ✅ Complete (topoSort + package-manager) |
@@ -287,10 +295,11 @@ Target routing by extension: `.mam.py` → python, `.mam.js`/`.mam.mjs`/`.mam.cj
 | Dry-run mode | High | ✅ Complete |
 | Evaluation Engine | Medium | ✅ Complete (~450 lines, quality scoring, benchmarks) |
 | Standalone `.mam` execution | High | ✅ Complete (`mam run file.mam`, native runtime) |
-| Observability System | Low | Basic metrics in each engine |
+| Observability System | Low | ✅ Standalone `@mam/observability` (traces/metrics/tokens/costs/evaluation) |
 | Registry deployment | High | ✅ Live publicly (tunnel; VPS when funded) |
 | Registry seeding | High | ✅ 20 founding modules live |
-| VS Code Extension | Medium | ✅ Live on OpenVSX; Marketplace queued on account fix |
+| VS Code Extension | Medium | ✅ Live on OpenVSX (426 downloads) **and** VS Code Marketplace |
+| npm release | High | ⏳ Staged, not published. Needs a granular npm token with bypass-2FA (the `@mam` org enforces 2FA). Run `pnpm preflight:publish` then `pnpm -r publish --access public`. |
 | Linguist recognition | Medium | Groundwork done; gated on ~200 public repos |
 | Permanent URL | Medium | Named tunnel (free) or VPS; trycloudflare rotates |
 | Runtime SDK | Low | Future |
@@ -301,8 +310,29 @@ Target routing by extension: `.mam.py` → python, `.mam.js`/`.mam.mjs`/`.mam.cj
 
 | Hash | Description |
 |------|-------------|
+| `27a810f` | All 30 packages realigned to 2.0.0 |
+| `48e9375` | `.mam` document coverage across LSP/CLI/testing/package-manager/reference |
+| `d6095b8` | Publish preflight warns about the 2FA token requirement |
+| `60e3530` | Parser: standalone hyphens + tokenizer hang on dash-only lines |
 | live | Production registry launch (654 + 11 tests, 20 modules seeded) |
-| live | OpenVSX extension published, namespace granted |
+| live | OpenVSX + Marketplace extension published, 426 downloads |
 | live | Docs refresh (README, purpose/goal/scope/brain, usage, SECURITY, CONTRIBUTING) |
 
 **All pushed to `https://github.com/tcp-ecosystem/MAM.git` on `main` branch.**
+
+---
+
+## Standalone Engine Packages
+
+Nine engines were extracted from `runtime/src/v2/` into first-class workspace
+packages and wired into the runtime, CLI, compiler, testing, LSP, TypeScript
+SDK and visualization:
+
+| Package | Package | Package |
+|---------|---------|---------|
+| `@mam/memory-engine` | `@mam/knowledge-engine` | `@mam/observability` |
+| `@mam/context-engine` | `@mam/security` | `@mam/tool-engine` |
+| `@mam/mcp` | `@mam/token-optimization` | `@mam/intelligence-layer` |
+
+`runtime/src/v2/system.ts` exposes them through `MAMSystem` / `createMAMSystem()`
+with a shared registry and event bus.
