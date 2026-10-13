@@ -1,6 +1,6 @@
 {
   "name": "@mam/visualization",
-  "version": "0.1.0",
+  "version": "2.0.0",
   "description": "MAM Visualization Engine",
   "type": "module",
   "main": "./dist/index.js",
@@ -38,12 +38,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tcp-ecosystems/MAM.git",
+    "url": "git+https://github.com/tcp-ecosystem/MAM.git",
     "directory": "visualization/"
   },
-  "homepage": "https://github.com/tcp-ecosystems/MAM/tree/main/visualization",
+  "homepage": "https://github.com/tcp-ecosystem/MAM/tree/main/visualization",
   "bugs": {
-    "url": "https://github.com/tcp-ecosystems/MAM/issues"
+    "url": "https://github.com/tcp-ecosystem/MAM/issues"
   },
   "publishConfig": {
     "access": "public"

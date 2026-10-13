@@ -30,7 +30,7 @@ if (isEntry) {
 
 export const LSP_SERVER_NAME = 'mam-lsp';
 
-export const LSP_SERVER_VERSION = '0.1.0';
+export const LSP_SERVER_VERSION = '2.0.0';
 
 export function createMAMServer(connection: Connection): MAMServer {
   return new MAMServer(connection);

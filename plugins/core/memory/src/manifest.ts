@@ -20,7 +20,7 @@ export { MEMORY_SECTION_NAME, MEMORY_KEY_PATTERN, RESERVED_MEMORY_PREFIX };
  */
 export const MEMORY_MANIFEST: PluginManifest = {
   name: '@mam/plugin-memory',
-  version: '0.1.0',
+  version: '2.0.0',
   description: 'Memory and state management for MAM modules',
   author: 'MAM Team',
   license: 'MIT',

@@ -2,7 +2,7 @@
   "name": "mam-jupyterlab",
   "version": "0.1.0",
   "description": "Syntax highlighting and file-type support for MAM (Machine Agent Modules) in JupyterLab",
-  "author": "tcp-ecosystems",
+  "author": "tcp-ecosystem",
   "license": "MIT",
   "keywords": [
     "jupyter",

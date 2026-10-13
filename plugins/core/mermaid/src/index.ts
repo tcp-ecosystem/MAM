@@ -142,7 +142,7 @@ import { mermaidSection as section } from './manifest.js';
 import { mermaidHtmlRenderer as htmlRenderer, ALL_MERMAID_RENDERERS as renderers } from './renderer.js';
 import { MERMAID_RULES as rules } from './rule.js';
 
-export const MERMAID_PLUGIN_VERSION = '0.1.0';
+export const MERMAID_PLUGIN_VERSION = '2.0.0';
 
 export interface MermaidPluginOptions {
   /** Install the full rule family instead of just the composite rule. */

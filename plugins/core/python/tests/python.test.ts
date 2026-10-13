@@ -578,7 +578,7 @@ describe('Python Plugin - Manifest', () => {
 
   it('should point main at a file the package actually ships', () => {
     expect(PYTHON_MANIFEST.main).toBe('./dist/index.js');
-    expect(PYTHON_MANIFEST.version).toBe('0.1.0');
+    expect(PYTHON_MANIFEST.version).toBe('2.0.0');
   });
 
   it('should export the section name, languages, limits and example', () => {
@@ -614,7 +614,7 @@ describe('Python Plugin - Manifest', () => {
     const custom = createPythonManifest({ version: '2.0.0', keywords: ['custom'] });
     expect(custom.version).toBe('2.0.0');
     expect(custom.keywords).toEqual(['custom']);
-    expect(PYTHON_MANIFEST.version).toBe('0.1.0');
+    expect(PYTHON_MANIFEST.version).toBe('2.0.0');
   });
 });
 

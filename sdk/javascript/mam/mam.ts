@@ -128,7 +128,7 @@ export class MAMModule {
 
   constructor(config: MAMModuleConfig) {
     this._config = {
-      version: '0.1.0',
+      version: '2.0.0',
       runtime: 'python',
       tags: [],
       permissions: [],
@@ -145,7 +145,7 @@ export class MAMModule {
   // --- Getters ---
 
   get name(): string { return this._config.name; }
-  get version(): string { return this._config.version ?? '0.1.0'; }
+  get version(): string { return this._config.version ?? '2.0.0'; }
   get author(): string | undefined { return this._config.author; }
   get description(): string | undefined { return this._config.description; }
   get id(): string { return this._config.id ?? this._config.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'); }
@@ -377,7 +377,7 @@ export class MAMModule {
   }
 
   getVersion(): string {
-    return this._config.version ?? '0.1.0';
+    return this._config.version ?? '2.0.0';
   }
 
   getConfig(): MAMModuleConfig {
@@ -420,7 +420,7 @@ export function fromAST(ast: AST): MAMModule {
   const fm = ast.frontmatter?.data ?? {};
   const mod = new MAMModule({
     name: (fm.name as string) ?? 'unnamed',
-    version: (fm.version as string) ?? '0.1.0',
+    version: (fm.version as string) ?? '2.0.0',
     author: fm.author as string | undefined,
     description: fm.description as string | undefined,
     id: fm.id as string | undefined,

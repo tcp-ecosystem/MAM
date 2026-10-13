@@ -540,7 +540,7 @@ describe('YAML Plugin - Manifest', () => {
 
   it('should point main at a file the package actually ships', () => {
     expect(YAML_MANIFEST.main).toBe('./dist/index.js');
-    expect(YAML_MANIFEST.version).toBe('0.1.0');
+    expect(YAML_MANIFEST.version).toBe('2.0.0');
   });
 
   it('should export the section name, languages, limits and example', () => {
@@ -594,7 +594,7 @@ describe('YAML Plugin - Manifest', () => {
     const custom = createYamlManifest({ version: '2.0.0', keywords: ['custom'] });
     expect(custom.version).toBe('2.0.0');
     expect(custom.keywords).toEqual(['custom']);
-    expect(YAML_MANIFEST.version).toBe('0.1.0');
+    expect(YAML_MANIFEST.version).toBe('2.0.0');
     expect(YAML_MANIFEST.keywords).toContain('yaml');
   });
 

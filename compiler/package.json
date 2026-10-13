@@ -1,6 +1,6 @@
 {
   "name": "@mam/compiler",
-  "version": "0.1.0",
+  "version": "2.0.0",
   "description": "MAM Compiler — Transpiles MAM AST to target languages",
   "type": "module",
   "main": "./dist/index.js",
@@ -42,12 +42,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tcp-ecosystems/MAM.git",
+    "url": "git+https://github.com/tcp-ecosystem/MAM.git",
     "directory": "compiler/"
   },
-  "homepage": "https://github.com/tcp-ecosystems/MAM/tree/main/compiler",
+  "homepage": "https://github.com/tcp-ecosystem/MAM/tree/main/compiler",
   "bugs": {
-    "url": "https://github.com/tcp-ecosystems/MAM/issues"
+    "url": "https://github.com/tcp-ecosystem/MAM/issues"
   },
   "publishConfig": {
     "access": "public"

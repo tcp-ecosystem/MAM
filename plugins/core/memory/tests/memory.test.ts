@@ -921,7 +921,7 @@ describe('Memory Plugin - Manifest', () => {
 
   it('should point main at a file the package actually ships', () => {
     expect(MEMORY_MANIFEST.main).toBe('./dist/index.js');
-    expect(MEMORY_MANIFEST.version).toBe('0.1.0');
+    expect(MEMORY_MANIFEST.version).toBe('2.0.0');
   });
 
   it('should export the section name and limits', () => {
@@ -947,7 +947,7 @@ describe('Memory Plugin - Manifest', () => {
     const custom = createMemoryManifest({ version: '2.0.0', keywords: ['custom'] });
     expect(custom.version).toBe('2.0.0');
     expect(custom.keywords).toEqual(['custom']);
-    expect(MEMORY_MANIFEST.version).toBe('0.1.0');
+    expect(MEMORY_MANIFEST.version).toBe('2.0.0');
     expect(MEMORY_MANIFEST.keywords).toContain('memory');
   });
 

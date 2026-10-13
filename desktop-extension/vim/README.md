@@ -47,7 +47,7 @@ added path are picked up automatically.
 
 ### Option C — plugin managers
 
-- **vim-plug**: `Plug 'tcp-ecosystems/MAM', { 'rtp': 'desktop-extension/vim' }`
+- **vim-plug**: `Plug 'tcp-ecosystem/MAM', { 'rtp': 'desktop-extension/vim' }`
 - **Pathogen**: symlink or clone the `desktop-extension/vim` folder into
   `~/.vim/bundle/mam`.
 

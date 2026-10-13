@@ -29,7 +29,7 @@ cursor --install-extension /path/to/mam-language-0.1.0.vsix
 ### Option B — VS Code Marketplace
 
 Cursor ships with Marketplace support. In the Extensions panel (Ctrl/Cmd+Shift+X)
-search for **MAM - Machine Agent Modules** (publisher `tcp-ecosystems`) and install.
+search for **MAM - Machine Agent Modules** (publisher `tcp-ecosystem`) and install.
 
 ### Option C — copy into Cursor's extension directory
 

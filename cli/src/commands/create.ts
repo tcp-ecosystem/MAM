@@ -148,7 +148,7 @@ export function buildContext(options: CreateOptions, kind: CreateKind): Template
     name,
     description: options.description?.trim() || `${titleCase(name)} module.`,
     moduleType: kind === 'agent' ? 'agent' : kind === 'workflow' ? 'workflow' : 'module',
-    version: '0.1.0',
+    version: '2.0.0',
     template: options.template ?? 'standard',
   };
 }
@@ -294,7 +294,7 @@ export function renderProjectManifest(ctx: TemplateContext): string {
   return [
     '[project]',
     `name = "${ctx.name}"`,
-    'version = "0.1.0"',
+    'version = "2.0.0"',
     'description = "' + ctx.description.replace(/"/g, "'") + '"',
     '',
     '[modules]',

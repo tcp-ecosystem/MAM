@@ -26,7 +26,7 @@ export const YAML_LANGUAGES = ['yaml', 'yml'] as const;
  */
 export const YAML_MANIFEST: PluginManifest = {
   name: '@mam/plugin-yaml',
-  version: '0.1.0',
+  version: '2.0.0',
   description: 'YAML section parser and validator for MAM modules',
   author: 'MAM Team',
   license: 'MIT',

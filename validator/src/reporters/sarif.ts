@@ -24,7 +24,7 @@ export interface ValidationReport {
 export interface SARIFReporterOptions {
   /** Driver tool name (default: 'mam-validator') */
   toolName?: string;
-  /** Driver tool version (default: '0.1.0') */
+  /** Driver tool version (default: '2.0.0') */
   toolVersion?: string;
   /** SARIF schema URI (default: SARIF 2.1.0 schema) */
   schemaUri?: string;
@@ -49,7 +49,7 @@ export class SARIFReporter {
   constructor(options?: SARIFReporterOptions) {
     this.options = {
       toolName: 'mam-validator',
-      toolVersion: '0.1.0',
+      toolVersion: '2.0.0',
       schemaUri: DEFAULT_SCHEMA_URI,
       informationUri: 'https://mam.dev/docs/validation',
       ...options,

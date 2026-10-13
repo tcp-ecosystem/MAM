@@ -1,6 +1,6 @@
 {
   "name": "@mam/registry-server",
-  "version": "0.1.0",
+  "version": "2.0.0",
   "description": "MAM Hub — Module Registry Server",
   "type": "module",
   "main": "./dist/index.js",
@@ -35,12 +35,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tcp-ecosystems/MAM.git",
+    "url": "git+https://github.com/tcp-ecosystem/MAM.git",
     "directory": "registry/server/"
   },
-  "homepage": "https://github.com/tcp-ecosystems/MAM/tree/main/registry/server",
+  "homepage": "https://github.com/tcp-ecosystem/MAM/tree/main/registry/server",
   "bugs": {
-    "url": "https://github.com/tcp-ecosystems/MAM/issues"
+    "url": "https://github.com/tcp-ecosystem/MAM/issues"
   },
   "publishConfig": {
     "access": "public"

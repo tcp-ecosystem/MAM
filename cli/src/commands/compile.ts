@@ -666,7 +666,7 @@ function generateCLIContext(ctx: GeneratorContext, target: string): string {
   lines.push('');
   lines.push(`Examples: ${info.examples}`);
   lines.push('');
-  lines.push('References: See https://github.com/tcp-ecosystems/MAM');
+  lines.push('References: See https://github.com/tcp-ecosystem/MAM');
 
   // Format based on target
   if (target === 'json') {
@@ -982,7 +982,7 @@ class JsonGenerator {
         permissions: moduleInfo.permissions,
         tests: moduleInfo.tests,
         examples: moduleInfo.examples,
-        references: 'See https://github.com/tcp-ecosystems/MAM',
+        references: 'See https://github.com/tcp-ecosystem/MAM',
       },
     }, null, ctx.targetOptions.minify ? 0 : ctx.targetOptions.indent);
   }

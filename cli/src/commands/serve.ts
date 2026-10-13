@@ -1116,7 +1116,7 @@ export async function startMcpServer(options: ServeOptions): Promise<void> {
   const invoker = createToolInvoker();
   const server = createMcpServer({
     config: {
-      serverInfo: { name: 'mam-cli', version: '0.1.0' },
+      serverInfo: { name: 'mam-cli', version: '2.0.0' },
       instructions: 'MAM CLI tools exposed over the Model Context Protocol.',
     },
   });

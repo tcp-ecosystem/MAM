@@ -111,7 +111,7 @@ Track monthly:
 | Hub modules (external) | Registry stats |
 | Hub downloads | Registry stats |
 | Extension installs | Open VSX / Marketplace |
-| Stars / forks on `tcp-ecosystems/MAM` | GitHub |
+| Stars / forks on `tcp-ecosystem/MAM` | GitHub |
 
 **Milestones:** 10 external repos -> 50 -> 200 (Linguist-ready).
 

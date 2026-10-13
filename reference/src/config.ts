@@ -18,7 +18,7 @@ export const DEFAULT_CONFIG: MAMConfig = {
   version: '1',
   project: {
     name: 'my-mam-project',
-    version: '0.1.0',
+    version: '2.0.0',
     description: '',
     runtime: 'python',
   },

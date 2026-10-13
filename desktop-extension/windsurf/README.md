@@ -28,7 +28,7 @@ windsurf --install-extension /path/to/mam-language-0.1.0.vsix
 
 Windsurf supports the VS Code Marketplace. In the Extensions panel
 (Ctrl/Cmd+Shift+X) search for **MAM - Machine Agent Modules** (publisher
-`tcp-ecosystems`) and install.
+`tcp-ecosystem`) and install.
 
 ### Option C — copy into Windsurf's extension directory
 

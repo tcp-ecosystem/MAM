@@ -142,7 +142,7 @@ export function checkSchemaParity(sdl: string = readGraphQLSchema()): SchemaPari
   return { inSync: unreachable.length === 0 && unimplemented.length === 0, unreachable, unimplemented };
 }
 
-export const API_VERSION = '0.1.0';
+export const API_VERSION = '2.0.0';
 
 /** One-line summary of the surface, for diagnostics. */
 export function describeApi(): string {

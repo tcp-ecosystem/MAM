@@ -27,7 +27,7 @@ engine) and is a native port of the canonical TextMate grammar in
 
 ```lua
 {
-  'tcp-ecosystems/MAM',
+  'tcp-ecosystem/MAM',
   ft = { 'mam' },
   config = function()
     -- The plugin auto-loads: ftdetect, syntax, and plugin/mam.lua
@@ -47,16 +47,16 @@ If you are not using the full monorepo, point lazy at the folder directly:
 ### packer.nvim
 
 ```lua
-use 'tcp-ecosystems/MAM'
+use 'tcp-ecosystem/MAM'
 -- or, for just this folder:
-use { 'tcp-ecosystems/MAM', rtp = 'desktop-extension/neovim' }
+use { 'tcp-ecosystem/MAM', rtp = 'desktop-extension/neovim' }
 ```
 
 ### vim-plug
 
 ```vim
 " Using the monorepo subfolder as a plugin root:
-Plug 'tcp-ecosystems/MAM', { 'rtp': 'desktop-extension/neovim' }
+Plug 'tcp-ecosystem/MAM', { 'rtp': 'desktop-extension/neovim' }
 ```
 
 After installing, restart Neovim and open a `.mam` file. Check the filetype

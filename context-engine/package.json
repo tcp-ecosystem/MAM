@@ -1,6 +1,6 @@
 {
   "name": "@mam/context-engine",
-  "version": "0.1.0",
+  "version": "2.0.0",
   "description": "Standalone MAM Context Engine: Context assembly, Token budgeting, Compression, Summarization and Prioritization layers",
   "type": "module",
   "main": "./dist/index.js",
@@ -40,12 +40,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tcp-ecosystems/MAM.git",
+    "url": "git+https://github.com/tcp-ecosystem/MAM.git",
     "directory": "context-engine/"
   },
-  "homepage": "https://github.com/tcp-ecosystems/MAM/tree/main/context-engine",
+  "homepage": "https://github.com/tcp-ecosystem/MAM/tree/main/context-engine",
   "bugs": {
-    "url": "https://github.com/tcp-ecosystems/MAM/issues"
+    "url": "https://github.com/tcp-ecosystem/MAM/issues"
   },
   "publishConfig": {
     "access": "public"

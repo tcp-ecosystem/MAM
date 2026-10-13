@@ -23,7 +23,7 @@ export const MERMAID_SECTION_NAME = 'Mermaid';
  */
 export const MERMAID_MANIFEST: PluginManifest = {
   name: '@mam/plugin-mermaid',
-  version: '0.1.0',
+  version: '2.0.0',
   description: 'Mermaid diagram renderer and validator for MAM modules',
   author: 'MAM Team',
   license: 'MIT',

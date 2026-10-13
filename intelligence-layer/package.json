@@ -1,6 +1,6 @@
 {
   "name": "@mam/intelligence-layer",
-  "version": "0.1.0",
+  "version": "2.0.0",
   "description": "Standalone MAM Intelligence engine: Query understanding, Grounding, Synthesis, Knowledge graph and Integration layers",
   "type": "module",
   "main": "./dist/index.js",
@@ -40,12 +40,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tcp-ecosystems/MAM.git",
+    "url": "git+https://github.com/tcp-ecosystem/MAM.git",
     "directory": "intelligence-layer/"
   },
-  "homepage": "https://github.com/tcp-ecosystems/MAM/tree/main/intelligence-layer",
+  "homepage": "https://github.com/tcp-ecosystem/MAM/tree/main/intelligence-layer",
   "bugs": {
-    "url": "https://github.com/tcp-ecosystems/MAM/issues"
+    "url": "https://github.com/tcp-ecosystem/MAM/issues"
   },
   "publishConfig": {
     "access": "public"

@@ -178,7 +178,7 @@ export class JSONReporter {
       metadata: {
         timestamp: new Date().toISOString(),
         validator: '@mam/validator',
-        version: '0.1.0',
+        version: '2.0.0',
       },
     };
 

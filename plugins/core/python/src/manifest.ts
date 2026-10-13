@@ -24,7 +24,7 @@ export const PYTHON_LANGUAGES = ['python', 'py'] as const;
  */
 export const PYTHON_MANIFEST: PluginManifest = {
   name: '@mam/plugin-python',
-  version: '0.1.0',
+  version: '2.0.0',
   description: 'Python code execution for MAM modules',
   author: 'MAM Team',
   license: 'MIT',

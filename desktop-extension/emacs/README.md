@@ -40,7 +40,7 @@ Add the folder to your `load-path` and register the mode on
 ```elisp
 (straight-use-package
   '(mam-mode :type git :host github
-             :repo "tcp-ecosystems/MAM"
+             :repo "tcp-ecosystem/MAM"
              :files ("desktop-extension/emacs/*.el")))
 ```
 

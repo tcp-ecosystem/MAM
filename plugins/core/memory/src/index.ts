@@ -130,7 +130,7 @@ import { MemoryStore as Store } from './store.js';
 import { memorySection as section } from './manifest.js';
 import { createMemoryHooks as buildHooks } from './hooks.js';
 
-export const MEMORY_PLUGIN_VERSION = '0.1.0';
+export const MEMORY_PLUGIN_VERSION = '2.0.0';
 
 export interface MemoryPluginOptions {
   /** Reuse an existing store, or leave unset to create one. */

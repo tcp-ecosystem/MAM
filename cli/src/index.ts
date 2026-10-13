@@ -656,6 +656,20 @@ program
     await migrateCommand({ file, ...options });
   });
 
+program
+  .command('convert')
+  .description('Convert a markdown file (AGENTS.md, CLAUDE.md) to a valid .mam module')
+  .argument('<file>', 'Markdown file to convert')
+  .option('-o, --out <path>', 'Output path (default: <id>.mam next to source)')
+  .option('-t, --type <type>', 'Force type: agent|module|auto', 'auto')
+  .option('--author <name>', 'Frontmatter author (default: OS user)')
+  .option('--dry-run', 'Print result without writing')
+  .option('--json', 'Machine-readable summary')
+  .action(async (file, options) => {
+    const { convertCommand } = await import('./commands/convert.js');
+    await convertCommand({ file, ...options });
+  });
+
 // ─── ENVIRONMENT & CONFIG ────────────────────────────────────────
 
 program

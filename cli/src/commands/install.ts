@@ -357,7 +357,7 @@ class RegistryClient {
     const url = `${this.baseUrl}/${encodeURIComponent(name).replace('%40', '@')}`;
     const headers: Record<string, string> = {
       Accept: 'application/json',
-      'User-Agent': 'mam-cli/0.1.0',
+      'User-Agent': 'mam-cli/2.0.0',
     };
     if (this.token) {
       headers['Authorization'] = `Bearer ${this.token}`;
@@ -435,7 +435,7 @@ class RegistryClient {
         const timeout = setTimeout(() => controller.abort(), DOWNLOAD_TIMEOUT_MS);
         const response = await fetch(tarballUrl, {
           signal: controller.signal,
-          headers: { 'User-Agent': 'mam-cli/0.1.0' },
+          headers: { 'User-Agent': 'mam-cli/2.0.0' },
         });
         clearTimeout(timeout);
 

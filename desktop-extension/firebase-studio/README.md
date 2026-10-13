@@ -3,7 +3,7 @@
 [Firebase Studio](https://firebase.google.com/docs/studio) (formerly Project
 IDX) is Google's cloud, browser-based IDE built on Code OSS — the open-source
 core of Visual Studio Code. Because it is a VS Code-based environment, it uses
-the **MAM VS Code extension** (`tcp-ecosystems.mam-language`) and the same
+the **MAM VS Code extension** (`tcp-ecosystem.mam-language`) and the same
 TextMate grammar (`source.mam`) as `../vscode/`.
 
 Extensions are installed from the [Open VSX Registry](https://open-vsx.org/),
@@ -14,7 +14,7 @@ the registry Code OSS builds consume, rather than the Microsoft Marketplace.
 Two ways to get the extension into a Firebase Studio workspace:
 
 1. **Open VSX (recommended).** Open the Extensions panel in the workspace,
-   search for `MAM`, and install `tcp-ecosystems.mam-language`.
+   search for `MAM`, and install `tcp-ecosystem.mam-language`.
 2. **Side-load a `.vsix`.** Build the extension from `../vscode/`
    (`pnpm build && pnpm package` or `vsce package`), then install the resulting
    `.vsix` from the Extensions panel (`...` menu → *Install from VSIX...*) or
@@ -31,14 +31,14 @@ project root. This folder provides:
 
 - `.idx/install.json` — a machine-readable list of extensions to install for
   the workspace. The MAM extension is listed by its fully qualified id
-  `tcp-ecosystems.mam-language` (`openVsxId` / `vscodeMarketplaceId`).
+  `tcp-ecosystem.mam-language` (`openVsxId` / `vscodeMarketplaceId`).
 
 Firebase Studio's current canonical mechanism is `.idx/dev.nix`, where the same
 extension is declared as:
 
 ```nix
 { pkgs, ... }: {
-  idx.extensions = [ "tcp-ecosystems.mam-language" ];
+  idx.extensions = [ "tcp-ecosystem.mam-language" ];
 }
 ```
 
@@ -79,7 +79,7 @@ mam run <module>        # execute a MAM module
 | Path | Purpose |
 | --- | --- |
 | `README.md` | This guide: installing the extension and using the MAM CLI in the cloud |
-| `.idx/install.json` | Workspace extension install manifest (lists `tcp-ecosystems.mam-language`) |
+| `.idx/install.json` | Workspace extension install manifest (lists `tcp-ecosystem.mam-language`) |
 
 ## References
 

@@ -1,8 +1,8 @@
 {
   "extensions": [
     {
-      "openVsxId": "tcp-ecosystems.mam-language",
-      "vscodeMarketplaceId": "tcp-ecosystems.mam-language"
+      "openVsxId": "tcp-ecosystem.mam-language",
+      "vscodeMarketplaceId": "tcp-ecosystem.mam-language"
     }
   ]
 }

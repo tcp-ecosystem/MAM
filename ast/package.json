@@ -1,6 +1,6 @@
 {
   "name": "@mam/ast",
-  "version": "0.1.0",
+  "version": "2.0.0",
   "description": "MAM AST — Abstract Syntax Tree for Machine Agent Modules",
   "type": "module",
   "main": "./dist/index.js",
@@ -52,12 +52,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tcp-ecosystems/MAM.git",
+    "url": "git+https://github.com/tcp-ecosystem/MAM.git",
     "directory": "ast/"
   },
-  "homepage": "https://github.com/tcp-ecosystems/MAM/tree/main/ast",
+  "homepage": "https://github.com/tcp-ecosystem/MAM/tree/main/ast",
   "bugs": {
-    "url": "https://github.com/tcp-ecosystems/MAM/issues"
+    "url": "https://github.com/tcp-ecosystem/MAM/issues"
   },
   "publishConfig": {
     "access": "public"

@@ -434,7 +434,7 @@ class RegistryClient {
     const headers: Record<string, string> = {
       Accept: 'application/json',
       'Content-Type': 'application/json',
-      'User-Agent': 'mam-cli/0.1.0',
+      'User-Agent': 'mam-cli/2.0.0',
     };
     if (this.authHeader) {
       headers['Authorization'] = this.authHeader;

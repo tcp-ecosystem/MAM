@@ -314,7 +314,7 @@ export interface ServerConfig {
 export const DEFAULT_SERVER_CONFIG: ServerConfig = {
   maxSessions: 128,
   protocolVersion: LATEST_PROTOCOL_VERSION,
-  serverInfo: { name: "mam-mcp-server", version: "0.1.0" },
+  serverInfo: { name: "mam-mcp-server", version: "2.0.0" },
   sessionIdleTimeoutMs: 30 * 60 * 1000,
   maxMessageBytes: 4 * 1024 * 1024,
   trackClosedSessions: true,

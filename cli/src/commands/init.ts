@@ -474,7 +474,7 @@ export function renderReadme(name: string): string {
   const title = titleFromModuleName(name);
   return `# ${title}
 
-A [MAM](https://github.com/tcp-ecosystems/MAM) project.
+A [MAM](https://github.com/tcp-ecosystem/MAM) project.
 
 ## Layout
 
@@ -521,7 +521,7 @@ export function renderMamToml(name: string): string {
 
 [project]
 name = "${name}"
-version = "0.1.0"
+version = "2.0.0"
 description = "A MAM project"
 runtime = "python >=3.12"
 

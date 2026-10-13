@@ -115,7 +115,7 @@ const pythonPlugin: MAMPlugin = {
   contexts: [pythonContext],
 };
 
-export const PYTHON_PLUGIN_VERSION = '0.1.0';
+export const PYTHON_PLUGIN_VERSION = '2.0.0';
 
 export interface PythonPluginOptions {
   /** Install the full rule family instead of just the composite rule. */

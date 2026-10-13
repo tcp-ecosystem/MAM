@@ -26,7 +26,7 @@ describe('MAMModule', () => {
     it('creates a module with defaults', () => {
       const mod = new MAMModule({ name: 'test' });
       expect(mod.name).toBe('test');
-      expect(mod.version).toBe('0.1.0');
+      expect(mod.version).toBe('2.0.0');
       expect(mod.runtime).toBe('python');
       expect(mod.id).toBe('test');
       expect(mod.sections).toHaveLength(0);
@@ -408,7 +408,7 @@ describe('MAMModule accessor methods', () => {
   });
 
   it('getVersion returns the version with a fallback', () => {
-    expect(new MAMModule({ name: 'a' }).getVersion()).toBe('0.1.0');
+    expect(new MAMModule({ name: 'a' }).getVersion()).toBe('2.0.0');
     const mod = new MAMModule({ name: 'a', version: '3.1.4' });
     expect(mod.getVersion()).toBe('3.1.4');
     mod.setVersion('9.9.9');

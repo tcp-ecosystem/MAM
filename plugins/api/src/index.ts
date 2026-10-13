@@ -154,7 +154,7 @@ export {
 // ─── Barrel Utilities ───────────────────────────────────────────────
 
 /** Version of this package's public API surface. */
-export const PLUGIN_API_VERSION = '0.1.0';
+export const PLUGIN_API_VERSION = '2.0.0';
 
 /** The managers returned by {@link createPluginApi}. */
 export interface PluginApi {

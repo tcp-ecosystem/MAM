@@ -38,7 +38,7 @@ describe('DEFAULT_CONFIG', () => {
   it('should have a default project', () => {
     expect(DEFAULT_CONFIG.project).toBeDefined();
     expect(DEFAULT_CONFIG.project!.name).toBe('my-mam-project');
-    expect(DEFAULT_CONFIG.project!.version).toBe('0.1.0');
+    expect(DEFAULT_CONFIG.project!.version).toBe('2.0.0');
   });
 
   it('should have default build config', () => {

@@ -300,7 +300,7 @@ export interface ClientConfig {
 export const DEFAULT_CLIENT_CONFIG: ClientConfig = {
   requestTimeoutMs: 30_000,
   protocolVersion: LATEST_PROTOCOL_VERSION,
-  clientInfo: { name: "mam-mcp-client", version: "0.1.0" },
+  clientInfo: { name: "mam-mcp-client", version: "2.0.0" },
   maxPendingRequests: 256,
   trackClosedConnections: true,
   maxClosedConnections: 1024,

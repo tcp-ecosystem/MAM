@@ -129,7 +129,7 @@ const yamlPlugin: MAMPlugin = {
   rules: [yamlRule],
 };
 
-export const YAML_PLUGIN_VERSION = '0.1.0';
+export const YAML_PLUGIN_VERSION = '2.0.0';
 
 export interface YAMLPluginOptions {
   /** Install the full rule family instead of just the composite rule. */

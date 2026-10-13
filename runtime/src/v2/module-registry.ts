@@ -106,7 +106,7 @@ export class ModuleRegistry {
     const record: ModuleRecord = {
       id: `mod-${module.name}-${Date.now().toString(36)}`,
       name: module.name,
-      version: options.version ?? '0.1.0',
+      version: options.version ?? '2.0.0',
       type: module.moduleType,
       status: 'registered',
       module,

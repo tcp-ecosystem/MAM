@@ -191,7 +191,7 @@ describe('MAMV2Runtime', () => {
 
     it('should set name and version', () => {
       expect(runtime.name).toBe('mam-v2');
-      expect(runtime.version).toBe('0.1.0');
+      expect(runtime.version).toBe('2.0.0');
     });
 
     it('should have supported types', () => {

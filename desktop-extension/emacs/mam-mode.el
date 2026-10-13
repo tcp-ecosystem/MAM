@@ -1,9 +1,9 @@
 ;;; mam-mode.el --- Major mode for editing MAM (Machine Agent Modules) -*- lexical-binding: t; -*-
 
-;; Copyright (C) 2026 MAM Desktop Extensions <tcp-ecosystems>
+;; Copyright (C) 2026 MAM Desktop Extensions <tcp-ecosystem>
 
-;; Author: MAM Desktop Extensions <tcp-ecosystems>
-;; URL: https://github.com/tcp-ecosystems/MAM
+;; Author: MAM Desktop Extensions <tcp-ecosystem>
+;; URL: https://github.com/tcp-ecosystem/MAM
 ;; version: 2.0.0
 ;; Package-Requires: ((emacs "26.1"))
 ;; Keywords: languages, markdown, convenience

@@ -156,7 +156,7 @@ def _accept(stage: str, **extra: Any) -> Dict[str, Any]:
     return {"ok": True, "stage": stage, **extra}
 
 
-def _total(items: List[Dict[str, Any]]) -> int:
+    def _total(items: List[Dict[str, Any]]) -> int:
     total = 0
     for item in items:
         unit = item.get("unit_price_cents")

@@ -22,7 +22,7 @@ const ALL_MODULE_TYPES = [
 
 export class MAMV2Runtime implements RuntimeInterface {
   name = 'mam-v2';
-  version = '0.1.0';
+  version = '2.0.0';
   supportedTypes = [...ALL_MODULE_TYPES];
 
   private config: RuntimeConfig | null = null;

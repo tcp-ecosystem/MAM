@@ -191,7 +191,7 @@ MAM supports 19 module types:
 
 ```bash
 # Clone the repository
-git clone https://github.com/tcp-ecosystems/MAM.git
+git clone https://github.com/tcp-ecosystem/MAM.git
 cd MAM
 
 # Install dependencies
