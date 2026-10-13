@@ -105,7 +105,8 @@ describe('convertContent', () => {
   it('honours --type and records it', () => {
     const { type, reasons } = convertContent('AGENTS.md', AGENTS_MD, 't', 'module');
     expect(type).toBe('module');
-    expect(reasons).toEqual(['forced via --type module']);
+    expect(reasons).toContain('forced via --type module');
+    expect(reasons).toContain('inserted ## Purpose from the leading paragraph (none existed)');
   });
 
   it('refuses empty input instead of hallucinating', () => {

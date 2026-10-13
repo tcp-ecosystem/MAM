@@ -10,6 +10,7 @@ import { resolve, dirname, relative, join } from 'node:path';
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import { parseMAM } from '@mam/parser';
 import { MAM_VERSION } from '@mam/ast';
+import { parse as parseYaml } from 'yaml';
 import chalk from 'chalk';
 import ora from 'ora';
 import { loadConfig, type MAMConfig } from '../utils/config.js';
@@ -297,8 +298,11 @@ const BUILT_IN_RULES: ValidationRule[] = [
       if (!ctx.frontmatter.name) {
         return [{ ruleId: 'FM003', message: 'Frontmatter is missing required "name" field', severity: 'error', line: 1, column: 1, source: ctx.filePath, suggestions: ['Add "name: <module-name>" to frontmatter'] }];
       }
-      if (typeof ctx.frontmatter.name !== 'string' || !/^[a-z0-9_-]+$/i.test(ctx.frontmatter.name)) {
-        return [{ ruleId: 'FM003', message: 'Frontmatter "name" must be a valid identifier (alphanumeric, hyphens, underscores)', severity: 'error', line: 1, column: 1, source: ctx.filePath }];
+      // `name` is a display title ("Agent Grammar"), not an identifier — the
+      // id field carries the identifier. Requiring identifier syntax here
+      // flagged every module in the ecosystem, contradicting @mam/validator.
+      if (typeof ctx.frontmatter.name !== 'string' || ctx.frontmatter.name.trim() === '') {
+        return [{ ruleId: 'FM003', message: 'Frontmatter "name" must be a non-empty string', severity: 'error', line: 1, column: 1, source: ctx.filePath }];
       }
       return [];
     },
@@ -472,7 +476,7 @@ const BUILT_IN_RULES: ValidationRule[] = [
     check: (ctx) => {
       const diagnostics: ValidationDiagnostic[] = [];
       for (const block of ctx.codeBlocks) {
-        if (!block.language || block.language === 'text') {
+        if (!block.language) {
           diagnostics.push({ ruleId: 'CB001', message: 'Code block is missing a language specifier', severity: 'warning', line: block.line, column: block.column, source: ctx.filePath, suggestions: ['Add language after opening ```', 'Use ```text for plain text'] });
         }
       }
@@ -551,8 +555,19 @@ const BUILT_IN_RULES: ValidationRule[] = [
     check: (ctx) => {
       const diagnostics: ValidationDiagnostic[] = [];
       for (const link of ctx.links) {
-        if (!link.isReference && link.url && !link.url.startsWith('#') && !link.url.startsWith('/') && !link.url.match(/^https?:\/\//) && !link.url.match(/^[a-z0-9]+:/i)) {
-          diagnostics.push({ ruleId: 'LNK001', message: `Invalid URL format: "${link.url}"`, severity: 'warning', line: link.line, column: link.column, source: ctx.filePath });
+        const url = link.url;
+        if (link.isReference || !url) continue;
+        const allowed =
+          url.startsWith('#') ||
+          url.startsWith('/') ||
+          url.startsWith('./') ||
+          url.startsWith('../') ||
+          /^https?:\/\//i.test(url) ||
+          /^[a-z][a-z0-9+.-]*:/i.test(url) ||
+          /\.[a-z0-9]+([?#].*)?$/i.test(url) || // relative file path (plan-doc/full-mam.md)
+          url.includes('/');
+        if (!allowed) {
+          diagnostics.push({ ruleId: 'LNK001', message: `Invalid URL format: "${url}"`, severity: 'warning', line: link.line, column: link.column, source: ctx.filePath });
         }
       }
       return diagnostics;
@@ -818,7 +833,11 @@ const BUILT_IN_RULES: ValidationRule[] = [
     fixable: true,
     check: (ctx) => {
       const diagnostics: ValidationDiagnostic[] = [];
+      // Blank lines inside code fences are the author's formatting (PEP8 asks
+      // for two blank lines between top-level Python defs) — only prose gaps count.
+      const inFence = fenceLineSet(ctx.codeBlocks);
       for (let i = 1; i < ctx.lines.length; i++) {
+        if (inFence.has(i + 1) || inFence.has(i)) continue;
         if (ctx.lines[i]!.trim() === '' && ctx.lines[i - 1]!.trim() === '') {
           diagnostics.push({ ruleId: 'GEN002', message: 'Multiple consecutive blank lines', severity: 'info', line: i + 1, column: 1, source: ctx.filePath, fix: { range: [0, 0], replacement: '', description: 'Remove extra blank line' } });
         }
@@ -852,7 +871,9 @@ const BUILT_IN_RULES: ValidationRule[] = [
     check: (ctx) => {
       const maxLen = (ctx.config.formatter?.maxLineLength as number) || 200;
       const diagnostics: ValidationDiagnostic[] = [];
+      const inFence = fenceLineSet(ctx.codeBlocks);
       for (let i = 0; i < ctx.lines.length; i++) {
+        if (inFence.has(i + 1)) continue; // code formatting is the author's choice
         if (ctx.lines[i]!.length > maxLen) {
           diagnostics.push({ ruleId: 'GEN004', message: `Line exceeds ${maxLen} characters (${ctx.lines[i]!.length})`, severity: 'info', line: i + 1, column: maxLen, source: ctx.filePath });
         }
@@ -888,6 +909,19 @@ function parseFrontmatter(content: string): Record<string, any> {
   const endIdx = content.indexOf('\n---', 3);
   if (endIdx === -1) return {};
   const yamlStr = content.slice(3, endIdx);
+  // Real YAML parsing: block sequences (`tags:` + `- item`), folded scalars
+  // (`description: >`) and comments must round-trip. A line-by-line parser
+  // silently turned `tags:` into an empty string and failed FM007 on every
+  // module in the ecosystem.
+  try {
+    const parsed = parseYaml(yamlStr);
+    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+      return parsed as Record<string, any>;
+    }
+  } catch {
+    // Invalid YAML: fall through to the tolerant parser so structural rules
+    // (FM001/FM002) and the official parser's YAML errors still make sense.
+  }
   const result: Record<string, any> = {};
   let currentKey = '';
   for (const line of yamlStr.split('\n')) {
@@ -903,6 +937,16 @@ function parseFrontmatter(content: string): Record<string, any> {
     }
   }
   return result;
+}
+
+/** 1-indexed line numbers (both fences included) that lie inside code blocks. */
+function fenceLineSet(blocks: CodeBlockInfo[]): Set<number> {
+  const set = new Set<number>();
+  for (const b of blocks) {
+    const inner = b.content ? b.content.split('\n').length : 0;
+    for (let l = b.line; l <= b.line + inner + 1; l++) set.add(l);
+  }
+  return set;
 }
 
 function parseSections(lines: string[]): SectionInfo[] {
@@ -1116,7 +1160,19 @@ function applyFixes(content: string, diagnostics: ValidationDiagnostic[]): strin
     if (d.ruleId === 'GEN001') {
       result = result.replace(/[ \t]+$/gm, '');
     } else if (d.ruleId === 'GEN002') {
-      result = result.replace(/\n{3,}/g, '\n\n');
+      // Collapse blank runs only outside code fences: a global replace would
+      // rewrite PEP8-spaced Python embedded in the module.
+      const srcLines = result.split('\n');
+      const out: string[] = [];
+      let inFence = false;
+      for (const line of srcLines) {
+        if (/^\s*```/.test(line)) inFence = !inFence;
+        if (!inFence && line.trim() === '' && out.length > 0 && out[out.length - 1]!.trim() === '') {
+          continue;
+        }
+        out.push(line);
+      }
+      result = out.join('\n');
     } else if (d.ruleId === 'GEN003') {
       if (!result.endsWith('\n')) result += '\n';
     }

@@ -30,7 +30,20 @@ import type { MAMModule } from '@mam/parser';
 
 export const MAM_LANGUAGE_ID = 'mam';
 
-export const MAM_DOCUMENT_SELECTOR = [{ scheme: 'file', pattern: '**/*.mam.md' }];
+/**
+ * Glob patterns for MAM documents.
+ *
+ * MAM files use the `.mam` extension; `.mam.md` is also accepted so a module
+ * can be authored as markdown-with-front-matter and still get language
+ * features. Both must be listed or plain `.mam` files are silently ignored by
+ * the language server.
+ */
+export const MAM_FILE_PATTERNS = ['**/*.mam', '**/*.mam.md'] as const;
+
+export const MAM_DOCUMENT_SELECTOR = MAM_FILE_PATTERNS.map((pattern) => ({
+  scheme: 'file',
+  pattern,
+}));
 
 /** Standard V1 section names in recommended order. */
 export const V1_SECTIONS = [

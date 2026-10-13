@@ -32,7 +32,8 @@ permissions:
 
 ## Purpose
 
-Defines the JavaScript section of the MAM specification. The section carries executable JavaScript and TypeScript code blocks for modules that interact with web technologies or the JavaScript ecosystem.
+Defines the JavaScript section of the MAM specification. The section carries executable JavaScript
+and TypeScript code blocks for modules that interact with web technologies or the JavaScript ecosystem.
 
 ## Inputs
 

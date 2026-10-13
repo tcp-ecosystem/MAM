@@ -113,6 +113,7 @@ interface FileEntry {
 // Constants
 // ---------------------------------------------------------------------------
 
+const MAM_EXTENSIONS = ['.mam.md', '.mam'] as const;
 const MAM_EXTENSION = '.mam.md';
 const BUILD_INFO_FILE = '.mam-buildinfo.json';
 const DEFAULT_CONFIG_FILE = '.mambuild.json';
@@ -170,7 +171,7 @@ function resolveConfig(options: BuildOptions, projectRoot: string): BuildConfig 
     sourceMap: options.sourceMap ?? false,
     parallel: options.parallel || DEFAULT_PARALLEL,
     excludes: [],
-    includes: ['**/*.mam.md'],
+    includes: ['**/*.mam.md', '**/*.mam'],
     hooks: typeof options.hooks === 'object' ? options.hooks : {},
     cacheDir: join(projectRoot, CACHE_DIR),
   };
@@ -199,7 +200,7 @@ async function discoverMamFiles(dir: string, config: BuildConfig): Promise<FileE
         const dirName = entry.name;
         if (['node_modules', '.git', 'dist', 'build', CACHE_DIR, '.mam-cache'].includes(dirName)) continue;
         await walk(fullPath);
-      } else if (entry.isFile() && entry.name.endsWith(MAM_EXTENSION)) {
+      } else if (entry.isFile() && MAM_EXTENSIONS.some((ext) => entry.name.endsWith(ext))) {
         const relPath = relative(dir, fullPath);
 
         // Check excludes
@@ -584,7 +585,7 @@ async function watchMode(
 
   const rebuild = async (changedFile: string) => {
     if (building) return;
-    if (!changedFile.endsWith(MAM_EXTENSION)) return;
+    if (!MAM_EXTENSIONS.some((ext) => changedFile.endsWith(ext))) return;
 
     building = true;
     console.log(chalk.gray(`\n  Change detected: ${relative(dir, changedFile)}`));

@@ -263,7 +263,7 @@ export class TestRunner {
     try {
       const entries = await readdir(this.config.dir);
       for (const entry of entries) {
-        if (entry.endsWith('.test.mam.md') || entry.endsWith('.test.ts')) {
+        if (entry.endsWith('.test.mam.md') || entry.endsWith('.test.mam') || entry.endsWith('.test.ts')) {
           files.push(join(this.config.dir, entry));
         }
       }

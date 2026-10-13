@@ -749,7 +749,7 @@ class GraphWatcher {
   async start(dir: string): Promise<void> {
     const { watch } = await import('node:fs');
     this.watcher = watch(dir, { recursive: true }, async (_event, filename) => {
-      if (!filename || !filename.endsWith('.mam.md')) return;
+      if (!filename || !(filename.endsWith('.mam.md') || filename.endsWith('.mam'))) return;
       if (['node_modules', 'dist', '.git'].some(i => filename.includes(i))) return;
 
       if (this.debounceTimer) clearTimeout(this.debounceTimer);

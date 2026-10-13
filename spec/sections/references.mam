@@ -31,7 +31,8 @@ permissions:
 
 ## Purpose
 
-Defines the References section of the MAM specification. The section lists external resources such as documentation, standards, and related projects so that a module can carry its own knowledge context.
+Defines the References section of the MAM specification. The section lists external resources such
+as documentation, standards, and related projects so that a module can carry its own knowledge context.
 
 ## Inputs
 

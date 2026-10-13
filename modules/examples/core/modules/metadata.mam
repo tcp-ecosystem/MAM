@@ -27,7 +27,8 @@ permissions:
 
 ## Purpose
 
-Shows how MAM modules carry machine readable identity in front matter: id, name, version, author, license, tags, runtime, capabilities, and permissions. This module parses, validates, and describes a metadata document.
+Shows how MAM modules carry machine readable identity in front matter: id, name, version, author,
+license, tags, runtime, capabilities, and permissions. This module parses, validates, and describes a metadata document.
 
 ## Inputs
 

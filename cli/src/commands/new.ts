@@ -71,7 +71,7 @@ export async function listTemplateTypes(): Promise<string[]> {
   const { readdir } = await import('node:fs/promises');
   const entries = await readdir(dir);
   return entries
-    .filter((e) => e.endsWith('.mam.md'))
+    .filter((e) => e.endsWith('.mam.md') || e.endsWith('.mam'))
     .map((e) => e.replace(/\.mam\.md$/, ''))
     .sort();
 }

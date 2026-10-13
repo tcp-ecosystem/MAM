@@ -303,7 +303,7 @@ export class Workspace {
       tags: ['workspace'],
       dependencies: packageNames.map(n => ({ name: n, version: '*' })),
       main: 'index.mam.md',
-      files: ['*.mam.md'],
+      files: ['*.mam.md', '*.mam'],
     };
 
     await mkdir(this.config.rootDir, { recursive: true });
@@ -338,7 +338,7 @@ export class Workspace {
         tags: [],
         dependencies: [],
         main: 'index.mam.md',
-        files: ['*.mam.md'],
+        files: ['*.mam.md', '*.mam'],
       };
 
       await writeFile(

@@ -32,7 +32,8 @@ permissions:
 
 ## Purpose
 
-Defines the Purpose section of the MAM specification. The Purpose section is the only required section of every module and provides a short, clear, and action oriented description of what the module does for its users.
+Defines the Purpose section of the MAM specification. The Purpose section is the only required
+section of every module and provides a short, clear, and action oriented description of what the module does for its users.
 
 ## Inputs
 

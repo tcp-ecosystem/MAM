@@ -28,7 +28,8 @@ permissions:
 
 ## Purpose
 
-Defines the grammar used by the MAM Prompt section. The module describes how a prompt declares its role, task, and constraints, and how template variables are interpolated. It also provides a small parser, renderer, and validator that accept a prompt template and report structural errors.
+Defines the grammar used by the MAM Prompt section. The module describes how a prompt declares its
+role, task, and constraints, and how template variables are interpolated. It also provides a small parser, renderer, and validator that accept a prompt template and report structural errors.
 
 ## Inputs
 

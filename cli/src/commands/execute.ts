@@ -8,6 +8,7 @@
 
 import { readFile, writeFile, readdir, access, mkdir } from 'node:fs/promises';
 import { resolve, join, basename } from 'node:path';
+import { stripMamExtension } from '../utils/mam-files.js';
 import { parseMAM } from '@mam/parser';
 import { executeModule } from '@mam/runtime';
 import { createTracer, createMetricsRegistry, createEvaluator } from '@mam/observability';
@@ -271,7 +272,7 @@ async function saveReplay(result: ExecutionResult, filePath: string): Promise<vo
   const replayPath = join(
     resolve('.'),
     'replays',
-    `${basename(filePath, '.mam.md')}-${Date.now()}.json`,
+    `${stripMamExtension(filePath)}-${Date.now()}.json`,
   );
   await mkdir(join(resolve('.'), 'replays'), { recursive: true });
   await writeFile(replayPath, JSON.stringify(result, null, 2), 'utf-8');

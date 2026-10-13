@@ -28,7 +28,9 @@ permissions:
 
 ## Purpose
 
-Defines the grammar used by the MAM Workflow section. The module describes how steps are declared in order, how branches and loops are expressed, and how a mermaid flowchart mirrors the textual steps. It also provides a small parser and validator that accept a workflow definition and report structural errors.
+Defines the grammar used by the MAM Workflow section. The module describes how steps are declared in
+order, how branches and loops are expressed, and how a mermaid flowchart mirrors the textual steps.
+It also provides a small parser and validator that accept a workflow definition and report structural errors.
 
 ## Inputs
 

@@ -14,6 +14,21 @@ import { MAMPackage } from '@mam/package-manager';
 import { GraphVisualizer, MermaidGenerator, ASCIIArt } from '@mam/visualization';
 import { readFile, writeFile, mkdir, access } from 'node:fs/promises';
 import { resolve, join, basename } from 'node:path';
+
+/**
+ * Accepted MAM document extensions, longest-first so `.mam.md` is stripped
+ * before `.mam`.
+ */
+const MAM_EXTENSIONS = ['.mam.md', '.mam'] as const;
+
+/** The file's basename with any MAM extension removed. */
+function stripMamExtension(path: string): string {
+  const base = basename(path);
+  for (const ext of MAM_EXTENSIONS) {
+    if (base.endsWith(ext)) return base.slice(0, -ext.length);
+  }
+  return base;
+}
 import { Command } from 'commander';
 import chalk from 'chalk';
 
@@ -173,7 +188,7 @@ async function buildCommand(file: string, options: any): Promise<void> {
     await mkdir(outDir, { recursive: true });
     
     const ext = getExtension(options.target);
-    const outFile = join(outDir, `${basename(file, '.mam.md')}.${ext}`);
+    const outFile = join(outDir, `${stripMamExtension(file)}.${ext}`);
     await writeFile(outFile, compileResult.output, 'utf-8');
 
     console.log(chalk.green(`\n✓ Built: ${outFile}`));

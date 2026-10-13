@@ -27,7 +27,8 @@ permissions:
 
 ## Purpose
 
-Defines the grammar used by MAM system declarations. The module describes how a system lists its members, agents, and edges, and how policy bounds the whole. It also provides a small parser and validator that accept a system definition and report structural errors.
+Defines the grammar used by MAM system declarations. The module describes how a system lists its
+members, agents, and edges, and how policy bounds the whole. It also provides a small parser and validator that accept a system definition and report structural errors.
 
 ## Inputs
 

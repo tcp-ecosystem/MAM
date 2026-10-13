@@ -31,7 +31,8 @@ permissions:
 
 ## Purpose
 
-Defines the Mermaid section of the MAM specification. The section uses the Mermaid diagramming language to create visual representations that help humans understand systems, processes, and relationships.
+Defines the Mermaid section of the MAM specification. The section uses the Mermaid diagramming
+language to create visual representations that help humans understand systems, processes, and relationships.
 
 ## Inputs
 

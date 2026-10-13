@@ -21,6 +21,7 @@
     "@jupyterlab/application": "^4.0.0",
     "@jupyterlab/codemirror": "^4.0.0",
     "@jupyterlab/rendermime": "^4.0.0",
+    "@jupyterlab/settingregistry": "^4.0.0",
     "@lumino/coreutils": "^2.0.0"
   },
   "devDependencies": {

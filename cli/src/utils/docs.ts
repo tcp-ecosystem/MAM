@@ -7,6 +7,7 @@
 
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { resolve, join, basename } from 'node:path';
+import { stripMamExtension } from './mam-files.js';
 import { parseMAM } from '@mam/parser';
 import { analyzeSemantics } from '@mam/compiler';
 import { V2ModuleNode } from '@mam/ast';
@@ -76,14 +77,14 @@ export class DocsGenerator {
 
     // Generate main documentation
     const docContent = this.generateModuleDoc(parseResult.ast, semanticResult);
-    const outFile = join(this.config.outDir, `${basename(filePath, '.mam.md')}.md`);
+    const outFile = join(this.config.outDir, `${stripMamExtension(filePath)}.md`);
     await writeFile(resolve(outFile), docContent, 'utf-8');
     files.push(outFile);
 
     // Generate API reference if enabled
     if (this.config.includeAPI) {
       const apiContent = this.generateAPIReference(parseResult.ast);
-      const apiFile = join(this.config.outDir, `${basename(filePath, '.mam.md')}-api.md`);
+      const apiFile = join(this.config.outDir, `${stripMamExtension(filePath)}-api.md`);
       await writeFile(resolve(apiFile), apiContent, 'utf-8');
       files.push(apiFile);
     }
@@ -91,7 +92,7 @@ export class DocsGenerator {
     // Generate examples if enabled
     if (this.config.includeExamples) {
       const examplesContent = this.generateExamples(parseResult.ast);
-      const examplesFile = join(this.config.outDir, `${basename(filePath, '.mam.md')}-examples.md`);
+      const examplesFile = join(this.config.outDir, `${stripMamExtension(filePath)}-examples.md`);
       await writeFile(resolve(examplesFile), examplesContent, 'utf-8');
       files.push(examplesFile);
     }

@@ -27,7 +27,8 @@ permissions:
 
 ## Purpose
 
-Defines the grammar used by MAM agent declarations. The module describes how an agent declares its role, goal, tools, memory, and handoff targets. It also provides a small parser and validator that accept an agent definition and report missing or malformed fields.
+Defines the grammar used by MAM agent declarations. The module describes how an agent declares its
+role, goal, tools, memory, and handoff targets. It also provides a small parser and validator that accept an agent definition and report missing or malformed fields.
 
 ## Inputs
 

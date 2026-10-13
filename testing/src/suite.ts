@@ -38,7 +38,7 @@ export interface RegisteredSuite {
 
 /** Options for {@link TestSuiteBuilder.collect} */
 export interface CollectOptions {
-  /** File basename suffixes to discover (default `['.test.ts', '.test.mam.md']`) */
+  /** File basename suffixes to discover (default `['.test.ts', '.test.mam.md', '.test.mam']`) */
   patterns?: string[];
   /** Populate each discovered suite's cases from the file */
   onFile?: (file: string) => TestCase[];
@@ -200,7 +200,7 @@ export class TestSuiteBuilder {
    */
   static async collect(dirs: string | string[], options?: CollectOptions): Promise<TestSuite[]> {
     const dirList = Array.isArray(dirs) ? dirs : [dirs];
-    const patterns = options?.patterns ?? ['.test.ts', '.test.mam.md'];
+    const patterns = options?.patterns ?? ['.test.ts', '.test.mam.md', '.test.mam'];
     const recursive = options?.recursive ?? true;
     const suites: TestSuite[] = [];
 
