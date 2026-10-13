@@ -42,7 +42,8 @@ permissions:
 
 ## Purpose
 
-Decomposes a high-level goal into an ordered graph of sub-tasks. Each task has an id, description, dependencies, priority, and estimated effort. The planner detects circular dependencies and produces a valid topological execution order.
+Decomposes a high-level goal into an ordered graph of sub-tasks. Each task has an id, description,
+dependencies, priority, and estimated effort. The planner detects circular dependencies and produces a valid topological execution order.
 
 ## Inputs
 

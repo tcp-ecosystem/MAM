@@ -44,7 +44,8 @@ permissions:
 
 ## Purpose
 
-Provides a reusable ETL (Extract-Transform-Load) pipeline framework. Handles data extraction from multiple source types, configurable transformations, schema validation, and loading into target stores with retry and dead-letter support.
+Provides a reusable ETL (Extract-Transform-Load) pipeline framework. Handles data extraction from
+multiple source types, configurable transformations, schema validation, and loading into target stores with retry and dead-letter support.
 
 ## Inputs
 
@@ -343,7 +344,7 @@ print(result["records"])
 # [{'name': 'Alice', 'age': '30'}, {'name': 'Charlie', 'age': '25'}]
 ```
 
-### Expected Flow
+## Expected Flow
 
 ```text
 Extract → Transform → Validate → Load → Summary

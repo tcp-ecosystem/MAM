@@ -45,7 +45,8 @@ permissions:
 
 ## Purpose
 
-Provides security primitives for MAM modules: secret detection in text, input sanitization, rate limiting, and policy enforcement. Designed to be embedded as a guardrail in agent workflows and pipelines.
+Provides security primitives for MAM modules: secret detection in text, input sanitization, rate
+limiting, and policy enforcement. Designed to be embedded as a guardrail in agent workflows and pipelines.
 
 ## Inputs
 

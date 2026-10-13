@@ -286,7 +286,7 @@ new_tokens = auth.refresh_access_token(tokens["refresh_token"])
 print(new_tokens)
 ```
 
-### Expected Flow
+## Expected Flow
 
 ```text
 Login → Validate Credentials → Generate Tokens → Return Response

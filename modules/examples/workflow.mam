@@ -43,7 +43,8 @@ permissions:
 
 ## Purpose
 
-Orchestrates multi-step workflows as directed acyclic graphs (DAGs). Each step is an atomic operation with optional conditions, retries, and error handlers. The engine executes steps in dependency order with support for parallel execution and branching.
+Orchestrates multi-step workflows as directed acyclic graphs (DAGs). Each step is an atomic
+operation with optional conditions, retries, and error handlers. The engine executes steps in dependency order with support for parallel execution and branching.
 
 ## Inputs
 

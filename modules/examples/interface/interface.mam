@@ -381,4 +381,3 @@ except SearchError as exc:
 - [MAM Specification](../../plan-doc/full-mam.md)
 - [Interface templates](../../templates/interface/)
 - [Data Access Policy](../policy/policy.mam)
-

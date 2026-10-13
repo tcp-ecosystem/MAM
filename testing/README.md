@@ -89,7 +89,9 @@ testValidation('auth.mam.md', {
 mam test
 
 # Run specific module tests
+mam test auth.mam
 mam test auth.mam.md
+
 
 # Run tests with coverage
 mam test --coverage

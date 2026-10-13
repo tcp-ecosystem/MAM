@@ -43,7 +43,8 @@ permissions:
 
 ## Purpose
 
-Implements a Retrieval-Augmented Generation pipeline: chunk documents into overlapping segments, compute simple TF-IDF embeddings, store them in a vector index, and retrieve the most relevant chunks for a given query.
+Implements a Retrieval-Augmented Generation pipeline: chunk documents into overlapping segments,
+compute simple TF-IDF embeddings, store them in a vector index, and retrieve the most relevant chunks for a given query.
 
 ## Inputs
 

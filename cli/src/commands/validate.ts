@@ -951,7 +951,10 @@ function fenceLineSet(blocks: CodeBlockInfo[]): Set<number> {
 
 function parseSections(lines: string[]): SectionInfo[] {
   const sections: SectionInfo[] = [];
+  let inFence = false;
   for (let i = 0; i < lines.length; i++) {
+    if (/^\s*```/.test(lines[i]!)) { inFence = !inFence; continue; }
+    if (inFence) continue; // headings inside embedded examples are not doc sections
     const match = lines[i]!.match(/^(#{1,6})\s+(.+)$/);
     if (match) {
       const level = match[1]!.length;
@@ -995,7 +998,10 @@ function parseLinks(lines: string[]): LinkInfo[] {
   const links: LinkInfo[] = [];
   const linkPattern = /(!?)\[([^\]]*)\]\(([^)]+)\)/g;
   const refPattern = /^\[([^\]]+)\]:\s+(.+)$/i;
+  let inFence = false;
   for (let i = 0; i < lines.length; i++) {
+    if (/^\s*```/.test(lines[i]!)) { inFence = !inFence; continue; }
+    if (inFence) continue; // Python `d[key](value)` is not a markdown link
     let match;
     const line = lines[i]!;
     const refMatch = refPattern.exec(line);
