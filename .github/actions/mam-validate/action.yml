@@ -1,0 +1,53 @@
+name: 'MAM Validate'
+description: >
+  Validates MAM module files (.mam and .mam.md) with `mam validate`,
+  failing the job when any module fails validation.
+
+branding:
+  icon: 'check-circle'
+  color: 'blue'
+
+inputs:
+  files:
+    description: |
+      File or directory globs to validate. Multiple entries are
+      whitespace-separated. Defaults to every .mam / .mam.md file in
+      `modules/`.
+    required: false
+    default: 'modules'
+  cli-source:
+    description: |
+      Where the CLI comes from:
+        npm   — `npm install -g @mam/cli` (default; use once packages are live)
+        local — use the already-built `cli/dist/index.js` from this checkout;
+                the caller must build before invoking the action.
+    required: false
+    default: 'npm'
+  cli-version:
+    description: '`@mam/cli` version or dist-tag when cli-source is `npm`.'
+    required: false
+    default: 'latest'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: 'Install MAM CLI from npm'
+      if: ${{ inputs.cli-source == 'npm' }}
+      shell: bash
+      run: npm install -g "@mam/cli@${{ inputs.cli-version }}"
+
+    - name: 'Run mam validate'
+      shell: bash
+      run: |
+        set -e
+        if [ "${{ inputs.cli-source }}" = "local" ]; then
+          if [ ! -f cli/dist/index.js ]; then
+            echo "::error::cli_source=local but cli/dist/index.js is missing." \
+                 "Run a build (e.g. pnpm build) before invoking this action."
+            exit 1
+          fi
+          MAM="node $(pwd)/cli/dist/index.js"
+        else
+          MAM=$(command -v mam)
+        fi
+        "$MAM" validate ${{ inputs.files }}

@@ -1,0 +1,15 @@
+# MAM validation pre-commit hook.
+#
+# Install once `npm i -g @mam/cli` publishes; until then use a wrapper that
+# calls `node cli/dist/index.js` from a MAM checkout:
+#   entry: node /path/to/MAM/cli/dist/index.js
+repos:
+  - repo: local
+    hooks:
+      - id: mam-validate
+        name: mam validate (changed .mam files)
+        language: system
+        # Only fires when a MAM module changes in a commit.
+        files: \.mam(\.md)?$
+        entry: mam validate
+        pass_filenames: true

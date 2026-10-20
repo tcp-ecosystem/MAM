@@ -38,6 +38,34 @@ jobs:
         run: pnpm lint
         if: hashFiles('package.json') != ''
 
+  validate-modules:
+    name: Validate shipped MAM modules
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+
+      - name: Install pnpm
+        run: corepack enable && corepack prepare pnpm@latest --activate
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build CLI
+        run: pnpm --filter @mam/cli build
+
+      - name: Validate all shipped modules
+        uses: ./.github/actions/mam-validate
+        with:
+          files: 'modules'
+          cli-source: 'local'
+
   python-sdk:
     name: Python SDK (ruff + mypy + pytest)
     runs-on: ubuntu-latest

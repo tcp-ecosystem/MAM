@@ -5,7 +5,7 @@
  * custom rules, caching, and multiple output formats.
  */
 
-import { readFile, writeFile, access, mkdir } from 'node:fs/promises';
+import { readFile, writeFile, access, mkdir, stat } from 'node:fs/promises';
 import { resolve, dirname, relative, join } from 'node:path';
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import { parseMAM } from '@mam/parser';
@@ -248,7 +248,9 @@ async function saveCache(hash: string, level: ValidationLevel, result: Validatio
 // Built-in Validation Rules (30+)
 // ============================================================================
 
-const BUILT_IN_RULES: ValidationRule[] = [
+// Exported so CI-oriented consumers (and tests) can introspect or run an
+// individual rule without constructing a full MAMValidator.
+export const BUILT_IN_RULES: ValidationRule[] = [
   // --- Frontmatter Rules ---
   {
     id: 'FM001',
@@ -277,7 +279,11 @@ const BUILT_IN_RULES: ValidationRule[] = [
       const lines = ctx.lines;
       if (lines[0]?.trim() !== '---') return [];
       let closed = false;
-      for (let i = 1; i < Math.min(lines.length, 50); i++) {
+      // Search the whole frontmatter block for its closing fence. A bound
+      // here spuriously rejects modules whose frontmatter legitimately runs
+      // longer (package-advanced.mam has 52 lines), and an unborn closing
+      // fence is the one thing the first scan-to-EOF cannot mistake.
+      for (let i = 1; i < lines.length; i++) {
         if (lines[i]?.trim() === '---') { closed = true; break; }
       }
       if (!closed) {
@@ -1366,31 +1372,117 @@ export class MAMValidator {
 // Command
 // ============================================================================
 
+const MAM_EXTENSIONS = ['.mam.md', '.mam'] as const;
+
+/**
+ * Expand a validate target into a list of module files.
+ *
+ * A single file validates itself. A directory is walked recursively and
+ * expanded to every `.mam` / `.mam.md` file inside it (skipping node_modules,
+ * .git and dist, respecting --ignore). A simple `*.ext` pattern uses the
+ * directory of the pattern and filters by its extension. Importantly this
+ * means `mam validate modules` works in CI without any extra tooling.
+ */
+async function expandValidateTargets(target: string, ignorePatterns: string[]): Promise<string[]> {
+  const abs = resolve(target);
+
+  if (!existsSync(abs)) {
+    throw new Error(`Not found: ${target}`);
+  }
+
+  const stats = await stat(abs);
+  if (stats.isFile()) {
+    return [abs];
+  }
+  if (!stats.isDirectory()) {
+    throw new Error(`Not a MAM source: ${target}`);
+  }
+
+  const IGNORED_DIRS = new Set(['node_modules', '.git', 'dist', 'build', '.mam-cache']);
+  const collected: string[] = [];
+
+  const walk = (dir: string) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const full = join(dir, entry.name);
+      if (entry.isDirectory()) {
+        if (!IGNORED_DIRS.has(entry.name)) walk(full);
+        continue;
+      }
+      if (!entry.isFile() || !MAM_EXTENSIONS.some((ext) => entry.name.endsWith(ext))) continue;
+      if (shouldIgnore(full, ignorePatterns)) continue;
+      collected.push(full);
+    }
+  };
+
+  walk(abs);
+
+  if (collected.length === 0) {
+    throw new Error(`No .mam / .mam.md files found under ${target}`);
+  }
+  return collected.sort();
+}
+
 export async function validateCommand(options: ValidateOptions): Promise<void> {
   const startTime = Date.now();
   const validator = new MAMValidator(options);
   await validator.loadConfig(options.config);
 
-  try {
-    const filePath = resolve(options.file);
-    const result = await validator.validateFile(filePath, options);
+  const ignorePatterns = [...DEFAULT_IGNORE, ...(options.ignore || [])];
 
-    // Apply fixes if requested
-    if (options.fix && result.diagnostics.some(d => d.fix)) {
-      const content = await readFile(filePath, 'utf-8');
-      const fixed = applyFixes(content, result.diagnostics);
-      await writeFile(filePath, fixed, 'utf-8');
-      console.log(chalk.green(`  Applied fixes to ${filePath}`));
+  try {
+    const targets = await expandValidateTargets(options.file, ignorePatterns);
+    const multi = targets.length > 1;
+
+    const results: ValidationResult[] = [];
+    for (const filePath of targets) {
+      const result = await validator.validateFile(filePath, options);
+      results.push(result);
+
+      // Apply fixes if requested
+      if (options.fix && result.diagnostics.some(d => d.fix)) {
+        const content = await readFile(filePath, 'utf-8');
+        const fixed = applyFixes(content, result.diagnostics);
+        await writeFile(filePath, fixed, 'utf-8');
+        console.log(chalk.green(`  Applied fixes to ${filePath}`));
+      }
     }
+
+    const aggregate = results.length === 1 ? results[0]! : ({
+      valid: results.every(r => r.valid),
+      file: 'multiple',
+      level: results[0]!.level,
+      diagnostics: results.flatMap(r => r.diagnostics),
+      stats: results.reduce(
+        (acc, r) => ({
+          timeMs: acc.timeMs + r.stats.timeMs,
+          rulesChecked: Math.max(acc.rulesChecked, r.stats.rulesChecked),
+          errors: acc.errors + r.stats.errors,
+          warnings: acc.warnings + r.stats.warnings,
+          info: acc.info + r.stats.info,
+          fixable: acc.fixable + r.stats.fixable,
+          linesChecked: acc.linesChecked + r.stats.linesChecked,
+        }),
+        { timeMs: 0, rulesChecked: 0, errors: 0, warnings: 0, info: 0, fixable: 0, linesChecked: 0, }
+      ),
+    } as unknown as ValidationResult);
 
     // Output
     const format = options.format || 'text';
     let output: string;
     switch (format) {
-      case 'json': output = formatJSON(result); break;
-      case 'sarif': output = formatSARIF(result); break;
-      case 'html': output = formatHTML(result); break;
-      default: output = formatText(result);
+      case 'json': output = formatJSON(aggregate); break;
+      case 'sarif': output = formatSARIF(aggregate); break;
+      case 'html': output = formatHTML(aggregate); break;
+      default: output = formatText(aggregate); break;
+    }
+
+    // For multi-file runs, print a compact per-file status line before the
+    // diagnostics, so a failing module stays visible in a page of output.
+    if (multi && !options.quiet) {
+      for (const r of results) {
+        const path = relative(process.cwd(), r.file);
+        console.log(chalk[r.valid ? 'green' : 'red'](`  ${r.valid ? 'PASS' : 'FAIL'}  ${path}`));
+      }
     }
 
     if (!options.quiet) {
@@ -1401,10 +1493,11 @@ export async function validateCommand(options: ValidateOptions): Promise<void> {
 
     // Summary
     if (!options.quiet && format === 'text') {
-      console.log(chalk.gray(`\n  Validated in ${result.stats.timeMs}ms | ${result.stats.rulesChecked} rules | ${result.stats.linesChecked} lines`));
+      const filesPart = results.length > 1 ? ` | ${results.length} files` : '';
+      console.log(chalk.gray(`\n  Validated in ${aggregate.stats.timeMs}ms | ${aggregate.stats.rulesChecked} rules | ${aggregate.stats.linesChecked} lines${filesPart}`));
     }
 
-    process.exit(result.valid ? 0 : 1);
+    process.exit(aggregate.valid ? 0 : 1);
   } catch (error) {
     console.error(chalk.red(`  Error: ${(error as Error).message}`));
     process.exit(1);

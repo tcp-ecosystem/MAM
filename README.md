@@ -207,6 +207,52 @@ pnpm build
 mam init                # creates mam.toml + modules/ + system.mam
 ```
 
+### Convert What You Already Have
+
+```bash
+mam convert AGENTS.md         # -> AGENTS.mam, inferred agent type
+mam convert CLAUDE.md -o agent.mam
+mam convert SLACK_AGENT.md    # works on plain markdown agent specs
+```
+
+`mam convert` rewrites your existing agent markdown into a MAM module that
+passes `mam validate` with zero errors — byte-preserving prose, synthesized
+frontmatter, and mapped sections.
+
+### Validate
+
+```bash
+mam validate modules          # a directory works too
+mam validate hello.mam        # or a single file
+mam validate modules --level strict
+```
+
+Passes to CI: validate your modules on every pull request with
+[`.github/actions/mam-validate`](.github/actions/mam-validate) (see below).
+
+### Serve to Agent Clients (MCP)
+
+```bash
+mam serve --mcp                # MCP server over stdio (tools/list + tools/call)
+mam serve                      # HTTP dev server on :3000 (no -p => port 3000)
+```
+
+Add this to any MCP client config (Claude Desktop, Cursor, VS Code):
+
+```json
+{
+  "mcpServers": {
+    "mam": {
+      "command": "mam",
+      "args": ["serve", "--mcp"]
+    }
+  }
+}
+```
+
+After restarting the client, your MAM modules are callable directly from agent
+sessions — without ever installing the CLI.
+
 ### Create a Module
 
 ```bash
