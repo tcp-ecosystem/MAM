@@ -3,7 +3,7 @@
 ;; Copyright (C) 2026 MAM Desktop Extensions <tcp-ecosystem>
 
 ;; Author: MAM Desktop Extensions <tcp-ecosystem>
-;; URL: https://github.com/tcp-ecosystem/MAM
+;; URL: https://github.com/tcp-ecosystems/MAM
 ;; version: 2.0.0
 ;; Package-Requires: ((emacs "26.1"))
 ;; Keywords: languages, markdown, convenience

@@ -1,10 +1,10 @@
 # Awesome MAM
 
-> Curated modules, tools, and resources for [MAM (Machine Agent Modules)](https://github.com/tcp-ecosystem/MAM) — describe systems, compile anywhere.
+> Curated modules, tools, and resources for [MAM (Machine Agent Modules)](https://github.com/tcp-ecosystems/MAM) — describe systems, compile anywhere.
 
 ## Registry
 
-- [MAM Hub](https://github.com/tcp-ecosystem/MAM/tree/main/registry) — production module registry (HTTP + GraphQL + typed client)
+- [MAM Hub](https://github.com/tcp-ecosystems/MAM/tree/main/registry) — production module registry (HTTP + GraphQL + typed client)
 
 ## Founding Modules (live on MAM Hub)
 
@@ -32,18 +32,18 @@
 
 ## Templates
 
-- [`mam new <type> <name>`](https://github.com/tcp-ecosystem/MAM/tree/main/modules/templates) — 19 type scaffolds (basic + advanced)
+- [`mam new <type> <name>`](https://github.com/tcp-ecosystems/MAM/tree/main/modules/templates) — 19 type scaffolds (basic + advanced)
 
 ## Editors
 
 - [VS Code](https://open-vsx.org/extension/arkhangellifejiggy/mam-language) — syntax, snippets, diagnostics (`arkhangellifejiggy.mam-language` on OpenVSX)
-- [Neovim / Vim / Sublime / Emacs / JetBrains / Zed](https://github.com/tcp-ecosystem/MAM/tree/main/desktop-extension) — 14 editors covered
+- [Neovim / Vim / Sublime / Emacs / JetBrains / Zed](https://github.com/tcp-ecosystems/MAM/tree/main/desktop-extension) — 14 editors covered
 
 ## Spec & Docs
 
-- [Specification](https://github.com/tcp-ecosystem/MAM/blob/main/spec/SPEC.md)
-- [Usage guide](https://github.com/tcp-ecosystem/MAM/blob/main/usage.md)
-- [Purpose](https://github.com/tcp-ecosystem/MAM/blob/main/purpose.md) · [Goal](https://github.com/tcp-ecosystem/MAM/blob/main/goal.md) · [Scope](https://github.com/tcp-ecosystem/MAM/blob/main/scope.md) · [Brain](https://github.com/tcp-ecosystem/MAM/blob/main/brain.md)
+- [Specification](https://github.com/tcp-ecosystems/MAM/blob/main/spec/SPEC.md)
+- [Usage guide](https://github.com/tcp-ecosystems/MAM/blob/main/usage.md)
+- [Purpose](https://github.com/tcp-ecosystems/MAM/blob/main/purpose.md) · [Goal](https://github.com/tcp-ecosystems/MAM/blob/main/goal.md) · [Scope](https://github.com/tcp-ecosystems/MAM/blob/main/scope.md) · [Brain](https://github.com/tcp-ecosystems/MAM/blob/main/brain.md)
 
 ## Contribute
 

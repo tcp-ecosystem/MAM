@@ -40,12 +40,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tcp-ecosystem/MAM.git",
+    "url": "git+https://github.com/tcp-ecosystems/MAM.git",
     "directory": "intelligence-layer/"
   },
-  "homepage": "https://github.com/tcp-ecosystem/MAM/tree/main/intelligence-layer",
+  "homepage": "https://github.com/tcp-ecosystems/MAM/tree/main/intelligence-layer",
   "bugs": {
-    "url": "https://github.com/tcp-ecosystem/MAM/issues"
+    "url": "https://github.com/tcp-ecosystems/MAM/issues"
   },
   "publishConfig": {
     "access": "public"

@@ -23,7 +23,7 @@
 
 ```bash
 # Clone the repository
-git clone https://github.com/tcp-ecosystem/MAM.git
+git clone https://github.com/tcp-ecosystems/MAM.git
 cd MAM
 
 # Install dependencies
@@ -68,7 +68,24 @@ mam new system platform      # system module
 mam templates                # list all 19 type templates
 ```
 
-### 3. Edit the Module (full MAM spec)
+### 3. Convert What You Already Have
+
+Already have an agent spec (`AGENTS.md`, `CLAUDE.md`, or any markdown agent
+file)? Convert it instead of writing a module from scratch:
+
+```bash
+mam convert AGENTS.md         # -> AGENTS.mam, type inferred from content
+mam convert CLAUDE.md -o claude-agent.mam
+mam convert AGENTS.md --dry-run    # print the result without writing
+mam convert AGENTS.md --json       # machine-readable summary
+```
+
+`mam convert` synthesizes frontmatter (id, name, author, tags), maps markdown
+headings to standard sections, and routes fenced code blocks to Python or
+JavaScript sections by language tag. The output is written only if it passes
+`mam validate`.
+
+### 4. Edit the Module (full MAM spec)
 
 ```markdown
 ---
@@ -108,21 +125,26 @@ Describe what this module does.
 Return a greeting.
 ```
 
-### 4. Validate
+### 5. Validate
 
 ```bash
 mam validate                  # validate the whole project (mam.toml)
 mam validate modules/hello.mam    # validate a single module
+mam validate modules          # validate a directory recursively (.mam + .mam.md)
+mam validate modules --level strict    # syntax | schema | semantic | strict
 ```
 
-### 5. Run Natively (no compilation)
+The directory form prints a `PASS`/`FAIL` line per file and exits non-zero if
+any module is invalid — the same mode the bundled CI action uses.
+
+### 6. Run Natively (no compilation)
 
 ```bash
 mam run                       # run the project entry system natively
 mam run modules/hello.mam     # run a single module natively
 ```
 
-### 6. Build / Compile
+### 7. Build / Compile
 
 ```bash
 mam build                     # compile the whole project to targets
@@ -212,11 +234,12 @@ Aliases: `eco` → `ecosystem`, `viz` → `visualize`, `fmt` → `format`.
 | `mam init [name]` | Initialize a project; with a name, creates a module |
 | `mam new <type> <name>` | Create a module from a template (`.mam` + `.mam.md`) |
 | `mam create <kind> <name>` | Scaffold a module, agent, workflow or project |
+| `mam convert <file>` | Convert an existing markdown agent spec to a valid `.mam` module (`-o`, `--dry-run`, `--json`) |
 | `mam build [file]` | Build a module, or the whole project when no file |
 | `mam compile <file> -t <target>` | Compile to a target language |
 | `mam run [file]` | Run a module or the project entry natively (no compiler) |
 | `mam execute <file>` | Execute module (v1 compat) |
-| `mam validate [file]` | Validate a module, or the whole project |
+| `mam validate [file\|dir]` | Validate a module, the whole project, or a directory tree of `.mam`/`.mam.md` files |
 | `mam lint <file>` | Lint module for issues |
 | `mam format <file>` | Format module |
 | `mam test [file]` | Run module tests, or all project tests |

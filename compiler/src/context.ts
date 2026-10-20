@@ -176,7 +176,7 @@ function buildContextLines(mod: V2ModuleNode): string[] {
   lines.push('');
 
   // References
-  lines.push('References: See https://github.com/tcp-ecosystem/MAM');
+  lines.push('References: See https://github.com/tcp-ecosystems/MAM');
 
   return lines;
 }
@@ -250,7 +250,7 @@ function formatAsJSON(mod: V2ModuleNode): string {
       permissions: mod.permissions || { network: 'N/A', filesystem: 'N/A' },
       tests: mod.tests || 'See source module',
       examples: mod.examples || 'See source module',
-      references: 'See https://github.com/tcp-ecosystem/MAM',
+      references: 'See https://github.com/tcp-ecosystems/MAM',
     },
   };
   return JSON.stringify(context, null, 2);

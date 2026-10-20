@@ -19,8 +19,8 @@ Editor support is already on OpenVSX (`arkhangellifejiggy.mam-language`).
 
 Start: `mam new agent researcher` → `mam publish` → it's on the Hub.
 
-Repo: https://github.com/tcp-ecosystem/MAM
-Docs: https://github.com/tcp-ecosystem/MAM/blob/main/usage.md
-Why: https://github.com/tcp-ecosystem/MAM/blob/main/purpose.md
+Repo: https://github.com/tcp-ecosystems/MAM
+Docs: https://github.com/tcp-ecosystems/MAM/blob/main/usage.md
+Why: https://github.com/tcp-ecosystems/MAM/blob/main/purpose.md
 
 `#AIagents #opensource #selfhosted #MLOps`

@@ -262,7 +262,7 @@ export const BUILT_IN_RULES: ValidationRule[] = [
     fixable: false,
     check: (ctx) => {
       if (!ctx.content.trimStart().startsWith('---')) {
-        return [{ ruleId: 'FM001', message: 'Module must start with YAML frontmatter (---)', severity: 'error', line: 1, column: 1, source: ctx.filePath }];
+        return [{ ruleId: 'FM001', message: 'Module must start with YAML frontmatter (---)', severity: 'error', line: 1, column: 1, source: ctx.filePath, suggestions: ['Open the file with a "---" line, add id/name/version/type fields, then close with another "---"'] }];
       }
       return [];
     },
@@ -287,7 +287,7 @@ export const BUILT_IN_RULES: ValidationRule[] = [
         if (lines[i]?.trim() === '---') { closed = true; break; }
       }
       if (!closed) {
-        return [{ ruleId: 'FM002', message: 'Frontmatter is not closed with ---', severity: 'error', line: 1, column: 1, source: ctx.filePath }];
+        return [{ ruleId: 'FM002', message: 'Frontmatter is not closed with ---', severity: 'error', line: 1, column: 1, source: ctx.filePath, suggestions: ['Add a line containing only "---" after the last frontmatter field'] }];
       }
       return [];
     },
@@ -308,7 +308,7 @@ export const BUILT_IN_RULES: ValidationRule[] = [
       // id field carries the identifier. Requiring identifier syntax here
       // flagged every module in the ecosystem, contradicting @mam/validator.
       if (typeof ctx.frontmatter.name !== 'string' || ctx.frontmatter.name.trim() === '') {
-        return [{ ruleId: 'FM003', message: 'Frontmatter "name" must be a non-empty string', severity: 'error', line: 1, column: 1, source: ctx.filePath }];
+        return [{ ruleId: 'FM003', message: 'Frontmatter "name" must be a non-empty string', severity: 'error', line: 1, column: 1, source: ctx.filePath, suggestions: ['Set "name: <display title>" in frontmatter (the id field is the identifier)'] }];
       }
       return [];
     },
@@ -339,7 +339,7 @@ export const BUILT_IN_RULES: ValidationRule[] = [
     check: (ctx) => {
       const desc = ctx.frontmatter.description;
       if (desc && typeof desc === 'string' && desc.length > 500) {
-        return [{ ruleId: 'FM005', message: `Description is ${desc.length} characters (max 500)`, severity: 'warning', line: 1, column: 1, source: ctx.filePath }];
+        return [{ ruleId: 'FM005', message: `Description is ${desc.length} characters (max 500)`, severity: 'warning', line: 1, column: 1, source: ctx.filePath, suggestions: ['Shorten the description to one sentence; move detail into the Purpose section'] }];
       }
       return [];
     },
@@ -357,7 +357,7 @@ export const BUILT_IN_RULES: ValidationRule[] = [
       if (author !== undefined) {
         if (typeof author === 'string') return [];
         if (typeof author === 'object' && author !== null && (author.name || author.email)) return [];
-        return [{ ruleId: 'FM006', message: 'Author must be a string or {name, email} object', severity: 'error', line: 1, column: 1, source: ctx.filePath }];
+        return [{ ruleId: 'FM006', message: 'Author must be a string or {name, email} object', severity: 'error', line: 1, column: 1, source: ctx.filePath, suggestions: ['Use "author: Your Name" or YAML mapping with name/email keys'] }];
       }
       return [];
     },
@@ -374,11 +374,11 @@ export const BUILT_IN_RULES: ValidationRule[] = [
       const tags = ctx.frontmatter.tags;
       if (tags !== undefined) {
         if (!Array.isArray(tags)) {
-          return [{ ruleId: 'FM007', message: '"tags" must be an array', severity: 'error', line: 1, column: 1, source: ctx.filePath }];
+          return [{ ruleId: 'FM007', message: '"tags" must be an array', severity: 'error', line: 1, column: 1, source: ctx.filePath, suggestions: ['Use a YAML list: "tags:" then "- tag-one" lines, or inline "tags: [one, two]"]'] }];
         }
         for (const tag of tags) {
           if (typeof tag !== 'string') {
-            return [{ ruleId: 'FM007', message: 'Each tag must be a string', severity: 'error', line: 1, column: 1, source: ctx.filePath }];
+            return [{ ruleId: 'FM007', message: 'Each tag must be a string', severity: 'error', line: 1, column: 1, source: ctx.filePath, suggestions: ['Quote numeric tags: "- "2.0"" instead of "- 2.0"]'] }];
           }
         }
       }
@@ -422,7 +422,7 @@ export const BUILT_IN_RULES: ValidationRule[] = [
       const diagnostics: ValidationDiagnostic[] = [];
       for (const section of ctx.sections) {
         if (!section.hasContent) {
-          diagnostics.push({ ruleId: 'SEC002', message: `Section "${section.name}" is empty`, severity: 'warning', line: section.line, column: section.column, source: ctx.filePath });
+          diagnostics.push({ ruleId: 'SEC002', message: `Section "${section.name}" is empty`, severity: 'warning', line: section.line, column: section.column, source: ctx.filePath, suggestions: ['Add a sentence describing what this section holds, or remove the heading'] });
         }
       }
       return diagnostics;
@@ -442,7 +442,7 @@ export const BUILT_IN_RULES: ValidationRule[] = [
       for (const section of ctx.sections) {
         const prev = seen.get(section.name);
         if (prev !== undefined) {
-          diagnostics.push({ ruleId: 'SEC003', message: `Duplicate section "${section.name}" (first at line ${prev})`, severity: 'error', line: section.line, column: section.column, source: ctx.filePath });
+          diagnostics.push({ ruleId: 'SEC003', message: `Duplicate section "${section.name}" (first at line ${prev})`, severity: 'error', line: section.line, column: section.column, source: ctx.filePath, suggestions: ['Merge the two sections, or rename one with a qualifier, e.g. "Examples (v1)"'] });
         }
         seen.set(section.name, section.line);
       }
@@ -463,7 +463,7 @@ export const BUILT_IN_RULES: ValidationRule[] = [
         const prev = ctx.sections[i - 1]!;
         const curr = ctx.sections[i]!;
         if (curr.level > prev.level + 1) {
-          diagnostics.push({ ruleId: 'SEC004', message: `Heading level skips from ${prev.level} to ${curr.level} in "${curr.name}"`, severity: 'warning', line: curr.line, column: curr.column, source: ctx.filePath });
+          diagnostics.push({ ruleId: 'SEC004', message: `Heading level skips from ${prev.level} to ${curr.level} in "${curr.name}"`, severity: 'warning', line: curr.line, column: curr.column, source: ctx.filePath, suggestions: ['Use the next level down from the previous heading, e.g. "###" after "##"'] });
         }
       }
       return diagnostics;
@@ -501,7 +501,7 @@ export const BUILT_IN_RULES: ValidationRule[] = [
       const diagnostics: ValidationDiagnostic[] = [];
       for (const block of ctx.codeBlocks) {
         if (!block.closed) {
-          diagnostics.push({ ruleId: 'CB002', message: `Unclosed code block (language: ${block.language || 'none'})`, severity: 'error', line: block.line, column: block.column, source: ctx.filePath });
+          diagnostics.push({ ruleId: 'CB002', message: `Unclosed code block (language: ${block.language || 'none'})`, severity: 'error', line: block.line, column: block.column, source: ctx.filePath, suggestions: ['Add a closing "```" line after the last line of the block'] });
         }
       }
       return diagnostics;
@@ -540,7 +540,7 @@ export const BUILT_IN_RULES: ValidationRule[] = [
       for (const block of ctx.codeBlocks) {
         for (const pattern of dangerousPatterns) {
           if (pattern.test(block.content)) {
-            diagnostics.push({ ruleId: 'CB004', message: 'Code block contains potentially dangerous command', severity: 'error', line: block.line, column: block.column, source: ctx.filePath });
+            diagnostics.push({ ruleId: 'CB004', message: 'Code block contains potentially dangerous command', severity: 'error', line: block.line, column: block.column, source: ctx.filePath, suggestions: ['Show the command as a comment or use placeholders (e.g. rm -rf <path>) in examples'] });
             break;
           }
         }
@@ -573,7 +573,7 @@ export const BUILT_IN_RULES: ValidationRule[] = [
           /\.[a-z0-9]+([?#].*)?$/i.test(url) || // relative file path (plan-doc/full-mam.md)
           url.includes('/');
         if (!allowed) {
-          diagnostics.push({ ruleId: 'LNK001', message: `Invalid URL format: "${url}"`, severity: 'warning', line: link.line, column: link.column, source: ctx.filePath });
+          diagnostics.push({ ruleId: 'LNK001', message: `Invalid URL format: "${url}"`, severity: 'warning', line: link.line, column: link.column, source: ctx.filePath, suggestions: ['Use https://…, a relative path like ./docs/spec.md, or an anchor like #section'] });
         }
       }
       return diagnostics;
@@ -602,7 +602,7 @@ export const BUILT_IN_RULES: ValidationRule[] = [
         while ((match = inlineRefPattern.exec(line)) !== null) {
           const ref = (match[2] || match[1])!.toLowerCase();
           if (!definedRefs.has(ref)) {
-            diagnostics.push({ ruleId: 'LNK002', message: `Undefined reference link: "${match[2] || match[1]}"`, severity: 'error', line: i + 1, column: (match.index || 0) + 1, source: ctx.filePath });
+            diagnostics.push({ ruleId: 'LNK002', message: `Undefined reference link: "${match[2] || match[1]}"`, severity: 'error', line: i + 1, column: (match.index || 0) + 1, source: ctx.filePath, suggestions: ['Define it at the bottom of the file as "[name]: https://…", or use an inline [text](url) link'] });
           }
         }
       }
@@ -621,7 +621,7 @@ export const BUILT_IN_RULES: ValidationRule[] = [
       const diagnostics: ValidationDiagnostic[] = [];
       for (const link of ctx.links) {
         if (!link.text || link.text.trim() === '') {
-          diagnostics.push({ ruleId: 'LNK003', message: 'Link has empty text', severity: 'warning', line: link.line, column: link.column, source: ctx.filePath });
+          diagnostics.push({ ruleId: 'LNK003', message: 'Link has empty text', severity: 'warning', line: link.line, column: link.column, source: ctx.filePath, suggestions: ['Describe what the link points to, e.g. [the MAM spec](...)'] });
         }
       }
       return diagnostics;
@@ -644,7 +644,7 @@ export const BUILT_IN_RULES: ValidationRule[] = [
           const expected = table.columns;
           for (let i = 0; i < table.rows.length; i++) {
             if (table.rows[i]!.length !== expected) {
-              diagnostics.push({ ruleId: 'TBL001', message: `Table row ${i + 1} has ${table.rows[i]!.length} columns, expected ${expected}`, severity: 'error', line: table.line + i + 2, column: 1, source: ctx.filePath });
+              diagnostics.push({ ruleId: 'TBL001', message: `Table row ${i + 1} has ${table.rows[i]!.length} columns, expected ${expected}`, severity: 'error', line: table.line + i + 2, column: 1, source: ctx.filePath, suggestions: [`Add or remove a "|" cell so the row matches the ${expected}-column header`] });
             }
           }
         }
@@ -719,7 +719,7 @@ export const BUILT_IN_RULES: ValidationRule[] = [
       for (let i = 0; i < ctx.lines.length; i++) {
         for (const imp of dangerousImports) {
           if (ctx.lines[i]!.includes(imp)) {
-            diagnostics.push({ ruleId: 'SEC011', message: `Potentially dangerous import/use of "${imp}"`, severity: 'warning', line: i + 1, column: 1, source: ctx.filePath });
+            diagnostics.push({ ruleId: 'SEC011', message: `Potentially dangerous import/use of "${imp}"`, severity: 'warning', line: i + 1, column: 1, source: ctx.filePath, suggestions: ['Only load code from sources you control; declare it in the module\'s permissions'] });
             break;
           }
         }

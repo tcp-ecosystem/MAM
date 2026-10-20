@@ -1,7 +1,7 @@
 " mam.vim - Vim syntax file for MAM (Machine Agent Modules)
 " Language:    MAM
 " Maintainer:  MAM Desktop Extensions <tcp-ecosystem>
-" URL:         https://github.com/tcp-ecosystem/MAM
+" URL:         https://github.com/tcp-ecosystems/MAM
 " Description: Syntax highlighting for MAM files (.mam, .mam.md).
 "
 "   MAM is markdown-based with:

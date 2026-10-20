@@ -46,12 +46,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tcp-ecosystem/MAM.git",
+    "url": "git+https://github.com/tcp-ecosystems/MAM.git",
     "directory": "validator/"
   },
-  "homepage": "https://github.com/tcp-ecosystem/MAM/tree/main/validator",
+  "homepage": "https://github.com/tcp-ecosystems/MAM/tree/main/validator",
   "bugs": {
-    "url": "https://github.com/tcp-ecosystem/MAM/issues"
+    "url": "https://github.com/tcp-ecosystems/MAM/issues"
   },
   "publishConfig": {
     "access": "public"

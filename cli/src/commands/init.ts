@@ -474,7 +474,7 @@ export function renderReadme(name: string): string {
   const title = titleFromModuleName(name);
   return `# ${title}
 
-A [MAM](https://github.com/tcp-ecosystem/MAM) project.
+A [MAM](https://github.com/tcp-ecosystems/MAM) project.
 
 ## Layout
 

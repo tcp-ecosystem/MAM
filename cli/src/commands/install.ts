@@ -35,6 +35,7 @@ import { parseMAM } from '@mam/parser';
 // ============================================================================
 
 export interface InstallOptions {
+  packages?: string[];
   file?: string;
   dir?: string;
   global?: boolean;
@@ -91,17 +92,43 @@ interface ResolvedPackage {
   };
 }
 
-interface PackageVersion {
+/**
+ * Wire shapes of the MAM Hub (registry/server):
+ *
+ *   GET /modules/:name              → ModuleRecord (this object, directly)
+ *   GET /modules/:name/versions     → VersionRecord[]
+ *   GET /modules/:name/download
+ *        ?version=:v                → { url: '/tarballs/:name/:v.tgz', integrity }
+ *   GET  {url}                      → the tarball bytes
+ *
+ * Success responses carry the data object at the top level (no envelope);
+ * failures are non-2xx with an `{ error }` body.
+ */
+interface HubVersionRecord {
   version: string;
-  dist: ResolvedPackage['dist'];
-  deprecated?: string;
+  manifest: {
+    dependencies?: { name: string; version: string; optional?: boolean }[];
+    deprecated?: string;
+    [key: string]: unknown;
+  };
+  files: Record<string, string>;
+  tarball: string;
+  integrity: string;
+  publishedAt: string;
+  publishedBy: string;
 }
 
-interface RegistryMetadata {
+interface HubModuleRecord {
   name: string;
-  'dist-tags': Record<string, string>;
-  versions: Record<string, PackageVersion>;
-  modified: string;
+  description: string;
+  author: string;
+  tags: string[];
+  versions: Record<string, HubVersionRecord>;
+  /** Latest published version. */
+  latest: string;
+  createdAt: string;
+  updatedAt: string;
+  archived?: boolean;
 }
 
 interface LockFileEntry {
@@ -179,7 +206,10 @@ interface IntegrityEntry {
 // Constants
 // ============================================================================
 
-const MAM_REGISTRY = 'https://registry.mam.dev';
+// Default to the live public Hub. `--registry` and `config.registry` override;
+// previously this pointed at registry.mam.dev, which has never resolved, so a
+// fresh `mam install` failed out of the box.
+const MAM_REGISTRY = 'https://mam-hub.onrender.com';
 const MAM_LOCKFILE_VERSION = 3;
 const LOCKFILE_NAME = 'package-lock.mam.json';
 const DEFAULT_CACHE_DIR = join(
@@ -339,7 +369,7 @@ function detectSource(spec: string): DependencySpec['source'] {
 
 class RegistryClient {
   private baseUrl: string;
-  private cache: Map<string, RegistryMetadata> = new Map();
+  private cache: Map<string, HubModuleRecord> = new Map();
   private token?: string;
 
   constructor(registry?: string) {
@@ -350,11 +380,17 @@ class RegistryClient {
     this.token = token;
   }
 
-  async getMetadata(name: string): Promise<RegistryMetadata> {
+  /** Turns a relative URL from the Hub (e.g. `/tarballs/...`) into an absolute one. */
+  private toAbsoluteUrl(url: string): string {
+    if (/^https?:\/\//i.test(url)) return url;
+    return `${this.baseUrl.replace(/\/$/, '')}${url.startsWith('/') ? url : `/${url}`}`;
+  }
+
+  async getMetadata(name: string): Promise<HubModuleRecord> {
     const cached = this.cache.get(name);
     if (cached) return cached;
 
-    const url = `${this.baseUrl}/${encodeURIComponent(name).replace('%40', '@')}`;
+    const url = `${this.baseUrl.replace(/\/$/, '')}/modules/${encodeURIComponent(name)}`;
     const headers: Record<string, string> = {
       Accept: 'application/json',
       'User-Agent': 'mam-cli/2.0.0',
@@ -371,14 +407,21 @@ class RegistryClient {
         const response = await fetch(url, { headers, signal: controller.signal });
         clearTimeout(timeout);
 
-        if (response.status === 404) {
-          throw new Error(`Package '${name}' not found in registry`);
-        }
         if (!response.ok) {
-          throw new Error(`Registry responded with ${response.status}: ${response.statusText}`);
+          let detail = `status ${response.status}`;
+          try {
+            const body = (await response.json()) as { error?: string };
+            if (body?.error) detail = body.error;
+          } catch {
+            // non-JSON error body — the status code alone has to do
+          }
+          if (response.status === 404 || detail.includes('not found')) {
+            throw new Error(`Package '${name}' not found in registry`);
+          }
+          throw new Error(`Registry responded with ${detail}`);
         }
 
-        const metadata = (await response.json()) as RegistryMetadata;
+        const metadata = (await response.json()) as HubModuleRecord;
         this.cache.set(name, metadata);
         return metadata;
       } catch (error) {
@@ -396,10 +439,10 @@ class RegistryClient {
     let resolvedVersion: string;
 
     if (version === 'latest') {
-      resolvedVersion = metadata['dist-tags']['latest'];
+      resolvedVersion = metadata.latest;
       if (!resolvedVersion) throw new Error(`No latest version found for '${name}'`);
-    } else if (metadata['dist-tags'][version]) {
-      resolvedVersion = metadata['dist-tags'][version];
+    } else if (metadata.versions[version]) {
+      resolvedVersion = version;
     } else {
       resolvedVersion = highestSatisfying(Object.keys(metadata.versions), version) || version;
     }
@@ -411,29 +454,53 @@ class RegistryClient {
       );
     }
 
+    // The tarball path on the version record is relative; the download
+    // endpoint is the authoritative source for the exact URL and the
+    // integrity hash, so prefer it and fall back to the record's field.
+    let tarballUrl = this.toAbsoluteUrl(pkgVersion.tarball);
+    let integrity = pkgVersion.integrity;
+    try {
+      const dlUrl = `${this.baseUrl.replace(/\/$/, '')}/modules/${encodeURIComponent(name)}/download?version=${encodeURIComponent(resolvedVersion)}`;
+      const response = await fetch(dlUrl, {
+        headers: { Accept: 'application/json', 'User-Agent': 'mam-cli/2.0.0' },
+      });
+      if (response.ok) {
+        const dl = (await response.json()) as { url?: string; integrity?: string };
+        if (dl?.url) tarballUrl = this.toAbsoluteUrl(dl.url);
+        if (dl?.integrity) integrity = dl.integrity;
+      }
+    } catch {
+      // fall back to the version record's own tarball field
+    }
+
+    const dependencies: Record<string, string> = {};
+    for (const dep of pkgVersion.manifest?.dependencies ?? []) {
+      dependencies[dep.name] = dep.version;
+    }
+
     return {
       name,
       version: resolvedVersion,
-      resolved: pkgVersion.dist.tarball,
-      integrity: pkgVersion.dist.integrity,
-      dependencies: {} as Record<string, string>,
+      resolved: tarballUrl,
+      integrity,
+      dependencies,
       optionalDependencies: {} as Record<string, string>,
       peerDependencies: {} as Record<string, string>,
       devDependencies: {} as Record<string, string>,
-      deprecated: pkgVersion.deprecated,
-      tarball: pkgVersion.dist.tarball,
-      shasum: pkgVersion.dist.shasum,
-      dist: pkgVersion.dist,
+      tarball: tarballUrl,
+      shasum: '',
+      dist: { integrity, shasum: '', tarball: tarballUrl },
     };
   }
 
   async download(tarballUrl: string): Promise<Buffer> {
+    const url = this.toAbsoluteUrl(tarballUrl);
     let lastError: Error | null = null;
     for (let attempt = 0; attempt < RETRY_COUNT; attempt++) {
       try {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), DOWNLOAD_TIMEOUT_MS);
-        const response = await fetch(tarballUrl, {
+        const response = await fetch(url, {
           signal: controller.signal,
           headers: { 'User-Agent': 'mam-cli/2.0.0' },
         });
@@ -649,7 +716,23 @@ async function extractTarball(
 
   try {
     const { execSync } = await import('node:child_process');
-    execSync(`tar xzf "${tmpFile}" -C "${targetDir}" --strip-components=1`, {
+    // npm tarballs carry a single `package/` root that needs stripping; the
+    // MAM Hub packs module files at the tarball root (e.g. `agent.mam`),
+    // where stripping would eat the real names and extract nothing. List
+    // the entries first and only strip a common top-level directory.
+    let stripArg = '';
+    try {
+      const listing = execSync(`tar tzf "${tmpFile}"`, { stdio: 'pipe' }).toString();
+      const names = listing.split(/\r?\n/).map((line) => line.replace(/\/$/, '')).filter(Boolean);
+      const roots = new Set(names.map((n) => n.split('/')[0]));
+      if (roots.size === 1 && names.some((n) => n.includes('/'))) {
+        stripArg = ' --strip-components=1';
+      }
+    } catch {
+      // listing failed — keep the historical strip behaviour for npm-style balls
+      stripArg = ' --strip-components=1';
+    }
+    execSync(`tar xzf "${tmpFile}" -C "${targetDir}"${stripArg}`, {
       stdio: 'pipe',
     });
 
@@ -830,8 +913,8 @@ async function auditDependencies(
       const metadata = await registry.getMetadata(name);
       totalDependencies++;
 
-      for (const [, versionInfo] of Object.entries(metadata.versions)) {
-        if (versionInfo.deprecated) {
+      for (const [, versionInfo] of Object.entries(metadata.versions as Record<string, HubVersionRecord>)) {
+        if (versionInfo.manifest?.deprecated) {
           const resolved = highestSatisfying(
             Object.keys(metadata.versions),
             range as string,
@@ -840,7 +923,7 @@ async function auditDependencies(
             vulnerabilities.push({
               name,
               severity: 'moderate',
-              via: [versionInfo.deprecated],
+              via: [versionInfo.manifest.deprecated],
               range: range as string,
               fixAvailable: true,
               nodes: [`node_modules/${name}`],
@@ -969,13 +1052,32 @@ export async function installCommand(options: InstallOptions): Promise<void> {
 
     await lockFile.load();
 
-    let packageJson = await loadPackageJson(rootDir);
-    if (!packageJson) {
-      spinner.fail('No mam-package.json or package.json found');
-      process.exit(1);
-    }
+    const packageJson = await loadPackageJson(rootDir);
 
-    const specs = collectDependencySpecs(packageJson, options);
+    // Explicit package arguments take priority over any manifest:
+    // the documented `mam install <pkg>` flow must install the
+    // requested module, not the devDependencies of whatever repo
+    // the command happens to run in.
+    const manifestDriven = !(options.packages && options.packages.length > 0);
+    let specs: DependencySpec[];
+    if (manifestDriven) {
+      if (!packageJson) {
+        spinner.fail('No mam-package.json or package.json found');
+        process.exit(1);
+      }
+      specs = collectDependencySpecs(packageJson, options);
+    } else {
+      specs = options.packages!.map((raw) => {
+        const { name, version } = parseSpec(raw);
+        return {
+          name,
+          version,
+          range: version,
+          type: 'dependencies' as const,
+          source: detectSource(raw),
+        };
+      });
+    }
     if (specs.length === 0) {
       spinner.succeed('No dependencies to install');
       return;
@@ -1149,7 +1251,7 @@ export async function installCommand(options: InstallOptions): Promise<void> {
     }
 
     const installedModules = await getInstalledModules(nodeModulesDir);
-    const unused = detectUnused(packageJson, new Set([...installedModules.keys()]));
+    const unused = manifestDriven ? detectUnused(packageJson!, new Set([...installedModules.keys()])) : [];
     if (unused.length > 0) {
       console.log(chalk.gray('\nUnused dependencies detected:'));
       for (const name of unused) {
@@ -1158,7 +1260,7 @@ export async function installCommand(options: InstallOptions): Promise<void> {
     }
 
     let auditResult: AuditResult | undefined;
-    if (options.audit) {
+    if (options.audit && manifestDriven) {
       spinner.text = 'Auditing dependencies for vulnerabilities...';
       auditResult = await auditDependencies(packageJson, registry);
       if (auditResult.vulnerabilities.length > 0) {

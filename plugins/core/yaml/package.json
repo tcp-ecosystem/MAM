@@ -32,12 +32,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tcp-ecosystem/MAM.git",
+    "url": "git+https://github.com/tcp-ecosystems/MAM.git",
     "directory": "plugins/core/yaml/"
   },
-  "homepage": "https://github.com/tcp-ecosystem/MAM/tree/main/plugins/core/yaml",
+  "homepage": "https://github.com/tcp-ecosystems/MAM/tree/main/plugins/core/yaml",
   "bugs": {
-    "url": "https://github.com/tcp-ecosystem/MAM/issues"
+    "url": "https://github.com/tcp-ecosystems/MAM/issues"
   },
   "publishConfig": {
     "access": "public"

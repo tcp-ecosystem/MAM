@@ -39,12 +39,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tcp-ecosystem/MAM.git",
+    "url": "git+https://github.com/tcp-ecosystems/MAM.git",
     "directory": "observability/"
   },
-  "homepage": "https://github.com/tcp-ecosystem/MAM/tree/main/observability",
+  "homepage": "https://github.com/tcp-ecosystems/MAM/tree/main/observability",
   "bugs": {
-    "url": "https://github.com/tcp-ecosystem/MAM/issues"
+    "url": "https://github.com/tcp-ecosystems/MAM/issues"
   },
   "publishConfig": {
     "access": "public"

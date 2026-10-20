@@ -187,11 +187,20 @@ MAM supports 19 module types:
 
 ## Quick Start
 
+The whole loop is five commands:
+
+```bash
+mam init                  # scaffold a project
+mam convert AGENTS.md     # or author from scratch: mam new basic hello
+mam validate modules      # every .mam / .mam.md, PASS/FAIL per file
+mam run                   # run natively — no compilation required
+```
+
 ### Installation
 
 ```bash
 # Clone the repository
-git clone https://github.com/tcp-ecosystem/MAM.git
+git clone https://github.com/tcp-ecosystems/MAM.git
 cd MAM
 
 # Install dependencies
@@ -345,8 +354,9 @@ def login(username: str, password: str) -> dict:
 
 ## Complete Module Examples
 
-One runnable example per type (`modules/examples/<type>/<type>.mam`, each with
-a `.mam.md` twin), plus five composed suites. Every example has Purpose, Inputs,
+One runnable example per type (`modules/examples/<type>/modules/<type>.mam`, each
+with a `.mam.md` twin and a composing `system.mam` at the folder root), plus six
+composed suites. Every example has Purpose, Inputs,
 Outputs, Capabilities, Rules, Workflow, Python, Mermaid, Tests and References —
 the auth module above is the smallest; the agent and workflow run to hundreds
 of lines.
@@ -373,13 +383,13 @@ of lines.
 | `tool` | URL Fetcher | Rate-limited, bounded side-effecting tool |
 | `workflow` | Ledger ETL | Three-step pipeline, retry-safe loads |
 
-**Composed suites** (`modules/examples/{core,basic,advanced,plugins,security-system}/`,
-each with its own `mam.toml`): multi-module projects that `mam build`, `mam run`,
-`mam validate` and `mam test` operate on whole.
+**Composed suites** (`modules/examples/{core,basic,advanced,plugins,security-system,scenarios}/`,
+each with `system.mam` and its own `mam.toml`): multi-module projects that
+`mam build`, `mam run`, `mam validate` and `mam test` operate on whole.
 
 **Templates** (`modules/templates/<type>/`, basic + advanced per type): `mam new
 <type> <name>` scaffolds from these. Community modules are curated at
-[awesome-mam](https://github.com/tcp-ecosystem/awesome-mam).
+[awesome-mam](https://github.com/tcp-ecosystems/awesome-mam).
 
 ---
 
@@ -461,7 +471,7 @@ mam test          # run tests across all modules
 mam info          # project summary
 ```
 
-Ready-made example projects: `modules/examples/{core,basic,advanced,plugins,security-system}` plus one folder per module type.
+Ready-made example projects: `modules/examples/{core,basic,advanced,plugins,security-system,scenarios}` plus one folder per module type (each with `system.mam` and `modules/`).
 Reusable templates: `modules/templates/` (19 type folders, basic + advanced).
 
 ---
@@ -916,7 +926,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 - [Purpose](purpose.md) · [Goal](goal.md) · [Scope](scope.md) · [Brain](brain.md)
 - [Examples](modules/examples/)
 - [Templates](modules/templates/)
-- [Awesome MAM](https://github.com/tcp-ecosystem/awesome-mam)
+- [Awesome MAM](https://github.com/tcp-ecosystems/awesome-mam)
 - [Plan](plan.md)
 - [v2 Plan](plan-doc/plan-v2.md)
 - [Changelog](CHANGELOG.md)
