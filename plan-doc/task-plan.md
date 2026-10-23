@@ -130,20 +130,39 @@ Everything is prepped: versions aligned to `2.0.0`, LICENSE per package,
       exists at `docs/`, no URL
 - [ ] README before/after comparison — the last Phase-2 doc piece
 - [x] `awesome-mam` production library ladder (separate repo:
-      `github.com/tcp-ecosystem/awesome-mam`, push `c94dfc9`, Oct 23 2026) —
-      five folder levels built on `plan-doc/full-mam.md`'s full component set,
-      no placeholders: `01-modules/` **complete** with 5 executable reference
-      modules (`schema-validator`, `retry-policy`, `rate-limiter`,
-      `structured-logging`, `config-loader`) — every module stdlib-pure with
-      the envelope discipline (verdict + stable code + `duration_ms`), twins
-      shipped; verification: Python harness **57/57 test cases executed and
-      passing**, `mam validate awesome-mam` 10/10 files PASS (19 rules),
-      `mam test` structural pass on all five; `config-loader` composes
-      `schema-validator` via real dependency resolution (`DEPENDENCY_UNRESOLVED`
-      gate proven). Levels 2–5 (components/workflows/services/systems) carry
-      complete authoring contracts (Memory+Exports; retry/compensate/replay/stop;
-      lifecycle+health+shutdown; repo-as-system with `mam.toml`+`system.mam.md`)
-      — their `.mam` files are authored level by level, next up 02.
+      `github.com/tcp-ecosystem/awesome-mam`, pushes `c94dfc9` → `83be740`,
+      Oct 23 2026) — **all five levels complete**, built on
+      `plan-doc/full-mam.md`'s full component set, no placeholders:
+      - `01-modules/` — 5 executable reference modules (`schema-validator`,
+        `retry-policy`, `rate-limiter`, `structured-logging`, `config-loader`):
+        stdlib-pure, envelope discipline (verdict + stable code +
+        `duration_ms`), twins shipped
+      - `02-components/` — 3 stateful components with Memory/Exports and
+        config-at-construction: `http-runtime` (rate-limiter + retry-policy +
+        structured-logging + schema-validator), `pacing-circuit`
+        (rate-limiter + retry-policy taxonomy + schema-validator, breaker
+        state machine), `config-factory` (config-loader + structured-logging,
+        path-only hot-reload audit)
+      - `03-workflows/` — 2 workflows with all four failure answers:
+        `order-fulfillment` (validate→reserve→charge→notify, release
+        compensation, ledger, idempotency keys) composed through Level 2, and
+        `dataset-publish` (paced upload, retry-policy schedule, structured
+        settle record) composed directly on Level 1
+      - `04-services/` — 2 services: `report-worker` (boot via config-loader,
+        bounded queue backpressure, criticality-aware health, drain) and
+        `webhook-receiver` (stdlib HMAC constant-time auth, per-producer token
+        buckets, bounded producer space, body-by-length-only logging)
+      - `05-systems/` — `orders-platform`: `mam.toml` + `system.mam.md` +
+        twin, 12-member manifest, downward-only Mermaid graph mirrored by a
+        verifier (`SYSTEM_INCOMPLETE` / `MEMBER_INVALID` / `EDGE_UNKNOWN` /
+        `LEVEL_ORDER_VIOLATION`), `describe().unconsumed` enumerates
+        host-executed/boundary members, compile targets declared
+        (`python`, `openai`, `langgraph`)
+      - verification on the final tree: Python harness **160/160 test cases
+        executed and passing** across all 13 authored files (dependency-ordered
+        module registration), `mam validate awesome-mam` **26 files PASS,
+        0 errors, 0 warnings** (19 rules, 12,118 lines), `mam test` **1/1 on
+        all 13 files**; composition gate proof in the system root
 - [ ] `awesome-mam` "add yours" PR template — still TODO
 - [ ] 2–3 standalone template repos (own repos, `mam-lang` topic) — external
 
