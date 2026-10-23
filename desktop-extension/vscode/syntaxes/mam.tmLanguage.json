@@ -275,15 +275,19 @@
             }
           ],
           "beginCaptures": {
-            "0": {
-              "name": "comment.line.fence.mam"
+            "3": {
+              "name": "punctuation.definition.markdown"
+            },
+            "4": {
+              "name": "fenced_code.block.language.markdown"
             }
           },
           "endCaptures": {
-            "0": {
-              "name": "comment.line.fence.mam"
+            "3": {
+              "name": "punctuation.definition.markdown"
             }
-          }
+          },
+          "name": "markup.fenced_code.block.markdown"
         },
         {
           "begin": "(^|\\G)(\\s*)(`{3,}|~{3,})\\s*(?i:(python|py))$",
@@ -301,15 +305,19 @@
             }
           ],
           "beginCaptures": {
-            "0": {
-              "name": "comment.line.fence.mam"
+            "3": {
+              "name": "punctuation.definition.markdown"
+            },
+            "4": {
+              "name": "fenced_code.block.language.markdown"
             }
           },
           "endCaptures": {
-            "0": {
-              "name": "comment.line.fence.mam"
+            "3": {
+              "name": "punctuation.definition.markdown"
             }
-          }
+          },
+          "name": "markup.fenced_code.block.markdown"
         },
         {
           "begin": "(^|\\G)(\\s*)(`{3,}|~{3,})\\s*(?i:(yaml|yml))$",
@@ -327,15 +335,19 @@
             }
           ],
           "beginCaptures": {
-            "0": {
-              "name": "comment.line.fence.mam"
+            "3": {
+              "name": "punctuation.definition.markdown"
+            },
+            "4": {
+              "name": "fenced_code.block.language.markdown"
             }
           },
           "endCaptures": {
-            "0": {
-              "name": "comment.line.fence.mam"
+            "3": {
+              "name": "punctuation.definition.markdown"
             }
-          }
+          },
+          "name": "markup.fenced_code.block.markdown"
         },
         {
           "begin": "(^|\\G)(\\s*)(`{3,}|~{3,})\\s*(?i:(json|jsonc))$",
@@ -353,15 +365,19 @@
             }
           ],
           "beginCaptures": {
-            "0": {
-              "name": "comment.line.fence.mam"
+            "3": {
+              "name": "punctuation.definition.markdown"
+            },
+            "4": {
+              "name": "fenced_code.block.language.markdown"
             }
           },
           "endCaptures": {
-            "0": {
-              "name": "comment.line.fence.mam"
+            "3": {
+              "name": "punctuation.definition.markdown"
             }
-          }
+          },
+          "name": "markup.fenced_code.block.markdown"
         },
         {
           "begin": "(^|\\G)(\\s*)(`{3,}|~{3,})\\s*(?i:(javascript|js|jsx|mjs|cjs))$",
@@ -379,15 +395,19 @@
             }
           ],
           "beginCaptures": {
-            "0": {
-              "name": "comment.line.fence.mam"
+            "3": {
+              "name": "punctuation.definition.markdown"
+            },
+            "4": {
+              "name": "fenced_code.block.language.markdown"
             }
           },
           "endCaptures": {
-            "0": {
-              "name": "comment.line.fence.mam"
+            "3": {
+              "name": "punctuation.definition.markdown"
             }
-          }
+          },
+          "name": "markup.fenced_code.block.markdown"
         },
         {
           "begin": "(^|\\G)(\\s*)(`{3,}|~{3,})\\s*(?i:(typescript|ts|tsx))$",
@@ -405,15 +425,19 @@
             }
           ],
           "beginCaptures": {
-            "0": {
-              "name": "comment.line.fence.mam"
+            "3": {
+              "name": "punctuation.definition.markdown"
+            },
+            "4": {
+              "name": "fenced_code.block.language.markdown"
             }
           },
           "endCaptures": {
-            "0": {
-              "name": "comment.line.fence.mam"
+            "3": {
+              "name": "punctuation.definition.markdown"
             }
-          }
+          },
+          "name": "markup.fenced_code.block.markdown"
         },
         {
           "begin": "(^|\\G)(\\s*)(`{3,}|~{3,})\\s*(?i:(bash|sh|shell|zsh))$",
@@ -431,15 +455,19 @@
             }
           ],
           "beginCaptures": {
-            "0": {
-              "name": "comment.line.fence.mam"
+            "3": {
+              "name": "punctuation.definition.markdown"
+            },
+            "4": {
+              "name": "fenced_code.block.language.markdown"
             }
           },
           "endCaptures": {
-            "0": {
-              "name": "comment.line.fence.mam"
+            "3": {
+              "name": "punctuation.definition.markdown"
             }
-          }
+          },
+          "name": "markup.fenced_code.block.markdown"
         },
         {
           "begin": "(^|\\G)(\\s*)(`{3,}|~{3,})\\s*(?i:(powershell|ps1|pwsh))$",
@@ -457,15 +485,19 @@
             }
           ],
           "beginCaptures": {
-            "0": {
-              "name": "comment.line.fence.mam"
+            "3": {
+              "name": "punctuation.definition.markdown"
+            },
+            "4": {
+              "name": "fenced_code.block.language.markdown"
             }
           },
           "endCaptures": {
-            "0": {
-              "name": "comment.line.fence.mam"
+            "3": {
+              "name": "punctuation.definition.markdown"
             }
-          }
+          },
+          "name": "markup.fenced_code.block.markdown"
         },
         {
           "begin": "(^|\\G)(\\s*)(`{3,}|~{3,})\\s*(?i:(toml))$",
@@ -483,15 +515,19 @@
             }
           ],
           "beginCaptures": {
-            "0": {
-              "name": "comment.line.fence.mam"
+            "3": {
+              "name": "punctuation.definition.markdown"
+            },
+            "4": {
+              "name": "fenced_code.block.language.markdown"
             }
           },
           "endCaptures": {
-            "0": {
-              "name": "comment.line.fence.mam"
+            "3": {
+              "name": "punctuation.definition.markdown"
             }
-          }
+          },
+          "name": "markup.fenced_code.block.markdown"
         },
         {
           "begin": "(^|\\G)(\\s*)(`{3,}|~{3,})\\s*(?i:(sql))$",
@@ -509,15 +545,19 @@
             }
           ],
           "beginCaptures": {
-            "0": {
-              "name": "comment.line.fence.mam"
+            "3": {
+              "name": "punctuation.definition.markdown"
+            },
+            "4": {
+              "name": "fenced_code.block.language.markdown"
             }
           },
           "endCaptures": {
-            "0": {
-              "name": "comment.line.fence.mam"
+            "3": {
+              "name": "punctuation.definition.markdown"
             }
-          }
+          },
+          "name": "markup.fenced_code.block.markdown"
         },
         {
           "begin": "(^|\\G)(\\s*)(`{3,}|~{3,})\\s*(?i:(html|xml))$",
@@ -535,15 +575,19 @@
             }
           ],
           "beginCaptures": {
-            "0": {
-              "name": "comment.line.fence.mam"
+            "3": {
+              "name": "punctuation.definition.markdown"
+            },
+            "4": {
+              "name": "fenced_code.block.language.markdown"
             }
           },
           "endCaptures": {
-            "0": {
-              "name": "comment.line.fence.mam"
+            "3": {
+              "name": "punctuation.definition.markdown"
             }
-          }
+          },
+          "name": "markup.fenced_code.block.markdown"
         },
         {
           "begin": "(^|\\G)(\\s*)(`{3,}|~{3,})\\s*(?i:(css|scss|less))$",
@@ -561,15 +605,19 @@
             }
           ],
           "beginCaptures": {
-            "0": {
-              "name": "comment.line.fence.mam"
+            "3": {
+              "name": "punctuation.definition.markdown"
+            },
+            "4": {
+              "name": "fenced_code.block.language.markdown"
             }
           },
           "endCaptures": {
-            "0": {
-              "name": "comment.line.fence.mam"
+            "3": {
+              "name": "punctuation.definition.markdown"
             }
-          }
+          },
+          "name": "markup.fenced_code.block.markdown"
         },
         {
           "begin": "(^|\\G)(\\s*)(`{3,}|~{3,})\\s*(?i:(diff|patch))$",
@@ -587,15 +635,19 @@
             }
           ],
           "beginCaptures": {
-            "0": {
-              "name": "comment.line.fence.mam"
+            "3": {
+              "name": "punctuation.definition.markdown"
+            },
+            "4": {
+              "name": "fenced_code.block.language.markdown"
             }
           },
           "endCaptures": {
-            "0": {
-              "name": "comment.line.fence.mam"
+            "3": {
+              "name": "punctuation.definition.markdown"
             }
-          }
+          },
+          "name": "markup.fenced_code.block.markdown"
         },
         {
           "begin": "(^|\\G)(\\s*)(`{3,}|~{3,})\\s*(?i:(markdown|md))$",
@@ -613,15 +665,19 @@
             }
           ],
           "beginCaptures": {
-            "0": {
-              "name": "comment.line.fence.mam"
+            "3": {
+              "name": "punctuation.definition.markdown"
+            },
+            "4": {
+              "name": "fenced_code.block.language.markdown"
             }
           },
           "endCaptures": {
-            "0": {
-              "name": "comment.line.fence.mam"
+            "3": {
+              "name": "punctuation.definition.markdown"
             }
-          }
+          },
+          "name": "markup.fenced_code.block.markdown"
         },
         {
           "begin": "(^|\\G)(\\s*)(`{3,}|~{3,})\\s*(?i:(text|plaintext|plain|txt))$",
@@ -635,15 +691,19 @@
             }
           ],
           "beginCaptures": {
-            "0": {
-              "name": "comment.line.fence.mam"
+            "3": {
+              "name": "punctuation.definition.markdown"
+            },
+            "4": {
+              "name": "fenced_code.block.language.markdown"
             }
           },
           "endCaptures": {
-            "0": {
-              "name": "comment.line.fence.mam"
+            "3": {
+              "name": "punctuation.definition.markdown"
             }
-          }
+          },
+          "name": "markup.fenced_code.block.markdown"
         },
         {
           "begin": "(^|\\G)(\\s*)(`{3,}|~{3,})\\s*(?i:(\\w[\\w+#.-]*))$",
@@ -657,15 +717,19 @@
             }
           ],
           "beginCaptures": {
-            "0": {
-              "name": "comment.line.fence.mam"
+            "3": {
+              "name": "punctuation.definition.markdown"
+            },
+            "4": {
+              "name": "fenced_code.block.language.markdown"
             }
           },
           "endCaptures": {
-            "0": {
-              "name": "comment.line.fence.mam"
+            "3": {
+              "name": "punctuation.definition.markdown"
             }
-          }
+          },
+          "name": "markup.fenced_code.block.markdown"
         }
       ]
     },
