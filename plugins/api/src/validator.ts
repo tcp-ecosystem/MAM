@@ -342,7 +342,7 @@ export interface CompatibilityResult {
  * Checks a plugin against a host MAM version.
  *
  * The manifest's `mamVersion` is treated as a minimum, so a plugin asking for
- * `>=0.1.0` still loads on a newer host. An unparsable requirement is an
+ * `>=2.0.0` still loads on a newer host. An unparsable requirement is an
  * error rather than a silent pass, since guessing here means loading a plugin
  * that may call APIs the host does not have.
  */

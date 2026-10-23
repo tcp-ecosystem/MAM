@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://mam.dev/schema/v1.0.0/sections/javascript.schema.json",
+  "$id": "https://mam.dev/schema/v2.0.0/sections/javascript.schema.json",
   "title": "JavaScript Section Schema",
   "description": "JavaScript code implementations — function definitions, class implementations, type annotations, async support, module systems, and runnable code blocks. Code should follow standard JavaScript style guides.",
   "type": "object",

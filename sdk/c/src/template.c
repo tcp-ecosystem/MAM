@@ -469,7 +469,7 @@ char *mam_template_new_module(const char *name, const char *kind, const char *ru
     variables[count++] = "name";
     variables[count++] = trimmed_name;
     variables[count++] = "version";
-    variables[count++] = "0.1.0";
+    variables[count++] = "2.0.0";
     variables[count++] = "author";
     variables[count++] = "unknown";
     variables[count++] = "runtime";

@@ -47,7 +47,7 @@ provenance and size ceilings.
 |------|------|----------|-------------|
 | manifest | object | Yes | Package metadata, e.g. `{ "name": "orders", "version": "1.0.0" }` |
 | entry | string | Yes | The single module file that ships |
-| target | string | No | Install prefix. Defaults to `./dist/<name>` |
+| target | string | No | Install prefix. Defaults to `./dist/acme-summarizer` |
 
 ## Outputs
 
@@ -79,7 +79,7 @@ nothing else; there is no dependency list to resolve.
 
 ## Layout
 
-```
+```text
 dist/orders/1.0.0/
   manifest.json
   orders.mam
@@ -87,7 +87,7 @@ dist/orders/1.0.0/
 
 | Rule | Value |
 |------|-------|
-| prefix | `./dist/<name>/<version>` |
+| prefix | `./dist/acme-summarizer/2.0.0` |
 | manifest | `manifest.json` at the package root |
 | outside the prefix | nothing is written |
 

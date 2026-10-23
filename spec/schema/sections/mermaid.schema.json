@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://mam.dev/schema/v1.0.0/sections/mermaid.schema.json",
+  "$id": "https://mam.dev/schema/v2.0.0/sections/mermaid.schema.json",
   "title": "Mermaid Section Schema",
   "description": "Visual diagrams using Mermaid syntax — flowcharts, sequence diagrams, state machines, Gantt charts, class diagrams, and more. Supports all Mermaid diagram types with configuration options.",
   "type": "object",

@@ -1,28 +1,37 @@
 ---
+# MAM Metadata
 id: section-inputs
 name: Inputs Section
 version: 2.0.0
 type: module
+
 author: MAM Team
+
 description: >
   Specifies the Inputs section of the MAM source format. The section defines
   the expected input parameters of a module using a table format that names
   each parameter, its type, whether it is required, and its purpose.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - spec
   - section
   - inputs
+
 dependencies:
   - name: mam-spec
     version: "1.0.0"
+
 capabilities:
   - validate
   - extract
   - document
+
 permissions:
   filesystem:
     - read
@@ -177,6 +186,13 @@ def test_inputs():
 ```
 
 ## Examples
+
+### Live check
+
+```python
+sample = "## Inputs\n\n| Name | Type | Required | Description |\n|------|------|----------|-------------|\n| target | string | Yes | Target to process |\n"
+print(extract_inputs(sample))
+```
 
 ### Simple Parameters
 

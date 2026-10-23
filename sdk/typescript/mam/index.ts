@@ -14,7 +14,7 @@ export * from './doctor.js';
 export * from './engines.js';
 
 /** Semantic version of this SDK. */
-export const VERSION = '0.1.0';
+export const VERSION = '2.0.0';
 
 /** Stable SDK identifier used in user agents. */
 export const SDK_NAME = 'mam-typescript';

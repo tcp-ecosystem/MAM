@@ -1,22 +1,30 @@
 ---
+# MAM Metadata
 id: module
 name: Module
 version: 2.0.0
 type: module
+
 author: MAM Team
+
 description: >
   Demonstrates the Module core of MAM: purpose, inputs, outputs, and
   capabilities that define a reusable unit.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - core
   - module
+
 capabilities:
   - process
   - validate
+
 permissions:
   filesystem:
     - read
@@ -110,7 +118,7 @@ def test_process_plain():
 
 ## Examples
 
-### Basic Usage
+### Transform a text sample
 
 ```python
 print(process("hello", flag=True))

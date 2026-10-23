@@ -100,7 +100,7 @@ been depending on which code path happened to run. Also declared the missing
 imported but never listed.
 
 **Versions realigned to 2.0.0.** All 30 publishable packages had drifted to
-`0.1.0` while the canonical `MAM_VERSION` in `ast/src/constants/version.ts` was
+`2.0.0` while the canonical `MAM_VERSION` in `ast/src/constants/version.ts` was
 already `2.0.0`. Package versions, the hardcoded constants in mcp / validator /
 lsp / registry-api / reference / plugins, CLI templates and runtime v2 are now
 all `2.0.0`.

@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://mam.dev/schema/v1.0.0/sections/exports.schema.json",
+  "$id": "https://mam.dev/schema/v2.0.0/sections/exports.schema.json",
   "title": "Exports Section Schema",
   "description": "Declares the public API surface of the module — functions, classes, constants, and types that other modules can import.",
   "type": "object",

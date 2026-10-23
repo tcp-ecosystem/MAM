@@ -1,23 +1,31 @@
 ---
+# MAM Metadata
 id: grammar-system
 name: System Grammar
 version: 2.0.0
 type: module
+
 author: MAM Team
+
 description: >
   Specifies the MAM system grammar: modules, agents, edges, memory, and policy
   declarations, plus a parser and validator for system definitions.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - grammar
   - system
   - specification
+
 capabilities:
   - parse_system
   - validate_system
+
 permissions:
   memory:
     - local
@@ -148,8 +156,7 @@ def test_validate_system_empty():
 
 ## Examples
 
-### Basic Usage
-
+### Parse a system definition
 ```python
 system = parse_system(
     ["recon", "analyzer", "reporter"],

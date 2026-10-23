@@ -180,7 +180,7 @@ describe('MAMConfig interface', () => {
 
 describe('ProjectConfig interface', () => {
   it('should create with required fields', () => {
-    const p: ProjectConfig = { name: 'my-pkg', version: '0.1.0' };
+    const p: ProjectConfig = { name: 'my-pkg', version: '2.0.0' };
     expect(p.name).toBe('my-pkg');
   });
 

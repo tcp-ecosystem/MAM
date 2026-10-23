@@ -508,7 +508,7 @@ class MAMModule:
     def __init__(
         self,
         name: str,
-        version: str = "0.1.0",
+        version: str = "2.0.0",
         author: str = "",
         runtime: str = "python",
         description: str = "",
@@ -534,7 +534,7 @@ class MAMModule:
 
         def __init__(self, name: str):
             self._name = name
-            self._version = "0.1.0"
+            self._version = "2.0.0"
             self._author = ""
             self._runtime = "python"
             self._description = ""
@@ -620,7 +620,7 @@ class MAMModule:
         fm = ast.frontmatter
         return cls(
             name=fm.name or ast.title or "unnamed",
-            version=fm.version or "0.1.0",
+            version=fm.version or "2.0.0",
             author=fm.author or "",
             runtime=fm.runtime or "python",
             description=fm.description or "",

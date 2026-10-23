@@ -34,9 +34,9 @@ describe('parsePackageSpec', () => {
   });
 
   it('should parse git specs', () => {
-    expect(parsePackageSpec('git:https://github.com/user/repo.git#v1.0.0')).toEqual({
+    expect(parsePackageSpec('git:https://github.com/user/repo.git#v2.0.0')).toEqual({
       name: '',
-      versionRange: 'https://github.com/user/repo.git#v1.0.0',
+      versionRange: 'https://github.com/user/repo.git#v2.0.0',
       source: 'git',
     });
     expect(parsePackageSpec('git@github.com:user/repo.git')).toEqual({ name: '', source: 'git' });
@@ -194,9 +194,9 @@ describe('isGitUrl', () => {
 
 describe('parseGitUrl', () => {
   it('should parse repo and ref', () => {
-    expect(parseGitUrl('git+https://github.com/user/repo.git#v1.0.0')).toEqual({
+    expect(parseGitUrl('git+https://github.com/user/repo.git#v2.0.0')).toEqual({
       repo: 'https://github.com/user/repo.git',
-      ref: 'v1.0.0',
+      ref: 'v2.0.0',
     });
   });
 

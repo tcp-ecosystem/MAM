@@ -1,27 +1,36 @@
 ---
+# MAM Metadata
 id: section-outputs
 name: Outputs Section
 version: 2.0.0
 type: module
+
 author: MAM Team
+
 description: >
   Specifies the Outputs section of the MAM source format. The section defines
   the expected output values of a module using a table format.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - spec
   - section
   - outputs
+
 dependencies:
   - name: mam-spec
     version: "1.0.0"
+
 capabilities:
   - validate
   - extract
   - document
+
 permissions:
   filesystem:
     - read
@@ -172,6 +181,13 @@ def test_outputs():
 ```
 
 ## Examples
+
+### Live check
+
+```python
+sample = "## Outputs\n\n| Name | Type | Description |\n|------|------|-------------|\n| result | object | Processed result |\n"
+print(extract_outputs(sample))
+```
 
 ### Simple Outputs
 

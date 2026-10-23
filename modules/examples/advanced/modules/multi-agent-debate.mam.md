@@ -1,30 +1,39 @@
 ---
+# MAM Metadata
 id: multi-agent-debate
 name: Multi-Agent Debate System
 version: 2.0.0
 type: system
+
 author: MAM Team
+
 description: >
   A structured debate system where an Advocate argues FOR a proposition, an
   Opponent argues AGAINST it, and a Judge evaluates both arguments to produce
   a balanced verdict.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - agent
   - multi-agent
   - debate
   - reasoning
   - advanced
+
 dependencies:
   - name: knowledge-graph
     version: ">=1.0.0"
+
 capabilities:
   - argue
   - rebut
   - judge
+
 permissions:
   filesystem:
     - read

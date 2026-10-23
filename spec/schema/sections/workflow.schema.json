@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://mam.dev/schema/v1.0.0/sections/workflow.schema.json",
+  "$id": "https://mam.dev/schema/v2.0.0/sections/workflow.schema.json",
   "title": "Workflow Section Schema",
   "description": "Defines the module execution flow: step sequencing, parallel/sequential execution, error handling, retry policies, and branching logic.",
   "type": "object",

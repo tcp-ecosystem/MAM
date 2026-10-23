@@ -36,7 +36,8 @@ permissions:
 
 ## Purpose
 
-Define a plugin that the host loads at runtime. The plugin declares lifecycle hooks, registers extensions against known contracts, and installs pointcuts that observe or modify host behavior. Copy this file and replace the sample hooks with your own logic.
+Define a plugin that the host loads at runtime. The plugin declares lifecycle hooks, registers
+extensions against known contracts, and installs pointcuts that observe or modify host behavior. Copy this file and replace the sample hooks with your own logic.
 
 ## Inputs
 

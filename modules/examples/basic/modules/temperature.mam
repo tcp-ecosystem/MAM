@@ -1,23 +1,32 @@
 ---
+# MAM Metadata
 id: temperature
 name: Temperature Converter
 version: 2.0.0
 type: module
+
 author: MAM Team
+
 description: >
   Converts between Celsius, Fahrenheit, and Kelvin temperature scales.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - example
   - beginner
   - conversion
   - temperature
+
 dependencies: []
+
 capabilities:
   - convert
+
 permissions:
   filesystem:
     - read

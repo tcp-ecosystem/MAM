@@ -203,7 +203,7 @@ def test_review():
 
 ## Examples
 
-### Basic Usage
+### Worked example
 
 ```python
 team = Team("TeamPolicy")

@@ -1,24 +1,32 @@
 ---
+# MAM Metadata
 id: grammar-prompt
 name: Prompt Grammar
 version: 2.0.0
 type: module
+
 author: MAM Team
+
 description: >
   Specifies the MAM prompt grammar: role, task, constraints, and template
   variables, plus a parser and validator for prompt templates.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - grammar
   - prompt
   - specification
+
 capabilities:
   - parse_prompt
   - render_prompt
   - validate_prompt
+
 permissions:
   memory:
     - local
@@ -152,8 +160,7 @@ def test_validate_prompt_unbalanced():
 
 ## Examples
 
-### Basic Usage
-
+### Parse a prompt template
 ```python
 template = "You are helping with {{module}}. Answer about {{topic}}."
 rendered = render_prompt(template, {"module": "MAM", "topic": "grammar"})

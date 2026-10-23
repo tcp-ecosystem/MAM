@@ -297,7 +297,7 @@ def test_empty_task():
 
 ## Examples
 
-### Basic Usage
+### Plan, delegate and stop an agent run
 
 ```python
 system = {

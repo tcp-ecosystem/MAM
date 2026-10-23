@@ -191,7 +191,7 @@ def test_health_check():
 
 ## Examples
 
-### Basic Usage
+### Fetch a URL through the rate limiter
 
 ```python
 tool = Tool("python")

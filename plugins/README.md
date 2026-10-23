@@ -71,12 +71,12 @@ import type { MAMPlugin } from '@mam/plugin-api';
 const myPlugin: MAMPlugin = {
   manifest: {
     name: '@acme/my-plugin',
-    version: '0.1.0',
+    version: '2.0.0',
     description: 'What it does',
     author: 'ACME',
     license: 'MIT',
     // Must be satisfiable by the host's @mam/plugin-api version.
-    mamVersion: '>=0.1.0',
+    mamVersion: '>=2.0.0',
     main: './dist/index.js',
   },
   sections: [mySectionDefinition],

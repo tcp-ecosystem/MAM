@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://mam.dev/schema/v1.0.0/sections/outputs.schema.json",
+  "$id": "https://mam.dev/schema/v2.0.0/sections/outputs.schema.json",
   "title": "Outputs Section Schema",
   "description": "Declares what the module produces — return values, side effects, output formats, and post-processing rules. Used by downstream modules for chaining and integration.",
   "type": "object",

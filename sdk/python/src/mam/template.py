@@ -351,7 +351,7 @@ def default_variables(name: str, runtime: str = "python") -> Dict[str, str]:
     return {
         "id": slugify(name),
         "name": name.strip(),
-        "version": "0.1.0",
+        "version": "2.0.0",
         "author": "unknown",
         "runtime": runtime,
         "description": f"Describe what {name.strip()} does.",

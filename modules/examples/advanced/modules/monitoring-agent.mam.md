@@ -1,30 +1,39 @@
 ---
+# MAM Metadata
 id: monitoring-agent
 name: System Monitoring Agent
 version: 2.0.0
 type: system
+
 author: MAM Team
+
 description: >
   A monitoring agent that collects system metrics, detects anomalies using
   statistical analysis, and sends alerts. Includes AlertManager and
   MetricsCollector tool modules with filesystem and network permissions.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - agent
   - monitoring
   - alerting
   - metrics
   - advanced
+
 dependencies:
   - name: data-pipeline
     version: ">=1.0.0"
+
 capabilities:
   - collect
   - detect-anomalies
   - send-alert
+
 permissions:
   filesystem:
     - read

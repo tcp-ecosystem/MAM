@@ -1,24 +1,32 @@
 ---
+# MAM Metadata
 id: grammar-workflow
 name: Workflow Grammar
 version: 2.0.0
 type: module
+
 author: MAM Team
+
 description: >
   Specifies the MAM workflow grammar: ordered steps, conditional branches,
   loops, and mermaid flowcharts, plus a parser and validator for workflow
   definitions.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - grammar
   - workflow
   - specification
+
 capabilities:
   - parse_workflow
   - validate_workflow
+
 permissions:
   memory:
     - local
@@ -132,8 +140,7 @@ def test_validate_workflow_empty():
 
 ## Examples
 
-### Basic Usage
-
+### Parse a workflow definition
 ```python
 steps = ["discover", "analyze", "report"]
 parsed = parse_workflow(steps)

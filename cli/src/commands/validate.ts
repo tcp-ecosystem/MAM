@@ -1334,6 +1334,17 @@ export class MAMValidator {
       diagnostics.push({ ruleId: 'PARSE_ERROR', message: error.message, severity: 'error', line: (error as any).line || 0, column: (error as any).column || 0, source: filePath });
     }
 
+    // One root cause, one diagnostic. Without frontmatter, every downstream
+    // check (missing name/version, section checks, parser errors) is a
+    // consequence of the same problem — reporting six errors for an empty
+    // file is noise, not signal.
+    if (diagnostics.some(d => d.ruleId === 'FM001')) {
+      diagnostics = diagnostics.filter(d =>
+        d.ruleId === 'FM001' ||
+        !/^(FM00[2-7]|PARSE_ERROR|SEC\d{3}|CB\d{3}|LNK\d{3}|TBL\d{3})$/.test(d.ruleId),
+      );
+    }
+
     // Severity filter
     if (options.severity) {
       diagnostics = filterDiagnosticsBySeverity(diagnostics, options.severity);
@@ -1497,10 +1508,11 @@ export async function validateCommand(options: ValidateOptions): Promise<void> {
       console.log(chalk.gray(`\n  Validated in ${aggregate.stats.timeMs}ms | ${aggregate.stats.rulesChecked} rules | ${aggregate.stats.linesChecked} lines${filesPart}`));
     }
 
-    process.exit(aggregate.valid ? 0 : 1);
+    // exitCode (not exit) so piped stdout — the editor's diagnostics — flushes.
+    process.exitCode = aggregate.valid ? 0 : 1;
   } catch (error) {
     console.error(chalk.red(`  Error: ${(error as Error).message}`));
-    process.exit(1);
+    process.exitCode = 1;
   }
 }
 

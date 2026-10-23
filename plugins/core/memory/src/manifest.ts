@@ -14,7 +14,7 @@ export { MEMORY_SECTION_NAME, MEMORY_KEY_PATTERN, RESERVED_MEMORY_PREFIX };
 
 /**
  * `mamVersion` was `>=1.0.0` while the API package this plugin compiles
- * against is `0.1.0`, so the requirement could never be satisfied.
+ * against is `2.0.0`, so the requirement could never be satisfied.
  * `main` pointed at `./index.js`, but the package only ships `dist`, so the
  * declared entry did not exist in the published artifact.
  */
@@ -24,7 +24,7 @@ export const MEMORY_MANIFEST: PluginManifest = {
   description: 'Memory and state management for MAM modules',
   author: 'MAM Team',
   license: 'MIT',
-  mamVersion: '>=0.1.0',
+  mamVersion: '>=2.0.0',
   keywords: ['memory', 'state', 'persistence'],
   main: './dist/index.js',
 };

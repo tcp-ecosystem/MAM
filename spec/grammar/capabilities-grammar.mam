@@ -1,23 +1,31 @@
 ---
+# MAM Metadata
 id: grammar-capabilities
 name: Capabilities Grammar
 version: 2.0.0
 type: module
+
 author: MAM Team
+
 description: >
   Describes the grammar of the MAM capabilities section: functional
   prerequisites a module needs from its execution environment.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - grammar
   - capabilities
+
 capabilities:
   - parse
   - validate
   - summarize
+
 permissions:
   filesystem:
     - read
@@ -165,8 +173,7 @@ def test_summarize():
 
 ## Examples
 
-### Basic Usage
-
+### Parse a capability list
 ```python
 doc = "- runtime:python:3.12+\n- network:https\n- storage:sqlite"
 print(summarize(doc))

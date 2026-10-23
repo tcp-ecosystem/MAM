@@ -40,7 +40,7 @@ gradle buildPlugin
 ```
 
 The distributable archive is written to
-`build/distributions/mam-language-jetbrains-0.1.0.zip`. Install it from
+`build/distributions/mam-language-jetbrains-2.0.0.zip`. Install it from
 *Settings | Plugins | Install Plugin from Disk*, or upload it to the
 [JetBrains Marketplace](https://plugins.jetbrains.com).
 

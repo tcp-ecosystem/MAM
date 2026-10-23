@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://mam.dev/schema/v1.0.0/sections/inputs.schema.json",
+  "$id": "https://mam.dev/schema/v2.0.0/sections/inputs.schema.json",
   "title": "Inputs Section Schema",
   "description": "Declares the expected input parameters, their types, defaults, validation rules, and inter-parameter dependencies. Used by the orchestrator for argument construction and validation.",
   "type": "object",

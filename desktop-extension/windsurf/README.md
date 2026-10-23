@@ -21,7 +21,7 @@ lives in `desktop-extension/vscode/`.
 ### Option A — install the `.vsix`
 
 ```bash
-windsurf --install-extension /path/to/mam-language-0.1.0.vsix
+windsurf --install-extension /path/to/mam-language-2.0.0.vsix
 ```
 
 ### Option B — VS Code Marketplace

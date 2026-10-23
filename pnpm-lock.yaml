@@ -1348,7 +1348,7 @@ packages:
     resolution: {integrity: sha512-2AT6j+gXe/1ueqbW6fLZJiIw3F8iXGJtt0yDrZaBhAZEG1raiTxKWU+IPqMCzQAXOUCKdA4UDMgacKH25XG2Cw==}
     engines: {node: '>=4'}
 
-  is-unicode-supported@0.1.0:
+  is-unicode-supported@2.0.0:
     resolution: {integrity: sha512-knxG2q4UC3u8stRGyAVJCOdxFmv5DZiRcdlIaAQXAbSfJya+OhopNotLQrstBhququ4ZpuKbDc/8S6mgXgPFPw==}
     engines: {node: '>=10'}
 
@@ -2528,7 +2528,7 @@ snapshots:
     dependencies:
       better-path-resolve: 1.0.0
 
-  is-unicode-supported@0.1.0: {}
+  is-unicode-supported@2.0.0: {}
 
   is-unicode-supported@1.3.0: {}
 
@@ -2567,7 +2567,7 @@ snapshots:
   log-symbols@4.1.0:
     dependencies:
       chalk: 4.1.2
-      is-unicode-supported: 0.1.0
+      is-unicode-supported: 2.0.0
 
   log-symbols@6.0.0:
     dependencies:
@@ -2635,7 +2635,7 @@ snapshots:
       cli-cursor: 3.1.0
       cli-spinners: 2.9.2
       is-interactive: 1.0.0
-      is-unicode-supported: 0.1.0
+      is-unicode-supported: 2.0.0
       log-symbols: 4.1.0
       strip-ansi: 6.0.1
       wcwidth: 1.0.1

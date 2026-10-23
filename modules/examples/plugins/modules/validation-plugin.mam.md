@@ -1,25 +1,34 @@
 ---
+# MAM Metadata
 id: validation-plugin
 name: Validation Plugin
 version: 2.0.0
 type: plugin
+
 author: MAM Examples
+
 description: >
   Registers custom validation rules for business and security policies.
+
 license: MIT
+
 runtime:
   language: typescript
   version: ">=5.0"
+
 tags:
   - plugin
   - validation
   - rules
   - security
   - example
+
 dependencies: []
+
 capabilities:
   - check-rules
   - check-security
+
 permissions:
   filesystem:
     - read
@@ -105,9 +114,9 @@ def test_validate_module():
 
 Validate a module and confirm the findings are empty.
 
-```text
-validate_module("custom-section")
-# returns {"module": "custom-section", "valid": true, "findings": []}
+```python
+result = validate_module("custom-section")
+print(result["valid"])
 ```
 
 ## References

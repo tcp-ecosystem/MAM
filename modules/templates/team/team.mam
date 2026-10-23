@@ -49,7 +49,8 @@ permissions:
 
 ## Purpose
 
-Starter template for a MAM team. A team groups members with distinct roles and a shared policy so that work can be assigned, coordinated, and reviewed. Replace the members, roles, and handoff order for your own team.
+Starter template for a MAM team. A team groups members with distinct roles and a shared policy so
+that work can be assigned, coordinated, and reviewed. Replace the members, roles, and handoff order for your own team.
 
 ## Inputs
 
@@ -203,7 +204,7 @@ def test_review():
 
 ## Examples
 
-### Basic Usage
+### Worked example
 
 ```python
 team = Team("TeamPolicy")

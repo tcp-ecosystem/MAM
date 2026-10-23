@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://mam.dev/schema/v1.0.0/sections/plugins.schema.json",
+  "$id": "https://mam.dev/schema/v2.0.0/sections/plugins.schema.json",
   "title": "Plugins Section Schema",
   "description": "Declares plugin dependencies, load order, version constraints, and conflict resolution. Plugins extend module functionality at runtime.",
   "type": "object",

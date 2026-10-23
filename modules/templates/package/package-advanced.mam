@@ -142,7 +142,7 @@ install continues.
 
 ## Layout
 
-```
+```text
 dist/orders/3.0.0/
   manifest.json
   lock.json
@@ -154,7 +154,7 @@ dist/orders/3.0.0/
 
 | Rule | Value |
 |------|-------|
-| prefix | `./dist/<name>/<version>` |
+| prefix | `./dist/acme-summarizer/2.0.0` |
 | manifest | `manifest.json` at the package root |
 | lockfile | `lock.json`, written on every install |
 | provenance | `provenance.json`, written once per release |

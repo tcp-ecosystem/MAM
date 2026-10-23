@@ -244,7 +244,7 @@ def test_search():
 
 ## Examples
 
-### Basic Usage
+### Store, recall and expire a value
 
 ```python
 mem = MemoryStore()

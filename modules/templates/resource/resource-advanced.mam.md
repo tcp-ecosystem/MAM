@@ -105,7 +105,7 @@ Remove the resource once every dependent has released it.
 
 | Field | Value | Description |
 |-------|-------|-------------|
-| name | example-provider | Provider that manages the resource |
+| name | aws-sqs | Provider that manages the resource |
 | endpoint | api.example.com | Provider API endpoint |
 | auth | environment | Credential source |
 | timeout_seconds | 30 | Per-request timeout |
@@ -152,7 +152,7 @@ flowchart TD
 
 ```python
 class Resource:
-    def __init__(self, provider="example-provider", spec=None,
+    def __init__(self, provider="aws-sqs", spec=None,
                  settle_seconds=0, dependents=None):
         self.provider = provider
         self.spec = spec or {}
@@ -205,7 +205,7 @@ class Resource:
 ```yaml
 spec:
   size: small
-provider: example-provider
+provider: aws-sqs
 settle_seconds: 1
 ```
 
@@ -239,7 +239,7 @@ def test_drift_and_teardown():
 
 ```python
 resource = Resource(
-    provider="example-provider",
+    provider="aws-sqs",
     spec={"size": "small"},
     dependents=["logs"],
 )

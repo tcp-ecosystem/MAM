@@ -9,7 +9,7 @@
     matter, <code>##</code> sections, mermaid diagrams and fenced code blocks.
     Errors reported by <code>mam validate</code> are highlighted in the editor.</p>
   ]]></description>
-  <version>0.1.0</version>
+  <version>2.0.0</version>
   <change-notes><![CDATA[
     Initial scaffold release.
   ]]></change-notes>

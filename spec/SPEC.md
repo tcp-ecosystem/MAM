@@ -1,4 +1,4 @@
-# MAM Specification v1.0.0
+# MAM Specification v2.0.0
 
 > **Machine Agent Modules — The Universal Intermediate Representation for AI Systems**
 

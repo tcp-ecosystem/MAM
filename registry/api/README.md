@@ -100,7 +100,7 @@ import { checkSchemaParity, getResolverOperations, describeApi } from '@mam/regi
 checkSchemaParity();
 // { inSync: true, unreachable: [], unimplemented: [] }
 
-describeApi();   // MAM Registry API v0.1.0 — 6 queries, 3 mutations, 1 module fields
+describeApi();   // MAM Registry API v2.0.0 — 6 queries, 3 mutations, 1 module fields
 ```
 
 - `unreachable` — implemented in a resolver but absent from the schema, so no

@@ -1,15 +1,21 @@
 ---
+# MAM Metadata
 id: memory-plugin
 name: Memory Plugin
 version: 2.0.0
 type: plugin
+
 author: MAM Examples
+
 description: >
   Registers memory backends for Redis, PostgreSQL and in memory storage.
+
 license: MIT
+
 runtime:
   language: typescript
   version: ">=5.0"
+
 tags:
   - plugin
   - memory
@@ -17,11 +23,14 @@ tags:
   - postgresql
   - cache
   - example
+
 dependencies: []
+
 capabilities:
   - store
   - retrieve
   - expire
+
 permissions:
   filesystem:
     - read
@@ -116,9 +125,9 @@ def test_store_value():
 
 Store a greeting in the memory backend and confirm the result.
 
-```text
-store_value("greeting", "hello")
-# returns {"key": "greeting", "stored": true}
+```python
+result = store_value("greeting", "hello")
+print(result["stored"])
 ```
 
 ## References

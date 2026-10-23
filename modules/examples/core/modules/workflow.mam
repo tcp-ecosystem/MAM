@@ -1,22 +1,30 @@
 ---
+# MAM Metadata
 id: workflow
 name: Workflow
 version: 2.0.0
 type: workflow
+
 author: MAM Team
+
 description: >
   Demonstrates the Workflow core of a MAM module: ordered steps, branching,
   and final output.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - core
   - workflow
+
 capabilities:
   - run
   - evaluate
+
 permissions:
   memory:
     - local
@@ -112,7 +120,7 @@ def test_run():
 
 ## Examples
 
-### Basic Usage
+### Execute a workflow with dependency checks
 
 ```python
 print(run([1, 9]))

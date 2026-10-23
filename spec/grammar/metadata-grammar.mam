@@ -1,23 +1,31 @@
 ---
+# MAM Metadata
 id: grammar-metadata
 name: Metadata Grammar
 version: 2.0.0
 type: module
+
 author: MAM Team
+
 description: >
   Describes the grammar of the MAM metadata layer: the YAML front matter
   block that carries identity, versioning, authorship, and configuration.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - grammar
   - metadata
+
 capabilities:
   - parse
   - validate
   - describe
+
 permissions:
   filesystem:
     - read
@@ -165,13 +173,12 @@ def test_validate_bad_version():
 
 def test_describe():
     doc = "id: a\nname: A\nversion: 2.0.0\nauthor: x\nruntime: python"
-    assert describe(doc) == "A v1.0.0 by x"
+    assert describe(doc) == "A v2.0.0 by x"
 ```
 
 ## Examples
 
-### Basic Usage
-
+### Parse module metadata
 ```python
 doc = "id: hello\nname: Hello\nversion: 2.0.0\nauthor: MAM Team\nruntime: python"
 print(describe(doc))

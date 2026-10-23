@@ -1,31 +1,40 @@
 ---
+# MAM Metadata
 id: knowledge-graph
 name: Knowledge Graph Builder
 version: 2.0.0
 type: workflow
+
 author: MAM Team
+
 description: >
   A multi step workflow that ingests text, extracts entities and relationships,
   builds a knowledge graph, and supports natural language queries.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - knowledge-graph
   - workflow
   - nlp
   - entity-extraction
   - advanced
+
 dependencies:
   - name: content-pipeline
     version: ">=1.0.0"
+
 capabilities:
   - ingest
   - extract-entities
   - build-graph
   - query
   - respond
+
 permissions:
   filesystem:
     - read

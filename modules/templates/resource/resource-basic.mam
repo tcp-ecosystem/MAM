@@ -54,7 +54,7 @@ reporting.
 | Name | Type | Required | Description |
 |------|------|----------|-------------|
 | spec | object | Yes | Desired state, e.g. `{ "size": "small" }` |
-| provider | string | No | Provider name. Defaults to `example-provider` |
+| provider | string | No | Provider name. Defaults to `aws-sqs` |
 
 ## Outputs
 
@@ -86,7 +86,7 @@ Remove the resource through the provider.
 
 | Field | Value | Description |
 |-------|-------|-------------|
-| name | example-provider | Provider that manages the resource |
+| name | aws-sqs | Provider that manages the resource |
 | endpoint | api.example.com | Provider API endpoint |
 | auth | environment | Credential source |
 
@@ -122,7 +122,7 @@ flowchart TD
 
 ```python
 class Resource:
-    def __init__(self, provider="example-provider", spec=None):
+    def __init__(self, provider="aws-sqs", spec=None):
         self.provider = provider
         self.spec = spec or {}
         self.state = {}
@@ -158,7 +158,7 @@ class Resource:
 ```yaml
 spec:
   size: small
-provider: example-provider
+provider: aws-sqs
 ```
 
 ### Expected
@@ -184,7 +184,7 @@ def test_provision_and_reconcile():
 ## Examples
 
 ```python
-resource = Resource(provider="example-provider", spec={"size": "small"})
+resource = Resource(provider="aws-sqs", spec={"size": "small"})
 resource.provision()
 resource.reconcile()
 print(resource.status())

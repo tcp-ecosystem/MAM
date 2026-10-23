@@ -1,15 +1,21 @@
 ---
+# MAM Metadata
 id: export-plugin
 name: Export Plugin
 version: 2.0.0
 type: plugin
+
 author: MAM Examples
+
 description: >
   Registers custom export formats for HTML, PDF and DOCX output.
+
 license: MIT
+
 runtime:
   language: typescript
   version: ">=5.0"
+
 tags:
   - plugin
   - export
@@ -17,11 +23,14 @@ tags:
   - pdf
   - docx
   - example
+
 dependencies: []
+
 capabilities:
   - export-html
   - export-pdf
   - export-docx
+
 permissions:
   filesystem:
     - write
@@ -111,9 +120,9 @@ def test_export_module():
 
 Export a module to HTML and confirm the descriptor.
 
-```text
-export_module("html")
-# returns {"format": "html", "status": "ready"}
+```python
+result = export_module("html")
+print(result["status"])
 ```
 
 ## References

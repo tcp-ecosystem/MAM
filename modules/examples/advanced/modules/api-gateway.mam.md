@@ -1,31 +1,40 @@
 ---
+# MAM Metadata
 id: api-gateway
 name: API Gateway with Rate Limiting
 version: 2.0.0
 type: system
+
 author: MAM Team
+
 description: >
   An API gateway system with rate limiting, authentication middleware, and
   request routing. Demonstrates tool based architecture with network and
   execution permissions.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - api
   - gateway
   - rate-limiting
   - auth
   - advanced
+
 dependencies:
   - name: monitoring-agent
     version: ">=1.0.0"
+
 capabilities:
   - receive-request
   - check-limit
   - validate-token
   - match-route
+
 permissions:
   network:
     - inbound

@@ -1,27 +1,36 @@
 ---
+# MAM Metadata
 id: section-references
 name: References Section
 version: 2.0.0
 type: module
+
 author: MAM Team
+
 description: >
   Specifies the References section of the MAM source format. The section lists
   external links and documentation that complement the module functionality.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - spec
   - section
   - references
+
 dependencies:
   - name: mam-spec
     version: "1.0.0"
+
 capabilities:
   - validate
   - extract
   - document
+
 permissions:
   filesystem:
     - read
@@ -179,6 +188,13 @@ def test_references():
 ```
 
 ## Examples
+
+### Live check
+
+```python
+sample = "## References\n\n- [MAM specification](https://example.com/mam)\n"
+print(extract_references(sample))
+```
 
 ### Official Documentation
 

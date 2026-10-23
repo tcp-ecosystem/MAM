@@ -1,28 +1,37 @@
 ---
+# MAM Metadata
 id: section-imports
 name: Imports Section
 version: 2.0.0
 type: module
+
 author: MAM Team
+
 description: >
   Specifies the Imports section of the MAM source format. The section declares
   the modules, packages, and symbols that the code blocks of the module need
   in order to run.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - spec
   - section
   - imports
+
 dependencies:
   - name: mam-spec
     version: "1.0.0"
+
 capabilities:
   - validate
   - extract
   - document
+
 permissions:
   filesystem:
     - read
@@ -173,9 +182,16 @@ def test_imports():
 
 ## Examples
 
-### Standard Library
+### Live check
 
 ```python
+sample = "## Imports\n\n- name: os\n"
+print(extract_imports(sample))
+```
+
+### Standard Library
+
+```text
 import os
 import sys
 import json
@@ -184,7 +200,7 @@ from pathlib import Path
 
 ### Third Party
 
-```python
+```text
 import requests
 from flask import Flask, request
 from sqlalchemy import create_engine
@@ -192,7 +208,7 @@ from sqlalchemy import create_engine
 
 ### Local Modules
 
-```python
+```text
 from . import mymodule
 from .utils import helper_function
 ```

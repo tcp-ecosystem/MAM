@@ -46,7 +46,8 @@ permissions:
 
 ## Purpose
 
-Starter template for a MAM tool. A tool exposes a provider plus a set of capabilities that other modules can call. Replace the provider name, the capability list, and the permission scopes to match your integration.
+Starter template for a MAM tool. A tool exposes a provider plus a set of capabilities that other
+modules can call. Replace the provider name, the capability list, and the permission scopes to match your integration.
 
 ## Inputs
 
@@ -191,7 +192,7 @@ def test_health_check():
 
 ## Examples
 
-### Basic Usage
+### Fetch a URL through the rate limiter
 
 ```python
 tool = Tool("python")

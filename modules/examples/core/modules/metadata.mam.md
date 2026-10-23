@@ -1,23 +1,31 @@
 ---
+# MAM Metadata
 id: metadata
 name: Metadata
 version: 2.0.0
 type: module
+
 author: MAM Team
+
 description: >
   Demonstrates the Metadata core of a MAM module: identity, versioning,
   and front matter handling.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - core
   - metadata
+
 capabilities:
   - parse
   - validate
   - describe
+
 permissions:
   filesystem:
     - read
@@ -27,7 +35,8 @@ permissions:
 
 ## Purpose
 
-Shows how MAM modules carry machine readable identity in front matter: id, name, version, author, license, tags, runtime, capabilities, and permissions. This module parses, validates, and describes a metadata document.
+Shows how MAM modules carry machine readable identity in front matter: id, name, version, author,
+license, tags, runtime, capabilities, and permissions. This module parses, validates, and describes a metadata document.
 
 ## Inputs
 
@@ -137,7 +146,7 @@ def test_validate_missing():
 
 ## Examples
 
-### Basic Usage
+### Read metadata from a parsed module
 
 ```python
 doc = "id: hello\nname: Hello\nversion: 2.0.0\nauthor: MAM Team\nruntime: python"

@@ -1,6 +1,6 @@
 # MAM Specification
 
-> The official specification for Machine Agent Modules (MAM) v1.0.0
+> The official specification for Machine Agent Modules (MAM) v2.0.0
 
 This package contains the formal specification for MAM, including grammar definitions, JSON schemas, and section documentation.
 

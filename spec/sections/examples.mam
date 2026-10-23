@@ -1,28 +1,37 @@
 ---
+# MAM Metadata
 id: section-examples
 name: Examples Section
 version: 2.0.0
 type: module
+
 author: MAM Team
+
 description: >
   Specifies the Examples section of the MAM source format. The section carries
   usage demonstrations, sample code, and practical illustrations of how a
   module works.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - spec
   - section
   - examples
+
 dependencies:
   - name: mam-spec
     version: "1.0.0"
+
 capabilities:
   - validate
   - extract
   - document
+
 permissions:
   filesystem:
     - read
@@ -169,8 +178,14 @@ def test_examples():
 
 ## Examples
 
-### Basic Usage
+### Live check
 
+```python
+sample = "## Examples\n\n```python\nprint(\"hello\")\n```\n"
+print(extract_examples(sample))
+```
+
+### Show a complete example set
 ```python
 def greet(name):
     return "Hello, " + name

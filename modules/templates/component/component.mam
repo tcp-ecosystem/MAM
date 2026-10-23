@@ -33,7 +33,8 @@ permissions:
 
 ## Purpose
 
-Provide a reusable unit with a clear boundary. The component declares its inputs, its outputs, and a contract that callers can rely on. Copy this file and replace the sample transform with your own logic.
+Provide a reusable unit with a clear boundary. The component declares its inputs, its outputs, and a
+contract that callers can rely on. Copy this file and replace the sample transform with your own logic.
 
 ## Inputs
 

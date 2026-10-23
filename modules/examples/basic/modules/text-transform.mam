@@ -1,23 +1,32 @@
 ---
+# MAM Metadata
 id: text-transform
 name: Text Transform
 version: 2.0.0
 type: module
+
 author: MAM Team
+
 description: >
   Transforms text between different cases and formats with length tracking.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - example
   - beginner
   - text
   - transformation
+
 dependencies: []
+
 capabilities:
   - transform
+
 permissions:
   filesystem:
     - read

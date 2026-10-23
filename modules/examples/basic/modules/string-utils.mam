@@ -1,24 +1,33 @@
 ---
+# MAM Metadata
 id: string-utils
 name: String Utilities
 version: 2.0.0
 type: module
+
 author: MAM Team
+
 description: >
   Common string manipulation utilities with Unicode support and error
   handling.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - example
   - beginner
   - string
   - utilities
+
 dependencies: []
+
 capabilities:
   - manipulate
+
 permissions:
   filesystem:
     - read

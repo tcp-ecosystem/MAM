@@ -35,7 +35,7 @@ describe('Plugin Types', () => {
       description: 'test plugin',
       author: 'tester',
       license: 'MIT',
-      mamVersion: '0.1.0',
+      mamVersion: '2.0.0',
       keywords: [],
       main: 'index.js',
     };
@@ -50,7 +50,7 @@ describe('Plugin Types', () => {
       description: 'A test manifest',
       author: 'tester',
       license: 'MIT',
-      mamVersion: '0.1.0',
+      mamVersion: '2.0.0',
       keywords: ['test', 'example'],
       main: 'index.js',
     };
@@ -86,7 +86,7 @@ describe('Plugin Types', () => {
         description: 'minimal plugin',
         author: 'test',
         license: 'MIT',
-        mamVersion: '0.1.0',
+        mamVersion: '2.0.0',
         keywords: [],
         main: 'index.js',
       },
@@ -172,9 +172,9 @@ describe('Barrel utilities (index.ts)', () => {
   });
 
   it('isPluginApiCompatible should require host >= minimum', () => {
-    expect(isPluginApiCompatible('0.2.0', '0.1.0')).toBe(true);
-    expect(isPluginApiCompatible('0.1.0', '0.1.0')).toBe(true);
-    expect(isPluginApiCompatible('0.0.9', '0.1.0')).toBe(false);
+    expect(isPluginApiCompatible('0.2.0', '2.0.0')).toBe(true);
+    expect(isPluginApiCompatible('2.0.0', '2.0.0')).toBe(true);
+    expect(isPluginApiCompatible('0.0.9', '2.0.0')).toBe(false);
   });
 
   it('assertMAMPlugin should pass a valid plugin and throw otherwise', () => {

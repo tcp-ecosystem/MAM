@@ -4,6 +4,18 @@ Working example modules. Unlike [`../templates/`](../templates/), which are
 starting points you fill in, everything here is a **complete, runnable module**
 with real logic, real tests and a concrete domain.
 
+Every folder follows the same layout, taken from [`advanced/`](./advanced):
+
+```text
+modules/examples/<folder>/
+├── system.mam                 # composition root (type: system)
+├── system.mam.md              # canonical twin
+├── mam.toml                   # project manifest
+└── modules/
+    ├── example.mam            # the worked module
+    └── example.mam.md         # byte-identical canonical twin
+```
+
 Each `.mam` has a byte-identical `.mam.md` twin, per the `full-mam.md` V1
 specification in which `.mam.md` is the canonical module format.
 
@@ -36,8 +48,9 @@ folder at `modules/examples/<type>/` containing a worked example of that type.
 
 ## Example systems
 
-The folders above are single modules. These pre-existing folders are complete
-**systems** — each has a `system.mam` that composes several modules:
+Every folder is a complete **system**: `system.mam` composes the modules in
+`modules/`. The single-type folders compose one worked example each; these
+folders compose several:
 
 | Folder | Composes |
 |--------|----------|
@@ -46,42 +59,49 @@ The folders above are single modules. These pre-existing folders are complete
 | [`core/`](./core) | configuration, metadata, module, workflow |
 | [`plugins/`](./plugins) | custom-section, export-plugin, memory-plugin, runtime-plugin, validation-plugin |
 | [`security-system/`](./security-system) | recon, analyzer, reporter |
-
-A handful of modules also sit loose at the top of this folder from earlier work
-(`authentication`, `bug-hunter`, `data_pipeline`, `hello`, `memory`, `planner`,
-`prompt`, `rag`, `security`, `workflow`).
+| [`scenarios/`](./scenarios) | End-to-end domain scenarios: authentication, bug-hunter, data_pipeline, hello, planner, prompt, rag, security, workflow |
 
 ## File format
 
-Examples use a compact frontmatter block, distinct from the template style:
+Examples use the canonical frontmatter from `plan-doc/full-mam.md`:
 
 ```yaml
 ---
+# MAM Metadata
 id: example-tool
 name: Rate-Limited HTTP Fetcher
 version: 2.0.0
 type: tool
+provider: python
+
 author: MAM Team
+
 description: >
   One or more lines of folded description.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - example
   - tool
+
 dependencies: []
+
 capabilities:
   - fetch
+
 permissions:
   filesystem:
     - read
 ---
 ```
 
-Fields run together with no blank lines, and there is no `# MAM Metadata`
-comment marker. That marker is a template convention; examples stay terse.
+The `# MAM Metadata` marker is kept, and metadata groups are separated by one
+blank line exactly as the specification shows.
 
 Every example then carries the full V1 surface: `Purpose`, `Inputs`, `Outputs`,
 `Capabilities`, `Rules`, `Workflow` (with a Mermaid diagram), `Python`, `Tests`
@@ -102,7 +122,8 @@ Every example then carries the full V1 surface: `Purpose`, `Inputs`, `Outputs`,
 - **The diagram is a view, not a second source of truth.** If the prose and the
   Python change, the diagram changes with them.
 - **Examples link back to templates.** Each `## References` points at the
-  matching `../../templates/<type>/` folder, so a reader can go from a working
+  matching `../../../templates/<type>/` folder (three levels up from
+  `modules/examples/<folder>/modules/`), so a reader can go from a working
   example to the starting point.
 
 ## Related

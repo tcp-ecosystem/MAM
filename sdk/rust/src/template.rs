@@ -208,7 +208,7 @@ pub fn default_variables(name: &str, runtime: &str) -> BTreeMap<String, String> 
     let mut variables = BTreeMap::new();
     variables.insert("id".to_string(), slugify(name));
     variables.insert("name".to_string(), name.trim().to_string());
-    variables.insert("version".to_string(), "0.1.0".to_string());
+    variables.insert("version".to_string(), "2.0.0".to_string());
     variables.insert("author".to_string(), "unknown".to_string());
     variables.insert("runtime".to_string(), runtime.to_string());
     variables.insert(

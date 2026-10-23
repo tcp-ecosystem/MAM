@@ -13,7 +13,7 @@ function initializeParams(protocolVersion = '2024-11-05') {
   return {
     protocolVersion,
     capabilities: {},
-    clientInfo: { name: 'test-client', version: '0.1.0' },
+    clientInfo: { name: 'test-client', version: '2.0.0' },
   };
 }
 

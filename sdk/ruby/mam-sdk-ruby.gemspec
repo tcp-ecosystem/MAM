@@ -1,6 +1,6 @@
 Gem::Specification.new do |spec|
   spec.name = "mam-sdk-ruby"
-  spec.version = "0.1.0"
+  spec.version = "2.0.0"
   spec.summary = "Dependency-free Ruby SDK for Machine Agent Modules files"
   spec.authors = ["MAM maintainers"]
   spec.files = Dir["lib/**/*.rb", "README.md", "task.md", "update.md"]

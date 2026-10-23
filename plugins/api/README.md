@@ -22,11 +22,11 @@ import type { MAMPlugin } from '@mam/plugin-api';
 const myPlugin: MAMPlugin = {
   manifest: {
     name: '@acme/my-plugin',
-    version: '0.1.0',
+    version: '2.0.0',
     description: 'What it does',
     author: 'ACME',
     license: 'MIT',
-    mamVersion: '>=0.1.0',
+    mamVersion: '>=2.0.0',
     main: './dist/index.js',
   },
   rules: [{
@@ -71,14 +71,14 @@ interface PluginManifest {
   author: string;
   license: string;
   main: string;             // must be a file the package actually ships
-  mamVersion?: string;      // e.g. '>=0.1.0'
+  mamVersion?: string;      // e.g. '>=2.0.0'
   keywords?: string[];
   dependencies?: string[];
 }
 ```
 
 > `mamVersion` is checked with `validatePluginCompatibility`, which treats it as
-> a **minimum**. A manifest requiring `>=1.0.0` cannot load against a `0.1.0`
+> a **minimum**. A manifest requiring `>=1.0.0` cannot load against a `2.0.0`
 > API. Several plugins in this repo shipped exactly that bug.
 
 ### Sections, rules, renderers
@@ -247,7 +247,7 @@ Runtime constant lists accompany the union types: `ALL_HOOK_NAMES`,
 ```typescript
 import { compareApiVersions, isPluginApiCompatible, assertMAMPlugin, describePluginApi } from '@mam/plugin-api';
 
-isPluginApiCompatible('0.2.0', '0.1.0');   // true
+isPluginApiCompatible('0.2.0', '2.0.0');   // true
 assertMAMPlugin(value);                     // throws a named TypeError
 ```
 

@@ -127,7 +127,7 @@ report it without re-deriving the logic.
 | filesystem | `filesystem.<verb>` | `write` | Denied under this scope, allowed elsewhere |
 | network | `network.<host>` | `internal` | Internal hosts are not reachable |
 | shell | `shell.<verb>` | `rm` | Destructive shell verbs are refused |
-| secret | `secret.<name>` | `secret.*` | Any secret is refused |
+| secret | `secret.*` | `secret.*` | Any secret is refused |
 
 ## Evaluation Order
 

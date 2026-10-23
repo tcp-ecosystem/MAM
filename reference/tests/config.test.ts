@@ -198,13 +198,13 @@ describe('mergeConfigs', () => {
   it('should shallow merge project', () => {
     const base: MAMConfig = {
       version: '1',
-      project: { name: 'old', version: '0.1.0' },
+      project: { name: 'old', version: '2.0.0' },
     };
     const result = mergeConfigs(base, {
       project: { name: 'new' },
     });
     expect(result.project!.name).toBe('new');
-    expect(result.project!.version).toBe('0.1.0');
+    expect(result.project!.version).toBe('2.0.0');
   });
 
   it('should shallow merge build', () => {

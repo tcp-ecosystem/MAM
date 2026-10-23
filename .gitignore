@@ -111,4 +111,6 @@ desktop-extension/vscode/*.vsix
 
 
 # awesome-mam lives in its own repo (tcp-ecosystem/awesome-mam)
-/awesome-mam/
+awesome-mam/
+crazy-mam-tool/
+OLD/

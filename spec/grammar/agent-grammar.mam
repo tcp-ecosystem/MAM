@@ -1,23 +1,31 @@
 ---
+# MAM Metadata
 id: grammar-agent
 name: Agent Grammar
 version: 2.0.0
 type: module
+
 author: MAM Team
+
 description: >
   Specifies the MAM agent grammar: role, goal, tools, memory, and handoff
   declarations, plus a parser and validator for agent definitions.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - grammar
   - agent
   - specification
+
 capabilities:
   - parse_agent
   - validate_agent
+
 permissions:
   memory:
     - local
@@ -143,8 +151,7 @@ def test_validate_agent_bad_memory():
 
 ## Examples
 
-### Basic Usage
-
+### Parse and validate an agent definition
 ```python
 agent = parse_agent("Research", "Gather findings", tools=["Search"], memory="shared")
 errors = validate_agent(agent)

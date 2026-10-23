@@ -16,7 +16,7 @@ module Mam
   # Package facade and shared SDK identity.
   module Mam
     # Semantic SDK version.
-    VERSION = '0.1.0'
+    VERSION = '2.0.0'
     # Stable user-agent component.
     SDK_NAME = 'mam-ruby'
 

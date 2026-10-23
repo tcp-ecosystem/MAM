@@ -187,8 +187,78 @@ export class MAMTransformer {
   private extractMermaid(content: ContentNode[]): string | null {
     for (const node of content) {
       if (node.type === 'mermaid') return node.value;
+      // The parser emits ```mermaid fences as codeblock nodes; MermaidNode
+      // exists in the type union but is never constructed.
+      if (node.type === 'codeblock' && node.language === 'mermaid') return node.value;
     }
     return null;
+  }
+
+  /** All paragraph/heading/code/mermaid/list text of a module, for decl fallbacks. */
+  private bodyText(ast: ParserModule): string {
+    const parts: string[] = [];
+    const nodeText = (node: ContentNode): string => {
+      if (node.type === 'list') {
+        return node.items
+          .map(item => {
+            const text = item.content
+              .map(child => (typeof (child as { value?: unknown }).value === 'string'
+                ? (child as { value: string }).value
+                : ''))
+              .join(' ')
+              .trim();
+            return text ? `- ${text}` : '';
+          })
+          .filter(Boolean)
+          .join('\n');
+      }
+      const value = (node as { value?: unknown }).value;
+      return typeof value === 'string' ? value : '';
+    };
+    for (const section of ast.sections) {
+      for (const node of section.content) {
+        const text = nodeText(node);
+        if (text) parts.push(text);
+      }
+    }
+    return parts.join('\n');
+  }
+
+  /**
+   * Tolerant `key:` lookup for agent declarations written in body blocks
+   * (`role:` / `goal:` in ## Agent Definition pseudo-YAML, inline or with the
+   * value on the next indented line). Frontmatter always wins upstream.
+   */
+  private declScalar(text: string, key: string): string | null {
+    const m = new RegExp(`(^|\\n)[ \\t]*${key}:[ \\t]*(\\S[^\\n]*)?`, 'i').exec(text);
+    if (!m) return null;
+    const inline = (m[2] ?? '').trim();
+    if (inline) return inline;
+    const after = text.slice((m.index ?? 0) + m[0].length);
+    const next = after.split('\n').find(l => l.trim() !== '');
+    if (next !== undefined && /^[ \t]+\S/.test(next)) return next.trim();
+    return null;
+  }
+
+  /** `- item` lines (or inline `[a, b]`) following `key:`. */
+  private declList(text: string, key: string): string[] | null {
+    const m = new RegExp(`(^|\\n)[ \\t]*${key}:[ \\t]*([^\\n]*)`, 'i').exec(text);
+    if (!m) return null;
+    const inline = (m[2] ?? '').trim();
+    if (inline) {
+      const bare = inline.replace(/^\[|\]$/g, '');
+      if (bare.includes(',')) return bare.split(',').map(s => s.trim()).filter(Boolean);
+      return null;
+    }
+    const rest = text.slice((m.index ?? 0) + m[0].length).split('\n');
+    const items: string[] = [];
+    for (const line of rest) {
+      const item = line.match(/^\s*-\s+(.+)$/);
+      if (item) { items.push(item[1]!.trim()); continue; }
+      if (line.trim() === '') continue;
+      break;
+    }
+    return items.length > 0 ? items : null;
   }
 
   // -------------------------------------------------------------------------
@@ -259,19 +329,28 @@ export class MAMTransformer {
     const examplesSection = this.findSection(sections, 'Examples');
     const testsSection = this.findSection(sections, 'Tests');
 
+    // Agent declarations appear in frontmatter or as body blocks
+    // (## Agent Definition pseudo-YAML). Frontmatter wins; body fills gaps.
+    const decl = this.bodyText(ast);
+    // The grammar allows only shared|local; prose like "shared: SharedMemory"
+    // must not leak into the declaration.
+    const declMemoryRaw = this.declScalar(decl, 'memory');
+    const memoryMatch = declMemoryRaw ? /^\s*(shared|local)\b/i.exec(declMemoryRaw) : null;
+    const declMemory = memoryMatch ? (memoryMatch[1]!.toLowerCase() as 'shared' | 'local') : undefined;
+
     return {
       ...base,
-      role: String(data.role || ''),
-      goal: String(data.goal || ''),
-      tools: Array.isArray(data.tools) ? data.tools.map(String) : undefined,
-      handoff: Array.isArray(data.handoff) ? data.handoff.map(String) : undefined,
+      role: String(data.role || this.declScalar(decl, 'role') || ''),
+      goal: String(data.goal || this.declScalar(decl, 'goal') || ''),
+      tools: Array.isArray(data.tools) ? data.tools.map(String) : this.declList(decl, 'tools') ?? undefined,
+      handoff: Array.isArray(data.handoff) ? data.handoff.map(String) : this.declList(decl, 'handoff') ?? undefined,
       inputs: inputsSection ? this.parseInputs(inputsSection.content) : undefined,
       outputs: outputsSection ? this.parseOutputs(outputsSection.content) : undefined,
       permissions: permissionsSection ? this.parsePermissions(permissionsSection.content) : undefined,
       requires: dependenciesSection ? this.extractList(dependenciesSection.content) : undefined,
       examples: examplesSection ? this.extractText(examplesSection.content) : undefined,
       tests: testsSection ? this.extractText(testsSection.content) : undefined,
-      memory: data.memory as V2MemoryReference | undefined,
+      memory: (data.memory ?? declMemory) as V2MemoryReference | undefined,
       rules: rulesSection ? this.extractList(rulesSection.content) : undefined,
       prompts: promptSection ? this.extractList(promptSection.content) : undefined,
     };
@@ -321,8 +400,12 @@ export class MAMTransformer {
     let steps: V2StepNode[] = [];
     let edges: V2EdgeNode[] = [];
 
-    // Try to parse from mermaid flowchart
-    const mermaidContent = mermaidSection ? this.extractMermaid(mermaidSection.content) : null;
+    // Mermaid lives in a ## Mermaid section OR (the ecosystem convention)
+    // as a ```mermaid fence inside ## Workflow.
+    const mermaidContent =
+      (mermaidSection && this.extractMermaid(mermaidSection.content)) ||
+      (workflowSection && this.extractMermaid(workflowSection.content)) ||
+      null;
     if (mermaidContent) {
       const parsed = this.parseMermaidFlowchart(mermaidContent);
       steps = parsed.steps;
@@ -753,35 +836,50 @@ export class MAMTransformer {
   private parseMermaidFlowchart(mermaid: string): { steps: V2StepNode[]; edges: V2EdgeNode[] } {
     const steps: V2StepNode[] = [];
     const edges: V2EdgeNode[] = [];
+    const rawEdges: Array<{ source: string; target: string }> = [];
     const nodeMap = new Map<string, string>();
+    const sanitize = (value: string): string =>
+      value
+        .replace(/[^a-zA-Z0-9_-]+/g, '-')
+        .replace(/-{2,}/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .toLowerCase();
 
     const lines = mermaid.split('\n');
     for (const line of lines) {
       const trimmed = line.trim();
 
-      const nodeMatch = trimmed.match(/(\w+)\s*[\[\(\{"](.+?)[\]\)\}"]/);
-      if (nodeMatch) {
-        const id = nodeMatch[1];
-        const label = nodeMatch[2];
-        nodeMap.set(id, label.replace(/[^a-zA-Z0-9_-]/g, '-').toLowerCase());
+      // A line can declare two nodes (`A[ticket] --> B[classify]`): take all.
+      const nodeRe = /(\w+)\s*[\[\(\{"](.+?)[\]\)\}"]/g;
+      let nodeMatch: RegExpExecArray | null;
+      while ((nodeMatch = nodeRe.exec(trimmed)) !== null) {
+        const id = nodeMatch[1]!;
+        if (nodeMap.has(id)) continue;
+        const name = sanitize(nodeMatch[2]!);
+        nodeMap.set(id, name);
         steps.push({
           type: 'StepNode',
-          name: nodeMap.get(id)!,
+          name,
           location: { start: { line: 0, column: 0, offset: 0 }, end: { line: 0, column: 0, offset: 0 }, source: 'mermaid' },
         });
       }
 
-      const edgeMatch = trimmed.match(/(\w+)\s*-->\s*(?:\|[^|]*\|\s*)?(\w+)/);
-      if (edgeMatch) {
-        const source = nodeMap.get(edgeMatch[1]) || edgeMatch[1];
-        const target = nodeMap.get(edgeMatch[2]) || edgeMatch[2];
-        edges.push({
-          type: 'EdgeNode',
-          source,
-          target,
-          location: { start: { line: 0, column: 0, offset: 0 }, end: { line: 0, column: 0, offset: 0 }, source: 'mermaid' },
-        });
+      const edgeRe = /(\w+)\s*-->\s*(?:\|[^|]*\|\s*)?(\w+)/g;
+      let edgeMatch: RegExpExecArray | null;
+      while ((edgeMatch = edgeRe.exec(trimmed)) !== null) {
+        rawEdges.push({ source: edgeMatch[1]!, target: edgeMatch[2]! });
       }
+    }
+
+    // Resolve edge endpoints once every node id is known, so `A --> B` and
+    // `B[classify]` always agree on the step name.
+    for (const edge of rawEdges) {
+      edges.push({
+        type: 'EdgeNode',
+        source: nodeMap.get(edge.source) || sanitize(edge.source),
+        target: nodeMap.get(edge.target) || sanitize(edge.target),
+        location: { start: { line: 0, column: 0, offset: 0 }, end: { line: 0, column: 0, offset: 0 }, source: 'mermaid' },
+      });
     }
 
     return { steps, edges };

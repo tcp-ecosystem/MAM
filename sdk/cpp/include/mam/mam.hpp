@@ -547,7 +547,7 @@ bool command_exists(std::string_view command);
 /* Free functions                                                               */
 /* ------------------------------------------------------------------------- */
 
-/** Returns the SDK identifier, for example `mam-cpp/0.1.0`. */
+/** Returns the SDK identifier, for example `mam-cpp/2.0.0`. */
 std::string_view user_agent() noexcept;
 
 /** Returns the SDK version. */

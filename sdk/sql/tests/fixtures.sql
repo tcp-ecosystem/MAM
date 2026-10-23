@@ -78,7 +78,7 @@ SELECT id, 'info', 'recommended', 'Recommended section missing: outputs', 'purpo
   FROM modules WHERE slug = 'full';
 
 INSERT INTO parse_runs (source_path, source_hash, parser_version, succeeded, error_count, warning_count, module_id, duration_ms)
-SELECT 'full.mam.md', 'hash-full', 'mam-c/0.1.0', 1, 0, 1, id, 4 FROM modules WHERE slug = 'full';
+SELECT 'full.mam.md', 'hash-full', 'mam-c/2.0.0', 1, 0, 1, id, 4 FROM modules WHERE slug = 'full';
 
 -- =====================================================================
 -- Expected results

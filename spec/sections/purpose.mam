@@ -1,28 +1,37 @@
 ---
+# MAM Metadata
 id: section-purpose
 name: Purpose Section
 version: 2.0.0
 type: module
+
 author: MAM Team
+
 description: >
   Specifies the Purpose section of the MAM source format. The Purpose section
   is the only required section and carries a concise description of what a
   module does for its users.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - spec
   - section
   - purpose
+
 dependencies:
   - name: mam-spec
     version: "1.0.0"
+
 capabilities:
   - validate
   - extract
   - document
+
 permissions:
   filesystem:
     - read
@@ -145,6 +154,13 @@ def test_purpose():
 ```
 
 ## Examples
+
+### Live check
+
+```python
+sample = "## Purpose\n\nValidate email addresses using RFC checks.\n"
+print(extract_purpose(sample))
+```
 
 ### Minimal Purpose
 

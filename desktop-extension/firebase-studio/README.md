@@ -21,7 +21,7 @@ Two ways to get the extension into a Firebase Studio workspace:
    from the workspace terminal:
 
    ```bash
-   code --install-extension mam-language-0.1.0.vsix
+   code --install-extension mam-language-2.0.0.vsix
    ```
 
 ## Workspace configuration (`.idx/`)

@@ -1,0 +1,287 @@
+---
+# MAM Metadata
+id: grammar-tokens
+name: Token Grammar
+version: 2.0.0
+type: module
+
+author: MAM Team
+
+description: >
+  Defines the token inventory of the MAM lexer and ships a reference tokenizer
+  that classifies headings, fences, lists, tables, YAML and whitespace with
+  line and column positions.
+
+license: MIT
+
+runtime:
+  language: python
+  version: ">=3.12"
+
+tags:
+  - grammar
+  - tokens
+  - specification
+
+dependencies: []
+
+capabilities:
+  - tokenize
+  - classify
+
+permissions:
+  memory:
+    - local
+---
+
+# Token Grammar Module
+
+## Purpose
+
+Defines every token the MAM lexer can emit and provides a reference tokenizer
+that turns MAM source into a deterministic token stream. The tokenizer reports
+`type`, `value`, `line` and `column` for each token so parsers, editors and
+linters can agree on positions.
+
+## Inputs
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| source | string | Yes | MAM module text to tokenize |
+| include_whitespace | boolean | No | Emit NEWLINE/INDENT tokens (default: false) |
+
+## Outputs
+
+| Name | Type | Description |
+|------|------|-------------|
+| tokens | list | `{type, value, line, column}` in source order |
+| counts | object | Token count per type |
+| errors | list | Unexpected characters or unclosed fences |
+
+## Capabilities
+
+### tokenize
+
+Scan source text and emit the token stream.
+
+### classify
+
+Report the token inventory and per-type counts for a source file.
+
+## Rules
+
+- Token types are stable and documented in `spec/grammar/token-reference.md`.
+- Positions are 1-based lines and columns, matching editor diagnostics.
+- Frontmatter is delimited by `---` lines and emitted as FRONTMATTER tokens.
+- An unclosed code fence is an error, never a silent token.
+- Unknown characters are reported as ERROR tokens, not dropped.
+- The token stream is deterministic for identical input.
+
+## Workflow
+
+```mermaid
+flowchart TD
+    A[Source] --> B[Scan line]
+    B --> C{Construct?}
+    C -->|Heading| D[HEADING_n]
+    C -->|Fence| E[CODE_FENCE + language]
+    C -->|List| F[BULLET or NUMBERED]
+    C -->|YAML| G[YAML_KEY + YAML_VALUE]
+    C -->|Other| H[TEXT]
+    D --> I[Emit token]
+    E --> I
+    F --> I
+    G --> I
+    H --> I
+    I --> J{More lines?}
+    J -->|Yes| B
+    J -->|No| K[Token stream]
+```
+
+## Python
+
+```python
+import re
+
+HEADING = re.compile(r"^(#{1,6})\s+(.*)$")
+FENCE = re.compile(r"^```\s*([A-Za-z0-9_+#.-]*)\s*$")
+BULLET = re.compile(r"^\s*[-*+]\s+(.*)$")
+NUMBERED = re.compile(r"^\s*\d+\.\s+(.*)$")
+YAML_PAIR = re.compile(r"^([A-Za-z_][\w-]*):\s*(.*)$")
+TABLE_SEPARATOR = re.compile(r"^\|?\s*:?-{3,}:?\s*(\|\s*:?-{3,}:?\s*)+\|?\s*$")
+
+
+def tokenize(source: str, include_whitespace: bool = False) -> dict:
+    """Classify MAM source into tokens with 1-based line and column."""
+    tokens: list[dict] = []
+    errors: list[str] = []
+    in_frontmatter = False
+    fence = None
+
+    def emit(kind: str, value: str, line: int, column: int) -> None:
+        tokens.append({"type": kind, "value": value, "line": line, "column": column})
+
+    for number, raw in enumerate(source.split("\n"), start=1):
+        if raw.strip() == "---":
+            emit("FRONTMATTER_SEPARATOR", raw, number, 1)
+            in_frontmatter = not in_frontmatter
+            continue
+
+        if fence is not None:
+            if FENCE.match(raw):
+                emit("CODE_FENCE_END", raw, number, 1)
+                fence = None
+                continue
+            emit("CODE_CONTENT", raw, number, 1)
+            continue
+
+        match = FENCE.match(raw)
+        if match:
+            emit("CODE_FENCE", raw, number, 1)
+            if match.group(1):
+                emit("CODE_LANGUAGE", match.group(1), number, 1)
+            fence = match.group(1) or "text"
+            continue
+
+        match = HEADING.match(raw)
+        if match:
+            emit(f"HEADING_{len(match.group(1))}", raw, number, 1)
+            emit("HEADING_TEXT", match.group(2).strip(), number, len(match.group(1)) + 2)
+            continue
+
+        if TABLE_SEPARATOR.match(raw):
+            emit("TABLE_SEPARATOR", raw, number, 1)
+            continue
+
+        match = BULLET.match(raw)
+        if match:
+            emit("BULLET_LIST", match.group(1).strip(), number, raw.index("-") + 1 if "-" in raw else 1)
+            continue
+
+        match = NUMBERED.match(raw)
+        if match:
+            emit("NUMBERED_LIST", match.group(1).strip(), number, 1)
+            continue
+
+        if in_frontmatter:
+            match = YAML_PAIR.match(raw)
+            if match:
+                emit("YAML_KEY", match.group(1), number, 1)
+                if match.group(2).strip():
+                    emit("YAML_VALUE", match.group(2).strip(), number, raw.index(":") + 2)
+                continue
+            if raw.strip().startswith("- "):
+                emit("YAML_LIST_ITEM", raw.strip()[2:], number, 1)
+                continue
+
+        if raw.strip() == "":
+            if include_whitespace:
+                emit("NEWLINE", "", number, 1)
+            continue
+
+        if raw.lstrip().startswith("|"):
+            emit("TABLE_ROW", raw, number, 1)
+            continue
+
+        emit("TEXT", raw, number, 1)
+
+    if fence is not None:
+        errors.append("Unclosed code fence")
+    if in_frontmatter:
+        errors.append("Unclosed frontmatter")
+
+    counts: dict[str, int] = {}
+    for token in tokens:
+        counts[token["type"]] = counts.get(token["type"], 0) + 1
+    return {"tokens": tokens, "counts": counts, "errors": errors}
+```
+
+## Tests
+
+### Input
+
+```yaml
+source: |
+  ---
+  id: sample
+  ---
+
+  # Sample
+
+  ## Purpose
+
+  Explain the sample.
+
+  ```python
+  print("ok")
+  ```
+```
+
+### Expected
+
+```yaml
+errors: []
+counts:
+  HEADING_1: 1
+  CODE_FENCE: 1
+```
+
+```python
+SAMPLE = "---\nid: sample\n---\n\n# Sample\n\n## Purpose\n\nExplain the sample.\n\n```python\nprint(\"ok\")\n```"
+
+
+def test_frontmatter_is_delimited():
+    result = tokenize(SAMPLE)
+    assert result["errors"] == []
+    kinds = [t["type"] for t in result["tokens"]]
+    assert kinds.count("FRONTMATTER_SEPARATOR") == 2
+    assert "YAML_KEY" in kinds
+
+
+def test_headings_carry_level():
+    result = tokenize(SAMPLE)
+    assert result["counts"]["HEADING_1"] == 1
+    assert result["counts"]["HEADING_2"] == 1
+
+
+def test_fence_tracks_content():
+    result = tokenize(SAMPLE)
+    assert result["counts"]["CODE_FENCE"] == 1
+    assert result["counts"]["CODE_CONTENT"] == 1
+    assert result["counts"]["CODE_FENCE_END"] == 1
+
+
+def test_unclosed_fence_is_an_error():
+    result = tokenize("```python\nprint('x')")
+    assert result["errors"] == ["Unclosed code fence"]
+
+
+def test_positions_are_one_based():
+    result = tokenize("# Title")
+    heading = result["tokens"][0]
+    assert heading["line"] == 1
+    assert heading["column"] == 1
+```
+
+## Examples
+
+### Tokenize a module
+
+```python
+source = "# Sample\n\n## Purpose\n\nExplain the sample."
+result = tokenize(source)
+print(result["counts"])
+```
+
+### Token inventory for frontmatter
+
+```python
+result = tokenize("---\nid: sample\nname: Sample\n---\n")
+print([token["type"] for token in result["tokens"]])
+```
+
+## References
+
+- `spec/grammar/token-reference.md` — full token reference
+- `spec/grammar/grammar-v3.bnf` — grammar that consumes these tokens
+- `parser/src/lexer/tokens.ts` — reference implementation in TypeScript

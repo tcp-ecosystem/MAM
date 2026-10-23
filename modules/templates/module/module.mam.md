@@ -138,7 +138,7 @@ def test_process_empty_input():
 
 ## Examples
 
-### Basic Usage
+### Transform a text sample
 
 ```python
 result = process("hello")

@@ -10,6 +10,8 @@
  */
 
 import * as vscode from 'vscode';
+import { existsSync } from 'node:fs';
+import { join, dirname } from 'node:path';
 import { CliService, CliUnavailableError } from './cli';
 import { MamDiagnostics } from './diagnostics';
 import {
@@ -18,6 +20,20 @@ import {
   MamDocumentSymbolProvider,
   MamHoverProvider,
 } from './providers';
+
+/** Use the nearest `<dir>/cli/dist/index.js` when the repo is open locally. */
+function resolveWorkspaceCli(workspaceFolder: string | undefined): string | undefined {
+  if (!workspaceFolder) return undefined;
+  let dir = workspaceFolder;
+  for (let depth = 0; depth < 4; depth++) {
+    const entry = join(dir, 'cli', 'dist', 'index.js');
+    if (existsSync(entry)) return entry;
+    const parent = dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  return undefined;
+}
 
 /** Module types the `mam new` command supports. */
 const MODULE_TYPES = [
@@ -45,9 +61,17 @@ export function activate(context: vscode.ExtensionContext) {
   // Core services
   // ------------------------------------------------------------------
   const config = vscode.workspace.getConfiguration('mam');
-  const cliPath = config.get<string>('cliPath', 'mam');
   const workspaceFolder = vscode.workspace.workspaceFolders?.[0]?.uri.fsPath;
-  const cli = new CliService({ cliPath, cwd: workspaceFolder });
+  // Prefer the workspace build over a possibly stale global `mam`. Without
+  // this, an old CLI on PATH keeps reporting the pre-fix diagnostic cascade.
+  const workspaceCli = resolveWorkspaceCli(workspaceFolder);
+  const cliPath = workspaceCli ? 'node' : config.get<string>('cliPath', 'mam');
+  output.appendLine(`CLI: ${workspaceCli ?? cliPath}${workspaceCli ? ' (workspace build)' : ''}`);
+  const cli = new CliService({
+    cliPath,
+    cliPrefix: workspaceCli ? [workspaceCli] : [],
+    cwd: workspaceFolder,
+  });
   const diagnostics = new MamDiagnostics(cli);
   context.subscriptions.push(diagnostics);
 
@@ -63,9 +87,8 @@ export function activate(context: vscode.ExtensionContext) {
 
   /** Append a heading + block to the MAM output channel and reveal it. */
   const showOutput = (heading: string, body: string): void => {
-    output.appendLine('');
-    output.appendLine(`— ${heading} —`);
-    output.appendLine(body);
+    // One append, then show: a header can never be visible without its body.
+    output.appendLine(`\n— ${heading} —\n${body}`);
     output.show(true);
   };
 
@@ -94,8 +117,7 @@ export function activate(context: vscode.ExtensionContext) {
       const body = result.diagnostics
         .map((d) => `  ${d.line}:${d.column} [${d.severity}] ${d.message} (${d.ruleId})`)
         .join('\n');
-      showOutput(`mam validate ${doc.uri.fsPath}`, body || '  No issues found.');
-      output.appendLine(`Summary: ${summary}`);
+      showOutput(`mam validate ${doc.uri.fsPath}`, `${body || '  No issues found.'}\nSummary: ${summary}`);
       if (result.valid) {
         vscode.window.showInformationMessage(`MAM: module valid — ${summary}`);
       } else {
@@ -132,7 +154,7 @@ export function activate(context: vscode.ExtensionContext) {
       if (err instanceof CliUnavailableError) {
         vscode.window.showWarningMessage(`MAM CLI not found (${cliPath}). Install @mam/cli or set mam.cliPath.`);
       } else {
-        vscode.window.showErrorMessage(`mam run failed: ${(err as Error).message}`);
+        vscode.window.showErrorMessage(`mam run failed (CLI: ${cliPath}): ${(err as Error).message}`);
       }
     }
   });
@@ -244,7 +266,7 @@ export function activate(context: vscode.ExtensionContext) {
       if (err instanceof CliUnavailableError) {
         vscode.window.showWarningMessage(`MAM CLI not found (${cliPath}). Install @mam/cli or set mam.cliPath.`);
       } else {
-        vscode.window.showErrorMessage(`mam run failed: ${(err as Error).message}`);
+        vscode.window.showErrorMessage(`mam run failed (CLI: ${cliPath}): ${(err as Error).message}`);
       }
     }
   });

@@ -48,7 +48,7 @@ the bytes the publisher produced. A package is a promise about a directory.
 |------|------|----------|-------------|
 | manifest | object | Yes | Package metadata, e.g. `{ "name": "orders", "version": "2.1.0" }` |
 | entries | array | Yes | Files that make up the package |
-| target | string | No | Install prefix. Defaults to `./dist/<name>` |
+| target | string | No | Install prefix. Defaults to `./dist/acme-summarizer` |
 
 ## Outputs
 
@@ -103,7 +103,7 @@ install continues.
 
 ## Layout
 
-```
+```text
 dist/orders/2.1.0/
   manifest.json
   orders.mam
@@ -113,7 +113,7 @@ dist/orders/2.1.0/
 
 | Rule | Value |
 |------|-------|
-| prefix | `./dist/<name>/<version>` |
+| prefix | `./dist/acme-summarizer/2.0.0` |
 | manifest | `manifest.json` at the package root |
 | twins | every `.mam` ships with a byte-identical `.mam.md` |
 | outside the prefix | nothing is written |

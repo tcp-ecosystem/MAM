@@ -114,7 +114,7 @@ function validateInputs(inputs, schema = {}) {
 const ModuleState = Object.freeze({ INITIALIZED: "initialized", RUNNING: "running", COMPLETED: "completed", FAILED: "failed" });
 
 class MAMModule {
-    constructor() { this.NAME = "text-transform.mam"; this.VERSION = "1.0.0"; this.state = ModuleState.INITIALIZED; this._plugins = []; this._hooks_before = []; this._hooks_after = []; }
+    constructor() { this.NAME = "text-transform.mam"; this.version = "2.0.0"; this.state = ModuleState.INITIALIZED; this._plugins = []; this._hooks_before = []; this._hooks_after = []; }
     registerHook(event, cb) { if (event === "before") this._hooks_before.push(cb); else this._hooks_after.push(cb); return this; }
     loadPlugin(p) { this._plugins.push(p); if (typeof p.onLoad === "function") p.onLoad(this); return this; }
 

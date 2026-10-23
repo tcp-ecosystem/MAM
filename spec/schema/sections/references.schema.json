@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://mam.dev/schema/v1.0.0/sections/references.schema.json",
+  "$id": "https://mam.dev/schema/v2.0.0/sections/references.schema.json",
   "title": "References Section Schema",
   "description": "External documentation, APIs, standards, and cross-references. Supports URL validation, citation formats, and internal module references.",
   "type": "object",

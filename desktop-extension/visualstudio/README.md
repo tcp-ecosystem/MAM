@@ -86,7 +86,7 @@ For Visual Studio 2022 (x64) the path is under `%ProgramFiles%` instead of
 | --- | --- |
 | `README.md` | This guide: VSIX build/install and copy-the-grammar paths |
 | `syntaxes/mam.tmLanguage.json` | Byte-identical copy of the canonical MAM TextMate grammar |
-| `MAM.vsixmanifest` | VSIX manifest scaffold (identity `MAMLanguage`, v0.1.0) |
+| `MAM.vsixmanifest` | VSIX manifest scaffold (identity `MAMLanguage`, v2.0.0) |
 | `textmate-grammar-registration.md` | Where and how VS discovers/registers the grammar |
 
 ## References

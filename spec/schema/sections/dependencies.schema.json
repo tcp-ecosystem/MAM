@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://mam.dev/schema/v1.0.0/sections/dependencies.schema.json",
+  "$id": "https://mam.dev/schema/v2.0.0/sections/dependencies.schema.json",
   "title": "Dependencies Section Schema",
   "description": "Declares runtime and build-time dependencies with version constraints, registries, and resolution metadata. Used by the package manager for installation and conflict resolution.",
   "type": "object",

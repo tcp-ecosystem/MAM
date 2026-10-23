@@ -1,15 +1,21 @@
 ---
+# MAM Metadata
 id: runtime-plugin
 name: Runtime Plugin
 version: 2.0.0
 type: plugin
+
 author: MAM Examples
+
 description: >
   Registers custom runtime contexts for Deno, Bun and WebAssembly.
+
 license: MIT
+
 runtime:
   language: typescript
   version: ">=5.0"
+
 tags:
   - plugin
   - runtime
@@ -17,10 +23,13 @@ tags:
   - bun
   - wasm
   - example
+
 dependencies: []
+
 capabilities:
   - execute-code
   - report-capabilities
+
 permissions:
   filesystem:
     - read
@@ -108,9 +117,9 @@ def test_select_runtime():
 
 Select a runtime for a language and confirm the context.
 
-```text
-select_runtime("typescript")
-# returns {"runtime": "deno", "language": "typescript", "status": "ready"}
+```python
+result = select_runtime("typescript")
+print(result["runtime"])
 ```
 
 ## References

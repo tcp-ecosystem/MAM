@@ -1,6 +1,6 @@
 # MAM Current State
 
-> **Last Updated: 2026-10-07**
+> **Last Updated: 2026-10-23**
 >
 > Totals in this document were verified by running the suites on 2026-10-07.
 > Earlier "7,000+ tests / 58 packages / 45 commands" figures were carried over
@@ -13,6 +13,41 @@
 MAM (Machine Agent Modules) is a System Description Language (SDL) whose reference syntax is Markdown. It describes intelligent systems — agents, tools, workflows, teams, policies — and compiles them to 16 target languages.
 
 **Status: Launched.** All packages build, **4,039 tests pass** across 30 packages, full pipeline works end-to-end. V2 Runtime: 100% complete (22/22 engines). `.mam` executes standalone. **MAM Hub registry is live publicly** with 20 founding modules (see [achievement.md](achievement.md)). All 30 publishable packages are at **2.0.0**, matching `MAM_VERSION`.
+
+---
+
+## Recent Changes (2026-10-23)
+
+- **`mam run` executes behaviour.** Modules with a `## Python` section run that
+  implementation plus the demo calls from `## Examples` (Python 3.12+, sandboxed
+  temp file, `INPUTS` injected). Output now carries an `execution` block with
+  `status`, `stdout`, `result`, `variables` and `durationMs`; execution errors
+  fail the run instead of being hidden. Verified on all 7 `advanced/` modules —
+  each returns real results (e.g. knowledge-graph → `entity_count: 1`).
+- **Validator reports root causes, not cascades.** An empty `.mam` now produces
+  exactly one error (`FM001`) instead of six; frontmatter, section, link, code
+  and parse diagnostics are suppressed when the frontmatter itself is missing.
+- **Examples follow one layout.** Every folder under `modules/examples/` now
+  matches `advanced/`: `system.mam` + `system.mam.md`, `mam.toml`, `README.md`,
+  and `modules/` with byte-identical `.mam`/`.mam.md` pairs. Loose top-level
+  examples moved to `scenarios/`. Counts: 25 folders, 79 `.mam` files, **79/79
+  validate clean (0 errors, 0 warnings, 0 info)** and **79/79 `mam run` pass**.
+- **Fence-aware CLI rules.** `CB001` accepts `text`, `GEN002` ignores code
+  fences (PEP8 blank lines survive), `GEN004` skips fenced code, and link /
+  section parsing ignores fenced content (`d[key](value)` is not a Markdown
+  link, embedded `## headings` are not module sections).
+- **VS Code extension v2.0.1.** Fenced blocks (`yaml`, `python`, `mermaid`,
+  `json`, `bash`, `powershell`, `typescript`, `sql`, `html`, `diff`, markdown)
+  delegate to embedded grammars like a normal Markdown file; packaged as
+  `desktop-extension/vscode/mam-language-2.0.1.vsix`.
+- **Transformer fixes.** Agent declarations are read from frontmatter or
+  `## Agent Definition` blocks; Mermaid is parsed from the `## Workflow` fence
+  (all nodes per line, edges resolved after the id map); workflow steps, agent
+  role/goal/tools and memory now survive into the V2 graph.
+
+Suite status after these changes: **cli 58/59** (one `npm pack` test is a
+network/parallel-load flake that passes 7/7 alone), **compiler 74/74**,
+**runtime 493/493**, examples 79/79 run + validate clean.
 
 ---
 
@@ -104,7 +139,9 @@ form with identical content:
   (`agent`, `component`, `contract`, `documentation`, `extension`, `interface`,
   `memory`, `module`, `package`, `plugin`, `policy`, `repository`, `resource`,
   `runtime`, `service`, `system`, `team`, `tool`, `workflow`), plus complete
-  projects `core`, `basic`, `advanced`, `plugins`, `security-system`
+  projects `core`, `basic`, `advanced`, `plugins`, `security-system` and
+  `scenarios`. Every folder follows the `advanced/` layout: a composing
+  `system.mam` at the root and `.mam`/`.mam.md` pairs in `modules/`.
 - **Templates** (`modules/templates/`): 19 type folders (basic + advanced)
 
 ### Project Composition (`mam.toml`)
@@ -117,7 +154,7 @@ file argument), they operate on the whole project.
 ```toml
 [project]
 name = "security-system"
-version = "1.0.0"
+version = "2.0.0"
 
 [build]
 entry = "system.mam"
@@ -318,7 +355,7 @@ Target routing by extension: `.mam.py` → python, `.mam.js`/`.mam.mjs`/`.mam.cj
 | live | OpenVSX + Marketplace extension published, 426 downloads |
 | live | Docs refresh (README, purpose/goal/scope/brain, usage, SECURITY, CONTRIBUTING) |
 
-**All pushed to `https://github.com/tcp-ecosystem/MAM.git` on `main` branch.**
+**All pushed to `https://github.com/tcp-ecosystems/MAM.git` on `main` branch.**
 
 ---
 

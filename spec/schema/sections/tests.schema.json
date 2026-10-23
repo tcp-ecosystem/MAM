@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://mam.dev/schema/v1.0.0/sections/tests.schema.json",
+  "$id": "https://mam.dev/schema/v2.0.0/sections/tests.schema.json",
   "title": "Tests Section Schema",
   "description": "Test definitions, assertions, coverage requirements, and test framework configuration. Supports multiple testing frameworks and assertion patterns.",
   "type": "object",

@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://mam.dev/schema/v1.0.0/sections/python.schema.json",
+  "$id": "https://mam.dev/schema/v2.0.0/sections/python.schema.json",
   "title": "Python Section Schema",
   "description": "Python code implementations — function definitions, class implementations, type hints, decorators, async support, and runnable code blocks. Code should be PEP 8 compliant.",
   "type": "object",

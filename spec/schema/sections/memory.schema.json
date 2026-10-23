@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://mam.dev/schema/v1.0.0/sections/memory.schema.json",
+  "$id": "https://mam.dev/schema/v2.0.0/sections/memory.schema.json",
   "title": "Memory Section Schema",
   "description": "Declares how the module manages state — cache backends, TTL policies, storage scopes, and serialization formats. Used by the orchestrator for memory allocation and lifecycle management.",
   "type": "object",

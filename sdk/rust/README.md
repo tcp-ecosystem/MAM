@@ -8,7 +8,7 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-mam-sdk = "0.1.0"
+mam-sdk = "2.0.0"
 ```
 
 Or from git:

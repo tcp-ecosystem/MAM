@@ -137,13 +137,13 @@ describe('scoped names over the wire', () => {
   it('round-trips @mam/thing through URL encoding', async () => {
     await client.publishModule({
       name: '@mam/thing',
-      version: '0.1.0',
+      version: '2.0.0',
       description: 'scoped',
       author: 'bob',
       files: { 'index.js': 'scoped' },
     });
     expect((await client.getModule('@mam/thing')).name).toBe('@mam/thing');
-    expect(await client.getVersions('@mam/thing')).toEqual(['0.1.0']);
+    expect(await client.getVersions('@mam/thing')).toEqual(['2.0.0']);
   });
 });
 

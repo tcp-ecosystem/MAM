@@ -70,16 +70,20 @@ export class CliUnavailableError extends Error {
 export interface CliOptions {
   /** Binary name or absolute path to the MAM CLI. */
   cliPath: string;
+  /** Arguments inserted before the command, e.g. a script path after `node`. */
+  cliPrefix?: string[];
   /** Working directory used as cwd for spawned processes. */
   cwd?: string;
 }
 
 export class CliService {
   private readonly cliPath: string;
+  private readonly cliPrefix: string[];
   private readonly cwd: string;
 
   constructor(options: CliOptions) {
     this.cliPath = options.cliPath;
+    this.cliPrefix = options.cliPrefix ?? [];
     this.cwd = options.cwd || process.cwd();
   }
 
@@ -99,12 +103,12 @@ export class CliService {
       try {
         if (process.platform === 'win32') {
           // Quote args that contain whitespace; cmd.exe resolves .cmd shims.
-          const line = [this.cliPath, ...args]
+          const line = [this.cliPath, ...this.cliPrefix, ...args]
             .map((a) => (/[\s"]/.test(a) ? `"${a.replace(/"/g, '\\"')}"` : a))
             .join(' ');
           child = child_process.spawn(line, [], { ...opts, shell: true });
         } else {
-          child = child_process.spawn(this.cliPath, args, opts);
+          child = child_process.spawn(this.cliPath, [...this.cliPrefix, ...args], opts);
         }
       } catch (err) {
         reject(new CliUnavailableError((err as Error).message));
@@ -157,6 +161,33 @@ export class CliService {
    * Parse the last JSON object embedded in stdout. The CLI may emit banners or
    * progress text around the payload; this extracts the final `{...}` block.
    */
+  /** Parse the legacy text report (`Success: true` … `Output: {json}`). */
+  private parseRunText(stdout: string): RunResult | null {
+    const clean = this.stripAnsi(stdout);
+    const success = /Success:\s*(true|false)/i.exec(clean);
+    if (!success) return null;
+    const time = /Time:\s*([\d.]+)ms/i.exec(clean);
+    const memory = /Memory:\s*([\d.]+)\s*MB/i.exec(clean);
+    const outputIndex = clean.indexOf('Output:');
+    let output: Record<string, unknown> = {};
+    if (outputIndex !== -1) {
+      const payload = clean.slice(outputIndex + 'Output:'.length).trim();
+      const start = payload.indexOf('{');
+      const end = payload.lastIndexOf('}');
+      if (start !== -1 && end > start) {
+        try { output = JSON.parse(payload.slice(start, end + 1)); } catch { /* keep empty */ }
+      }
+    }
+    return {
+      success: success[1].toLowerCase() === 'true',
+      output,
+      errors: [],
+      warnings: [],
+      timeMs: time ? Number(time[1]) : 0,
+      memoryUsedBytes: memory ? Number(memory[1]) * 1024 * 1024 : 0,
+    };
+  }
+
   private parseJson<T>(stdout: string): T {
     const clean = this.stripAnsi(stdout);
     const start = clean.indexOf('{');
@@ -255,7 +286,22 @@ export class CliService {
    */
   async run(file: string, cwd?: string): Promise<RunResult> {
     const outcome = await this.spawn(['run', file, '--format', 'json'], cwd);
-    const parsed = this.parseJson<RunResult>(outcome.stdout);
+    let parsed: RunResult;
+    try {
+      parsed = this.parseJson<RunResult>(outcome.stdout);
+    } catch (err) {
+      // Older CLIs print a text report. Parse that instead of failing.
+      const text = this.parseRunText(outcome.stdout);
+      if (text) {
+        parsed = text;
+      } else {
+        const stderr = this.stripAnsi(outcome.stderr).trim().slice(-500);
+        const stdout = this.stripAnsi(outcome.stdout).trim().slice(0, 200);
+        throw new Error(
+          `${(err as Error).message} | exit ${outcome.code} | stderr: ${stderr || '(empty)'} | stdout: ${stdout || '(empty)'}`,
+        );
+      }
+    }
     return {
       success: Boolean(parsed.success),
       output: parsed.output || {},

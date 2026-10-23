@@ -1,28 +1,37 @@
 ---
+# MAM Metadata
 id: section-permissions
 name: Permissions Section
 version: 2.0.0
 type: module
+
 author: MAM Team
+
 description: >
   Specifies the Permissions section of the MAM source format. The section
   declares the security permissions that a module needs and supports
   capability based security and resource management.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - spec
   - section
   - permissions
+
 dependencies:
   - name: mam-spec
     version: "1.0.0"
+
 capabilities:
   - validate
   - extract
   - document
+
 permissions:
   filesystem:
     - read
@@ -185,6 +194,13 @@ def test_permissions():
 ```
 
 ## Examples
+
+### Live check
+
+```python
+sample = "## Permissions\n\nfilesystem:\n  - read\nnetwork:\n  - internet\n"
+print(extract_permissions(sample))
+```
 
 ### Network Access
 

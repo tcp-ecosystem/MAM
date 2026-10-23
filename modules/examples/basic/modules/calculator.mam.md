@@ -1,24 +1,33 @@
 ---
+# MAM Metadata
 id: calculator
 name: Calculator
 version: 2.0.0
 type: module
+
 author: MAM Team
+
 description: >
   Performs basic arithmetic operations with input validation and error
   handling.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - example
   - beginner
   - arithmetic
   - calculator
+
 dependencies: []
+
 capabilities:
   - calculate
+
 permissions:
   filesystem:
     - read

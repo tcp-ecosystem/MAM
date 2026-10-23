@@ -7,8 +7,9 @@
  * plugins, parallel execution, execution history, and benchmark mode.
  */
 
-import { readFile } from 'node:fs/promises';
-import { resolve, basename, extname, dirname } from 'node:path';
+import { readFile, writeFile, mkdtemp, rm } from 'node:fs/promises';
+import { resolve, basename, extname, dirname, join } from 'node:path';
+import { tmpdir } from 'node:os';
 import { spawn } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { EventEmitter } from 'node:events';
@@ -1217,6 +1218,146 @@ async function runTargetArtifact(
   };
 }
 
+/** Result of running a module's `## Python` implementation with its demo examples. */
+export interface PythonImplementationResult {
+  language: 'python';
+  status: 'ok' | 'error' | 'skipped';
+  stdout?: string;
+  stderr?: string;
+  result?: unknown;
+  variables?: Record<string, unknown>;
+  error?: string;
+  durationMs?: number;
+}
+
+type AstContentNode = { type?: string; language?: string; value?: string };
+
+/** Python code blocks from one module section, in document order. */
+function pythonBlocks(ast: unknown, sectionName: string): string[] {
+  const sections = ((ast as { sections?: Array<{ name?: string; content?: AstContentNode[] }> }).sections ?? []);
+  return sections
+    .filter(s => (s.name ?? '').toLowerCase() === sectionName.toLowerCase())
+    .flatMap(s => s.content ?? [])
+    .filter(n => n.type === 'codeblock' && (n.language === 'python' || n.language === 'py') && typeof n.value === 'string')
+    .map(n => n.value as string);
+}
+
+/**
+ * Execute the module's `## Python` section followed by its `## Examples` code,
+ * so `mam run` returns behaviour (real return values / stdout), not only the
+ * parsed manifest. Returns null when the module has no Python implementation.
+ */
+async function executePythonImplementation(
+  ast: unknown,
+  inputs: Record<string, unknown>,
+  timeoutMs: number,
+): Promise<PythonImplementationResult | null> {
+  const impl = pythonBlocks(ast, 'Python');
+  if (impl.length === 0) return null;
+
+  const tests = pythonBlocks(ast, 'Tests');
+  const demo = pythonBlocks(ast, 'Examples');
+  const script = [
+    'import json as _mam_json, types as _mam_types',
+    `INPUTS = _mam_json.loads(${JSON.stringify(JSON.stringify(inputs ?? {}))})`,
+    '_mam_before = None',
+    ...impl,
+    ...tests,
+    '_mam_before = set(globals())',
+    ...demo,
+    '_mam_payload = {"result": None, "variables": {}}',
+    'for _mam_name in ("result", "output", "findings", "response", "report", "verdict"):',
+    '    if _mam_name in globals():',
+    '        _mam_payload["result"] = globals()[_mam_name]',
+    '        break',
+    'for _mam_name, _mam_value in list(globals().items()):',
+    '    if _mam_name in _mam_before or _mam_name.startswith("_") or _mam_name == "INPUTS":',
+    '        continue',
+    '    if callable(_mam_value) or isinstance(_mam_value, _mam_types.ModuleType):',
+    '        continue',
+    '    try:',
+    '        _mam_json.dumps(_mam_value)',
+    '    except Exception:',
+    '        continue',
+    '    _mam_payload["variables"][_mam_name] = _mam_value',
+    'if _mam_payload["result"] is None and len(_mam_payload["variables"]) == 1:',
+    '    _mam_payload["result"] = next(iter(_mam_payload["variables"].values()))',
+    'print("__MAM_RESULT__" + _mam_json.dumps(_mam_payload, default=str))',
+  ].join('\n\n');
+
+  const started = Date.now();
+  const dir = await mkdtemp(join(tmpdir(), 'mam-run-'));
+  const file = join(dir, 'main.py');
+  try {
+    await writeFile(file, script, 'utf8');
+    const candidates = process.platform === 'win32' ? ['python', 'py'] : ['python3', 'python'];
+    let lastError = '';
+
+    for (const cmd of candidates) {
+      const outcome = await new Promise<{ ok: boolean; stdout: string; stderr: string; missing: boolean }>((res) => {
+        let stdout = '';
+        let stderr = '';
+        let settled = false;
+        let child: ReturnType<typeof spawn>;
+        try {
+          child = spawn(cmd, [file], { cwd: dir, windowsHide: true });
+        } catch {
+          res({ ok: false, stdout: '', stderr: '', missing: true });
+          return;
+        }
+        const timer = setTimeout(() => {
+          if (!settled) { settled = true; try { child.kill(); } catch { /* ignore */ } res({ ok: false, stdout, stderr: stderr + '\n(timed out)', missing: false }); }
+        }, timeoutMs);
+        child.stdout?.on('data', (d) => { stdout += String(d); });
+        child.stderr?.on('data', (d) => { stderr += String(d); });
+        child.on('error', (err: NodeJS.ErrnoException) => {
+          if (settled) return;
+          settled = true; clearTimeout(timer);
+          res({ ok: false, stdout, stderr: err.code === 'ENOENT' ? '' : String(err.message), missing: err.code === 'ENOENT' });
+        });
+        child.on('close', (code) => {
+          if (settled) return;
+          settled = true; clearTimeout(timer);
+          res({ ok: code === 0, stdout, stderr, missing: false });
+        });
+      });
+
+      if (outcome.missing) { lastError = `${cmd} not found`; continue; }
+
+      const lines = outcome.stdout.split(/\r?\n/);
+      const markerIndex = lines.map(l => l.startsWith('__MAM_RESULT__')).lastIndexOf(true);
+      let parsedResult: unknown;
+      let parsedVariables: Record<string, unknown> | undefined;
+      if (markerIndex >= 0) {
+        try {
+          const payload = JSON.parse(lines[markerIndex].slice('__MAM_RESULT__'.length)) as {
+            result?: unknown;
+            variables?: Record<string, unknown>;
+          };
+          parsedResult = payload.result;
+          if (payload.variables && Object.keys(payload.variables).length > 0) parsedVariables = payload.variables;
+        } catch { /* ignore */ }
+        lines.splice(markerIndex, 1);
+      }
+      const cleanStdout = lines.join('\n').trim();
+      return {
+        language: 'python',
+        status: outcome.ok ? 'ok' : 'error',
+        stdout: cleanStdout || undefined,
+        stderr: outcome.stderr.trim() || undefined,
+        result: parsedResult ?? undefined,
+        variables: parsedVariables,
+        error: outcome.ok ? undefined : (outcome.stderr.trim() || `python exited with an error`),
+        durationMs: Date.now() - started,
+      };
+    }
+
+    return { language: 'python', status: 'skipped', error: lastError || 'python interpreter not found', durationMs: Date.now() - started };
+  } finally {
+    await rm(dir, { recursive: true, force: true }).catch(() => undefined);
+  }
+}
+
 async function executeRun(options: RunOptions): Promise<ExecutionResult> {
   const startTime = Date.now();
   const trace = new TraceCollector(options.trace || false);
@@ -1339,14 +1480,34 @@ async function executeRun(options: RunOptions): Promise<ExecutionResult> {
         permissions: new PermChecker(),
         options: { timeout: Number(options.timeout) || DEFAULT_TIMEOUT_MS },
       });
+
+      // Behaviour, not just structure: run the ## Python implementation with
+      // the ## Examples demo calls, so output reflects what the module does.
+      const pythonExecution = await executePythonImplementation(
+        result.ast,
+        inputs as Record<string, unknown>,
+        Number(options.timeout) || DEFAULT_TIMEOUT_MS,
+      );
+      if (pythonExecution) trace.add('execute', `Python implementation: ${pythonExecution.status}`);
+
       return {
-        success: execResult.success,
-        output: execResult.output ?? {},
-        errors: execResult.error ? [execResult.error] : [],
+        success: execResult.success && pythonExecution?.status !== 'error',
+        output: pythonExecution
+          ? { ...(execResult.output ?? {}), execution: pythonExecution }
+          : (execResult.output ?? {}),
+        errors: [
+          ...(execResult.error ? [execResult.error] : []),
+          ...(pythonExecution?.status === 'error' && pythonExecution.error ? [pythonExecution.error] : []),
+        ],
         warnings: [],
         timeMs: Date.now() - startTime,
         memoryUsedBytes: 0,
-        metadata: { native: true, module: module.name, type: module.moduleType },
+        metadata: {
+          native: true,
+          module: module.name,
+          type: module.moduleType,
+          pythonExecution: pythonExecution?.status ?? 'none',
+        },
         trace: trace.getEntries(),
       };
     }
@@ -1471,7 +1632,10 @@ export async function runCommand(options: RunOptions): Promise<void> {
           console.log(ResultFormatter.format(result, options.format || 'text', options.verbose || false));
           if (!result.success) hasFailure = true;
         }
-        process.exit(hasFailure ? 1 : 0);
+        // Set exitCode instead of process.exit(): stdout is a pipe when the
+        // editor spawns us, and exiting immediately truncates the JSON.
+        process.exitCode = hasFailure ? 1 : 0;
+        return;
       }
     }
 
@@ -1494,7 +1658,8 @@ export async function runCommand(options: RunOptions): Promise<void> {
         console.log(JSON.stringify(benchmarkResult, null, 2));
       }
 
-      process.exit(benchmarkResult.successRate === 100 ? 0 : 1);
+      process.exitCode = benchmarkResult.successRate === 100 ? 0 : 1;
+      return;
     }
 
     // Single execution
@@ -1507,9 +1672,15 @@ export async function runCommand(options: RunOptions): Promise<void> {
     spinner.stop();
     executions.increment();
     const evaluation = evaluator.evaluate('run.success', result.success ? 1 : 0);
-    console.log(chalk.gray(
+    // Keep stdout machine-readable for `--format json` consumers (editors, CI).
+    const observabilityLine = chalk.gray(
       `  [observability] span=mam.run.execute ${result.success ? 'ok' : 'error'} · executions=${executions.get()} · eval=run.success ${evaluation.passed ? 'PASS' : 'FAIL'} (${evaluation.score.toFixed(2)})`,
-    ));
+    );
+    if (options.format === 'json') {
+      console.error(observabilityLine);
+    } else {
+      console.log(observabilityLine);
+    }
 
     // Compiled target artifacts stream their own program output.
     if (result.metadata && result.metadata.targetRuntime) {
@@ -1526,16 +1697,28 @@ export async function runCommand(options: RunOptions): Promise<void> {
           console.error(chalk.red(`\n${result.metadata.targetRuntime} process exited with code ${code}`));
         }
       }
-      process.exit(result.success ? 0 : 1);
+      process.exitCode = result.success ? 0 : 1;
+      return;
     }
 
     const formatted = ResultFormatter.format(result, options.format || 'text', options.verbose || false);
     console.log(formatted);
 
-    process.exit(result.success ? 0 : 1);
+    process.exitCode = result.success ? 0 : 1;
   } catch (error) {
     spinner.fail((error as Error).message);
-    process.exit(1);
+    // JSON consumers must always get a payload, even on a hard failure.
+    if (options.format === 'json') {
+      console.log(JSON.stringify({
+        success: false,
+        output: {},
+        errors: [(error as Error).message],
+        warnings: [],
+        timeMs: 0,
+        memoryUsedBytes: 0,
+      }, null, 2));
+    }
+    process.exitCode = 1;
   }
 }
 

@@ -724,5 +724,5 @@ Security validation includes:
 ---
 
 **Last Updated:** 2026-09-14
-**Version:** 0.1.0 (Beta)
+**Version:** 2.0.0 (Beta)
 **License:** MIT

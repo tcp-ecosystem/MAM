@@ -198,7 +198,7 @@ def test_audit():
 
 ## Examples
 
-### Basic Usage
+### Worked example
 
 ```python
 policy = Policy("SafeExecution", allow=["python", "search"], deny=["shell.rm"])

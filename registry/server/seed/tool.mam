@@ -3,6 +3,7 @@ id: example-tool
 name: Rate-Limited HTTP Fetcher
 version: 2.0.0
 type: tool
+provider: python
 author: MAM Team
 description: >
   A side-effecting tool that fetches URLs through a token-bucket rate limiter

@@ -44,7 +44,8 @@ permissions:
 
 ## Purpose
 
-Template for creating API modules that define RESTful endpoints with request validation, middleware chains, and structured responses. Customize the endpoints, middleware, and schemas for your service.
+Template for creating API modules that define RESTful endpoints with request validation, middleware
+chains, and structured responses. Customize the endpoints, middleware, and schemas for your service.
 
 ## Inputs
 

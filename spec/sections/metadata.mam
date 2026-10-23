@@ -1,28 +1,37 @@
 ---
+# MAM Metadata
 id: section-metadata
 name: Metadata Section
 version: 2.0.0
 type: module
+
 author: MAM Team
+
 description: >
   Specifies the Metadata section of the MAM source format. Metadata lives in
   the YAML front matter and provides identity, versioning, authorship, and
   configuration for the module.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - spec
   - section
   - metadata
+
 dependencies:
   - name: mam-spec
     version: "1.0.0"
+
 capabilities:
   - validate
   - extract
   - document
+
 permissions:
   filesystem:
     - read
@@ -170,6 +179,13 @@ def test_metadata():
 ```
 
 ## Examples
+
+### Live check
+
+```python
+sample = "---\nid: sample\nname: Sample\nversion: 2.0.0\ntype: module\nauthor: Team\ndescription: Sample module.\n---\n"
+print(extract_metadata(sample))
+```
 
 ### Valid Front Matter
 

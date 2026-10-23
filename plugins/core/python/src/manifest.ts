@@ -19,7 +19,7 @@ export const PYTHON_LANGUAGES = ['python', 'py'] as const;
 
 /**
  * `mamVersion` was `>=1.0.0` while the API package this plugin compiles against
- * is `0.1.0`, so the requirement could never be satisfied. `main` pointed at
+ * is `2.0.0`, so the requirement could never be satisfied. `main` pointed at
  * `./index.js`, but the package only ships `dist`.
  */
 export const PYTHON_MANIFEST: PluginManifest = {
@@ -28,7 +28,7 @@ export const PYTHON_MANIFEST: PluginManifest = {
   description: 'Python code execution for MAM modules',
   author: 'MAM Team',
   license: 'MIT',
-  mamVersion: '>=0.1.0',
+  mamVersion: '>=2.0.0',
   keywords: ['python', 'runtime', 'execution'],
   main: './dist/index.js',
 };

@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://mam.dev/schema/v1.0.0/sections/prompt.schema.json",
+  "$id": "https://mam.dev/schema/v2.0.0/sections/prompt.schema.json",
   "title": "Prompt Section Schema",
   "description": "Defines prompt templates for LLM interactions — system prompts, user prompts, variable interpolation, role-based message structure, and response formatting.",
   "type": "object",

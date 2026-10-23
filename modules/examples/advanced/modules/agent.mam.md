@@ -1,29 +1,38 @@
 ---
+# MAM Metadata
 id: research-agent
 name: Research Agent System
 version: 2.0.0
 type: system
+
 author: MAM Team
+
 description: >
   A coordinated multi agent system where a Planner delegates research tasks to
   a Researcher agent, which produces structured findings that a Writer agent
   compiles into a final report.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - agent
   - multi-agent
   - research
   - advanced
+
 dependencies:
   - name: multi-agent-debate
     version: ">=1.0.0"
+
 capabilities:
   - plan
   - research
   - write
+
 permissions:
   filesystem:
     - read

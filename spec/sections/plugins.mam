@@ -1,27 +1,36 @@
 ---
+# MAM Metadata
 id: section-plugins
 name: Plugins Section
 version: 2.0.0
 type: module
+
 author: MAM Team
+
 description: >
   Specifies the Plugins section of the MAM source format. The section lists
   the plugins that a module depends on for extensions and extra functionality.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - spec
   - section
   - plugins
+
 dependencies:
   - name: mam-spec
     version: "1.0.0"
+
 capabilities:
   - validate
   - extract
   - document
+
 permissions:
   filesystem:
     - read
@@ -177,6 +186,13 @@ def test_plugins():
 ```
 
 ## Examples
+
+### Live check
+
+```python
+sample = "## Plugins\n\n- name: formatter\n  version: \">=1.0.0\"\n"
+print(extract_plugins(sample))
+```
 
 ### Core Plugins
 

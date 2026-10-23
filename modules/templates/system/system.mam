@@ -170,9 +170,14 @@ def test_orchestrate():
 
 ## Examples
 
-```text
-MySystem.run(task="example")
-  then Planner, then Executor, then Reporter
+```python
+composer = SystemComposer()
+composer.register("Planner", lambda task, context: {"plan": task})
+composer.register("Executor", lambda task, context: {"done": task})
+composer.register("Reporter", lambda task, context: {"report": task})
+
+result = composer.orchestrate("index the repository")
+print(result["result"])
 ```
 
 ## References

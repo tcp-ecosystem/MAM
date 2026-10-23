@@ -196,8 +196,8 @@ func TestVersionConstant(t *testing.T) {
 	if Version == "" {
 		t.Error("Version constant is empty")
 	}
-	if Version != "0.1.0" {
-		t.Errorf("Version = %q, want %q", Version, "0.1.0")
+	if Version != "2.0.0" {
+		t.Errorf("Version = %q, want %q", Version, "2.0.0")
 	}
 }
 

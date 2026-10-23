@@ -56,7 +56,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - E2E tests: all frontmatter blocks include required `id`, `author`, `runtime` fields
 - plan-doc files: compiler targets updated from 8/9 → 16 across all docs
 
-## [0.1.0] - 2025-01-01
+## [2.0.0] - 2025-01-01
 
 ### Added
 - Initial release of MAM (Machine Agent Modules)

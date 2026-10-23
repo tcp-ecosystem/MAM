@@ -11,7 +11,7 @@ import java.util.Map;
 /** Public Java SDK facade. */
 public final class Mam {
     /** SDK version. */
-    public static final String VERSION = "0.1.0";
+    public static final String VERSION = "2.0.0";
     /** Stable SDK name. */
     public static final String SDK_NAME = "mam-java";
     private Mam() { }

@@ -10,7 +10,7 @@ function makePlugin(name: string): MAMPlugin {
       description: `Test plugin ${name}`,
       author: 'test',
       license: 'MIT',
-      mamVersion: '0.1.0',
+      mamVersion: '2.0.0',
       keywords: [],
       main: 'index.js',
     },

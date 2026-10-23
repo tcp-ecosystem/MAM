@@ -1,27 +1,36 @@
 ---
+# MAM Metadata
 id: content-pipeline
 name: Content Pipeline Workflow
 version: 2.0.0
 type: workflow
+
 author: MAM Team
+
 description: >
   Multi step content pipeline with branching and parallel execution.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - workflow
   - pipeline
   - content
   - advanced
+
 dependencies: []
+
 capabilities:
   - ingest
   - classify
   - summarize
   - analyze-sentiment
   - merge
+
 permissions:
   filesystem:
     - read

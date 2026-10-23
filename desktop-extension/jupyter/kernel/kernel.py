@@ -28,9 +28,9 @@ def _find_cli() -> str:
 
 class MamKernel(Kernel):
     implementation = "mam_kernel"
-    implementation_version = "0.1.0"
+    implementation_version = "2.0.0"
     language = "mam"
-    language_version = "0.1.0"
+    language_version = "2.0.0"
     language_info = {
         "name": "mam",
         "mimetype": "text/x-mam",

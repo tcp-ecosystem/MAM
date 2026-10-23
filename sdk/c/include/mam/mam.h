@@ -67,10 +67,10 @@ extern "C" {
 /* Version                                                                    */
 /* ------------------------------------------------------------------------- */
 
-#define MAM_VERSION "0.1.0"
+#define MAM_VERSION "2.0.0"
 #define MAM_SDK_NAME "mam-c"
 
-/** Returns the SDK identifier, for example `mam-c/0.1.0`. */
+/** Returns the SDK identifier, for example `mam-c/2.0.0`. */
 const char *mam_user_agent(void);
 
 /** Returns the SDK version string. */

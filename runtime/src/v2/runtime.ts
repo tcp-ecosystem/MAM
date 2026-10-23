@@ -170,7 +170,9 @@ export class MAMV2Runtime implements RuntimeInterface {
       return {
         success: false,
         output: {},
-        error: 'Agent requires role and goal',
+        error:
+          'Agent requires role and goal — declare them in frontmatter (role:/goal:) or in a ' +
+          '## Agent Definition block with "role:" and "goal:" lines',
         timeMs: performance.now() - startTime,
         events: [],
         stateChanges: [],

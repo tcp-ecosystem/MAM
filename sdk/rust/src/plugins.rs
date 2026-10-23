@@ -298,7 +298,7 @@ impl Plugin for MetadataPlugin {
     }
 
     fn version(&self) -> &str {
-        "0.1.0"
+        "2.0.0"
     }
 
     fn description(&self) -> &str {
@@ -338,7 +338,7 @@ impl Plugin for PythonPlugin {
     }
 
     fn version(&self) -> &str {
-        "0.1.0"
+        "2.0.0"
     }
 
     fn description(&self) -> &str {
@@ -377,7 +377,7 @@ impl Plugin for MemoryPlugin {
     }
 
     fn version(&self) -> &str {
-        "0.1.0"
+        "2.0.0"
     }
 
     fn description(&self) -> &str {
@@ -412,7 +412,7 @@ mod tests {
             &self.name
         }
         fn version(&self) -> &str {
-            "0.1.0"
+            "2.0.0"
         }
         fn description(&self) -> &str {
             "Test plugin"
@@ -494,7 +494,7 @@ mod tests {
     #[test]
     fn test_plugin_version() {
         let registry = registry_with_one();
-        assert_eq!(plugin_version(&registry, "test"), Some("0.1.0".to_string()));
+        assert_eq!(plugin_version(&registry, "test"), Some("2.0.0".to_string()));
         assert_eq!(plugin_version(&registry, "nope"), None);
     }
 
@@ -518,7 +518,7 @@ mod tests {
     #[test]
     fn test_describe_plugins() {
         let text = describe_plugins(&registry_with_one());
-        assert!(text.contains("test v0.1.0"));
+        assert!(text.contains("test v2.0.0"));
         assert!(text.contains("enabled"));
         assert_eq!(describe_plugins(&PluginRegistry::new()), "No plugins registered");
     }

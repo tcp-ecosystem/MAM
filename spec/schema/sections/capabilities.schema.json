@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://mam.dev/schema/v1.0.0/sections/capabilities.schema.json",
+  "$id": "https://mam.dev/schema/v2.0.0/sections/capabilities.schema.json",
   "title": "Capabilities Section Schema",
   "description": "Declares what the module can do — its feature surface, runtime abilities, and integration points. Used by the orchestrator for capability-based routing and dependency resolution.",
   "type": "object",

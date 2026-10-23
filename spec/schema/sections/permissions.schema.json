@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://mam.dev/schema/v1.0.0/sections/permissions.schema.json",
+  "$id": "https://mam.dev/schema/v2.0.0/sections/permissions.schema.json",
   "title": "Permissions Section Schema",
   "description": "Declares the runtime permissions this module requires — filesystem access, network, environment variables, exec, and memory. Includes escalation rules and scoped permission grants.",
   "type": "object",

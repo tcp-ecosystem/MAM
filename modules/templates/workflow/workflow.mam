@@ -42,7 +42,8 @@ permissions:
 
 ## Purpose
 
-Template for creating multi step workflows as directed acyclic graphs. Each step is an atomic operation with dependencies, conditions, retries, and error handlers. Customize the steps and handlers for your pipeline.
+Template for creating multi step workflows as directed acyclic graphs. Each step is an atomic
+operation with dependencies, conditions, retries, and error handlers. Customize the steps and handlers for your pipeline.
 
 ## Inputs
 

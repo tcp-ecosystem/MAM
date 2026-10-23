@@ -1,23 +1,31 @@
 ---
+# MAM Metadata
 id: grammar-dependencies
 name: Dependencies Grammar
 version: 2.0.0
 type: module
+
 author: MAM Team
+
 description: >
   Describes the grammar of the MAM dependencies section: the packages and
   modules a module needs to function.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - grammar
   - dependencies
+
 capabilities:
   - parse
   - validate
   - resolve
+
 permissions:
   filesystem:
     - read
@@ -181,8 +189,7 @@ def test_resolve():
 
 ## Examples
 
-### Basic Usage
-
+### Parse a dependency declaration
 ```python
 doc = "- fastapi >= 0.100.0\n- pydantic >= 2.0"
 print(resolve(doc))

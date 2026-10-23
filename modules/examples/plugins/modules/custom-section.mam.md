@@ -1,15 +1,21 @@
 ---
+# MAM Metadata
 id: custom-section
 name: Custom Section
 version: 2.0.0
 type: plugin
+
 author: MAM Examples
+
 description: >
   Adds a custom diagram section type that accepts Mermaid syntax.
+
 license: MIT
+
 runtime:
   language: typescript
   version: ">=5.0"
+
 tags:
   - plugin
   - section
@@ -17,11 +23,14 @@ tags:
   - mermaid
   - renderer
   - example
+
 dependencies: []
+
 capabilities:
   - register-section
   - validate-section
   - render-section
+
 permissions:
   filesystem:
     - read
@@ -111,9 +120,9 @@ def test_register_section():
 
 Register a section called diagram and confirm its status.
 
-```text
-register_section("diagram")
-# returns {"name": "diagram", "status": "registered"}
+```python
+result = register_section("diagram")
+print(result["status"])
 ```
 
 ## References

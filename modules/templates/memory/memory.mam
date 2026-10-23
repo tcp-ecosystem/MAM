@@ -47,7 +47,8 @@ permissions:
 
 ## Purpose
 
-Starter template for a MAM memory module. Memory provides namespaced storage for agents with an explicit format, backend, scope, and time to live. Replace the format, backend, scope, and expiry values to match your deployment.
+Starter template for a MAM memory module. Memory provides namespaced storage for agents with an
+explicit format, backend, scope, and time to live. Replace the format, backend, scope, and expiry values to match your deployment.
 
 ## Inputs
 
@@ -244,7 +245,7 @@ def test_search():
 
 ## Examples
 
-### Basic Usage
+### Store, recall and expire a value
 
 ```python
 mem = MemoryStore()

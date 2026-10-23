@@ -3,7 +3,7 @@
 
 [project]
 name = "plugins"
-version = "1.0.0"
+version = "2.0.0"
 description = "MAM plugin extension examples composed from modules"
 license = "MIT"
 authors = ["MAM Examples"]

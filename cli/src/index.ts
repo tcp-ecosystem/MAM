@@ -721,11 +721,11 @@ program
 
     if (action === 'list' || !action) {
       console.log(chalk.gray('  Installed plugins:'));
-      console.log(chalk.white('    @mam/plugin-api      ^0.1.0'));
-      console.log(chalk.white('    @mam/plugin-memory   ^0.1.0'));
-      console.log(chalk.white('    @mam/plugin-mermaid  ^0.1.0'));
-      console.log(chalk.white('    @mam/plugin-python   ^0.1.0'));
-      console.log(chalk.white('    @mam/plugin-yaml     ^0.1.0'));
+      console.log(chalk.white('    @mam/plugin-api      ^2.0.0'));
+      console.log(chalk.white('    @mam/plugin-memory   ^2.0.0'));
+      console.log(chalk.white('    @mam/plugin-mermaid  ^2.0.0'));
+      console.log(chalk.white('    @mam/plugin-python   ^2.0.0'));
+      console.log(chalk.white('    @mam/plugin-yaml     ^2.0.0'));
     } else if (action === 'install' && name) {
       console.log(chalk.green(`  Installing plugin: ${name}`));
     } else if (action === 'remove' && name) {

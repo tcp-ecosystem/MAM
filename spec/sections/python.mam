@@ -1,27 +1,36 @@
 ---
+# MAM Metadata
 id: section-python
 name: Python Section
 version: 2.0.0
 type: module
+
 author: MAM Team
+
 description: >
   Specifies the Python section of the MAM source format. The section holds
   executable Python code blocks that run in a Python runtime environment.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - spec
   - section
   - python
+
 dependencies:
   - name: mam-spec
     version: "1.0.0"
+
 capabilities:
   - validate
   - extract
   - document
+
 permissions:
   filesystem:
     - read
@@ -177,6 +186,13 @@ def test_python():
 ```
 
 ## Examples
+
+### Live check
+
+```python
+sample = "## Python\n\n```python\ndef run(value):\n    return value\n```\n"
+print(extract_python_blocks(sample))
+```
 
 ### Basic Function
 

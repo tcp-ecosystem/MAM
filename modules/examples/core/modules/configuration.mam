@@ -1,23 +1,31 @@
 ---
+# MAM Metadata
 id: configuration
 name: Configuration
 version: 2.0.0
 type: module
+
 author: MAM Team
+
 description: >
   Demonstrates the Configuration core of a MAM module: loading, merging,
   and validating runtime settings.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - core
   - configuration
+
 capabilities:
   - load
   - merge
   - validate
+
 permissions:
   filesystem:
     - read
@@ -125,7 +133,7 @@ def test_validate_ok():
 
 ## Examples
 
-### Basic Usage
+### Load and override a layered configuration
 
 ```python
 cfg = merge({"name": "app", "timeout": 30}, {"timeout": 60})

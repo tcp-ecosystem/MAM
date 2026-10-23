@@ -1,23 +1,31 @@
 ---
+# MAM Metadata
 id: grammar-permissions
 name: Permissions Grammar
 version: 2.0.0
 type: module
+
 author: MAM Team
+
 description: >
   Describes the grammar of the MAM permissions section: the security grants
   a module requests from its execution environment.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - grammar
   - permissions
+
 capabilities:
   - parse
   - validate
   - assess
+
 permissions:
   filesystem:
     - read
@@ -179,8 +187,7 @@ def test_assess():
 
 ## Examples
 
-### Basic Usage
-
+### Parse a permission block
 ```python
 doc = "- network\n- filesystem\n- memory"
 print(assess(doc))

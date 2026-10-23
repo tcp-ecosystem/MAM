@@ -591,7 +591,7 @@ describe('Mermaid Plugin - Manifest', () => {
   });
 
   it('should require a MAM version the host can satisfy', () => {
-    expect(MERMAID_MANIFEST.mamVersion).toBe('>=0.1.0');
+    expect(MERMAID_MANIFEST.mamVersion).toBe('>=2.0.0');
   });
 
   it('should point main at a file the package actually ships', () => {

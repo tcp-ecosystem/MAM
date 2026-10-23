@@ -34,13 +34,17 @@ the plan should exploit it, not rebuild it.
 | VS Code extension — Marketplace | **Live** | `ArkhAngelLifeJiggy.mam-language` |
 | `mam-lsp` language server | Shipped | `lsp/`, bin wired |
 | MCP server (`mam serve --mcp`, `@mam/mcp`) | Shipped **and documented** | README + usage.md carry the client config; 26 tests |
+| `awesome-mam` reference library | **Complete — all 5 levels, verified** | 13 authored files + `.mam` twins: 5 modules, 3 components, 2 workflows, 2 services, 1 system (`system.mam.md` + `mam.toml`); 160/160 harness cases, 26 files validate 0/0 (19 rules), `mam test` 1/1 on all 13; repo `tcp-ecosystem/awesome-mam`, commits `f30e717`→`83be740` |
 | Docs material | README documented (5-command loop, convert/validate/MCP/targets) | `docs/` site — material only, **still no stable URL** |
 | Token-efficiency engine | Shipped | `@mam/token-optimization`, 5 layers, 70 tests |
 
 Two of the biggest unshipped levers remain the public npm release and the docs
 site URL. Meanwhile the loop that matters is already closed end-to-end:
 convert → validate → run → install from the Hub → publish to the Hub → fan
-out to npm/PyPI/GitHub.
+out to npm/PyPI/GitHub. The proof surface an outsider is asked to imitate is
+now real as well: `awesome-mam` carries a complete five-level ladder whose
+every file is executable and validated — though, being authored by us, it is
+the bar to clear, never adoption evidence.
 
 ---
 
@@ -138,8 +142,13 @@ templates → outreach → launch.**
 ### D. Seed the ecosystem
 - Make the 19 seeded Hub modules genuinely reusable (they are live and
   installable — `mam install example-agent` verified).
-- Keep `awesome-mam` populated beyond our own repos, with an "add yours" PR
-  template (still TODO).
+- The `awesome-mam` reference ladder is **complete**: 5 modules → 3
+  components → 2 workflows → 2 services → 1 system, 13 authored files +
+  twins, 160/160 harness cases, 26 files validate. It is the artifact new
+  contributors are asked to imitate at each level — not adoption evidence,
+  since we authored it.
+- Next on that repo: the "add yours" PR template (still TODO), then
+  external entries — those are the actual adoption signal.
 - Add the `mam-lang` topic to relevant repos.
 - 2–3 standalone template repos from `mam init` output (still TODO).
 
@@ -183,6 +192,8 @@ templates → outreach → launch.**
       the next extension release
 - [ ] Docs site published with a stable URL
 - [x] `mam serve --mcp` documented as the MCP integration path (README + usage.md)
+- [x] `awesome-mam` reference library complete — 5 levels, verified (authored
+      by us: a readiness bar, not adoption evidence)
 - [ ] `awesome-mam` seeded with external entries
 
 ---
@@ -228,6 +239,15 @@ Track monthly:
 - External `.mam` repositories: **not yet measured** — first sweep scheduled
   with the next metrics pass.
 
+**Reference surface (explicitly NOT adoption evidence — authored by us):**
+
+- `awesome-mam` ladder complete: 5 modules · 3 components · 2 workflows ·
+  2 services · 1 system; 13 authored files + `.mam` twins; 160/160
+  Python-harness test cases, 26 files validate (0 errors, 0 warnings,
+  19 rules), `mam test` 1/1 on all 13 files. Repo
+  `tcp-ecosystem/awesome-mam`, commits `f30e717` → `83be740`
+  (Oct 23, 2026).
+
 **Milestones:** 10 external repos → 50 → 200 (Linguist-ready).
 
 ---
@@ -242,8 +262,11 @@ Track monthly:
 3. Write the before/after README section; record the demo.
 4. Publish the standalone `mam-action` marketplace repo (the in-repo action
    already works).
-5. Template repos + `awesome-mam` PR template.
-6. Prepare outreach list and Convert-PR template.
+5. Template repos + `awesome-mam` "add yours" PR template — the reference
+   ladder itself is complete; external entries remain the open signal.
+6. Prepare the outreach list and Convert-PR template; the `awesome-mam`
+   ladder is the link to send when someone asks "what does production-grade
+   MAM look like?"
 7. Finish the readiness checklist, then plan the public launch.
 
 ---

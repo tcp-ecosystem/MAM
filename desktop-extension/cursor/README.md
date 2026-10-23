@@ -23,7 +23,7 @@ and supports the VS Code Marketplace out of the box. The MAM extension lives in
 With Cursor installed on your `PATH`:
 
 ```bash
-cursor --install-extension /path/to/mam-language-0.1.0.vsix
+cursor --install-extension /path/to/mam-language-2.0.0.vsix
 ```
 
 ### Option B — VS Code Marketplace

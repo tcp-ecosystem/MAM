@@ -1,23 +1,32 @@
 ---
+# MAM Metadata
 id: hello-world
 name: Hello World
 version: 2.0.0
 type: module
+
 author: MAM Team
+
 description: >
   Minimal MAM module that introduces the core concepts: frontmatter metadata,
   purpose driven design, behavioral rules, and executable Python code.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - example
   - beginner
   - hello
+
 dependencies: []
+
 capabilities:
   - greet
+
 permissions:
   filesystem:
     - read

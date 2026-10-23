@@ -20,7 +20,7 @@ Trae is a VS Code-based editor, so it runs standard VS Code extensions
 ### Option A — install the `.vsix`
 
 ```bash
-trae --install-extension /path/to/mam-language-0.1.0.vsix
+trae --install-extension /path/to/mam-language-2.0.0.vsix
 ```
 
 ### Option B — VS Code Marketplace

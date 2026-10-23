@@ -244,7 +244,7 @@ init, build, validate, lint, format, fmt, graph, ast, execute, export, doctor, d
 - [ ] Configure package.json files for publishing (publishConfig, repository, keywords, files)
 - [ ] Add changesets configuration
 - [ ] Create initial CHANGELOG.md
-- [ ] Tag v0.1.0-beta release
+- [ ] Tag v2.0.0-beta release
 - [ ] Test `npm pack` for each package
 
 ---

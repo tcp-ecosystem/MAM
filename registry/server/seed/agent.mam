@@ -3,6 +3,12 @@ id: example-agent
 name: Support Triage Agent
 version: 2.0.0
 type: agent
+role: Support Triage
+goal: Turn an inbound ticket into a routing decision and stop with a reason.
+tools:
+  - knowledge_base_search
+  - customer_context
+  - create_ticket_note
 author: MAM Team
 description: >
   An autonomous support agent that reads an inbound ticket, classifies it,

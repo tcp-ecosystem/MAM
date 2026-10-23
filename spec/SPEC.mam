@@ -1,0 +1,307 @@
+---
+# MAM Metadata
+id: mam-spec
+name: MAM Specification
+version: 2.0.0
+type: system
+
+author: MAM Team
+
+description: >
+  Entry system for the MAM specification: composes the token, grammar and
+  section modules into one machine-readable spec that can be validated and
+  rendered together.
+
+license: MIT
+
+runtime:
+  language: python
+  version: ">=3.12"
+
+tags:
+  - spec
+  - system
+  - specification
+
+dependencies:
+  - name: grammar-tokens
+    version: ">=2.0.0"
+  - name: grammar-agent
+    version: ">=2.0.0"
+  - name: grammar-capabilities
+    version: ">=2.0.0"
+  - name: grammar-dependencies
+    version: ">=2.0.0"
+  - name: grammar-metadata
+    version: ">=2.0.0"
+  - name: grammar-permissions
+    version: ">=2.0.0"
+  - name: grammar-prompt
+    version: ">=2.0.0"
+  - name: grammar-system
+    version: ">=2.0.0"
+  - name: grammar-workflow
+    version: ">=2.0.0"
+  - name: section-purpose
+    version: ">=2.0.0"
+  - name: section-metadata
+    version: ">=2.0.0"
+  - name: section-inputs
+    version: ">=2.0.0"
+  - name: section-outputs
+    version: ">=2.0.0"
+  - name: section-capabilities
+    version: ">=2.0.0"
+  - name: section-rules
+    version: ">=2.0.0"
+  - name: section-workflow
+    version: ">=2.0.0"
+  - name: section-mermaid
+    version: ">=2.0.0"
+  - name: section-python
+    version: ">=2.0.0"
+  - name: section-javascript
+    version: ">=2.0.0"
+  - name: section-prompt
+    version: ">=2.0.0"
+  - name: section-memory
+    version: ">=2.0.0"
+  - name: section-tests
+    version: ">=2.0.0"
+  - name: section-examples
+    version: ">=2.0.0"
+  - name: section-references
+    version: ">=2.0.0"
+  - name: section-dependencies
+    version: ">=2.0.0"
+  - name: section-permissions
+    version: ">=2.0.0"
+  - name: section-imports
+    version: ">=2.0.0"
+  - name: section-exports
+    version: ">=2.0.0"
+  - name: section-plugins
+    version: ">=2.0.0"
+
+capabilities:
+  - compose
+  - validate
+  - inventory
+
+permissions:
+  filesystem:
+    - read
+---
+
+# MAM Specification
+
+## Purpose
+
+Entry system for the MAM specification. It composes every grammar module and
+every section module into one spec, then answers three questions mechanically:
+which modules exist, which group they belong to, and whether the declared
+dependency graph is internally consistent.
+
+## Inputs
+
+| Name | Type | Required | Description |
+|------|------|----------|-------------|
+| mode | string | No | `inventory` (default), `validate`, or `render` |
+| group | string | No | Limit the report to `grammar` or `sections` |
+
+## Outputs
+
+| Name | Type | Description |
+|------|------|-------------|
+| status | string | `ok` when the spec graph is consistent |
+| groups | object | Module ids grouped by `grammar` and `sections` |
+| count | integer | Total number of composed modules |
+| errors | list | Duplicate ids, dangling groups or unknown modules |
+
+## Modules
+
+### Grammar
+
+- **Token Grammar** (`grammar-tokens`) — token inventory and reference tokenizer
+- **Agent Grammar** (`grammar-agent`) — role, goal, tools, memory, handoff
+- **Capabilities Grammar** (`grammar-capabilities`)
+- **Dependencies Grammar** (`grammar-dependencies`)
+- **Metadata Grammar** (`grammar-metadata`)
+- **Permissions Grammar** (`grammar-permissions`)
+- **Prompt Grammar** (`grammar-prompt`)
+- **System Grammar** (`grammar-system`)
+- **Workflow Grammar** (`grammar-workflow`)
+
+### Sections
+
+- **Purpose Section** (`section-purpose`)
+- **Metadata Section** (`section-metadata`)
+- **Inputs Section** (`section-inputs`)
+- **Outputs Section** (`section-outputs`)
+- **Capabilities Section** (`section-capabilities`)
+- **Rules Section** (`section-rules`)
+- **Workflow Section** (`section-workflow`)
+- **Mermaid Section** (`section-mermaid`)
+- **Python Section** (`section-python`)
+- **JavaScript Section** (`section-javascript`)
+- **Prompt Section** (`section-prompt`)
+- **Memory Section** (`section-memory`)
+- **Tests Section** (`section-tests`)
+- **Examples Section** (`section-examples`)
+- **References Section** (`section-references`)
+- **Dependencies Section** (`section-dependencies`)
+- **Permissions Section** (`section-permissions`)
+- **Imports Section** (`section-imports`)
+- **Exports Section** (`section-exports`)
+- **Plugins Section** (`section-plugins`)
+
+## Capabilities
+
+### compose
+
+Group the composed modules by grammar and section.
+
+### validate
+
+Check for duplicate ids and modules that claim an unknown group.
+
+### inventory
+
+Report counts per group for documentation generators.
+
+## Rules
+
+- Every grammar and section module is part of the spec.
+- Module ids are unique across the whole spec.
+- The spec never references a module it does not compose.
+- Section modules document one section each; grammar modules document one
+  construct each.
+- A spec change updates the BNF, the section module and the schema together.
+
+## Workflow
+
+```mermaid
+flowchart LR
+    Tokens[Token Grammar] --> Grammar[Grammar modules]
+    Grammar --> Sections[Section modules]
+    Sections --> Validate[Validate ids and groups]
+    Validate --> Inventory[Inventory report]
+    Inventory --> Render[Render docs]
+```
+
+## Python
+
+```python
+GROUPS = {
+    "grammar": [
+        "grammar-tokens", "grammar-agent", "grammar-capabilities",
+        "grammar-dependencies", "grammar-metadata", "grammar-permissions",
+        "grammar-prompt", "grammar-system", "grammar-workflow",
+    ],
+    "sections": [
+        "section-purpose", "section-metadata", "section-inputs",
+        "section-outputs", "section-capabilities", "section-rules",
+        "section-workflow", "section-mermaid", "section-python",
+        "section-javascript", "section-prompt", "section-memory",
+        "section-tests", "section-examples", "section-references",
+        "section-dependencies", "section-permissions", "section-imports",
+        "section-exports", "section-plugins",
+    ],
+}
+
+
+def run_spec(mode="inventory", group=None):
+    """Report or validate the spec composition."""
+    known_groups = set(GROUPS)
+    all_ids = [mid for ids in GROUPS.values() for mid in ids]
+    errors = []
+    if len(set(all_ids)) != len(all_ids):
+        errors.append("duplicate module id")
+    if group is not None and group not in known_groups:
+        errors.append(f"unknown group: {group}")
+
+    selected = {group: GROUPS[group]} if group in known_groups else GROUPS
+    report = {
+        "status": "ok" if not errors else "error",
+        "mode": mode,
+        "groups": selected,
+        "count": sum(len(ids) for ids in selected.values()),
+        "errors": errors,
+    }
+    if mode == "render":
+        report["markdown"] = "\n".join(
+            f"### {name}\n\n" + "\n".join(f"- `{mid}`" for mid in ids)
+            for name, ids in selected.items()
+        )
+    return report
+```
+
+## Tests
+
+### Input
+
+```yaml
+mode: inventory
+```
+
+### Expected
+
+```yaml
+status: ok
+count: 29
+errors: []
+```
+
+```python
+def test_spec_inventory_is_complete():
+    result = run_spec("inventory")
+    assert result["status"] == "ok"
+    assert result["count"] == 29
+    assert result["errors"] == []
+
+
+def test_spec_groups_are_unique():
+    ids = [mid for group in GROUPS.values() for mid in group]
+    assert len(ids) == len(set(ids))
+
+
+def test_spec_limits_to_one_group():
+    result = run_spec("inventory", group="grammar")
+    assert result["count"] == len(GROUPS["grammar"])
+    assert set(result["groups"]) == {"grammar"}
+
+
+def test_spec_rejects_unknown_group():
+    result = run_spec("inventory", group="runtime")
+    assert result["status"] == "error"
+    assert result["errors"] == ["unknown group: runtime"]
+
+
+def test_spec_render_produces_markdown():
+    result = run_spec("render", group="sections")
+    assert "### sections" in result["markdown"]
+    assert "`section-purpose`" in result["markdown"]
+```
+
+## Examples
+
+### Inventory by group
+
+```python
+result = run_spec("inventory")
+print(result["count"], sorted(result["groups"]))
+```
+
+### Render the section index
+
+```python
+report = run_spec("render", group="sections")
+print(report["markdown"].split("\n")[0])
+```
+
+## References
+
+- `spec/SPEC.md` — prose specification
+- `spec/grammar/grammar-v3.bnf` — consolidated grammar
+- `spec/schema/mam.schema.json` — JSON Schema for modules
+- `plan-doc/full-mam.md` — canonical source format

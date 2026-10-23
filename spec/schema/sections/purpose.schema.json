@@ -1,6 +1,6 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "$id": "https://mam.dev/schema/v1.0.0/sections/purpose.schema.json",
+  "$id": "https://mam.dev/schema/v2.0.0/sections/purpose.schema.json",
   "title": "Purpose Section Schema",
   "description": "Declares the module's objective, target audience, problem domain, and success criteria. The Purpose section is the first section consumers read to understand what a module does and why it exists.",
   "type": "object",

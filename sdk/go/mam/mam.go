@@ -50,12 +50,12 @@ func Execute(ctx context.Context, path string, cfg RuntimeConfig) ([]*ExecutionR
 }
 
 // Version is the semantic version of this SDK.
-const Version = "0.1.0"
+const Version = "2.0.0"
 
 // SDKName identifies this SDK in user agents and diagnostics.
 const SDKName = "mam-go"
 
-// UserAgent returns the SDK identifier string (e.g. "mam-go/0.1.0").
+// UserAgent returns the SDK identifier string (e.g. "mam-go/2.0.0").
 func UserAgent() string {
 	return SDKName + "/" + Version
 }

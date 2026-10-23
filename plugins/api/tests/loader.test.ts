@@ -33,7 +33,7 @@ describe('Plugin Loader', () => {
       description: 'A test plugin',
       author: 'tester',
       license: 'MIT',
-      mamVersion: '0.1.0',
+      mamVersion: '2.0.0',
       keywords: [],
       main: 'index.js',
     });
@@ -48,7 +48,7 @@ describe('Plugin Loader', () => {
       description: 'test',
       author: 'tester',
       license: 'MIT',
-      mamVersion: '0.1.0',
+      mamVersion: '2.0.0',
       keywords: [],
       main: 'index.js',
     });
@@ -63,7 +63,7 @@ describe('Plugin Loader', () => {
       description: 'test',
       author: 'tester',
       license: 'MIT',
-      mamVersion: '0.1.0',
+      mamVersion: '2.0.0',
       keywords: [],
       main: 'index.js',
     });
@@ -78,7 +78,7 @@ describe('Plugin Loader', () => {
       description: 'test',
       author: 'tester',
       license: 'MIT',
-      mamVersion: '0.1.0',
+      mamVersion: '2.0.0',
       keywords: [],
       main: 'index.js',
     });
@@ -123,7 +123,7 @@ describe('Plugin Loader semver and manifest utilities', () => {
     expect(satisfiesSemver('1.2.3', '^1.0.0')).toBe(true);
     expect(satisfiesSemver('1.9.9', '^1.0.0')).toBe(true);
     expect(satisfiesSemver('2.0.0', '^1.0.0')).toBe(false);
-    expect(satisfiesSemver('0.9.0', '^0.1.0')).toBe(false);
+    expect(satisfiesSemver('0.9.0', '^2.0.0')).toBe(false);
   });
 
   it('satisfiesSemver() should honour tilde, exact and comparator ranges', () => {

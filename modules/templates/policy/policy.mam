@@ -42,7 +42,8 @@ permissions:
 
 ## Purpose
 
-Starter template for a MAM policy. A policy states what is allowed and what is denied, then enforces the result through the declared permission scopes. Replace the allow list, the deny list, and the permission scopes for your environment.
+Starter template for a MAM policy. A policy states what is allowed and what is denied, then enforces
+the result through the declared permission scopes. Replace the allow list, the deny list, and the permission scopes for your environment.
 
 ## Inputs
 
@@ -198,7 +199,7 @@ def test_audit():
 
 ## Examples
 
-### Basic Usage
+### Worked example
 
 ```python
 policy = Policy("SafeExecution", allow=["python", "search"], deny=["shell.rm"])

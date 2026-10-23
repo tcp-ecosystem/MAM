@@ -1,24 +1,33 @@
 ---
+# MAM Metadata
 id: password-gen
 name: Password Generator
 version: 2.0.0
 type: module
+
 author: MAM Team
+
 description: >
   Generates secure random passwords with configurable complexity and strength
   assessment.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - example
   - beginner
   - security
   - password
+
 dependencies: []
+
 capabilities:
   - generate
+
 permissions:
   filesystem:
     - read

@@ -6,7 +6,7 @@ info:
     `graphql/schema.graphql` and the resolvers in `src/resolvers.ts` describe
     the same surface; this document is the equivalent for REST clients and for
     code generators.
-  version: 0.1.0
+  version: 2.0.0
   license:
     name: MIT
   contact:

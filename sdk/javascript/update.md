@@ -16,7 +16,7 @@
 | Feature | Behavior |
 | --- | --- |
 | `getName()` | Returns current module name |
-| `getVersion()` | Returns version, or `'0.1.0'` when unset |
+| `getVersion()` | Returns version, or `'2.0.0'` when unset |
 | `getConfig()` | Returns a deep-ish defensive copy of the config object (mutating the result does not affect the module) |
 | `sectionCount()` | Number of sections held by the module |
 | `isEmpty()` | `true` when the module has no sections |

@@ -1,31 +1,40 @@
 ---
+# MAM Metadata
 id: data-pipeline
 name: ETL Data Pipeline
 version: 2.0.0
 type: workflow
+
 author: MAM Team
+
 description: >
   A multi step ETL pipeline that extracts data from sources, runs parallel
   transform and validate steps, loads into a target, and produces a report.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - workflow
   - etl
   - pipeline
   - data
   - advanced
+
 dependencies:
   - name: content-pipeline
     version: ">=1.0.0"
+
 capabilities:
   - extract
   - transform
   - validate
   - load
   - report
+
 permissions:
   filesystem:
     - read

@@ -21,7 +21,7 @@ export const YAML_LANGUAGES = ['yaml', 'yml'] as const;
 
 /**
  * `mamVersion` was `>=1.0.0` while the API package this plugin compiles against
- * is `0.1.0`, so the requirement could never be satisfied. `main` pointed at
+ * is `2.0.0`, so the requirement could never be satisfied. `main` pointed at
  * `./index.js`, but the package only ships `dist`.
  */
 export const YAML_MANIFEST: PluginManifest = {
@@ -30,7 +30,7 @@ export const YAML_MANIFEST: PluginManifest = {
   description: 'YAML section parser and validator for MAM modules',
   author: 'MAM Team',
   license: 'MIT',
-  mamVersion: '>=0.1.0',
+  mamVersion: '>=2.0.0',
   keywords: ['yaml', 'parser', 'validator'],
   main: './dist/index.js',
 };

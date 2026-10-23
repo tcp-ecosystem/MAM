@@ -9,7 +9,7 @@ using Sys = System.Collections.Generic;
 /// <summary>Provides public convenience APIs and identity for the C# MAM SDK.</summary>
 public static class Mam
 {
-    /// <summary>Gets the semantic SDK version.</summary> public const string Version = "0.1.0";
+    /// <summary>Gets the semantic SDK version.</summary> public const string Version = "2.0.0";
     /// <summary>Gets the stable user-agent component.</summary> public const string SdkName = "mam-csharp";
 
     /// <summary>Returns a stable user-agent string.</summary><returns>An SDK name and version separated by a slash.</returns> public static string UserAgent() => SdkName + "/" + Version;

@@ -22,7 +22,7 @@ function makePlugin(overrides?: Partial<MAMPlugin>): MAMPlugin {
       description: 'Test plugin',
       author: 'tester',
       license: 'MIT',
-      mamVersion: '0.1.0',
+      mamVersion: '2.0.0',
       keywords: [],
       main: 'index.js',
     },
@@ -183,30 +183,30 @@ describe('validatePluginCompatibility', () => {
   });
 
   it('should be compatible when the host meets the minimum', () => {
-    expect(validatePluginCompatibility(manifest('0.1.0'), '0.2.0').compatible).toBe(true);
-    expect(validatePluginCompatibility(manifest('0.1.0'), '0.1.0').compatible).toBe(true);
+    expect(validatePluginCompatibility(manifest('2.0.0'), '0.2.0').compatible).toBe(true);
+    expect(validatePluginCompatibility(manifest('2.0.0'), '2.0.0').compatible).toBe(true);
   });
 
   it('should be incompatible when the host is too old', () => {
-    const result = validatePluginCompatibility(manifest('0.2.0'), '0.1.0');
+    const result = validatePluginCompatibility(manifest('0.2.0'), '2.0.0');
     expect(result.compatible).toBe(false);
     expect(result.errors[0]).toMatch(/requires MAM 0.2.0/);
   });
 
   it('should warn when no requirement is declared', () => {
-    const result = validatePluginCompatibility(manifest(), '0.1.0');
+    const result = validatePluginCompatibility(manifest(), '2.0.0');
     expect(result.compatible).toBe(true);
     expect(result.warnings[0]).toMatch(/no mamVersion/);
   });
 
   it('should error on a malformed requirement', () => {
-    const result = validatePluginCompatibility(manifest('^oops'), '0.1.0');
+    const result = validatePluginCompatibility(manifest('^oops'), '2.0.0');
     expect(result.compatible).toBe(false);
     expect(result.errors[0]).toMatch(/not valid semver/);
   });
 
   it('should error on a malformed host version', () => {
-    expect(validatePluginCompatibility(manifest('0.1.0'), 'nope').compatible).toBe(false);
+    expect(validatePluginCompatibility(manifest('2.0.0'), 'nope').compatible).toBe(false);
   });
 });
 
