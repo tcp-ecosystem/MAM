@@ -409,6 +409,27 @@ mam run hello.mam.py                    # compiled target routes to python
 mam run hello.mam.js                    # compiled target routes to node
 ```
 
+When a module carries a `## Python` section, `mam run` also executes that
+implementation with the demo calls from `## Examples` and returns the real
+result, not just the parsed manifest:
+
+```json
+{
+  "name": "Knowledge Graph Builder",
+  "steps": 4,
+  "execution": {
+    "language": "python",
+    "status": "ok",
+    "stdout": "1",
+    "result": { "entity_count": 1, "query_result": { "found": true } },
+    "durationMs": 238
+  }
+}
+```
+
+`execution.status` is `ok`, `error`, or `skipped` (no Python interpreter on
+`PATH`); execution errors fail the run instead of being hidden.
+
 ### Project Composition (`mam.toml`)
 
 Multi-file projects compose modules into a system. A complete manifest
@@ -498,20 +519,35 @@ node -e "import('./dist/index.js').then(async ({ RegistryServer, RegistryHttpSer
 ```
 
 ```bash
-mam publish hello.mam         # publish to the registry
-mam search authentication     # search modules
-mam install                   # install dependencies
+mam publish hello.mam                        # publish to the MAM Hub
+mam publish .                                # publish a whole module folder
+mam publish hello.mam --targets npm,github   # + npm package + GitHub release
+mam publish hello.mam --targets npm,python,github   # fan out everywhere
+mam search authentication                    # search modules
+mam install example-agent                    # install from the Hub
 ```
 
 **Live instance:** `https://mam-hub.onrender.com` (free tier: sleeps when idle,
 self-seeds on cold boot).
+
+One artifact, everywhere: the `--targets` flag fans a published module out to
+the ecosystems you already build in — an npm package (`dist/npm/`, published
+with the real `npm` CLI), a pip-installable Python package (`dist/python/`),
+and a GitHub Release on the module's own repo (via `gh`). Each target shells
+out to its ecosystem's standard tool, so auth and error handling are exactly
+what you know.
 
 ---
 
 ## Editor Support
 
 First-class `.mam` language support — syntax highlighting, snippets,
-diagnostics, commands — v2.0.0:
+diagnostics, commands — v2.0.1:
+
+Fenced blocks highlight like a normal Markdown file: `yaml`, `python`,
+`mermaid`, `json`, `bash`, `powershell`, `typescript`, `sql`, `html`, `diff`
+and friends are delegated to their embedded language grammars instead of being
+one flat block.
 
 - [VS Code Marketplace](https://marketplace.visualstudio.com/items?itemName=ArkhAngelLifeJiggy.mam-language)
 - [OpenVSX](https://open-vsx.org/extension/arkhangellifejiggy/mam-language) (Cursor, Windsurf, VSCodium)

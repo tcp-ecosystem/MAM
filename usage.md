@@ -278,10 +278,10 @@ Aliases: `eco` → `ecosystem`, `viz` → `visualize`, `fmt` → `format`.
 
 | Command | Description |
 |---------|-------------|
-| `mam install` | Install dependencies |
+| `mam install [packages...]` | Install a specific module from the Hub, or a manifest's dependencies |
 | `mam uninstall` | Remove dependencies |
 | `mam update` | Update packages |
-| `mam publish <file>` | Publish to registry |
+| `mam publish <file>` | Publish to the MAM Hub (`--targets npm,python,github` fans out to other ecosystems) |
 | `mam search <query>` | Search module registry |
 | `mam ecosystem` | List ecosystem modules |
 
@@ -550,13 +550,17 @@ MAM compiles to 16 target languages:
 mam init my-package
 
 # Install dependencies
-mam install
+mam install example-agent        # a single module from the Hub
+mam install                      # or everything in mam-package.json
 
-# Publish to registry
+# Publish the module (or the whole folder) to the MAM Hub
 mam publish my-package.mam.md
 
-# Search registry
-mam search "authentication"
+# Fan the same module out to other ecosystems
+mam publish my-package.mam.md --targets npm,python,github
+#   npm    -> dist/npm/<id>/ npm package (published with the real npm CLI)
+#   python -> dist/python/  pip package   (built with python -m build + twine)
+#   github -> dist/github/  release notes (release created via the gh CLI)
 ```
 
 ---
@@ -835,6 +839,7 @@ gzip tarballs with SHA-256 integrity, GraphQL at `/graphql`.
 **Module not found**
 ```bash
 # Check file exists
+ls *.mam
 ls *.mam.md
 
 # Validate module
@@ -856,7 +861,7 @@ mam validate my-module.mam.md --level strict
 mam doctor
 
 # Try different target
-mam compile my-module.mam.md -t json
+mam compile my-module.mam -t json
 ```
 
 ---

@@ -1,8 +1,9 @@
 /**
  * MAM Publish Command
  *
- * Production-grade package publisher with registry auth, version bumping,
- * tarball creation, changelog extraction, signing, and deprecation support.
+ * Publishes a MAM module (or a whole module folder) to the MAM Hub, and can
+ * fan the same artifact out to the ecosystems adopters already build in:
+ * npm (`--targets npm`), Python/PyPI (`python`), GitHub releases (`github`).
  */
 
 import {
@@ -26,6 +27,14 @@ import { randomBytes } from 'node:crypto';
 import chalk from 'chalk';
 import ora from 'ora';
 import { parseMAM } from '@mam/parser';
+import {
+  buildTargetInfo,
+  parseTargets,
+  runNpmTarget,
+  runPythonTarget,
+  runGitHubTarget,
+  type TargetOptions,
+} from './publish-targets.js';
 
 // ============================================================================
 // Types
@@ -33,6 +42,7 @@ import { parseMAM } from '@mam/parser';
 
 export interface PublishOptions {
   file: string;
+  targets?: string;
   registry?: string;
   access?: 'public' | 'restricted' | 'private';
   token?: string;
@@ -168,7 +178,8 @@ interface PackageInfo {
 // Constants
 // ============================================================================
 
-const MAM_REGISTRY = 'https://registry.mam.dev';
+// Live public Hub (README's advertised instance); `--registry` overrides.
+const MAM_REGISTRY = 'https://mam-hub.onrender.com';
 const DEFAULT_ACCESS: PublishOptions['access'] = 'public';
 const TAR_FILENAME = 'package.tar.gz';
 const README_MAX_LENGTH = 1024 * 64;
@@ -442,29 +453,82 @@ class RegistryClient {
     return headers;
   }
 
+  /**
+   * Fetch a module record from the Hub. Module records carry `latest` and a
+   * `versions` map; we surface that through PackageInfo's `version` field so
+   * callers can test "is this version already taken".
+   */
   async getPackage(name: string): Promise<PackageInfo | null> {
-    const url = `${this.baseUrl}/${encodeURIComponent(name).replace('%40', '@')}`;
+    const url = `${this.baseUrl.replace(/\/$/, '')}/modules/${encodeURIComponent(name)}`;
     try {
       const response = await fetch(url, { headers: this.getHeaders() });
-      if (response.status === 404) return null;
-      if (!response.ok) throw new Error(`Registry error: ${response.status}`);
-      return (await response.json()) as PackageInfo;
+      if (!response.ok) {
+        if (response.status === 404) return null;
+        return null;
+      }
+      const record = (await response.json()) as {
+        name: string;
+        description?: string;
+        author?: string;
+        license?: string;
+        repository?: { url?: string };
+        keywords?: string[];
+        tags?: string[];
+        versions: Record<string, unknown>;
+        latest: string;
+      };
+      return {
+        name: record.name,
+        version: record.latest,
+        description: record.description ?? '',
+        readme: '',
+        homepage: '',
+        repository: record.repository?.url ?? '',
+        author: record.author ?? '',
+        license: record.license ?? '',
+        keywords: record.keywords ?? record.tags ?? [],
+        dependencies: {},
+        versions: Object.keys(record.versions ?? {}),
+        distTags: { latest: record.latest ?? '' },
+        time: {},
+        maintainers: [],
+      };
     } catch {
       return null;
     }
   }
 
-  async publish(manifest: PublishManifest): Promise<void> {
-    const url = `${this.baseUrl}/${encodeURIComponent(manifest.name).replace('%40', '@')}`;
+  /**
+   * Publish a module (or a whole module folder) to the Hub.
+   *
+   * The Hub contract is `POST /modules` with a flat payload whose `files`
+   * member is a map of relative path -> utf-8 content; the HTTP layer
+   * separates files from the manifest before the store sees them. Auth is
+   * a Bearer token from `POST /auth/login` / `POST /auth/register`
+   * (`mam login`, or --token / MAM_TOKEN).
+   */
+  async publish(
+    payload: {
+      name: string;
+      version: string;
+      description?: string;
+      author?: string;
+      license?: string;
+      tags?: string[];
+      repository?: { type: string; url: string };
+      files: Record<string, string>;
+    },
+  ): Promise<void> {
+    const url = `${this.baseUrl.replace(/\/$/, '')}/modules`;
     const response = await fetch(url, {
-      method: 'PUT',
+      method: 'POST',
       headers: this.getHeaders(),
-      body: JSON.stringify(manifest),
+      body: JSON.stringify(payload),
     });
 
     if (response.status === 401 || response.status === 403) {
       throw new Error(
-        'Authentication failed. Run `mam login` or set MAM_TOKEN environment variable.',
+        'Authentication required. Set MAM_TOKEN or use --token (`mam login` obtains one).',
       );
     }
 
@@ -477,39 +541,41 @@ class RegistryClient {
   }
 
   async unpublish(name: string, version?: string): Promise<void> {
-    const url = version
-      ? `${this.baseUrl}/${encodeURIComponent(name).replace('%40', '@')}/${version}`
-      : `${this.baseUrl}/${encodeURIComponent(name).replace('%40', '@')}`;
-
+    // The Hub models deletion at module scope (DELETE /modules/:name). A
+    // single-version unpublish has no Hub equivalent, so say exactly that
+    // instead of pretending the parameter worked.
+    if (version) {
+      throw new Error(
+        'The MAM Hub does not support single-version unpublish; DELETE removes the whole module. Omit the version to remove the module entirely.',
+      );
+    }
+    const url = `${this.baseUrl.replace(/\/$/, '')}/modules/${encodeURIComponent(name)}`;
     const response = await fetch(url, {
       method: 'DELETE',
       headers: this.getHeaders(),
     });
 
+    if (response.status === 401 || response.status === 403) {
+      throw new Error('Authentication failed. Set MAM_TOKEN or use --token.');
+    }
     if (!response.ok) {
       throw new Error(`Unpublish failed: ${response.status} ${response.statusText}`);
     }
   }
 
   async deprecate(name: string, version: string, message: string): Promise<void> {
-    const url = `${this.baseUrl}/${encodeURIComponent(name).replace('%40', '@')}/-/deprecate`;
-    const response = await fetch(url, {
-      method: 'POST',
-      headers: this.getHeaders(),
-      body: JSON.stringify({ id: `${name}@${version}`, message }),
-    });
-
-    if (!response.ok) {
-      throw new Error(`Deprecation failed: ${response.status} ${response.statusText}`);
-    }
+    void name; void version; void message;
+    throw new Error(
+      'The MAM Hub does not support deprecation marks yet — unpublish (DELETE the module) or republish a corrected version instead.',
+    );
   }
 
   async whoami(): Promise<string> {
-    const url = `${this.baseUrl}/-/whoami`;
+    const url = `${this.baseUrl.replace(/\/$/, '')}/auth/profile`;
     const response = await fetch(url, { headers: this.getHeaders() });
     if (!response.ok) throw new Error('Not authenticated');
-    const body = (await response.json()) as { username: string };
-    return body.username;
+    const body = (await response.json()) as { user?: { username?: string }; username?: string };
+    return body.user?.username ?? body.username ?? 'unknown';
   }
 }
 
@@ -995,6 +1061,87 @@ class HookRunner {
 // Publish Command
 // ============================================================================
 
+/** Max bytes read per file into the files map; larger files are skipped. */
+const MAX_TEXT_FILE_SIZE = 2 * 1024 * 1024;
+const DIR_EXCLUSIONS = new Set([
+  'node_modules', '.git', 'dist', 'build', 'coverage', '.mam',
+]);
+
+function mamTags(mamData: Record<string, unknown>): string[] {
+  if (Array.isArray(mamData.tags)) {
+    return mamData.tags.filter((t): t is string => typeof t === 'string');
+  }
+  if (typeof mamData.tags === 'string') {
+    return mamData.tags
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+  return [];
+}
+
+/**
+ * Walk the module folder into the flat `files` map the Hub expects
+ * (relative path -> utf-8 content), mirroring the old tar excludes
+ * (`node_modules`, `.git`, `.mam`). Binary files cannot ride the JSON
+ * payload, so they are skipped and reported; the module itself plus all
+ * text resources (docs, configs, source listings) publish.
+ */
+async function collectModuleFiles(
+  rootDir: string,
+  include?: string[],
+  exclude?: string[],
+): Promise<{ files: Record<string, string>; fileCount: number; unpackedSize: number; binary: string[] }> {
+  const excludePatterns = [...(exclude ?? ['node_modules', '.git', '.mam']), ...DIR_EXCLUSIONS];
+  const includeArg = include ?? [];
+
+  const files: Record<string, string> = {};
+  const binary: string[] = [];
+  let unpackedSize = 0;
+
+  const shouldSkip = (name: string, isDir: boolean): boolean => {
+    for (const pattern of excludePatterns) {
+      if (pattern === name || name.startsWith(pattern)) return true;
+    }
+    return false;
+  };
+
+  const walk = async (dir: string): Promise<void> => {
+    const dirEntries = await readdir(dir, { withFileTypes: true });
+    for (const entry of dirEntries) {
+      const full = join(dir, entry.name);
+      const rel = relative(rootDir, full).replace(/\\/g, '/');
+      if (entry.isDirectory()) {
+        if (!shouldSkip(entry.name, true)) await walk(full);
+        continue;
+      }
+      if (!entry.isFile()) continue;
+      if (includeArg.length > 0 && !includeArg.some((p) => rel.includes(p) || entry.name.includes(p))) {
+        continue;
+      }
+      const s = await stat(full);
+      if (s.size > MAX_TEXT_FILE_SIZE) {
+        binary.push(rel);
+        continue;
+      }
+      try {
+        const buf = await readFile(full);
+        if (buf.subarray(0, 1024).includes(0)) {
+          binary.push(rel);
+          continue;
+        }
+        files[rel] = buf.toString('utf-8');
+        unpackedSize += s.size;
+      } catch {
+        binary.push(rel);
+      }
+    }
+  };
+
+  await walk(rootDir);
+  return { files, fileCount: Object.keys(files).length, unpackedSize, binary };
+}
+
 export async function publishCommand(options: PublishOptions): Promise<void> {
   const spinner = ora('Preparing publish...').start();
   const startTime = Date.now();
@@ -1069,9 +1216,14 @@ export async function publishCommand(options: PublishOptions): Promise<void> {
     }
 
     const existingPkg = await registry.getPackage(manifest.getName());
-    if (existingPkg && existingPkg.version === pkgJson.version && !options.force) {
+    if (
+      existingPkg &&
+      (existingPkg.version === pkgJson.version ||
+        existingPkg.versions.includes(pkgJson.version)) &&
+      !options.force
+    ) {
       spinner.fail(
-        `Version ${pkgJson.version} already exists. Use --bump or --force.`,
+        `Version ${pkgJson.version} already exists on the Hub. Use --bump or --force.`,
       );
       process.exit(1);
     }
@@ -1089,8 +1241,8 @@ export async function publishCommand(options: PublishOptions): Promise<void> {
       console.log(chalk.cyan('\nDry run — would publish:'));
       console.log(`  ${chalk.bold(manifest.getName())}@${chalk.bold(pkgJson.version)}`);
       console.log(`  Registry: ${options.registry || MAM_REGISTRY}`);
-      console.log(`  Access: ${options.access || DEFAULT_ACCESS}`);
-      if (options.tag) console.log(`  Tag: ${options.tag}`);
+      const targets = parseTargets(options.targets);
+      if (targets.length > 1 || targets[0] !== 'hub') console.log(`  Targets: ${targets.join(', ')}`);
       console.log(chalk.gray('\nPackage details:'));
       console.log(chalk.gray(`  Description: ${manifest.getDescription()}`));
       console.log(chalk.gray(`  Author: ${manifest.getAuthor()}`));
@@ -1098,63 +1250,58 @@ export async function publishCommand(options: PublishOptions): Promise<void> {
       return;
     }
 
-    spinner.text = 'Creating tarball...';
-    const tarballCreator = new TarballCreator(
-      rootDir,
-      options.include,
-      options.exclude,
-      options.unpacked,
-    );
-    const { buffer: tarballBuffer, fileCount, unpackedSize } = await tarballCreator.create();
+    const targets = parseTargets(options.targets);
+    const publishToHub = targets.includes('hub');
 
-    if (tarballBuffer.length > MAX_PACKAGE_SIZE) {
-      spinner.fail(
-        `Package too large: ${(tarballBuffer.length / 1024 / 1024).toFixed(1)} MB (max: ${MAX_PACKAGE_SIZE / 1024 / 1024} MB)`,
+    let fileCount = 0;
+    let unpackedSize = 0;
+    let tarballBuffer: Buffer | undefined;
+    void tarballBuffer;
+    if (publishToHub) {
+      spinner.text = 'Collecting module files...';
+      const collected = await collectModuleFiles(
+        rootDir,
+        options.include,
+        options.exclude,
       );
-      process.exit(1);
-    }
+      fileCount = collected.fileCount;
+      unpackedSize = collected.unpackedSize;
 
-    const integrity = createIntegrity(tarballBuffer);
-    const shasum = sha256(tarballBuffer);
-    const tarballUrl = `${options.registry || MAM_REGISTRY}/${manifest.getName()}/-/${manifest.getName()}-${pkgJson.version}.tgz`;
+      if (collected.binary.length > 0) {
+        for (const skipped of collected.binary.slice(0, 3)) {
+          console.log(chalk.gray(`  skipped binary: ${skipped}`));
+        }
+        if (collected.binary.length > 3) {
+          console.log(chalk.gray(`  … ${collected.binary.length - 3} more binary files skipped`));
+        }
+      }
 
-    spinner.text = 'Building manifest...';
-    const publishManifest = await manifest.buildPublishManifest(
-      tarballUrl,
-      integrity,
-      shasum,
-      fileCount,
-      unpackedSize,
-    );
-
-    if (options.tag) {
-      publishManifest.distTags = { [options.tag]: pkgJson.version };
-    }
-
-    if (options.sign) {
-      spinner.text = 'Signing package...';
-      const signatures = await signPackage(
-        tarballBuffer,
-        manifest.getName(),
-        pkgJson.version,
-        options.signKey,
-      );
-      publishManifest.dist.signatures = signatures;
-    }
-
-    if (!options.gitTag) {
-      spinner.text = 'Publishing to registry...';
+      spinner.text = 'Publishing to MAM Hub...';
+      const repository = manifest.getRepository();
       try {
-        await registry.publish(publishManifest);
+        await registry.publish({
+          name: manifest.getName(),
+          version: pkgJson.version,
+          description: manifest.getDescription(),
+          author: manifest.getAuthor(),
+          license: manifest.getLicense(),
+          tags: [...new Set([...manifest.getKeywords(), ...mamTags(mamData)])],
+          repository,
+          files: collected.files,
+        });
       } catch (error) {
-        if ((error as Error).message.includes('Authentication failed')) {
+        if ((error as Error).message.includes('Authentication required')) {
           spinner.fail(
-            'Authentication required. Set MAM_TOKEN or use --token.',
+            'Authentication required. Set MAM_TOKEN or use --token (`mam login` obtains one).',
           );
           process.exit(1);
         }
         throw error;
       }
+    } else {
+      // Hub skipped, but keep an integrity digest for the report below.
+      fileCount = 0;
+      unpackedSize = 0;
     }
 
     if (options.gitTag !== false) {
@@ -1190,28 +1337,49 @@ export async function publishCommand(options: PublishOptions): Promise<void> {
       await hookRunner.run(options.afterPublish, {
         MAM_PACKAGE_NAME: manifest.getName(),
         MAM_PACKAGE_VERSION: pkgJson.version,
-        MAM_REGISTRY_URL: tarballUrl,
+        MAM_REGISTRY_URL: options.registry || MAM_REGISTRY,
       });
     }
 
-    const duration = Date.now() - startTime;
-    const result: PublishResult = {
-      name: manifest.getName(),
-      version: pkgJson.version,
-      tarball: tarballUrl,
-      size: tarballBuffer.length,
-      integrity,
-      publishedAt: new Date().toISOString(),
-      registry: options.registry || MAM_REGISTRY,
-      access: options.access || DEFAULT_ACCESS,
-    };
+    // ---------------------------------------------------------------------------
+    // External ecosystem targets (npm / python / github)
+    // ---------------------------------------------------------------------------
+    const externalTargets = targets.filter((t) => t !== 'hub');
+    if (externalTargets.length > 0) {
+      const remote = await getGitRemoteUrl();
+      const targetInfo = buildTargetInfo(mamData, filePath, rootDir, remote ?? undefined);
+      const targetOptions: TargetOptions = {
+        dryRun: Boolean(options.dryRun),
+        access: options.access === 'restricted' ? 'restricted' : 'public',
+        tag: options.tag,
+      };
 
-    spinner.succeed(`Published ${result.name}@${result.version}`);
-    console.log(chalk.gray(`  Registry: ${result.registry}`));
-    console.log(chalk.gray(`  Access: ${result.access}`));
-    console.log(chalk.gray(`  Size: ${(result.size / 1024).toFixed(1)} KB`));
-    console.log(chalk.gray(`  Integrity: ${result.integrity.slice(0, 32)}...`));
-    console.log(chalk.gray(`  Published in ${(duration / 1000).toFixed(1)}s`));
+      spinner.stop();
+      for (const target of externalTargets) {
+        switch (target) {
+          case 'npm':
+            await runNpmTarget(targetInfo, targetOptions);
+            break;
+          case 'python':
+            await runPythonTarget(targetInfo, targetOptions);
+            break;
+          case 'github':
+            await runGitHubTarget(targetInfo, targetOptions);
+            break;
+        }
+      }
+    }
+
+    const duration = Date.now() - startTime;
+    spinner.succeed(
+      `Published ${manifest.getName()}@${pkgJson.version}${publishToHub ? '' : ` (targets: ${targets.join(', ')})`}`,
+    );
+    if (publishToHub) {
+      const hubUrl = options.registry || MAM_REGISTRY;
+      console.log(chalk.gray(`  Hub: ${hubUrl}/modules/${manifest.getName()}`));
+      console.log(chalk.gray(`  Files: ${fileCount} (${(unpackedSize / 1024).toFixed(1)} KB)`));
+    }
+    console.log(chalk.gray(`  Took ${(duration / 1000).toFixed(1)}s`));
   } catch (error) {
     spinner.fail((error as Error).message);
     process.exit(1);

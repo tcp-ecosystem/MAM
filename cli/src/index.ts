@@ -445,9 +445,10 @@ program
 
 program
   .command('publish')
-  .description('Publish MAM module to registry')
+  .description('Publish MAM module to the Hub, optionally to npm/python/github too')
   .argument('[file]', 'MAM module file')
   .option('--tag <tag>', 'Release tag', 'latest')
+  .option('--targets <targets>', 'Comma-separated extra ecosystem targets: npm,python,github (default: hub only)')
   .option('--access <access>', 'Access level (public|restricted)', 'public')
   .option('--registry <url>', 'Registry URL')
   .option('--dry-run', 'Show what would be published')

@@ -88,8 +88,35 @@ Everything is prepped: versions aligned to `2.0.0`, LICENSE per package,
       Proof: fresh temp project, `mam install example-agent` → exit 0, real
       extracted `.mam` module with correct frontmatter, lockfile v3 with the
       resolved URL + sha256 integrity, cli tests 49/49.
-- [ ] Verify `mam publish` friction (token flow, error messages) — `mam publish`
-      has its own command path, not yet audited against the same protocol
+- [x] `mam publish` to the Hub — same class of breakage as install, fixed in
+      `cli/src/commands/publish.ts`: the client now speaks the real Hub
+      protocol (`POST /modules` with a `files: {path → content}` map collected
+      by walking the module folder; `GET /modules/:name` for the
+      version-exists check; `DELETE /modules/:name` for unpublish, with an
+      honest "no single-version unpublish" error, since the Hub has no such
+      API). The dead `registry.mam.dev` default is gone here too. The npm
+      spec-echoing `unpublish <pkg> <version>` form now fails with a clear
+      explanation instead of silently hitting the wrong endpoint.
+      Proof: real example module, `mam publish --dry-run` → parses, lists
+      targets; `mam publish` against the live Hub without a token → stops at
+      the gate with the exact remedy ("Set MAM_TOKEN or use --token").
+- [x] Multi-ecosystem publishing links **npm / python / github** — the
+      "publish to the Hub → reuse everywhere" loop from `adoption-2.md` §15.
+      New `mam publish --targets npm,python,github` (default stays `hub`):
+      - `npm`  → generates `dist/npm/<id>/` (package.json with the .mam in
+        `files`, mam metadata, README from the module info) and publishes with
+        the real `npm` CLI; `npm pack --dry-run` verified locally.
+      - `python` → generates `dist/python/` (setuptools pyproject with the
+        module as package data); builds via `python -m build` and uploads via
+        `twine` when installed, with install instructions when not.
+      - `github` → writes release notes and attaches the module files to a
+        Release on the module's own repo via the `gh` CLI; no remote/gh →
+        notes only, clearly reported.
+      Implementation: `cli/src/commands/publish-targets.ts` +
+      `cli/tests/publish-targets.test.ts` (7 tests, dry-run only — no tokens
+      needed). cli suite 59/59.
+- [ ] 2–3 standalone template repos (own repos, `mam-lang` topic) — external
+- [ ] `awesome-mam` "add yours" PR template — separate repo
 - [ ] 2–3 standalone template repos (own repos, `mam-lang` topic) — external
 - [ ] `awesome-mam` "add yours" PR template — separate repo
 
