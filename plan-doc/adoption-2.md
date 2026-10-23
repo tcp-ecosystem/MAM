@@ -284,6 +284,15 @@ integration.
 
 The developer creates or modifies a real `.mam` file.
 
+The `awesome-mam` ladder is the reference for what "real" means at each
+level: a module is a pure decision function with a stable error-code
+contract; a component adds state, exports and a validated configuration; a
+workflow declares what retries, compensates, replays and stops; a service
+declares lifecycle, health and drain; a system names its members and
+refuses to compose an incomplete graph. A newcomer copies the shape, not
+the subject matter — and every reference file is executable, so the bar is
+verifiable rather than rhetorical.
+
 ### Layer 4 --- First Execution
 
 The developer successfully validates and runs MAM.
@@ -351,6 +360,11 @@ The strongest evidence is:
 > An independent developer discovers MAM, understands it, uses it for a
 > real problem, and continues using it without direct intervention from
 > the core team.
+
+Repository self-evidence does not count. Files the core team authors in its
+own repositories — including the complete `awesome-mam` reference ladder —
+demonstrate the format's ceiling; they are the bar outsiders are invited to
+clear, not proof that anyone did.
 
 ------------------------------------------------------------------------
 
@@ -491,7 +505,10 @@ How target compilation works.
 
 ### Examples
 
-Realistic, reusable systems.
+Realistic, reusable systems. The `awesome-mam` ladder is the reference
+implementation — five modules → three components → two workflows → two
+services → one system — and each level ships executable tests, so examples
+are verified before they are published, never curated for looks.
 
 ### Troubleshooting
 
