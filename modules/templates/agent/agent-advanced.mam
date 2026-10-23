@@ -80,6 +80,40 @@ the base for any agent that other systems will call unattended.
 | tokens_used | number | Tokens charged against the run budget |
 | trace | object | Counts and timings for the run |
 
+## Agent Identity
+
+The Advanced Agent is a long-lived research worker that other systems call
+unattended. It is the same shape as the basic agent — one task, one run, one
+answer — wrapped in the controls a production caller needs: hard budgets, a
+pre/post guard policy, stable machine-readable codes and a trace that never
+echoes secrets.
+
+It does not negotiate, retry or wait. When a budget is exhausted or a step is
+refused it stops with an explicit `stop_reason` and the partial answer, so the
+caller can decide what happens next without guessing.
+
+## Role Description
+
+This agent is the authority on the task it was given and the only party allowed
+to spend its budgets. It collaborates with the caller (which supplies the task
+and reads the trace) and with the host runtime (which enforces the sandbox). It
+never edits its own policy, never extends its own budget and never hides a
+refusal.
+
+## Profile
+
+| Attribute | Value |
+|-----------|-------|
+| Agent ID | `template-agent-advanced` |
+| Category | `agent` |
+| Specialization | Budgeted, guarded single-task research |
+| Primary tools | `notes.read`, `notes.write`, `http.fetch` |
+| Memory | local, namespaced per agent |
+| Deny list | `shell.rm`, `http.internal` (plus caller additions) |
+| Termination | `answered`, `turn_budget`, `token_budget`, `refused`, `failed`, `no_task` |
+| Latency budget | Under 250 ms for 8 steps |
+| Failure mode | Explicit code + partial answer, never a silent stop |
+
 ## Capabilities
 
 ### plan
@@ -102,6 +136,88 @@ Screen the agent and each step against the policy before and after execution.
 ### report
 
 Summarize the run as counts, a stop reason and a stable code.
+
+## Core Competencies
+
+### 1. Budget enforcement
+
+Turns and tokens are charged by the agent, not the caller. A step that would
+cross either limit is never started.
+
+### 2. Pre-action screening
+
+Every step is checked against the allow list and the deny list before it runs.
+Refusals are recorded as turns with a stable code.
+
+### 3. Post-action validation
+
+A step that returns `ok: false` becomes `failed`/`step_failed`; the run stops
+with the evidence attached.
+
+### 4. Redaction
+
+Any step result containing a secret marker is replaced with `[redacted]` before
+it reaches the notes or the trace. The step is kept with `code: redacted`.
+
+### 5. Partial answers
+
+A run that exhausts a budget still reports the answer accumulated so far,
+marked with the budget stop reason.
+
+### 6. Stable error taxonomy
+
+Every non-success run carries exactly one code from the documented table, so
+callers branch on codes rather than message text.
+
+### 7. Observability by default
+
+Every run returns counts (turns, refused, failed), the tools touched and a
+duration; values are never echoed.
+
+### 8. Policy layering
+
+Caller-supplied deny rules are added to the default deny list; nothing can
+remove a default denial.
+
+## Response Format Template
+
+```json
+{
+  "answer": "answer for what is mam",
+  "stop_reason": "answered",
+  "code": "",
+  "tokens_used": 750,
+  "turns": [
+    {"tool": "notes.read", "ok": true, "code": "", "value": "a module format"},
+    {"tool": "notes.write", "ok": true, "code": "", "value": "answer for what is mam"},
+    {"tool": "http.fetch", "ok": true, "code": "", "value": "fetched what is mam"}
+  ],
+  "trace": {"turns": 3, "refused": 0, "failed": 0, "tools": ["http.fetch", "notes.read", "notes.write"], "duration_ms": 0.4}
+}
+```
+
+## Decision-Making Framework
+
+| Situation | Decision | `stop_reason` / `code` |
+|-----------|----------|------------------------|
+| Task empty or not a string | Do not plan | `no_task` / `invalid_task` |
+| Turn budget exhausted | Stop before next step | `turn_budget` / `""` |
+| Token budget exhausted | Stop before next step | `token_budget` / `""` |
+| Tool not on allow list | Record refusal | `refused` / `tool_not_allowed` |
+| Tool on deny list | Record refusal | `refused` / `tool_denied` |
+| Step returned failure | Stop with evidence | `failed` / `step_failed` |
+| All steps succeeded | Report answer | `answered` / `""` |
+
+Ambiguity rule: prefer refusing a single step over failing the whole run; prefer
+stopping over spending the last token.
+
+## Communication Style
+
+- **With callers:** one result object; branch on `stop_reason` and `code`.
+- **With on-call engineers:** the trace is the incident summary; quote counts,
+  not values.
+- **With other agents:** never delegate; this agent is a leaf.
+- **In logs:** tool names, codes and durations only — no note contents.
 
 ## Agent Definition
 
@@ -177,6 +293,15 @@ empty.
 | memory | local | Read and write agent notes |
 | python | sandbox | Execute steps in a sandbox |
 | network | internet | Let the agent reach an approved upstream only |
+
+## Integration Patterns with Other Agents
+
+- **Coordinator:** calls this agent for bounded research and reads `answer`,
+  `stop_reason`, `code` and `trace`.
+- **Policy service:** supplies additional deny rules; it cannot remove defaults.
+- **Telemetry sink:** receives the trace object; it never receives step values.
+- **Human reviewer:** consumes the code taxonomy to decide retries.
+- **No handoffs:** delegation belongs to the full multi-agent template.
 
 ## Rules
 
@@ -435,6 +560,9 @@ out = agent.run("what is mam")
 print(out["stop_reason"], out["code"])   # answered
 print(out["trace"]["tools"])            # ['notes.read', 'notes.write']
 print(out["tokens_used"])               # 500
+
+result = Agent(notes={"what is mam": "a module format"}).run("what is mam")
+print(result["answer"])
 ```
 
 ### Expected Flow
@@ -442,6 +570,57 @@ print(out["tokens_used"])               # 500
 ```text
 task -> guard -> plan -> execute -> redact -> remember -> report -> trace
 ```
+
+## Best Practices
+
+- Set budgets from measured runs, then add headroom; never from optimism.
+- Keep the deny list small and absolute; allow-list everything else.
+- Treat codes as a public API and version them with the module.
+- Redact before persisting, not after logging.
+- Assert the trace shape in tests; observability regressions are silent.
+
+## Common Anti-Patterns
+
+- **Retrying on the caller's behalf.** Retries hide budget burn.
+- **Catching and swallowing step errors.** A silent failure is not a success.
+- **Logging the note contents.** Secrets move through notes.
+- **Mutable default deny list.** Callers must not be able to remove defaults.
+- **Token accounting after the step.** Check before spending.
+
+## Performance Optimization Patterns
+
+- Charge tokens before execution so the budget check is O(1).
+- Keep the plan static per task; never re-plan inside the loop.
+- Build the trace from counters, not by scanning turns repeatedly.
+- Stop at the first refusal; continuing only burns budget.
+- Benchmark with a fixed corpus; 8 steps should stay under 250 ms.
+
+## Security Considerations
+
+- The deny list is a floor, not a ceiling; pair it with host-level sandboxing.
+- Secret markers are heuristics; never rely on them as the only control.
+- Do not echo note values into traces, errors or codes.
+- Reject non-string tasks before they reach the policy engine.
+- Treat `http.fetch` as internet access and require an explicit permission.
+
+## Troubleshooting Guide
+
+| Symptom | Likely cause | Action |
+|---------|--------------|--------|
+| `token_budget` immediately | `max_tokens` below one step | raise above `TOKENS_PER_STEP` |
+| `refused` on a valid tool | caller deny list shadows it | inspect combined deny set |
+| Answer empty after budget stop | no `notes.write` ran yet | allow one write before fetch |
+| Trace has no tools | plan returned empty | check task trimming |
+| Values in logs | redaction bypassed | route payloads through `_redact` |
+
+## Quick Reference Card
+
+- Budgets: 8 turns, 4000 tokens, 250 tokens per step.
+- Allow: notes.read, notes.write, http.fetch. Deny: shell.rm, http.internal.
+- Codes: `tool_not_allowed`, `tool_denied`, `step_failed`, `redacted`,
+  `invalid_task`.
+- Always return `answer`, `stop_reason`, `code`, `tokens_used`, `trace`.
+- Never echo step values.
 
 ## References
 
