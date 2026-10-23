@@ -34,7 +34,7 @@ the plan should exploit it, not rebuild it.
 | VS Code extension — Marketplace | **Live** | `ArkhAngelLifeJiggy.mam-language` |
 | `mam-lsp` language server | Shipped | `lsp/`, bin wired |
 | MCP server (`mam serve --mcp`, `@mam/mcp`) | Shipped **and documented** | README + usage.md carry the client config; 26 tests |
-| `awesome-mam` reference library | **Complete — all 5 levels, verified** | 13 authored files + `.mam` twins: 5 modules, 3 components, 2 workflows, 2 services, 1 system (`system.mam.md` + `mam.toml`); 160/160 harness cases, 26 files validate 0/0 (19 rules), `mam test` 1/1 on all 13; repo `tcp-ecosystem/awesome-mam`, commits `f30e717`→`83be740` |
+| `awesome-mam` reference library | **Complete — all 5 levels + repo infrastructure, verified** | 17 authored files + `.mam` twins (5 modules, 3 components, 2 workflows, 2 services, 1 system, 4 templates); CI gates (`scripts/harness.py`, `scripts/check_twins.py`, placement job), docs, PR/issue templates; **193/193** harness cases, **34 files validate 0/0** (19 rules), twins 17/17; repo `tcp-ecosystem/awesome-mam`, commits `f30e717`→`d835d4b` |
 | Docs material | README documented (5-command loop, convert/validate/MCP/targets) | `docs/` site — material only, **still no stable URL** |
 | Token-efficiency engine | Shipped | `@mam/token-optimization`, 5 layers, 70 tests |
 
@@ -143,10 +143,12 @@ templates → outreach → launch.**
 - Make the 19 seeded Hub modules genuinely reusable (they are live and
   installable — `mam install example-agent` verified).
 - The `awesome-mam` reference ladder is **complete**: 5 modules → 3
-  components → 2 workflows → 2 services → 1 system, 13 authored files +
-  twins, 160/160 harness cases, 26 files validate. It is the artifact new
-  contributors are asked to imitate at each level — not adoption evidence,
-  since we authored it.
+  components → 2 workflows → 2 services → 1 system, plus executable
+  templates for levels 1–4, CI gates (`scripts/harness.py`,
+  `scripts/check_twins.py`, system-placement job), docs, and PR/issue
+  templates — 17 authored files + twins, **193/193** harness cases,
+  **34 files validate**. It is the artifact new contributors are asked to
+  imitate at each level — not adoption evidence, since we authored it.
 - Next on that repo: the "add yours" PR template (still TODO), then
   external entries — those are the actual adoption signal.
 - Add the `mam-lang` topic to relevant repos.
@@ -241,11 +243,12 @@ Track monthly:
 
 **Reference surface (explicitly NOT adoption evidence — authored by us):**
 
-- `awesome-mam` ladder complete: 5 modules · 3 components · 2 workflows ·
-  2 services · 1 system; 13 authored files + `.mam` twins; 160/160
-  Python-harness test cases, 26 files validate (0 errors, 0 warnings,
-  19 rules), `mam test` 1/1 on all 13 files. Repo
-  `tcp-ecosystem/awesome-mam`, commits `f30e717` → `83be740`
+- `awesome-mam` ladder + infrastructure complete: 5 modules · 3 components ·
+  2 workflows · 2 services · 1 system · 4 templates; 17 authored files +
+  `.mam` twins; **193/193** Python-harness test cases, **34 files validate**
+  (0 errors, 0 warnings, 19 rules), twins 17/17, CI runs harness + twins +
+  system-placement on Ubuntu and Windows. Repo
+  `tcp-ecosystem/awesome-mam`, commits `f30e717` → `d835d4b`
   (Oct 23, 2026).
 
 **Milestones:** 10 external repos → 50 → 200 (Linguist-ready).

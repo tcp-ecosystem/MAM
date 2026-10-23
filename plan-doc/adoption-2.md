@@ -24,11 +24,11 @@ criteria for external users of MAM.
 >   user's npm/gh tokens.
 > - Not yet: public npm `@mam/*` release (404 verified 2026-10-23), docs
 >   site URL, template repos, external-repo measurement.
-> - Reference surface: the `awesome-mam` library ladder is **complete** —
->   5 modules, 3 components, 2 workflows, 2 services and 1 system
->   (13 authored files + twins; 160/160 harness cases, 26 files validate,
->   `mam test` 1/1). Authored by us, so it is the bar for contributors,
->   **not** external-adoption evidence.
+> - Reference surface: the `awesome-mam` library is **complete** — five
+>   levels plus executable templates, CI gates, docs and PR/issue
+>   templates (17 authored files + twins; 193/193 harness cases, 34 files
+>   validate, twins 17/17). Authored by us, so it is the bar for
+>   contributors, **not** external-adoption evidence.
 > - Health level (§19): between **L1 Public** and **L2 First External
 >   Users** — first external installs are happening; independent
 >   `.mam`-in-the-wild evidence still to be collected.

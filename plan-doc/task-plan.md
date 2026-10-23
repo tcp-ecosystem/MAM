@@ -158,11 +158,20 @@ Everything is prepped: versions aligned to `2.0.0`, LICENSE per package,
         `LEVEL_ORDER_VIOLATION`), `describe().unconsumed` enumerates
         host-executed/boundary members, compile targets declared
         (`python`, `openai`, `langgraph`)
-      - verification on the final tree: Python harness **160/160 test cases
-        executed and passing** across all 13 authored files (dependency-ordered
-        module registration), `mam validate awesome-mam` **26 files PASS,
-        0 errors, 0 warnings** (19 rules, 12,118 lines), `mam test` **1/1 on
-        all 13 files**; composition gate proof in the system root
+      - infrastructure (commit `d835d4b`): `scripts/harness.py` (portable,
+        dependency-ordered execution of every file and test),
+        `scripts/check_twins.py` (byte-identical twins gate), `templates/`
+        with one executable starter per level (module/component/workflow/
+        service, 33 tests), `docs/` (getting started, level guides,
+        verification), `.github/` (CI on Ubuntu+Windows running harness,
+        twins and a system-placement job; add-yours PR template; module
+        proposal + bug issue templates)
+      - verification on the final tree: Python harness **193/193 test cases
+        executed and passing** across all 17 authored files (dependency-ordered
+        module registration), `mam validate awesome-mam` **34 files PASS,
+        0 errors, 0 warnings** (19 rules, 14,878 lines), `mam test` **1/1 on
+        all 13 reference files**, twins **17/17 identical**; composition gate
+        proof in the system root
 - [ ] `awesome-mam` "add yours" PR template — still TODO
 - [ ] 2–3 standalone template repos (own repos, `mam-lang` topic) — external
 
