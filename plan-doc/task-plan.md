@@ -129,8 +129,23 @@ Everything is prepped: versions aligned to `2.0.0`, LICENSE per package,
 - [ ] Docs site published with a stable URL (GitHub Pages) — material
       exists at `docs/`, no URL
 - [ ] README before/after comparison — the last Phase-2 doc piece
+- [x] `awesome-mam` production library ladder (separate repo:
+      `github.com/tcp-ecosystem/awesome-mam`, push `c94dfc9`, Oct 23 2026) —
+      five folder levels built on `plan-doc/full-mam.md`'s full component set,
+      no placeholders: `01-modules/` **complete** with 5 executable reference
+      modules (`schema-validator`, `retry-policy`, `rate-limiter`,
+      `structured-logging`, `config-loader`) — every module stdlib-pure with
+      the envelope discipline (verdict + stable code + `duration_ms`), twins
+      shipped; verification: Python harness **57/57 test cases executed and
+      passing**, `mam validate awesome-mam` 10/10 files PASS (19 rules),
+      `mam test` structural pass on all five; `config-loader` composes
+      `schema-validator` via real dependency resolution (`DEPENDENCY_UNRESOLVED`
+      gate proven). Levels 2–5 (components/workflows/services/systems) carry
+      complete authoring contracts (Memory+Exports; retry/compensate/replay/stop;
+      lifecycle+health+shutdown; repo-as-system with `mam.toml`+`system.mam.md`)
+      — their `.mam` files are authored level by level, next up 02.
+- [ ] `awesome-mam` "add yours" PR template — still TODO
 - [ ] 2–3 standalone template repos (own repos, `mam-lang` topic) — external
-- [ ] `awesome-mam` "add yours" PR template — separate repo
 
 ## Phase 6 — Outreach
 
