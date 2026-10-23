@@ -1,7 +1,12 @@
 # Task Plan — Adoption Phases (live status)
 
-> Health level: **L1 Public → L2 First External Users**.
-> Priority order: **convert → validate action → npm release → templates → publish flow.**
+> Health level: **L1 Public → L2 First External Users** (556 Open VSX
+> installs verified Oct 23, 2026 — first real users in; independent
+> `.mam`-in-the-wild evidence still to collect).
+> Priority order: **npm release → docs site URL → before/after README →
+> templates → outreach.**
+> Quality pass before the NEXT release: the release itself waits until the
+> remaining polish items below are finished.
 > Rule 1: never manufacture evidence. Every checked item below carries proof
 > (command output, file paths, or commit refs).
 
@@ -61,12 +66,18 @@ Everything is prepped: versions aligned to `2.0.0`, LICENSE per package,
 `mamc`), scope membership confirmed, preflight runner ready
 (`tools/scripts/preflight-publish.mjs`).
 
+- **Truth check (Oct 23, 2026):** the public npm API still returns 404 for
+  `@mam/cli`, so no `@mam/*` release has landed on the public registry yet.
+  If any packages were pushed to an internal/platform registry, the public
+  release below is still outstanding.
 - [ ] User creates a granular npm token with 2FA bypass for automation
 - [ ] Run preflight: `node tools/scripts/preflight-publish.mjs`
 - [ ] Publish: `pnpm -r publish --access public` (user gives the explicit go)
 - [ ] Post-publish verify: `npm i -g @mam/cli` exposes `mam`, `mam-lsp`, `mamc`
 - [x] Pre-publish metadata: all 30 package.json `repository`/`homepage`/`bugs`
       URLs corrected (`github.com/tcp-ecosystem/` → `tcp-ecosystems/`, 40 files)
+- [ ] Follow-up: Open VSX/Marketplace listing metadata still shows the
+      singular `tcp-ecosystem/` URLs — fix with the next extension release
 
 ## Phase 5 — Templates & Publish Flow
 
@@ -115,8 +126,9 @@ Everything is prepped: versions aligned to `2.0.0`, LICENSE per package,
       Implementation: `cli/src/commands/publish-targets.ts` +
       `cli/tests/publish-targets.test.ts` (7 tests, dry-run only — no tokens
       needed). cli suite 59/59.
-- [ ] 2–3 standalone template repos (own repos, `mam-lang` topic) — external
-- [ ] `awesome-mam` "add yours" PR template — separate repo
+- [ ] Docs site published with a stable URL (GitHub Pages) — material
+      exists at `docs/`, no URL
+- [ ] README before/after comparison — the last Phase-2 doc piece
 - [ ] 2–3 standalone template repos (own repos, `mam-lang` topic) — external
 - [ ] `awesome-mam` "add yours" PR template — separate repo
 
@@ -134,3 +146,11 @@ Everything is prepped: versions aligned to `2.0.0`, LICENSE per package,
 ## Metrics (monthly, per `adpotion.md` §7)
 
 10 external repos → 50 → 200 (Linguist-ready). Track owners, not just files.
+
+**Verified snapshot (Oct 23, 2026):**
+
+- Open VSX extension: **556 downloads** (v2.0.0, published 2026-10-07) —
+  read from the Open VSX API.
+- Hub: **19 live modules @ 2.0.0**, all listable; one installed end-to-end.
+- npm `@mam/*`: **0 public** (404 verified; release staged behind the token).
+- External `.mam` repositories: not yet measured.

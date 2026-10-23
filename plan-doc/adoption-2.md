@@ -9,6 +9,25 @@ This document defines the adoption strategy, onboarding path, evidence
 model, telemetry boundaries, contributor workflow, and readiness
 criteria for external users of MAM.
 
+> **Status snapshot — October 2026** (verified against the running
+> system, not projected):
+>
+> - Distribution: CLI repo public; **Open VSX extension live with 556
+>   downloads** (v2.0.0, 2026-10-07); Marketplace listing live.
+> - Onboarding: `mam convert` (§5-§6 flow) shipped and documented;
+>   5-command quickstart in the README.
+> - Reuse: `mam install <module>` from the live Hub verified end-to-end
+>   (resolve → download → extract → integrity lockfile).
+> - Publish: `mam publish` to the Hub rewritten onto the Hub's real API
+>   (module or folder), with ecosystem fan-out to npm / Python / GitHub
+>   (`--targets`) shipped in dry-run; real external uploads pending the
+>   user's npm/gh tokens.
+> - Not yet: public npm `@mam/*` release (404 verified 2026-10-23), docs
+>   site URL, template repos, external-repo measurement.
+> - Health level (§19): between **L1 Public** and **L2 First External
+>   Users** — first external installs are happening; independent
+>   `.mam`-in-the-wild evidence still to be collected.
+
 ------------------------------------------------------------------------
 
 ## 1. Purpose
