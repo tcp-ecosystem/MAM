@@ -2,7 +2,7 @@
   "name": "mam-language",
   "displayName": "MAM - Machine Agent Modules",
   "description": "First-class language support for MAM modules (.mam/.mam.md): syntax highlighting, snippets, CLI-based diagnostics, commands, formatting, folding, symbols, hover, and status bar.",
-  "version": "2.0.17",
+  "version": "2.0.18",
   "publisher": "arkhangellifejiggy",
   "license": "MIT",
   "icon": "./icons/extension-icon.png",
@@ -40,7 +40,8 @@
       "workbench.editorAssociations": {
         "*.mam": "default",
         "*.mam.md": "default"
-      }
+      },
+      "workbench.iconTheme": "mam-icons"
     },
     "iconThemes": [
       {
