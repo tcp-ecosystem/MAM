@@ -1,0 +1,27 @@
+{
+  "iconDefinitions": {
+    "_mam_dark": {
+      "iconPath": "./icons/mam-dark.svg"
+    },
+    "_mam_light": {
+      "iconPath": "./icons/mam-light.svg"
+    }
+  },
+  "fileExtensions": {
+    "mam": "_mam_dark",
+    "mam.md": "_mam_dark"
+  },
+  "languageIds": {
+    "mam": "_mam_dark"
+  },
+  "light": {
+    "fileExtensions": {
+      "mam": "_mam_light",
+      "mam.md": "_mam_light"
+    },
+    "languageIds": {
+      "mam": "_mam_light"
+    }
+  },
+  "hidesExplorerArrows": false
+}
