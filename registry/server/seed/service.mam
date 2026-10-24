@@ -1,28 +1,37 @@
 ---
+# MAM Metadata
 id: example-service
 name: Worker Health Service
 version: 2.0.0
 type: service
+
 author: MAM Team
+
 description: >
   A long-running background service with an explicit lifecycle, a health
   endpoint and graceful shutdown. Demonstrates the `service` type: states,
   readiness, bounded concurrency and drain-on-signal.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - example
   - service
   - health
   - background
+
 dependencies: []
+
 capabilities:
   - start
   - process
   - health
   - shutdown
+
 permissions:
   filesystem:
     - read

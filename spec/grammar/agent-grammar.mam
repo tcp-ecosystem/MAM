@@ -164,6 +164,38 @@ print(agent, errors)
 Definition -> Parse -> Validate -> Result
 ```
 
+## Conformance
+
+- `role` and `goal` are required for every agent.
+- `tools` may only name tool modules that exist in the system.
+- `handoff` may only name agents in the same system.
+- `memory` is `shared` or `local`; anything else is an error.
+- The parser reports every missing field, not just the first.
+
+## Failure Modes
+
+| Condition | Diagnostic | Remedy |
+|-----------|------------|--------|
+| missing role | `Agent requires a role` | add role or refuse deployment |
+| missing goal | `Agent requires a goal` | add goal or refuse deployment |
+| bad memory | `Memory must be shared or local` | choose shared or local |
+| unknown handoff | `Unknown handoff target` | declare the target agent |
+| undeclared tool | `Tool not declared` | add a Tool module |
+
+## Quick Reference
+
+- role + goal required
+- tools optional
+- handoff optional
+- memory shared|local
+- one-way handoffs
+
+## Related Modules
+
+- `grammar-system`
+- `grammar-workflow`
+- `grammar-tokens`
+
 ## References
 
 - MAM Agent section specification

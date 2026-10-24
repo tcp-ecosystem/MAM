@@ -1,28 +1,37 @@
 ---
+# MAM Metadata
 id: example-resource
 name: Managed Queue
 version: 2.0.0
 type: resource
+
 author: MAM Team
+
 description: >
   A queue resource whose real state lives in an external broker and is kept in
   sync by a reconcile loop targeting a desired depth. Demonstrates the
   `resource` type: observed state, desired state and convergence.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - example
   - resource
   - queue
   - reconcile
+
 dependencies: []
+
 capabilities:
   - observe
   - plan
   - reconcile
   - drift
+
 permissions:
   filesystem:
     - read

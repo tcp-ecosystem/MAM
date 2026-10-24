@@ -1,27 +1,36 @@
 ---
+# MAM Metadata
 id: example-repository
 name: Document Store Repository
 version: 2.0.0
 type: repository
+
 author: MAM Team
+
 description: >
   A content-addressed collection of documents. It states what the repository
   holds, how the working tree is laid out, how trunk and feature lines move,
   how integrity is proven, and what a contributor is required to do.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - example
   - repository
   - content-addressed
   - documents
+
 dependencies: []
+
 capabilities:
   - commit
   - read_blob
   - checkout
+
 permissions:
   filesystem:
     - read

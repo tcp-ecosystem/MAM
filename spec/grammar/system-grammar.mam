@@ -173,6 +173,36 @@ print(system, errors)
 Modules -> Edges -> Validate -> Result
 ```
 
+## Conformance
+
+- Agent roles are unique within a system and at most 10 agents are allowed.
+- Edges are acyclic and point coordinator → worker.
+- Shared memory and a policy are declared once per system.
+- Every member resolves to a declared module.
+
+## Failure Modes
+
+| Condition | Diagnostic | Remedy |
+|-----------|------------|--------|
+| duplicate role | `Duplicate agent role` | rename the role |
+| cycle | `Cyclic system edges` | remove the back edge |
+| too many agents | `Too many agents` | split the system |
+| unknown member | `Unknown system member` | declare the module |
+
+## Quick Reference
+
+- ≤10 agents
+- unique roles
+- acyclic edges
+- one policy
+- one shared memory
+
+## Related Modules
+
+- `grammar-agent`
+- `grammar-workflow`
+- `grammar-dependencies`
+
 ## References
 
 - MAM System section specification

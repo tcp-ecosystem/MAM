@@ -185,6 +185,35 @@ print(summarize(doc))
 Document → Parse → Validate → Summarize → Output
 ```
 
+## Conformance
+
+- Capability names are lowercase identifiers with hyphens.
+- Names are unique within a module.
+- Version constraints use semver ranges.
+- Every requested capability must be declared.
+
+## Failure Modes
+
+| Condition | Diagnostic | Remedy |
+|-----------|------------|--------|
+| invalid name | `Invalid capability name` | use `[a-z][a-z0-9-]*` |
+| duplicate | `Duplicate capability` | merge or rename |
+| bad range | `Invalid version constraint` | use `^1.2`, `>=2.0.0` |
+| unknown request | `Capability not provided` | declare it or drop the call |
+
+## Quick Reference
+
+- lowercase-hyphen names
+- unique
+- semver ranges
+- declare before use
+
+## Related Modules
+
+- `grammar-dependencies`
+- `grammar-metadata`
+- `grammar-tokens`
+
 ## References
 
 - MAM documentation

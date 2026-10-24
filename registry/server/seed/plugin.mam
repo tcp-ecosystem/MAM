@@ -1,28 +1,37 @@
 ---
+# MAM Metadata
 id: example-plugin
 name: Report Banner Plugin
 version: 2.0.0
 type: plugin
+
 author: MAM Team
+
 description: >
   A plugin that adds a new formatter to a host it does not own and intercepts
   the host's render call site to wrap whatever the host produced in a banner.
   It states its lifecycle, the extension it registers, and the call sites it
   matches.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - example
   - plugin
   - interception
   - extension
+
 dependencies: []
+
 capabilities:
   - on_load
   - intercept
   - on_unload
+
 permissions:
   filesystem:
     - read

@@ -1,28 +1,37 @@
 ---
+# MAM Metadata
 id: example-workflow
 name: Ledger Extract Transform Load
 version: 2.0.0
 type: workflow
+
 author: MAM Team
+
 description: >
   A three-step pipeline that takes raw ledger lines, normalises them, and
   loads them into a sink. It fixes the order of the steps, what each step
   receives, and the retry policy that applies to the load step.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - example
   - workflow
   - pipeline
   - etl
+
 dependencies: []
+
 capabilities:
   - extract
   - transform
   - load
   - run_pipeline
+
 permissions:
   filesystem:
     - read

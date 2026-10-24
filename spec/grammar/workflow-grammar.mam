@@ -154,6 +154,36 @@ print(parsed, errors)
 Steps -> Parse -> Validate -> Result
 ```
 
+## Conformance
+
+- Steps are ordered and each step declares one action.
+- Branches are explicit; loops declare a bound.
+- The Mermaid diagram mirrors the textual steps.
+- Each step declares error handling or inherits the default.
+
+## Failure Modes
+
+| Condition | Diagnostic | Remedy |
+|-----------|------------|--------|
+| empty workflow | `Workflow has no steps` | add at least one step |
+| duplicate step | `Duplicate step` | rename or merge |
+| unbounded loop | `Unbounded loop` | declare a max iteration |
+| dangling edge | `Dangling workflow edge` | fix the target step |
+
+## Quick Reference
+
+- ordered steps
+- explicit branches
+- bounded loops
+- diagram mirrors steps
+- error handling
+
+## Related Modules
+
+- `grammar-system`
+- `grammar-agent`
+- `grammar-tokens`
+
 ## References
 
 - MAM Workflow section specification

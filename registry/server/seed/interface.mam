@@ -1,28 +1,37 @@
 ---
+# MAM Metadata
 id: example-interface
 name: Paginated Search Interface
 version: 2.0.0
 type: interface
+
 author: MAM Team
+
 description: >
   A versioned public search contract with opaque cursor pagination, a
   compatibility promise and strict argument validation. Demonstrates the
   `interface` type: callers program against the contract, not the
   implementation.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - example
   - interface
   - search
   - pagination
+
 dependencies: []
+
 capabilities:
   - search
   - describe
   - negotiate_version
+
 permissions:
   filesystem:
     - read
@@ -381,4 +390,3 @@ except SearchError as exc:
 - [MAM Specification](../../plan-doc/full-mam.md)
 - [Interface templates](../../templates/interface/)
 - [Data Access Policy](../policy/policy.mam)
-

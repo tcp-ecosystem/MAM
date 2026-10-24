@@ -201,6 +201,38 @@ print(resolve(doc))
 Document → Parse → Validate → Resolve → Output
 ```
 
+## Conformance
+
+- Package names match `[a-z][a-z0-9-]*` with an optional `@scope/`.
+- Version ranges are semver ranges.
+- A module may not depend on itself.
+- Duplicate dependencies are rejected.
+- `optional: true` marks a dependency that may be absent.
+
+## Failure Modes
+
+| Condition | Diagnostic | Remedy |
+|-----------|------------|--------|
+| invalid name | `Invalid package name` | fix scope/name characters |
+| bad range | `Invalid version constraint` | use a semver range |
+| self dependency | `Module cannot depend on itself` | remove the entry |
+| duplicate | `Duplicate dependency` | keep one entry |
+| unresolvable | `Dependency not found` | add it to the manifest |
+
+## Quick Reference
+
+- scoped names allowed
+- semver ranges
+- no self-deps
+- dedupe
+- optional flag
+
+## Related Modules
+
+- `grammar-capabilities`
+- `grammar-metadata`
+- `grammar-tokens`
+
 ## References
 
 - MAM documentation

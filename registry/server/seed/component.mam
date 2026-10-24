@@ -1,28 +1,37 @@
 ---
+# MAM Metadata
 id: example-component
 name: Circuit Breaker
 version: 2.0.0
 type: component
+
 author: MAM Team
+
 description: >
   A circuit breaker that guards a flaky dependency with three states, a failure
   threshold and a half-open probe window. Demonstrates the `component` type: a
   part with a stable contract, used from inside a larger system.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - example
   - component
   - resilience
   - circuit-breaker
+
 dependencies: []
+
 capabilities:
   - call
   - record_success
   - record_failure
   - state_of
+
 permissions:
   filesystem:
     - read

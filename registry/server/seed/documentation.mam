@@ -1,27 +1,36 @@
 ---
+# MAM Metadata
 id: example-documentation
 name: Versioned API Reference
 version: 2.0.0
 type: documentation
+
 author: MAM Team
+
 description: >
   The API reference as a module in its own right: who it is written for, how
   it is organised, where the truth lives, and how it goes stale when the code
   it describes changes underneath it.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - example
   - documentation
   - api-reference
   - drift
+
 dependencies: []
+
 capabilities:
   - index_endpoints
   - compare_versions
   - report_drift
+
 permissions:
   filesystem:
     - read

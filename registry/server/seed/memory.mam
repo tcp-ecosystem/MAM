@@ -1,29 +1,38 @@
 ---
+# MAM Metadata
 id: example-memory
 name: Session Memory
 version: 2.0.0
 type: memory
+
 author: MAM Team
+
 description: >
   A persistent conversation memory scoped per session, with a time-to-live
   per entry, a hard cap on stored entries and an explicit list of fields that
   are never written. Demonstrates the `memory` type: read, write, scoping and
   retention.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - example
   - memory
   - conversation
   - ttl
+
 dependencies: []
+
 capabilities:
   - write
   - recall
   - forget
   - purge_expired
+
 permissions:
   filesystem:
     - read

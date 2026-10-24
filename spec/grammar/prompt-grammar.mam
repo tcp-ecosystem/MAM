@@ -174,6 +174,36 @@ print(rendered, errors)
 Template -> Parse -> Render -> Validate -> Result
 ```
 
+## Conformance
+
+- Variables use `{{name}}` and must be declared as inputs.
+- Prompts must not contain secrets or credentials.
+- Role framing names the agent role exactly once.
+- Injection markers are rejected before rendering.
+
+## Failure Modes
+
+| Condition | Diagnostic | Remedy |
+|-----------|------------|--------|
+| unbalanced braces | `Unbalanced template braces` | close every `{{` |
+| unknown variable | `Unknown prompt variable` | declare it as an input |
+| injection marker | `Prompt injection marker` | remove or escape |
+| oversized prompt | `Prompt exceeds token budget` | trim or split |
+
+## Quick Reference
+
+- `{{var}}` only
+- declare vars
+- no secrets
+- one role frame
+- bounded size
+
+## Related Modules
+
+- `grammar-agent`
+- `grammar-metadata`
+- `grammar-tokens`
+
 ## References
 
 - MAM Prompt section specification

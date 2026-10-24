@@ -199,6 +199,36 @@ print(assess(doc))
 Document → Parse → Validate → Assess → Output
 ```
 
+## Conformance
+
+- Scopes: `filesystem`, `network`, `python`, `memory`, `environment`.
+- Actions: `read`, `write`, `internet`, `sandbox`, `local`, `shared`.
+- Permissions grant the minimum needed for the declared capabilities.
+- Wildcards are rejected outside explicitly documented admin modules.
+
+## Failure Modes
+
+| Condition | Diagnostic | Remedy |
+|-----------|------------|--------|
+| unknown scope | `Unknown permission scope` | use a declared scope |
+| unknown action | `Unknown permission action` | use a declared action |
+| wildcard | `Wildcard permissions are not allowed` | enumerate actions |
+| duplicate | `Duplicate permission` | dedupe the list |
+
+## Quick Reference
+
+- 5 scopes
+- declared actions only
+- least privilege
+- no wildcards
+- review on change
+
+## Related Modules
+
+- `grammar-metadata`
+- `grammar-system`
+- `grammar-tokens`
+
 ## References
 
 - MAM documentation

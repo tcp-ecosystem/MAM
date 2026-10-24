@@ -1,27 +1,36 @@
 ---
+# MAM Metadata
 id: example-extension
 name: Formatter Extension Point
 version: 2.0.0
 type: extension
+
 author: MAM Team
+
 description: >
   The extension point through which a host adds new report formats. It fixes
   what may be registered, the shape of the hook a formatter must satisfy, how
   extensions are discovered, and which host API versions stay loadable.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - example
   - extension
   - registry
   - formatting
+
 dependencies: []
+
 capabilities:
   - register
   - resolve
   - list_formatters
+
 permissions:
   filesystem:
     - read

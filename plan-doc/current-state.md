@@ -1,6 +1,6 @@
 # MAM Current State
 
-> **Last Updated: 2026-10-23**
+> **Last Updated: 2026-10-24**
 >
 > Totals in this document were verified by running the suites on 2026-10-07.
 > Earlier "7,000+ tests / 58 packages / 45 commands" figures were carried over
@@ -15,6 +15,29 @@ MAM (Machine Agent Modules) is a System Description Language (SDL) whose referen
 **Status: Launched.** All packages build, **4,039 tests pass** across 30 packages, full pipeline works end-to-end. V2 Runtime: 100% complete (22/22 engines). `.mam` executes standalone. **MAM Hub registry is live publicly** with 20 founding modules (see [achievement.md](achievement.md)). All 30 publishable packages are at **2.0.0**, matching `MAM_VERSION`.
 
 ---
+
+## Recent Changes (2026-10-24)
+
+- **Examples are now exactly `advanced/`-shaped.** Removed 24 stale `.mam.md`
+  duplicates (14 root-level per-folder copies and 10 loose root files whose real
+  sources already live in `scenarios/modules/`) plus the checked-in
+  `.mam-cache/`. Twin audit: every `.mam` under `modules/examples/` has a
+  byte-identical `.mam.md`; layout audit: 25/25 folders carry `system.mam` +
+  twin, `mam.toml`, `README.md` and `modules/`. Verified **79/79 validate clean**
+  and **79/79 `mam run` pass**.
+- **CLI templates contain real modules.** `cli/src/templates/examples/`
+  (`auth`, `memory`, `planner`) now hold production content instead of 0-byte
+  files, each with a byte-identical `.mam` twin: password hashing + HMAC tokens,
+  a TTL session store with eviction and blocked keys, and a dependency planner
+  with topological order, parallel waves and critical path. All three validate
+  0/0/0 and pass their 30 tests.
+- **`mam init` ships five templates, loaded from disk.** `cli/src/templates/init/`
+  contains `basic`, `advanced`, `workflow`, `agent` and `service` as canonical
+  `.mam.md`, replacing the inline placeholder strings in `init.ts`. `init` writes
+  both `<name>.mam` and `<name>.mam.md`; `mam init --project` does the same under
+  `modules/`. A `copy-templates.mjs` build step keeps `dist/` and `src/` in sync.
+  Every generated module validates 0/0/0 and runs (45 template tests).
+- Suite status: **cli 74/74**, **17 init tests**, examples 79/79 validate + run.
 
 ## Recent Changes (2026-10-23)
 

@@ -149,7 +149,7 @@ init, build, validate, lint, format, fmt, graph, ast, execute, export, doctor, d
 | **Plugin READMEs** | plugins/core/*/README.md missing for all 4 core plugins |
 | **Spec examples** | spec/schema/examples/valid/ and invalid/ directories missing |
 | **Benchmarks** | parser/benchmarks/ has files but may need updating |
-| **CLI templates** | cli/src/templates/examples/ (auth, memory, planner .mam.md) missing |
+| **CLI templates** | ✅ Complete — `cli/src/templates/examples/` ships `auth`, `memory`, `planner` as `.mam.md` + `.mam`; `cli/src/templates/init/` ships 5 templates used by `mam init` |
 | **CLI test fixtures** | cli/tests/fixtures/ may be empty |
 
 ### Line Count Discrepancies
@@ -188,7 +188,7 @@ init, build, validate, lint, format, fmt, graph, ast, execute, export, doctor, d
 
 7. **No examples/** — No standalone examples directory for users to reference.
 
-8. **CLI templates incomplete** — `mam init` templates (basic, full, agent) exist in cli/src/templates/init/ but example templates are missing.
+8. **CLI templates complete** — `mam init` loads `basic`, `advanced`, `workflow`, `agent` and `service` from `cli/src/templates/init/`, and the `auth`, `memory` and `planner` examples exist as `.mam.md` + `.mam`.
 
 9. **Spec validation examples missing** — No valid/invalid example files for spec/schema/examples/.
 

@@ -1,27 +1,36 @@
 ---
+# MAM Metadata
 id: example-runtime
 name: Sandboxed Step Runner
 version: 2.0.0
 type: runtime
+
 author: MAM Team
+
 description: >
   A step execution engine for untrusted workflow steps. It defines the
   execution model, the per-step budgets a step may not exceed, how a step is
   isolated from its neighbours, and the lifecycle a step goes through.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - example
   - runtime
   - sandbox
   - execution
+
 dependencies: []
+
 capabilities:
   - run_step
   - enforce_budget
   - collect_metrics
+
 permissions:
   filesystem:
     - read

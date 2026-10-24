@@ -1,28 +1,37 @@
 ---
+# MAM Metadata
 id: example-package
 name: Summarizer Package Manifest
 version: 2.0.0
 type: package
+
 author: MAM Team
+
 description: >
   The manifest of a distributable unit: exactly which files ship, which
   dependency ranges they are built against, what the installed layout looks
   like on disk, and the digest that proves the bytes are the ones that were
   published.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - example
   - package
   - manifest
   - supply-chain
+
 dependencies: []
+
 capabilities:
   - resolve
   - verify
   - describe
+
 permissions:
   filesystem:
     - read

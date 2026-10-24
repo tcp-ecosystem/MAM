@@ -22,12 +22,14 @@
  * @module init
  */
 import { writeFile, mkdir } from 'node:fs/promises';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { existsSync } from 'node:fs';
 import { join, resolve, relative, dirname } from 'node:path';
 import chalk from 'chalk';
 
 /** Names of the templates shipped with the CLI. */
-export type TemplateName = 'basic' | 'advanced' | 'workflow';
+export type TemplateName = 'basic' | 'advanced' | 'workflow' | 'agent' | 'service';
 
 /** Description of one scaffold template. */
 export interface TemplateInfo {
@@ -83,186 +85,58 @@ export interface InitProjectResult {
   error?: string;
 }
 
-const TEMPLATES = {
-  basic: (name: string) => `---
-id: ${name}
-name: ${name.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
-version: 2.0.0
-type: module
-author: Your Name
-license: MIT
-tags: [mam, module]
-runtime: "python >=3.12"
----
+/** Directory holding the canonical init templates, shipped as `.mam.md`. */
+const TEMPLATE_DIR = new URL('../templates/init/', import.meta.url);
 
-# ${name.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+/**
+ * Convert an arbitrary module name into a canonical MAM id.
+ *
+ * Lowercases, folds whitespace and underscores to hyphens, drops anything that
+ * is not `a-z`, `0-9` or `-`, and trims leading and trailing hyphens.
+ *
+ * @param name - requested module name.
+ * @returns the canonical id used in frontmatter and file contents.
+ */
+export function toModuleId(name: string): string {
+  return String(name)
+    .trim()
+    .toLowerCase()
+    .replace(/[\s_]+/g, '-')
+    .replace(/[^a-z0-9-]/g, '')
+    .replace(/-{2,}/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
 
-A new MAM module.
-
-## Purpose
-
-Describe what this module does.
-
-## Inputs
-
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| input | string | Yes | Input description |
-
-## Outputs
-
-| Name | Type | Description |
-|------|------|-------------|
-| output | string | Output description |
-
-## Rules
-
-- Rule 1
-- Rule 2
-
-## Workflow
-
-- Step 1: Validate input
-- Step 2: Process data
-- Step 3: Return result
-
-## Tests
-
-Test the module with sample inputs.
-
-## Examples
-
-\`\`\`python
-from ${name.replace(/-/g, '_')} import main
-result = main(input="test")
-print(result)
-\`\`\`
-`,
-
-  advanced: (name: string) => `---
-id: ${name}
-name: ${name.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
-version: 2.0.0
-type: module
-author: Your Name
-license: MIT
-tags: [mam, module, advanced]
-runtime: "python >=3.12"
----
-
-# ${name.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
-
-An advanced MAM module with multiple capabilities.
-
-## Purpose
-
-Advanced module with parallel processing and branching.
-
-## Inputs
-
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| data | array | Yes | Input data array |
-| options | object | No | Configuration options |
-
-## Outputs
-
-| Name | Type | Description |
-|------|------|-------------|
-| results | array | Processed results |
-| metadata | object | Processing metadata |
-
-## Capabilities
-
-- Parallel processing
-- Error handling
-- Caching
-
-## Rules
-
-- Handle errors gracefully
-- Log all operations
-- Validate input before processing
-
-## Workflow
-
-- Step 1: Validate and parse input
-- Step 2: Check cache for existing results
-- Step 3: Process data in parallel
-- Step 4: Merge results
-- Step 5: Update cache
-- Step 6: Return results with metadata
-
-## Permissions
-
-- Network: outbound HTTP requests
-- Filesystem: read/write cache directory
-
-## Tests
-
-Test parallel processing with large datasets.
-
-## Examples
-
-\`\`\`python
-from ${name.replace(/-/g, '_')} import process
-results = process(data=[1, 2, 3], options={"parallel": True})
-\`\`\`
-`,
-
-  workflow: (name: string) => `---
-id: ${name}
-name: ${name.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
-version: 2.0.0
-type: workflow
-author: Your Name
-license: MIT
-tags: [mam, workflow, pipeline]
-runtime: "python >=3.12"
----
-
-# ${name.replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
-
-A multi-step workflow with branching.
-
-## Purpose
-
-Orchestrate complex multi-step processes.
-
-## Inputs
-
-| Name | Type | Required | Description |
-|------|------|----------|-------------|
-| source | string | Yes | Data source |
-
-## Outputs
-
-| Name | Type | Description |
-|------|------|-------------|
-| status | string | Workflow status |
-| artifacts | array | Generated artifacts |
-
-## Workflow
-
-- Step 1: Fetch data from source
-- Step 2: Validate data format
-- Step 3: Transform data
-- Step 4: Branch: if large dataset, use parallel processing
-- Step 5: Generate output artifacts
-- Step 6: Cleanup temporary files
-- Step 7: Return status and artifacts
-
-## Rules
-
-- Never skip validation steps
-- Log all state transitions
-- Rollback on failure
-
-## Tests
-
-Test workflow with various data sources and sizes.
-`
-};
+/**
+ * Read one bundled template and personalise it for a module name.
+ *
+ * Templates live in `src/templates/init/<template>.mam.md` and are copied to
+ * `dist/templates/init/` by the build, so the same source works in tests and in
+ * a published package. The three substitutions are the id, the title and the
+ * snake_case form.
+ *
+ * @param template - template key.
+ * @param moduleName - name supplied to `mam init`.
+ * @returns the rendered `.mam` source, also written as the `.mam.md` twin.
+ */
+export function renderTemplate(template: TemplateName, moduleName: string): string {
+  const id = toModuleId(moduleName);
+  if (!id) throw new Error('Module name resolves to an empty id');
+  const title = titleFromModuleName(id);
+  const snake = id.replace(/-/g, '_');
+  const sourcePath = fileURLToPath(new URL(`${template}.mam.md`, TEMPLATE_DIR));
+  let source: string;
+  try {
+    source = readFileSync(sourcePath, 'utf-8');
+  } catch {
+    throw new Error(`Bundled template '${template}' is missing at ${sourcePath}`);
+  }
+  const capitalised = template[0].toUpperCase() + template.slice(1);
+  return source
+    .replaceAll(`template-${template}`, id)
+    .replaceAll(`Template ${capitalised}`, title)
+    .replaceAll(`template_${template}`, snake);
+}
 
 /**
  * Metadata for each bundled template.
@@ -273,24 +147,38 @@ Test workflow with various data sources and sizes.
 const TEMPLATE_INFO: Readonly<Record<TemplateName, TemplateInfo>> = {
   basic: {
     name: 'basic',
-    summary: 'Single-purpose module with inputs, outputs, rules and tests.',
+    summary: 'Text-to-slug module with pure logic, tests and a runnable example.',
     moduleType: 'module',
-    tags: ['mam', 'module'],
-    sections: ['Purpose', 'Inputs', 'Outputs', 'Rules', 'Workflow', 'Tests', 'Examples'],
+    tags: ['mam', 'module', 'starter'],
+    sections: ['Purpose', 'Inputs', 'Outputs', 'Capabilities', 'Rules', 'Workflow', 'Python', 'Tests', 'Examples'],
   },
   advanced: {
     name: 'advanced',
-    summary: 'Module with parallel processing, caching, permissions and metadata.',
+    summary: 'Bounded batch processor with chunking, retries and a failure report.',
     moduleType: 'module',
-    tags: ['mam', 'module', 'advanced'],
-    sections: ['Purpose', 'Inputs', 'Outputs', 'Capabilities', 'Rules', 'Workflow', 'Permissions', 'Tests', 'Examples'],
+    tags: ['mam', 'module', 'advanced', 'reliability'],
+    sections: ['Purpose', 'Inputs', 'Outputs', 'Capabilities', 'Rules', 'Workflow', 'Python', 'Tests', 'Examples'],
   },
   workflow: {
     name: 'workflow',
-    summary: 'Multi-step workflow with branching and artifact generation.',
+    summary: 'Saga-style workflow with ordered steps and reverse compensation.',
     moduleType: 'workflow',
-    tags: ['mam', 'workflow', 'pipeline'],
-    sections: ['Purpose', 'Inputs', 'Outputs', 'Workflow', 'Rules', 'Tests'],
+    tags: ['mam', 'workflow', 'pipeline', 'saga'],
+    sections: ['Purpose', 'Inputs', 'Outputs', 'Capabilities', 'Rules', 'Workflow', 'Python', 'Tests', 'Examples'],
+  },
+  agent: {
+    name: 'agent',
+    summary: 'Bounded agent with an allow list, a turn budget and explicit stop reasons.',
+    moduleType: 'agent',
+    tags: ['mam', 'agent', 'triage'],
+    sections: ['Purpose', 'Inputs', 'Outputs', 'Capabilities', 'Rules', 'Workflow', 'Python', 'Tests', 'Examples'],
+  },
+  service: {
+    name: 'service',
+    summary: 'Service lifecycle with health checks, degraded state and graceful drain.',
+    moduleType: 'service',
+    tags: ['mam', 'service', 'lifecycle', 'health'],
+    sections: ['Purpose', 'Inputs', 'Outputs', 'Capabilities', 'Rules', 'Workflow', 'Python', 'Tests', 'Examples'],
   },
 };
 
@@ -565,7 +453,8 @@ export async function initProject(options: InitProjectOptions): Promise<InitProj
     { path: join(root, 'mam.toml'), content: renderMamToml(name) },
     { path: join(root, '.gitignore'), content: renderGitignore() },
     { path: join(root, 'README.md'), content: renderReadme(name) },
-    { path: join(root, 'modules', `${name}.mam`), content: TEMPLATES.basic(name) },
+    { path: join(root, 'modules', `${name}.mam`), content: renderTemplate('basic', name) },
+    { path: join(root, 'modules', `${name}.mam.md`), content: renderTemplate('basic', name) },
   ];
 
   if (dryRun) {
@@ -627,10 +516,11 @@ export async function initModule(options: InitOptions): Promise<{ success: boole
     return { success: false, file: outFile, error: `File already exists: ${outFile}` };
   }
   
-  const content = TEMPLATES[template](name);
+  const content = renderTemplate(template, name);
   if (options.dryRun) return { success: true, file: outFile };
   await writeFile(outFile, content, 'utf-8');
-  
+  await writeFile(`${outFile}.md`, content, 'utf-8');
+
   return { success: true, file: outFile };
 }
 

@@ -56,7 +56,7 @@ program
   .command('init')
   .description('Initialize a MAM project or module')
   .argument('[name]', 'Module name (omit to initialize a project)')
-  .option('-t, --template <template>', 'Template (basic|advanced|workflow)', 'basic')
+  .option('-t, --template <template>', 'Template (basic|advanced|workflow|agent|service)', 'basic')
   .option('-d, --dir <dir>', 'Target directory')
   .option('--project', 'Initialize a full project (mam.toml + modules + system)')
   .option('--force', 'Overwrite existing files')

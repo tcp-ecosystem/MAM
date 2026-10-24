@@ -1,27 +1,36 @@
 ---
+# MAM Metadata
 id: example-tool
 name: Rate-Limited HTTP Fetcher
 version: 2.0.0
 type: tool
 provider: python
+
 author: MAM Team
+
 description: >
   A side-effecting tool that fetches URLs through a token-bucket rate limiter
   and a bounded retry policy. Demonstrates the `tool` type: a narrow,
   well-typed contract with an explicit idempotency statement.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - example
   - tool
   - http
   - rate-limit
+
 dependencies: []
+
 capabilities:
   - fetch
   - acquire_token
+
 permissions:
   filesystem:
     - read

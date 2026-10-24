@@ -1,4 +1,5 @@
 ---
+# MAM Metadata
 id: example-agent
 name: Support Triage Agent
 version: 2.0.0
@@ -9,26 +10,34 @@ tools:
   - knowledge_base_search
   - customer_context
   - create_ticket_note
+
 author: MAM Team
+
 description: >
   An autonomous support agent that reads an inbound ticket, classifies it,
   scores its urgency, decides whether to escalate to a human queue and stops
   with an explicit stop reason. Demonstrates the `agent` type: a role, a goal,
   a bounded set of tools and a termination policy.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - example
   - agent
   - support
   - triage
+
 dependencies: []
+
 capabilities:
   - classify
   - assess_urgency
   - plan
+
 permissions:
   filesystem:
     - read

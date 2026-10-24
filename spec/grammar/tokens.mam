@@ -280,6 +280,35 @@ result = tokenize("---\nid: sample\nname: Sample\n---\n")
 print([token["type"] for token in result["tokens"]])
 ```
 
+## Conformance
+
+- Token types are stable and documented in `token-reference.md`.
+- Positions are 1-based lines and columns.
+- Unclosed fences and frontmatter are errors.
+- Unknown characters become ERROR tokens, never dropped.
+
+## Failure Modes
+
+| Condition | Diagnostic | Remedy |
+|-----------|------------|--------|
+| unclosed fence | `Unclosed code fence` | close the fence |
+| unclosed frontmatter | `Unclosed frontmatter` | add the closing `---` |
+| unknown character | ERROR token | escape or remove |
+
+## Quick Reference
+
+- stable types
+- 1-based positions
+- frontmatter delimited
+- fences closed
+- deterministic
+
+## Related Modules
+
+- `grammar-metadata`
+- `grammar-workflow`
+- `grammar-agent`
+
 ## References
 
 - `spec/grammar/token-reference.md` — full token reference

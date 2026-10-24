@@ -1,25 +1,34 @@
 ---
+# MAM Metadata
 id: example-module
 name: Text Statistics
 version: 2.0.0
 type: module
+
 author: MAM Team
+
 description: >
   A generic MAM module that computes statistics about a piece of text.
   Demonstrates the plain `module` type: one input, pure transform, no state
   and no I/O.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - example
   - module
   - text
+
 dependencies: []
+
 capabilities:
   - analyze
   - summarize
+
 permissions:
   filesystem:
     - read

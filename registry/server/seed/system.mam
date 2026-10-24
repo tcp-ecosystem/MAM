@@ -1,28 +1,37 @@
 ---
+# MAM Metadata
 id: example-system
 name: Order Processing System
 version: 2.0.0
 type: system
+
 author: MAM Team
+
 description: >
   A small order-processing system composed of three cooperating modules,
   validate, charge, and fulfil. It shows how a system wires parts, decides
   what happens when one part refuses, and records the run as a trace.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - example
   - system
   - orders
   - composition
+
 dependencies: []
+
 capabilities:
   - validate_order
   - charge_order
   - fulfil_order
   - orchestrate
+
 permissions:
   filesystem:
     - read

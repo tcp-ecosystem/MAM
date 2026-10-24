@@ -1,27 +1,36 @@
 ---
+# MAM Metadata
 id: example-team
 name: Research Team
 version: 2.0.0
 type: team
+
 author: MAM Team
+
 description: >
   A three-agent team where a planner turns a question into sub-questions,
   researchers answer them in parallel and a writer composes one answer.
   Demonstrates the `team` type: roles, edges and a handoff protocol.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - example
   - team
   - research
   - handoff
+
 dependencies: []
+
 capabilities:
   - plan
   - delegate
   - compose
+
 permissions:
   filesystem:
     - read

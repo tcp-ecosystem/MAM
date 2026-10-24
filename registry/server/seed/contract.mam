@@ -1,27 +1,36 @@
 ---
+# MAM Metadata
 id: example-contract
 name: Cursor Pagination Contract
 version: 2.0.0
 type: contract
+
 author: MAM Team
+
 description: >
   The agreement between list-API producers and consumers: how a cursor is
   encoded, what a page is guaranteed to contain, which major versions may talk
   to each other, and when a deprecated field disappears.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - example
   - contract
   - api
   - pagination
+
 dependencies: []
+
 capabilities:
   - build_page
   - validate_cursor
   - assess_compatibility
+
 permissions:
   filesystem:
     - read

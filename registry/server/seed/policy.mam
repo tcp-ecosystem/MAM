@@ -1,27 +1,36 @@
 ---
+# MAM Metadata
 id: example-policy
 name: Data Access Policy
 version: 2.0.0
 type: policy
+
 author: MAM Team
+
 description: >
   A declarative allow and deny policy evaluated before execution, deciding
   whether an actor may read a record based on role and data classification.
   Demonstrates the `policy` type: rules, evaluation order and explained verdicts.
+
 license: MIT
+
 runtime:
   language: python
   version: ">=3.12"
+
 tags:
   - example
   - policy
   - access-control
   - compliance
+
 dependencies: []
+
 capabilities:
   - evaluate
   - explain
   - redact
+
 permissions:
   filesystem:
     - read

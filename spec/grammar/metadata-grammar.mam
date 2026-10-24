@@ -190,6 +190,37 @@ print(describe(doc))
 Document → Parse → Validate → Describe → Output
 ```
 
+## Conformance
+
+- `id`, `name`, `version`, `author` and `runtime` are required.
+- `id` is `[a-z][a-z0-9-]*`.
+- `version` is semver; `type` is one of the declared module types.
+- `runtime` is `{language, version}` with a supported language.
+- Unknown top-level keys are ignored, never fatal.
+
+## Failure Modes
+
+| Condition | Diagnostic | Remedy |
+|-----------|------------|--------|
+| missing field | `Missing required field` | add it to frontmatter |
+| invalid id | `Invalid id` | lowercase, hyphens only |
+| bad version | `Invalid version` | use `MAJOR.MINOR.PATCH` |
+| bad type | `Unknown module type` | use a declared type |
+| bad runtime | `Invalid runtime` | language + version |
+
+## Quick Reference
+
+- id/name/version/author/runtime required
+- semver
+- declared types
+- structured runtime
+
+## Related Modules
+
+- `grammar-tokens`
+- `grammar-permissions`
+- `grammar-dependencies`
+
 ## References
 
 - MAM documentation
