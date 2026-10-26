@@ -12,7 +12,7 @@ Syntax highlighting and file-type detection for MAM (Machine Agent Modules)
 
 The grammar mirrors the canonical TextMate grammar in
 `desktop-extension/vscode/syntaxes/mam.tmLanguage.json` and reuses its scope
-names (`source.mam`, `markup.heading.*`, `markup.raw`, `keyword.control.section.mam`,
+names (`text.html.markdown.mam`, `markup.heading.*`, `markup.raw`, `keyword.control.section.mam`,
 `punctuation.definition.frontmatter.mam`, ...), so themes and snippets stay
 consistent across editors.
 

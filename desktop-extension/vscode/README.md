@@ -1,7 +1,7 @@
-# MAM Language Support for VS Code
+﻿# MAM Language Support for VS Code
 
-First-class language support for **MAM** (Machine Agent Modules) — `.mam` / `.mam.md`
-files — with the same richness you expect from `.py` or `.js`: rich syntax
+First-class language support for **MAM** (Machine Agent Modules) â€” `.mam` / `.mam.md`
+files â€” with the same richness you expect from `.py` or `.js`: rich syntax
 highlighting, snippets, real CLI-based diagnostics, commands, formatting,
 folding, symbols, hover, and a status bar.
 
@@ -12,24 +12,24 @@ folding, symbols, hover, and a status bar.
 
 ## Features
 
-- **Rich syntax highlighting** — nested YAML frontmatter (keys, strings, lists,
+- **Rich syntax highlighting** â€” nested YAML frontmatter (keys, strings, lists,
   booleans, inline arrays, structured `runtime`/`permissions`/`capabilities`/
   `dependencies`), headings, tables, blockquotes, task lists, links & images,
   strikethrough, HTML comments, code fences with embedded Mermaid
   (`source.mermaid`), full section keyword list, module type keywords, and
   workflow edges (`->`, `=>`).
-- **Snippets** — scaffold a full module or any individual section with tabstops.
-- **Real CLI diagnostics** — runs `mam validate` (debounced) and maps every
+- **Snippets** â€” scaffold a full module or any individual section with tabstops.
+- **Real CLI diagnostics** â€” runs `mam validate` (debounced) and maps every
   diagnostic into the Problems panel. Falls back to lightweight structural
   checks when the CLI is not installed.
-- **Commands** — validate, run, build, compile, scaffold new modules, and run
+- **Commands** â€” validate, run, build, compile, scaffold new modules, and run
   the project entry, all through the `@mam/cli` binary.
-- **Formatting** — trim trailing whitespace, enforce a single trailing newline,
+- **Formatting** â€” trim trailing whitespace, enforce a single trailing newline,
   and normalize frontmatter indentation.
-- **Folding** — frontmatter, heading sections, and fenced code blocks.
-- **Outline / symbols** — module (`#`), sections (`##`), sub-sections (`###`).
-- **Hover** — inline context for section headings and frontmatter keys.
-- **Status bar** — a MAM status item while editing `.mam`/`.mam.md` files.
+- **Folding** â€” frontmatter, heading sections, and fenced code blocks.
+- **Outline / symbols** â€” module (`#`), sections (`##`), sub-sections (`###`).
+- **Hover** â€” inline context for section headings and frontmatter keys.
+- **Status bar** â€” a MAM status item while editing `.mam`/`.mam.md` files.
 
 ## Requirements
 
@@ -83,7 +83,7 @@ All commands are in the **MAM** category.
 
 ## Grammar notes
 
-- **Scope name**: `source.mam`.
+- **Scope name**: `text.html.markdown.mam`.
 - **Embedded languages**: Mermaid blocks (` ```mermaid `) are scoped to
   `source.mermaid` and declared in `embeddedLanguages` so the Mermaid extension
   can take over inside diagrams.
@@ -103,8 +103,8 @@ Source layout:
 
 ```
 src/extension.ts      activation, commands, status bar, wiring
-src/cli.ts            CliService — spawns the mam binary
-src/diagnostics.ts    MamDiagnostics — Problems-panel integration
+src/cli.ts            CliService â€” spawns the mam binary
+src/diagnostics.ts    MamDiagnostics â€” Problems-panel integration
 src/providers.ts      formatting, folding, symbols, hover providers
 syntaxes/mam.tmLanguage.json
 snippets/mam.code-snippets

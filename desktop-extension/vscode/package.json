@@ -2,7 +2,7 @@
   "name": "mam-language",
   "displayName": "MAM - Machine Agent Modules",
   "description": "First-class language support for MAM modules (.mam/.mam.md): syntax highlighting, snippets, CLI-based diagnostics, commands, formatting, folding, symbols, hover, and status bar.",
-  "version": "2.0.18",
+  "version": "2.0.20",
   "publisher": "arkhangellifejiggy",
   "license": "MIT",
   "icon": "./icons/extension-icon.png",
@@ -67,7 +67,7 @@
     "grammars": [
       {
         "language": "mam",
-        "scopeName": "source.mam",
+        "scopeName": "text.html.markdown.mam",
         "path": "./syntaxes/mam.tmLanguage.json",
         "embeddedLanguages": {
           "source.mermaid": "mermaid",

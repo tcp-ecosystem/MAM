@@ -14,7 +14,7 @@ const MAM_MIME = 'text/x-mam';
  * MAM is "Machine Agent Modules": frontmatter between `---` fences, headings,
  * code fences, and inline markdown constructs. This mirrors the canonical
  * TextMate grammar in `vscode/syntaxes/mam.tmLanguage.json` (scopeName
- * `source.mam`) so highlighting stays consistent across editors.
+ * `text.html.markdown.mam`) so highlighting stays consistent across editors.
  */
 function createMamStreamParser(): Record<string, any> {
   let inFrontmatter = false;
@@ -99,7 +99,7 @@ function registerCodeMirrorMode(): void {
   if (registry) {
     return;
   }
-  // Register a lightweight CodeMirror 5 mode for `source.mam`.
+  // Register a lightweight CodeMirror 5 mode for `text.html.markdown.mam`.
   (Mode as any).addModeInfo({
     name: 'mam',
     mime: MAM_MIME,

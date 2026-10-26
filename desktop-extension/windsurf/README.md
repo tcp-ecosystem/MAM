@@ -37,7 +37,7 @@ Copy the extension folder into `~/.windsurf/extensions` and restart Windsurf.
 ## Usage
 
 After install, `.mam` and `.mam.md` files get MAM highlighting (scope
-`source.mam`).
+`text.html.markdown.mam`).
 
 The MAM CLI drives the workflow:
 

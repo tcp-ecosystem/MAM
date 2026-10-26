@@ -9,7 +9,7 @@ Syntax highlighting and execution support for MAM (Machine Agent Modules) in
 | **Kernel** | `kernel/` | A Jupyter kernel that runs MAM modules via `@mam/cli mam run` |
 
 The highlighting mirrors the canonical TextMate grammar
-(`../vscode/syntaxes/mam.tmLanguage.json`, scopeName `source.mam`) so MAM
+(`../vscode/syntaxes/mam.tmLanguage.json`, scopeName `text.html.markdown.mam`) so MAM
 looks the same across VS Code and JupyterLab.
 
 ## Requirements

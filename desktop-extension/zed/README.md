@@ -9,13 +9,13 @@ editor: syntax highlighting for `.mam` and `.mam.md` files.
 |------|---------|
 | `extension.json` | Zed extension manifest (name, version, authors, repository, grammar + language registration) |
 | `grammars/mam.tmLanguage.json` | TextMate grammar for MAM — a byte-for-byte copy of the canonical grammar in `desktop-extension/vscode/syntaxes/mam.tmLanguage.json` |
-| `grammars/grammars.json` | Maps the `source.mam` scope to the TextMate grammar file |
+| `grammars/grammars.json` | Maps the `text.html.markdown.mam` scope to the TextMate grammar file |
 | `languages/mam/config.scm` | Tree-sitter language config (comments, brackets, folds) |
 | `languages/mam/highlights.scm` | Tree-sitter highlight queries (future-proof native grammar mapping) |
 
 ## How highlighting works
 
-Zed uses the TextMate grammar (scope `source.mam`) for highlighting, exactly
+Zed uses the TextMate grammar (scope `text.html.markdown.mam`) for highlighting, exactly
 like VS Code. The tree-sitter `.scm` files describe the mapping a future
 native `mam` tree-sitter grammar will use and are a no-op today.
 
@@ -44,7 +44,7 @@ Zed can load an extension directly from a folder on disk.
 2. Restart Zed.
 
 3. Open a `.mam` or `.mam.md` file. The syntax selector should show
-   **MAM** (scope `source.mam`).
+   **MAM** (scope `text.html.markdown.mam`).
 
 > The `dev/` subfolder tells Zed to treat the extension as a development
 > build and to re-scan it on restart — no packaging step needed.

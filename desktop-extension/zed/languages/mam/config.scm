@@ -5,7 +5,7 @@
 ; without hard-coding them in Rust.
 ;
 ; NOTE: The MAM extension currently ships a TextMate grammar
-; (grammars/mam.tmLanguage.json, scope `source.mam`) which Zed uses for
+; (grammars/mam.tmLanguage.json, scope `text.html.markdown.mam`) which Zed uses for
 ; highlighting. These tree-sitter queries are written against the node types
 ; a future native `mam` tree-sitter grammar would emit, so they are
 ; future-proof and harmless if the grammar is absent — Zed falls back to

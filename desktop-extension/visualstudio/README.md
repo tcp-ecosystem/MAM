@@ -6,7 +6,7 @@ Syntax highlighting and language support for MAM (Machine Agent Modules) files
 Visual Studio colorizes files through **TextMate grammars** (the same grammar
 technology VS Code uses). The canonical grammar lives at
 `../vscode/syntaxes/mam.tmLanguage.json`; this folder ships a byte-identical
-copy at `syntaxes/mam.tmLanguage.json` (scope name `source.mam`).
+copy at `syntaxes/mam.tmLanguage.json` (scope name `text.html.markdown.mam`).
 
 ## How Visual Studio consumes TextMate grammars
 
@@ -19,7 +19,7 @@ that writes to the `TextMate` registry root:
 "MAM"="$PackageFolder$\Grammars"
 ```
 
-The grammar's `scopeName` (`source.mam`) is what identifies the language. File
+The grammar's `scopeName` (`text.html.markdown.mam`) is what identifies the language. File
 extensions are associated with Solution Explorer icons via
 `[$RootKey$\ShellFileAssociations]`. For editing features (comment toggling,
 bracket matching), VS 2022+ uses a `language-configuration.json` registered

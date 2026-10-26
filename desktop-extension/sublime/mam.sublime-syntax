@@ -15,7 +15,7 @@
 ---
 # The scope name is the root scope applied to every token in a MAM buffer.
 name: MAM
-scope: source.mam
+scope: text.html.markdown.mam
 # Sublime Text matches these file extensions (dot-less) against `.mam` and
 # `.mam.md`. Note: Sublime matches the *longest* extension first, so both
 # variants are listed explicitly to give `.mam.md` priority.
@@ -103,12 +103,12 @@ contexts:
   code-fence:
     - match: '^(```|~~~)\s*([\w+-]*)\s*$'
       captures:
-        1: punctuation.definition.code-block.begin.mam
-        2: entity.name.tag.code-block.mam
+        1: punctuation.definition.markdown
+        2: fenced_code.block.language.markdown
       push:
-        - meta_scope: markup.raw.code-block.mam
+        - meta_scope: markup.fenced_code.block.markdown
         - match: '^(```|~~~)\s*$'
-          scope: punctuation.definition.code-block.end.mam
+          scope: punctuation.definition.markdown
           pop: true
 
   # --- Mermaid ------------------------------------------------------------

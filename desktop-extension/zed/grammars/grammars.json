@@ -1,7 +1,7 @@
 {
   "mam": {
     "name": "MAM",
-    "scope": "source.mam",
+    "scope": "text.html.markdown.mam",
     "path": "grammars/mam.tmLanguage.json",
     "contentName": "MAM"
   }

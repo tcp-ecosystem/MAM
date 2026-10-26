@@ -8,7 +8,7 @@
   "grammars": [
     {
       "name": "mam",
-      "scope": "source.mam",
+      "scope": "text.html.markdown.mam",
       "path": "grammars/mam.tmLanguage.json"
     }
   ],

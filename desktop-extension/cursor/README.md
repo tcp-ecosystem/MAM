@@ -44,7 +44,7 @@ On Windows, the directory is `%USERPROFILE%\.cursor\extensions`.
 ## Usage
 
 After install, `.mam` and `.mam.md` files get MAM highlighting (scope
-`source.mam`).
+`text.html.markdown.mam`).
 
 The MAM CLI drives the workflow:
 

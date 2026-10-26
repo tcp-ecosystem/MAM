@@ -1,7 +1,7 @@
 {
   "$schema": "https://raw.githubusercontent.com/martinring/tmlanguage/master/tmlanguage.json",
   "name": "MAM",
-  "scopeName": "source.mam",
+  "scopeName": "text.html.markdown.mam",
   "fileTypes": ["mam", "mam.md"],
   "patterns": [
     { "include": "#frontmatter" },
@@ -74,11 +74,11 @@
           "begin": "```(\\w+)?\\s*$",
           "end": "^```\\s*$",
           "beginCaptures": {
-            "0": { "name": "punctuation.definition.code-block.begin.mam" },
-            "1": { "name": "entity.name.tag.code-block.mam" }
+            "0": { "name": "punctuation.definition.markdown" },
+            "1": { "name": "fenced_code.block.language.markdown" }
           },
           "endCaptures": {
-            "0": { "name": "punctuation.definition.code-block.end.mam" }
+            "0": { "name": "punctuation.definition.markdown" }
           },
           "patterns": [
             { "match": "->|=>", "name": "keyword.operator.edge.mam" }

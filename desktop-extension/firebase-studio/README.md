@@ -4,7 +4,7 @@
 IDX) is Google's cloud, browser-based IDE built on Code OSS — the open-source
 core of Visual Studio Code. Because it is a VS Code-based environment, it uses
 the **MAM VS Code extension** (`tcp-ecosystem.mam-language`) and the same
-TextMate grammar (`source.mam`) as `../vscode/`.
+TextMate grammar (`text.html.markdown.mam`) as `../vscode/`.
 
 Extensions are installed from the [Open VSX Registry](https://open-vsx.org/),
 the registry Code OSS builds consume, rather than the Microsoft Marketplace.

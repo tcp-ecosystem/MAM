@@ -1,7 +1,7 @@
 # TextMate grammar registration in Visual Studio
 
 This note explains where Visual Studio picks up the MAM TextMate grammar
-(`source.mam`) and what it takes for `.mam` / `.mam.md` files to be colorized.
+(`text.html.markdown.mam`) and what it takes for `.mam` / `.mam.md` files to be colorized.
 
 ## 1. Grammar discovery via the TextMate repository registry
 
@@ -22,7 +22,7 @@ names to grammar folders. Extension authors write this registry through a
 
 All `*.tmLanguage`, `*.tmLanguage.json`, `*.plist`, and `*.json` grammar files
 in that `Grammars` folder are loaded. The MAM grammar file
-`syntaxes/mam.tmLanguage.json` declares `"scopeName": "source.mam"`, which
+`syntaxes/mam.tmLanguage.json` declares `"scopeName": "text.html.markdown.mam"`, which
 becomes the language's registered scope.
 
 ## 2. File association
@@ -45,7 +45,7 @@ and by content type under `[$RootKey$\TextMate\LanguageConfiguration]`:
 
 ```pkgdef
 [$RootKey$\TextMate\LanguageConfiguration\GrammarMapping]
-"source.mam"="$PackageFolder$\mam-language-configuration.json"
+"text.html.markdown.mam"="$PackageFolder$\mam-language-configuration.json"
 ```
 
 When no language service (LSP) claims the content type, the editor falls back
@@ -72,6 +72,6 @@ it is only recommended for quick local testing.
 | Grammar repository registration | `[$RootKey$\TextMate\Repositories]` in a `.pkgdef` inside the VSIX |
 | Grammar files on disk | `%LocalAppData%\Microsoft\VisualStudio\<version>\Extensions\<guid>\Grammars\` |
 | File extension → icon | `[$RootKey$\ShellFileAssociations\.mam]` and `.mam.md` |
-| Scope name | `source.mam` (declared in `syntaxes/mam.tmLanguage.json`) |
+| Scope name | `text.html.markdown.mam` (declared in `syntaxes/mam.tmLanguage.json`) |
 | Language configuration mapping | `[$RootKey$\TextMate\LanguageConfiguration\GrammarMapping]` |
 | Manual grammar location | `...\TextMate\Starterkit\Grammars\` under the VS install dir |
