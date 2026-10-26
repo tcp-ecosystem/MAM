@@ -21,6 +21,10 @@
     "./sandboxes": {
       "import": "./dist/sandboxes/index.js",
       "types": "./dist/sandboxes/index.d.ts"
+    },
+    "./lir": {
+      "import": "./dist/lir/index.js",
+      "types": "./dist/lir/index.d.ts"
     }
   },
   "scripts": {

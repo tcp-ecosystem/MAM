@@ -1,0 +1,19 @@
+# MAM Project Manifest — LIR interoperability example.
+# Python and TypeScript implement capabilities; MAM describes the system.
+
+[project]
+name = "interop"
+version = "1.0.0"
+description = "Python and TypeScript implementations orchestrated by a MAM system"
+license = "MIT"
+authors = ["MAM Team"]
+
+[build]
+entry = "system.mam"
+modules = [
+  "system.mam",
+  "modules/**/*.mam",
+  "modules/**/*.mam.md",
+]
+outDir = "dist"
+targets = ["python", "javascript"]

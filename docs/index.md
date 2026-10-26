@@ -14,6 +14,7 @@
 | [plan.md](../plan.md) | Project plan (v1) |
 | [plan-v2.md](../plan-doc/plan-v2.md) | Project plan (v2) |
 | [usage.md](./usage.md) | Complete usage guide |
+| [LIR.md](./architecture/LIR.md) | Language Interoperability Runtime (Python, JavaScript, TypeScript) |
 
 ---
 

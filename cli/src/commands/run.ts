@@ -8,6 +8,7 @@
  */
 
 import { readFile, writeFile, mkdtemp, rm } from 'node:fs/promises';
+import { existsSync, readFileSync } from 'node:fs';
 import { resolve, basename, extname, dirname, join } from 'node:path';
 import { tmpdir } from 'node:os';
 import { spawn } from 'node:child_process';
@@ -23,6 +24,13 @@ import {
   type EventEmitter as V2EventEmitter,
   type MAMEvent,
 } from '@mam/runtime/v2';
+import {
+  createDefaultLirRegistry,
+  parseImplementationDeclarations,
+  type LirInvocationFailure,
+  type LirInvocationResult,
+  type LirInvocationSuccess,
+} from '@mam/runtime/lir';
 import chalk from 'chalk';
 import ora from 'ora';
 import { createTracer, createMetricsRegistry, createEvaluator } from '@mam/observability';
@@ -146,12 +154,16 @@ const BENCHMARK_WARMUP_RUNS = 2;
 class InputParser {
   static parse(inputStr?: string): Record<string, unknown> {
     if (!inputStr) return {};
+    let raw = inputStr;
+    if (inputStr.startsWith('@')) {
+      raw = readFileSync(resolve(inputStr.slice(1)), 'utf8');
+    }
     try {
-      return JSON.parse(inputStr);
+      return JSON.parse(raw);
     } catch {
       // Try key=value format
       const result: Record<string, unknown> = {};
-      const pairs = inputStr.split(',');
+      const pairs = raw.split(',');
       for (const pair of pairs) {
         const eqIdx = pair.indexOf('=');
         if (eqIdx > 0) {
@@ -982,6 +994,25 @@ function generateDryRunOutput(ast: any, inputs: Record<string, unknown>, options
   }
   lines.push('');
 
+  const declaredImplementations = fm?.implementations;
+  if (Array.isArray(declaredImplementations) && declaredImplementations.length > 0) {
+    lines.push(chalk.white(`  Implementations (${declaredImplementations.length}):`));
+    for (const item of declaredImplementations) {
+      if (item && typeof item === 'object') {
+        const implementation = item as Record<string, unknown>;
+        const upstream = implementation.inputFrom
+          ? chalk.gray(` <- ${String(implementation.inputFrom)}`)
+          : '';
+        lines.push(chalk.gray(
+          `    ${String(implementation.id ?? '(unnamed)')} `
+          + `[${String(implementation.language ?? '?')}] `
+          + `${String(implementation.entry ?? '?')}${upstream}`,
+        ));
+      }
+    }
+    lines.push('');
+  }
+
   lines.push(chalk.white('  Input Parameters:'));
   if (Object.keys(inputs).length === 0) {
     lines.push(chalk.gray('    (none)'));
@@ -1358,6 +1389,140 @@ async function executePythonImplementation(
   }
 }
 
+interface LirImplementationRun {
+  id: string;
+  language: string;
+  ok: boolean;
+  inputFrom?: string;
+  durationMs: number;
+  value?: unknown;
+  error?: { code: string; message: string };
+  stdout?: string;
+  stderr?: string;
+}
+
+interface LirExecutionResult {
+  ok: boolean;
+  implementations: LirImplementationRun[];
+  skipped: string[];
+}
+
+function findProjectRoot(filePath: string): string {
+  const start = dirname(resolve(filePath));
+  let dir = start;
+  for (;;) {
+    if (existsSync(join(dir, 'mam.toml'))) return dir;
+    const parent = dirname(dir);
+    if (parent === dir) return start;
+    dir = parent;
+  }
+}
+
+/**
+ * Invoke host-language implementations declared in the module frontmatter.
+ * Returns null for pure native MAM modules, preserving their behaviour and
+ * requiring no Python or Node runtime.
+ */
+async function executeImplementations(
+  ast: unknown,
+  inputs: Record<string, unknown>,
+  filePath: string,
+  defaultTimeoutMs: number,
+): Promise<LirExecutionResult | null> {
+  const frontmatter = (ast as {
+    frontmatter?: { data?: Record<string, unknown> };
+  }).frontmatter?.data;
+  const projectRoot = findProjectRoot(filePath);
+
+  let declarations;
+  try {
+    declarations = parseImplementationDeclarations(frontmatter?.implementations, {
+      source: 'implementations',
+      projectRoot,
+    });
+  } catch (error) {
+    return {
+      ok: false,
+      implementations: [{
+        id: '(declarations)',
+        language: 'unknown',
+        ok: false,
+        durationMs: 0,
+        error: {
+          code: 'LIR_DECLARATION_INVALID',
+          message: error instanceof Error ? error.message : String(error),
+        },
+      }],
+      skipped: [],
+    };
+  }
+
+  if (declarations.length === 0) return null;
+
+  const registry = createDefaultLirRegistry({
+    projectRoot,
+    manifestPath: resolve(filePath),
+  });
+  const results = new Map<string, LirInvocationResult>();
+  const implementations: LirImplementationRun[] = [];
+  const skipped: string[] = [];
+
+  for (const declaration of declarations) {
+    let input: unknown = inputs;
+
+    if (declaration.inputFrom) {
+      const upstream = results.get(declaration.inputFrom);
+      if (!upstream || !upstream.ok) {
+        const reason = upstream
+          ? `upstream implementation "${declaration.inputFrom}" failed`
+          : `upstream implementation "${declaration.inputFrom}" was skipped`;
+        skipped.push(declaration.id);
+        implementations.push({
+          id: declaration.id,
+          language: declaration.language,
+          ok: false,
+          inputFrom: declaration.inputFrom,
+          durationMs: 0,
+          error: { code: 'LIR_DEPENDENCY_UNAVAILABLE', message: reason },
+        });
+        continue;
+      }
+      input = { inputs, upstream: upstream.value };
+    }
+
+    const result = await registry.invoke(declaration, input, {
+      timeoutMs: declaration.timeoutMs ?? defaultTimeoutMs,
+    });
+    results.set(declaration.id, result);
+
+    const implementationRun: LirImplementationRun = {
+      id: declaration.id,
+      language: declaration.language,
+      ok: result.ok,
+      ...(declaration.inputFrom ? { inputFrom: declaration.inputFrom } : {}),
+      durationMs: result.durationMs,
+      ...(result.stdout.trim() ? { stdout: result.stdout.trimEnd() } : {}),
+      ...(result.stderr.trim() ? { stderr: result.stderr.trimEnd() } : {}),
+    };
+    if (result.ok) {
+      implementationRun.value = (result as LirInvocationSuccess).value;
+    } else {
+      const failure = result as LirInvocationFailure;
+      implementationRun.error = {
+        code: failure.error.code,
+        message: failure.error.message,
+      };
+    }
+    implementations.push(implementationRun);
+  }
+
+  return {
+    ok: implementations.every((implementation) => implementation.ok),
+    implementations,
+    skipped,
+  };
+}
+
 async function executeRun(options: RunOptions): Promise<ExecutionResult> {
   const startTime = Date.now();
   const trace = new TraceCollector(options.trace || false);
@@ -1490,14 +1655,39 @@ async function executeRun(options: RunOptions): Promise<ExecutionResult> {
       );
       if (pythonExecution) trace.add('execute', `Python implementation: ${pythonExecution.status}`);
 
+      // Host-language implementations are invoked only when the module
+      // explicitly declares them. Pure native modules remain runtime-free.
+      const lirExecution = await executeImplementations(
+        result.ast,
+        inputs as Record<string, unknown>,
+        filePath,
+        Number(options.timeout) || DEFAULT_TIMEOUT_MS,
+      );
+      if (lirExecution) {
+        const passed = lirExecution.implementations.filter((item) => item.ok).length;
+        trace.add(
+          'execute',
+          `LIR implementations: ${passed}/${lirExecution.implementations.length} ok`,
+        );
+      }
+
+      const lirErrors = (lirExecution?.implementations ?? [])
+        .filter((item) => !item.ok)
+        .map((item) => `LIR[${item.id}] ${item.error?.code ?? 'LIR_INVOKE_FAILED'}: ${item.error?.message ?? 'failed'}`);
+
+      const output: Record<string, unknown> = { ...(execResult.output ?? {}) };
+      if (pythonExecution) output.execution = pythonExecution;
+      if (lirExecution) output.lir = lirExecution;
+
       return {
-        success: execResult.success && pythonExecution?.status !== 'error',
-        output: pythonExecution
-          ? { ...(execResult.output ?? {}), execution: pythonExecution }
-          : (execResult.output ?? {}),
+        success: execResult.success
+          && pythonExecution?.status !== 'error'
+          && (lirExecution?.ok ?? true),
+        output,
         errors: [
           ...(execResult.error ? [execResult.error] : []),
           ...(pythonExecution?.status === 'error' && pythonExecution.error ? [pythonExecution.error] : []),
+          ...lirErrors,
         ],
         warnings: [],
         timeMs: Date.now() - startTime,
@@ -1507,6 +1697,7 @@ async function executeRun(options: RunOptions): Promise<ExecutionResult> {
           module: module.name,
           type: module.moduleType,
           pythonExecution: pythonExecution?.status ?? 'none',
+          lir: lirExecution ? (lirExecution.ok ? 'ok' : 'error') : 'none',
         },
         trace: trace.getEntries(),
       };

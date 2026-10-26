@@ -68,3 +68,57 @@ describe('FM002 frontmatter-closed', () => {
     expect(diags[0]!.ruleId).toBe('FM002');
   });
 });
+
+describe('LIR001 implementations-valid', () => {
+  const lir001 = BUILT_IN_RULES.find((rule) => rule.id === 'LIR001');
+
+  it('is registered as a schema error', () => {
+    expect(lir001).toBeDefined();
+    expect(lir001!.severity).toBe('error');
+    expect(lir001!.level).toBe('schema');
+  });
+
+  it('accepts valid declarations', () => {
+    const ctx = ctxFor(['---', '---'], 'system.mam');
+    ctx.frontmatter = {
+      implementations: [
+        { id: 'normalize', language: 'python', entry: 'src/normalize.py', export: 'normalize' },
+        { id: 'score', language: 'typescript', entry: 'src/score.ts', export: 'score', inputFrom: 'normalize' },
+      ],
+    };
+
+    expect(lir001!.check(ctx)).toEqual([]);
+  });
+
+  it('ignores modules without declarations', () => {
+    const ctx = ctxFor(['---', '---'], 'system.mam');
+    expect(lir001!.check(ctx)).toEqual([]);
+  });
+
+  it('reports unsupported languages and absolute entries', () => {
+    const ctx = ctxFor(['---', '---'], 'system.mam');
+    ctx.frontmatter = {
+      implementations: [
+        { id: 'ruby-step', language: 'ruby', entry: 'src/step.rb' },
+      ],
+    };
+
+    const diagnostics = lir001!.check(ctx);
+    expect(diagnostics).toHaveLength(1);
+    expect(diagnostics[0]).toMatchObject({
+      ruleId: 'LIR001',
+      severity: 'error',
+      line: 1,
+    });
+    expect(diagnostics[0]!.message).toContain('not supported');
+
+    ctx.frontmatter = {
+      implementations: [
+        { id: 'absolute', language: 'python', entry: '/etc/passwd' },
+      ],
+    };
+    const absolute = lir001!.check(ctx);
+    expect(absolute).toHaveLength(1);
+    expect(absolute[0]!.message).toContain('project-relative');
+  });
+});

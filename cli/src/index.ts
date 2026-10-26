@@ -167,6 +167,70 @@ program
     await runCommand({ ...options, file, timeout: parseInt(options.timeout) });
   });
 
+const lir = program
+  .command('lir')
+  .description('Inspect and invoke host-language implementations declared in a module');
+
+lir
+  .command('probe')
+  .description('Check Python and Node.js runtime availability')
+  .option('--language <language>', 'Filter to python|javascript|typescript')
+  .option('--python <path>', 'Explicit Python interpreter')
+  .option('--node <path>', 'Explicit Node.js executable')
+  .option('-f, --format <format>', 'Output format (text|json)', 'text')
+  .action(async (options) => {
+    const { lirCommand } = await import('./commands/lir.js');
+    await lirCommand({
+      action: 'probe',
+      language: options.language,
+      python: options.python,
+      node: options.node,
+      format: options.format === 'json' ? 'json' : 'text',
+    });
+  });
+
+lir
+  .command('list')
+  .description('List implementations declared in a .mam file')
+  .argument('<file>', '.mam module file')
+  .option('--python <path>', 'Explicit Python interpreter')
+  .option('--node <path>', 'Explicit Node.js executable')
+  .option('-f, --format <format>', 'Output format (text|json)', 'text')
+  .action(async (file, options) => {
+    const { lirCommand } = await import('./commands/lir.js');
+    await lirCommand({
+      action: 'list',
+      file,
+      python: options.python,
+      node: options.node,
+      format: options.format === 'json' ? 'json' : 'text',
+    });
+  });
+
+lir
+  .command('invoke')
+  .description('Invoke one declared implementation with JSON input')
+  .argument('<file>', '.mam module file')
+  .argument('<id>', 'Implementation id')
+  .option('-i, --input <json>', 'JSON input value or @path/to/input.json', '{}')
+  .option('-t, --timeout <ms>', 'Execution timeout in ms')
+  .option('--python <path>', 'Explicit Python interpreter')
+  .option('--node <path>', 'Explicit Node.js executable')
+  .option('-f, --format <format>', 'Output format (text|json)', 'text')
+  .action(async (file, id, options) => {
+    const { lirCommand } = await import('./commands/lir.js');
+    await lirCommand({
+      action: 'invoke',
+      file,
+      id,
+      input: options.input,
+      timeout: options.timeout ? parseInt(options.timeout, 10) : undefined,
+      python: options.python,
+      node: options.node,
+      format: options.format === 'json' ? 'json' : 'text',
+    });
+  });
+
 program
   .command('execute')
   .alias('exec')

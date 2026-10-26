@@ -18,13 +18,29 @@ MAM (Machine Agent Modules) is a System Description Language (SDL) whose referen
 
 ## Recent Changes (2026-10-24)
 
+- **Language Interoperability Runtime (LIR) implemented.** `@mam/runtime/lir`
+  lets a `.mam` system orchestrate ordinary Python, JavaScript and TypeScript
+  files without compiling the module. Implementations are declared under
+  `implementations:` in frontmatter; the registry enforces language/id
+  allowlists, `process:spawn`, declaration permissions and environment names,
+  project-root path containment (including symlink resolution), filtered child
+  environments, timeouts with process-tree termination, output caps, and an
+  audit record per invocation. Python uses `importlib`; TypeScript uses Node
+  built-in type stripping (Node >= 22.6, default in Node 24) with no implicit
+  package installs. `mam lir probe|list|invoke` and `mam run` are wired;
+  `mam run` composes declarations in order and supports `inputFrom` envelopes.
+  New `LIR001` validator rule; docs in `docs/architecture/LIR.md`; runnable example in
+  `modules/examples/interop/` (Python → TypeScript, 0/0/0 validation, tests).
+  Suites: **runtime 513/513** (20 LIR), **cli 86/86** (4 LIR command, 4 run
+  integration), example Python 3/3 and Node 2/2.
 - **Examples are now exactly `advanced/`-shaped.** Removed 24 stale `.mam.md`
   duplicates (14 root-level per-folder copies and 10 loose root files whose real
   sources already live in `scenarios/modules/`) plus the checked-in
   `.mam-cache/`. Twin audit: every `.mam` under `modules/examples/` has a
-  byte-identical `.mam.md`; layout audit: 25/25 folders carry `system.mam` +
-  twin, `mam.toml`, `README.md` and `modules/`. Verified **79/79 validate clean**
-  and **79/79 `mam run` pass**.
+  byte-identical `.mam.md`; layout audit: 26/26 folders carry `system.mam` +
+  twin, `mam.toml`, `README.md` and `modules/`. Verified **81/81 validate clean**
+  and **81/81 `mam run` pass** (the interop example uses its sample
+  `input.json`).
 - **CLI templates contain real modules.** `cli/src/templates/examples/`
   (`auth`, `memory`, `planner`) now hold production content instead of 0-byte
   files, each with a byte-identical `.mam` twin: password hashing + HMAC tokens,
@@ -37,7 +53,7 @@ MAM (Machine Agent Modules) is a System Description Language (SDL) whose referen
   both `<name>.mam` and `<name>.mam.md`; `mam init --project` does the same under
   `modules/`. A `copy-templates.mjs` build step keeps `dist/` and `src/` in sync.
   Every generated module validates 0/0/0 and runs (45 template tests).
-- Suite status: **cli 74/74**, **17 init tests**, examples 79/79 validate + run.
+- Suite status: **cli 86/86**, **17 init tests**, **runtime 513/513**, examples 81/81 validate + run.
 
 ## Recent Changes (2026-10-23)
 
@@ -351,7 +367,8 @@ Target routing by extension: `.mam.py` → python, `.mam.js`/`.mam.mjs`/`.mam.cj
 | Workflow Engine (standalone) | Medium | ✅ Complete (~500 lines) |
 | Module Registry (runtime-level) | Medium | ✅ Complete (349 lines) |
 | Dependency Resolver (runtime-level) | Medium | ✅ Complete (topoSort + package-manager) |
-| CLI `mam run` | High | ✅ Complete (sandbox, hooks, plugins, V2 runtime) |
+| CLI `mam run` | High | ✅ Complete (sandbox, hooks, plugins, V2 runtime, LIR orchestration) |
+| Language Interoperability Runtime | High | ✅ Complete (Python + Node/JS/TS, policy, audit, CLI, example) |
 | Dry-run mode | High | ✅ Complete |
 | Evaluation Engine | Medium | ✅ Complete (~450 lines, quality scoring, benchmarks) |
 | Standalone `.mam` execution | High | ✅ Complete (`mam run file.mam`, native runtime) |

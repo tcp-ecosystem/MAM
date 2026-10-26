@@ -1,0 +1,6 @@
+{
+  "name": "mam-example-interop",
+  "private": true,
+  "type": "module",
+  "description": "ESM marker for the TypeScript implementation used by the LIR example"
+}

@@ -10,6 +10,7 @@ import { resolve, dirname, relative, join } from 'node:path';
 import { existsSync, readdirSync, statSync } from 'node:fs';
 import { parseMAM } from '@mam/parser';
 import { MAM_VERSION } from '@mam/ast';
+import { parseImplementationDeclarations } from '@mam/runtime/lir';
 import { parse as parseYaml } from 'yaml';
 import chalk from 'chalk';
 import ora from 'ora';
@@ -898,6 +899,52 @@ export const BUILT_IN_RULES: ValidationRule[] = [
     check: (_ctx) => {
       // Encoding check is done at file read level; this is a placeholder
       return [];
+    },
+  },
+  {
+    id: 'LIR001',
+    name: 'implementations-valid',
+    description: 'Implementation declarations must be valid and project-relative',
+    severity: 'error',
+    level: 'schema',
+    category: 'implementations',
+    fixable: false,
+    check: (ctx) => {
+      if (ctx.frontmatter.implementations === undefined) return [];
+
+      const start = resolve(dirname(ctx.filePath || process.cwd()));
+      let projectRoot = start;
+      for (;;) {
+        if (existsSync(join(projectRoot, 'mam.toml'))) break;
+        const parent = dirname(projectRoot);
+        if (parent === projectRoot) {
+          projectRoot = start;
+          break;
+        }
+        projectRoot = parent;
+      }
+
+      try {
+        parseImplementationDeclarations(ctx.frontmatter.implementations, {
+          source: 'implementations',
+          projectRoot,
+        });
+        return [];
+      } catch (error) {
+        return [{
+          ruleId: 'LIR001',
+          message: error instanceof Error ? error.message : String(error),
+          severity: 'error',
+          line: 1,
+          column: 1,
+          source: ctx.filePath,
+          suggestions: [
+            'Each implementation needs id, language, and a project-relative entry',
+            'Supported languages: python, javascript, typescript',
+            'Use `mam lir list <file>` to inspect resolved declarations',
+          ],
+        }];
+      }
     },
   },
 ];
